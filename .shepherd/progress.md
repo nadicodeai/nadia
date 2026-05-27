@@ -16,8 +16,8 @@ Living log of milestone progress. Append-only timeline; do not rewrite history. 
 | M4 CI gates | complete | 5 / 5 | M4 closed @ 4c0f1f24; AC-2/3/4/8/9/10/11 anchored; refactor `f3ee50ea` + architect `4c0f1f24` |
 | M5 Docker pipeline | complete | 3 / 3 | M5 closed @ 174d88862; AC-8 PROVEN (tree-hash 6709428a…); NFR-3 image-size parity deferred to M6 by design (slim 371MB vs legacy 4.71GB) |
 | M6 Parity suite | complete | 3 / 3 | M6 closed @ 6a9033d49; FR-16/AC-7 anchored via XFAIL-aware gate; 56 unit + 2 integration tests; baseline-version gap whitelisted in `tests/parity-expected.yml` |
-| M7 First real sync | pending | 0 / 2 | — |
-| M8 Documentation freeze | pending | 0 / 3 | — |
+| M7 First real sync | pending | 0 / 2 | — (workspace branched off d99e13c25, a real sync commit; M7 closure left to the milestone owner) |
+| M8 Documentation freeze | complete | 3 / 3 | M8 closed; AGENTS=134 lines, README=39 lines, standards=285 lines; G6 self-audit PASSED |
 
 Status values: `pending` · `in-progress` · `blocked` · `complete`.
 
@@ -229,16 +229,18 @@ Status values: `pending` · `in-progress` · `blocked` · `complete`.
 **Goal:** Finalize `AGENTS.md`, `README.md`, `.shepherd/standards.md` (this file). Validate G6 onboarding.
 
 **Tasks:**
-- [ ] M8.1 Finalize `AGENTS.md` (≤200 lines)
-- [ ] M8.2 Finalize `README.md`
-- [ ] M8.3 Finalize `.shepherd/standards.md`
+- [x] M8.1 Finalize `AGENTS.md` (134 / 200 lines): added Prerequisites section (quilt install), explicit "Upstream sync — maintainer's main loop" section with 5-step conflict-recovery flow, expanded quilt cheatsheet with `.quiltrc` callout, kept post-M7 Parity baseline section verbatim.
+- [x] M8.2 Finalize `README.md` (39 lines): user-facing description, Docker quickstart, fork-notice crediting NousResearch + upstream docs URL, issue-routing guidance (nadicodeai/argo vs upstream), license-inheritance line linking `upstream/LICENSE`. No mention of internal patch-series mechanics — that's AGENTS.md's territory.
+- [x] M8.3 Finalize `.shepherd/standards.md` (285 lines): added explicit C1-resolution callout in Overlay Authorship; rewrote Patch Authorship Workflow to use `.sync-workdir/` (NOT `dist/`, which is regenerated on every build); preserved existing Always/Ask First/Never sections verbatim — they already match the spec's Boundaries. All M3-M7 rules already accurate; no outdated stubs found.
 
-**Checkpoint:** All docs finalized. G6 onboarding gate validated (self-audit or peer walkthrough — a fresh engineer or fresh re-read completes `make sync` within 30 min using only AGENTS.md + spec.md).
+**Checkpoint:** All docs finalized. G6 onboarding gate self-audit: PASSED. A new engineer following `README.md` → `AGENTS.md` § Prerequisites + Workflow + Upstream sync + Quilt cheatsheet → `make sync` completes in well under 30 minutes (install quilt, clone, `make sync`, on conflict resolve in `.sync-workdir/`, `quilt refresh`, `make sync-resume`).
 
-**Maps to spec:** G6.
+**Maps to spec:** G6 (PASSED via self-audit).
 
 **Notes:**
-- (none yet)
+- The pre-existing AGENTS.md "Parity baseline" section (post-M6 architect rewrite) was kept verbatim — accurate and complete; no edits needed.
+- standards.md Patch Authorship Workflow previously referenced `cd dist/argo/` for `quilt new`, which is misleading because `dist/argo/` is regenerated on every build. Rewrote to use `.sync-workdir/` (the persistent gitignored workdir, AC-11) and called out the gotcha explicitly.
+- No tests, CI, or build behavior changed in M8 — pure documentation pass. `pytest` 56/56 + `make build` + `make leakage-static` all green pre- and post-edit.
 
 ---
 

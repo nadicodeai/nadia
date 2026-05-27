@@ -131,23 +131,28 @@ quilt series                    # show ordered series
 quilt top                       # show currently-top patch
 ```
 
-Workflow for a new fork change:
+Workflow for a new fork change (authored against `.sync-workdir/`, NOT `dist/`):
 
 1. `make build` first to confirm clean baseline.
-2. `cd dist/argo/` (or the build's temp workdir).
-3. `quilt new 00NN-short-slug.patch`.
-4. `quilt add <files-you'll-edit>`.
-5. Edit the files in the workdir.
-6. `quilt refresh`.
-7. Copy `dist/argo/patches/00NN-*.patch` back to `patches/` and `series` to repo root.
-8. Write `patches/asserts/00NN-short-slug.txt` (if load-bearing).
-9. Update `patches/asserts/manifest.txt`.
+2. Populate `.sync-workdir/` if not already (`make sync` does this; or `cp -r upstream/* .sync-workdir/ && cd .sync-workdir && quilt push -a`).
+3. `cd .sync-workdir`.
+4. `quilt new 00NN-short-slug.patch` (writes to `.sync-workdir/patches/`, since `.quiltrc` sets `QUILT_PATCHES=patches` relative to cwd).
+5. `quilt add <files-you'll-edit>`.
+6. Edit the files inside `.sync-workdir/`.
+7. `quilt refresh` (`.quiltrc` ensures `-p ab --no-timestamps --no-index` output for AC-8 determinism).
+8. Copy `.sync-workdir/patches/00NN-*.patch` back to repo-root `patches/`; append the filename to `patches/series`.
+9. Write `patches/asserts/00NN-short-slug.txt` (if load-bearing) and add its basename to `patches/asserts/manifest.txt`.
 10. `make build` from repo root to verify the patch applies cleanly and assertions pass.
-11. Commit.
+11. `make leakage-static`; both must exit 0.
+12. Commit.
+
+**Do NOT author patches inside `dist/argo/`** — that directory is regenerated on every `make build` and would clobber un-copied-back patch files. `.sync-workdir/` is gitignored and persistent across sync attempts (AC-11), which is why it's the right workdir.
 
 ---
 
 ## Overlay Authorship Rules
+
+**C1 resolution (spec v2):** overlay uses **hermes-named** paths and identifiers. The rename engine processes overlay AND upstream uniformly in the same pass when producing `dist/argo/`. There is no separate "overlay is already argo-named" path.
 
 - Overlay files use **hermes-named** paths and reference upstream symbols by their hermes names. Example: `overlay/hermes_cli/doctor_leakage.py` imports `from hermes_sync.config import RenameConfig`. The build-time rename engine rewrites these to `argo_cli/doctor_leakage.py` and `from argo_sync.config import RenameConfig` in `dist/argo/`.
 - All file I/O uses `encoding="utf-8"` (PLW1514).
