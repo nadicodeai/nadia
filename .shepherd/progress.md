@@ -251,6 +251,81 @@ Status values: `pending` · `in-progress` · `blocked` · `complete`.
 
 ---
 
+## Phase 3 closure (cross-milestone architect pass)
+
+Closes GitHub issue #10. Conducted 2026-05-27 against HEAD `e63eb0219` (11 commits beyond M8 close at `b75e539fd`). Scope: cross-milestone invariants after the 9 issue-driven commits (issues #1, #2, #3, #4, #5, #6, #7, #8, #9) landed in series on top of the closed shepherd loop.
+
+**Verdict: APPROVE WITH FOLLOW-UPS.** Production-ready; one IMPORTANT housekeeping miss (missing `.pc/` `.gitignore` entry) and several NICE-TO-HAVE follow-ups, none blocking.
+
+### Verification commands run
+
+All repo-defined gates executed against HEAD; no new gates introduced.
+
+- `make build` — exit 0. 7 patches applied, 24 overlay files, 33 assertions satisfied, manifest written. Build-time rename engine produces `dist/argo/docker/{main-argo,dashboard,user/contents.d}` exactly where the issue-#2 Dockerfile expects them.
+- `make leakage-static` — exit 0. `verify_no_leakage: no leakage detected in dist/argo`.
+- `make check-upstream-pristine` — exit 0. `upstream pristine: HEAD == sync-commit d99e13c25bf9` (M7's first-real-sync pin).
+- `python tools/run_assertions.py dist/argo` — exit 0. 33 assertion(s) across 7 patch(es) satisfied (FR-14 invariant holds across the post-issue-#4 doctor-static wiring patch).
+- `python -m pytest tests/` — 56 passed, 2 deselected (integration markers); 0 failed. AC-9 unit gate.
+- YAML parse for every workflow + composite action (`ci.yml`, `sync.yml`, `docker-publish.yml`, `publish-legacy-baseline.yml`, `argo-setup/action.yml`) — all OK. Confirms issues #1, #6, #7, #8, #9 left every YAML well-formed.
+- `make patch-list` — exit 0. 7 patches in series (`0001`, `0002`, `0003`, `0004`, `0005`, `0007`, `0008`). No orphan files vs `patches/series`; `0008-doctor-static-live-wiring.patch` is the M7 + issue-#4 product.
+- `make image` (slim) — exit 0; `ghcr.io/nadicodeai/argo:dev` = 372 MB; `docker run --rm … argo --version` returns `Argo Agent v0.14.0 (2026.5.16)` deterministically. NFR-3 slim slice intact.
+- `tools/check_modes.sh` — exit 0. 56 executables checked, 0 mismatches. AC-8 + s6 `run`/`finish` script integrity preserved across the rename engine post-issue-#2.
+
+### Findings
+
+1. **IMPORTANT — `.gitignore` missing `.pc/` entry.** Source `.gitignore` lists `.quilt/` but not `.pc/`, and quilt's `.quiltrc` has `QUILT_PATCHES=patches` so `make build` (and any local `quilt push`) materializes `.pc/` at repo root — currently visible as untracked in `git status` (file: `.gitignore`). Spec § Project Structure line 181 also names the directory wrong (`.quilt/` instead of `.pc/`). `.dockerignore` already lists `.pc/` correctly (file: `.dockerignore:32`), so the build context is safe; risk is purely a maintainer accidentally `git add`ing the working dir. Add a `.pc/` line to `.gitignore` and amend spec § Project Structure. Verified `.pc/` was never historically committed (`git log --all -- .pc/` empty), so no past damage — only future-proofing.
+
+2. **NICE-TO-HAVE — `tests/parity-expected.yml` still carries the three version-gap XFAILs.** `help`, `version`, `session-init` are whitelisted pending the one-shot `publish-legacy-baseline.yml` run that issue #1 added. Lifecycle is documented inline in the YAML + AGENTS.md § Parity baseline; expected closure path is "trigger workflow, re-run `make parity`, prune whitelist, drop `--allow-expected` from `make parity` if list empties". Not blocking; intentional XFAIL-aware gate posture.
+
+3. **NICE-TO-HAVE — `docker-publish.yml` apt prelude installs the composite default `quilt zstd` even though buildx supplies its own apt environment.** `argo-setup` at the docker job site sets `with-uv: "false"` + `python-version: ""` but does not override `apt-packages`, so each docker-publish run pays ~5-10s of apt update + install for tools the host job never invokes. The comment at `.github/workflows/docker-publish.yml:97-102` already acknowledges the defensive intent ("make/quilt may also be invoked by tooling outside the Dockerfile in future phases"). Either tighten to `apt-packages: ""` now or leave the comment as the contract. Pure micro-optimization.
+
+4. **NICE-TO-HAVE — quilt backup files (`patches/*.patch~`) exist in the working tree.** Three `.patch~` siblings (`0005`, `0007`, `0008`) are local quilt-refresh leftovers; `.gitignore`'s `*~` rule catches them so they cannot be committed (`git check-ignore` confirms). Cosmetic only; consider deleting after the next `make sync` cycle.
+
+5. **NICE-TO-HAVE — Spec § Project Structure name drift.** Spec line 181 says `.gitignore # dist/, .sync-workdir/, .quilt/, *.rej, *.orig`. Tools landed actually use `.pc/` (per quilt 0.69 default), not `.quilt/`. Pure text-rot in the spec; correct alongside finding #1.
+
+### Closed orphan recommendations
+
+The M5 architect's M5.1 closure (commit `174d88862`, recorded at progress.md L153-178) flagged two follow-ups that were left as orphan recommendations at loop close. Both are now closed:
+
+- **NFR-3 / Dockerfile expansion** — closed by issue #2 (commits `1f8606a16` slim/full split + `0425389c6` s6 supervision repair). The Dockerfile now ships `runtime-slim` (372 MB CLI) and `runtime-full` (~4.5 GB customer parity) with multi-arch via OQ-4 release path. Verified: `make image` succeeds, `dist/argo/docker/{main-argo,dashboard,cont-init.d}` populated post-rename, modes preserved (0755) per `check_modes.sh`.
+- **Parity baseline publish** — closed by issue #1 (commit `5027dbc5b` `publish-legacy-baseline.yml`). The workflow builds the frozen legacy SHA `9b8cf6bf5` and pushes `ghcr.io/nadicodeai/argo-agent:0.14.0`. `tools/parity_runner.py` `DEFAULT_LEGACY_IMAGE` now points at `:0.14.0`. AGENTS.md § Parity baseline documents the one-shot trigger plus prerequisite (push the frozen ref before `workflow_dispatch`).
+
+Additional M6 architect follow-ups all landed during the issue queue:
+
+- Issue #9 (`afd8418e0`) cached the 4.71 GB legacy image via `actions/cache@v4` keyed on `LEGACY_TAG` — addresses the M5/M6 architect's concern about per-CI pull cost.
+- Issue #4 (`ec0164561`) baked rename constants into `argo_cli/_rename_defaults.py` so `argo doctor --static` works inside the published image without `argo-rename.yaml` mounted (FR-7 zero-leak invariant preserved).
+- Issue #3 (`70aee20ff`) fixed `sync.py --resume` quilt exit-2 misclassification; AC-11 still proven by `tests/test_check_upstream_pristine.py`.
+
+### Composite-action regression check (issue #7)
+
+Verified every job that needs it gets its apt prelude:
+
+- `build`, `leakage`, `test`, `parity` (ci.yml) — no `apt-packages:` override → composite default `quilt zstd` installed. Required because `make build` invokes `quilt push -a` and `dist/argo/.zst` fixtures need zstd.
+- `sync` (sync.yml) — no override → `quilt zstd` installed. Required for `make sync` invoking subprocess `quilt`.
+- `lint`, `typecheck`, `upstream-pristine` (ci.yml) — explicit `apt-packages: ""` → skip apt entirely. Confirmed these jobs never invoke quilt.
+- `docker-publish` (docker-publish.yml) — no override, but `with-uv: "false"` + `python-version: ""` — see finding #3.
+
+No job is missing a dep it requires.
+
+### Cross-milestone invariant check
+
+- **Parity volume mounts × Dockerfile s6 ENTRYPOINT.** `tools/parity_runner.py` mounts `tests/fixtures/parity-{mcp,hooks}` and a per-test tmpdir into the new image; the issue-#2 `ENTRYPOINT ["/init", "/opt/argo/docker/main-wrapper.sh"]` routes leading-dash args through `s6-setuidgid argo argo` so `docker run … argo --help` still reaches `argo` with stdin/stderr intact. Verified end-to-end via `docker run --rm ghcr.io/nadicodeai/argo:dev argo --version`.
+- **Rename engine × slim/full image split.** Post-rename `dist/argo/docker/main-argo/run` and `dashboard/{run,finish,type}` exist with 0755; the Dockerfile `cp -a /opt/argo/docker/s6-rc.d/. /etc/s6-overlay/s6-rc.d/` (Dockerfile:391) reads them at build time. M2.3's mode-preservation guarantee is load-bearing for issue #2.
+- **Leakage scan × baked rename constants.** Issue #4 added `overlay/hermes_cli/_rename_defaults.py` (auto-generated from `argo-rename.yaml`); the file is excluded from leakage detection via context skip because every `hermes` token in it is a FROM-key string, not a leak. Verified: `make leakage-static` exits 0.
+- **Branch protection × ci.yml job names.** All 7 required check names in `tools/enable-branch-protection.sh:22-30` match the exact `name:` lines in `ci.yml` (`lint (ruff)`, `typecheck (ty)`, `build (make build)`, `leakage (static scan)`, `test (pytest)`, `upstream-pristine (FR-15)`, `parity (FR-16 all surfaces, XFAIL-aware)`). The skipped `check-legacy-untouched` is correctly absent from the required list.
+- **Spec vs implementation.** FR-1–FR-16 still hold. NFR-1 (sync ≤2 min) re-verified at M7. NFR-2 (≤20 patches): 7, healthy. NFR-3 (image ≤5% over legacy): resolved by issue #2's slim/full split with documented trade-off. NFR-4 (dist determinism): AC-8 still proven by `tests/test_dist_determinism.py`. NFR-5 (onboarding): G6 self-audit at M8.
+
+### Outstanding follow-ups (recommend filing as new issues, severity in brackets)
+
+- **[IMPORTANT]** Add `.pc/` to `.gitignore`; amend spec § Project Structure line 181 (and possibly Glossary) to use `.pc/` instead of `.quilt/`. Trivial one-line patch with a spec-text edit.
+- **[NICE-TO-HAVE]** Trigger `publish-legacy-baseline.yml` once the maintainer has pushed `refs/tags/baseline-v0.14.0` to `nadicodeai/argo-agent`, then prune `tests/parity-expected.yml` entries that no longer XFAIL and drop `--allow-expected` from `make parity` if the list empties. AGENTS.md § Parity baseline already documents the procedure.
+- **[NICE-TO-HAVE]** Pass `apt-packages: ""` at the docker-publish job site of `argo-setup` (or remove the prelude entirely) to shave ~10s per docker-publish run. Cosmetic.
+- **[NICE-TO-HAVE]** `rm patches/*.patch~` in a housekeeping commit.
+
+Phase 3 closure complete. Loop fully closed; production posture confirmed.
+
+---
+
 ## Decision log
 
 Append entries here whenever a non-obvious decision is made during execution. Keep entries brief; link back to the task that produced them.
