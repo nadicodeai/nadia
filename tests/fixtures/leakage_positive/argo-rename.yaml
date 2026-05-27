@@ -1,0 +1,10 @@
+# Minimal rename config for the positive-case fixture.
+# Same shape as the real argo-rename.yaml; deliberately omits the
+# leakage_positive/ glob so the planted hermes hit IS reported.
+
+mappings:
+  - {from: "hermes", to: "argo"}
+
+exceptions: []
+
+skip_contexts: []

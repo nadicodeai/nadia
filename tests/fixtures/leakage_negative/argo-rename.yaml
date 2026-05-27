@@ -1,0 +1,17 @@
+# Minimal rename config for the negative-case fixture.
+# The skip_contexts regex matches every `hermes` inside upstream URLs and
+# 40-hex git SHAs, so the corresponding hits in the fixture's file are
+# correctly classified as non-leakage.
+
+mappings:
+  - {from: "hermes", to: "argo"}
+
+exceptions:
+  - path: "argo-rename.yaml"
+    why: "This config file legitimately contains hermes literals as FROM keys."
+
+skip_contexts:
+  # Match URLs to upstream's GitHub repo (and any nested path).
+  - 'https?://github\.com/NousResearch/hermes-agent[^\s]*'
+  # Match 40-hex git SHA tokens.
+  - '\b[0-9a-f]{40}\b'

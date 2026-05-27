@@ -39,6 +39,8 @@ exceptions:
   # - bin/argo-bootstrap.py (no bootstrap script in the dist artifact)
   # - .gitleaks.toml (absent from upstream; will be re-added via a patch + re-listed if needed)
   # - argo_agent.egg-info/** (generated; not committed; not in dist/)
+  - path: ".argo/**"
+    why: "Build/sync manifests record the pre-rename file paths (hermes_cli/foo.py → argo_cli/foo.py). They are intentionally metadata about the rename and ship with the artifact for introspection (argo --version --verbose surfaces them)."
   - path: "tests/test_full_rename_config.py"
     why: "This test validates the rename config by checking that hermes-* FROM keys are present in mappings. It must contain hermes-* string literals and cannot be renamed by the engine itself."
   - path: "README.md"
