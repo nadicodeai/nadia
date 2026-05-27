@@ -178,7 +178,7 @@ Run from `~/Code/argo` repo root. All paths POSIX.
 │       └── release.yml           # On tag: image + push with version tag.
 │
 ├── Makefile                      # Stable user-facing entrypoint surface.
-├── .gitignore                    # dist/, .sync-workdir/, .quilt/, *.rej, *.orig
+├── .gitignore                    # dist/, .sync-workdir/, .pc/, .quilt/, *.rej, *.orig, *.patch~
 ├── .gitattributes                # upstream/* linguist-vendored=true; text=auto eol=lf
 ├── AGENTS.md                     # ≤200 lines; points at .shepherd/ and patch ops.
 └── README.md                     # `docker pull` quickstart + fork notice.
