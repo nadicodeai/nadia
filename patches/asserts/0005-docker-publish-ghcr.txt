@@ -1,0 +1,22 @@
+# Assertions for patch 0005-docker-publish-ghcr.
+#
+# Each non-comment line is a pattern that MUST appear in dist/argo/
+# after the build. These catch the legacy failure mode where `quilt
+# refresh` after manual conflict resolution silently drops fork lines
+# (spec FR-14).
+#
+# Absence-checks (e.g. "DOCKERHUB must NOT appear") are not supported
+# by tools/run_assertions.py; relying on the presence assertions below
+# to anchor the rewrite, plus reviewer eyes on the patch diff.
+
+# The patch must edit the docker-publish workflow.
+path:.github/workflows/docker-publish.yml
+
+# IMAGE_NAME / inline shell vars now point at ghcr.io/nadicodeai/argo.
+ghcr.io/nadicodeai/argo
+
+# docker/login-action targets ghcr.io.
+registry: ghcr.io
+
+# Auth flips from DOCKERHUB_* secrets to the built-in GITHUB_TOKEN.
+secrets.GITHUB_TOKEN
