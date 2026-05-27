@@ -1,4 +1,5 @@
 0001-fork-notice-readme.patch
+0002-rebrand-install-urls.patch
 0003-ci-gate-pypi-publish.patch
 0004-ci-gate-vercel-deploy.patch
 0005-docker-publish-ghcr.patch
