@@ -16,7 +16,7 @@ Living log of milestone progress. Append-only timeline; do not rewrite history. 
 | M4 CI gates | complete | 5 / 5 | M4 closed @ 4c0f1f24; AC-2/3/4/8/9/10/11 anchored; refactor `f3ee50ea` + architect `4c0f1f24` |
 | M5 Docker pipeline | complete | 3 / 3 | M5 closed @ 174d88862; AC-8 PROVEN (tree-hash 6709428a…); NFR-3 image-size parity deferred to M6 by design (slim 371MB vs legacy 4.71GB) |
 | M6 Parity suite | complete | 3 / 3 | M6 closed @ 6a9033d49; FR-16/AC-7 anchored via XFAIL-aware gate; 56 unit + 2 integration tests; baseline-version gap whitelisted in `tests/parity-expected.yml` |
-| M7 First real sync | pending | 0 / 2 | — (workspace branched off d99e13c25, a real sync commit; M7 closure left to the milestone owner) |
+| M7 First real sync | complete | 2 / 2 | M7 closed @ d99e13c25; first real sync against upstream HEAD; v0.1.0 tagged; G1 sync sanity met (1 patch refreshed, ~1 min wall-clock) |
 | M8 Documentation freeze | complete | 3 / 3 | M8 closed; AGENTS=134 lines, README=39 lines, standards=285 lines; G6 self-audit PASSED |
 
 Status values: `pending` · `in-progress` · `blocked` · `complete`.
