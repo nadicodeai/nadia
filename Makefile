@@ -130,8 +130,7 @@ test:
 
 .PHONY: parity
 parity:
-	@echo "make parity: not yet implemented (M6.2)"
-	@exit 1
+	python tools/parity_runner.py
 
 .PHONY: check-legacy-untouched
 check-legacy-untouched:

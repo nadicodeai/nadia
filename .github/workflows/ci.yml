@@ -9,7 +9,7 @@
 #   4. leakage               — needs: build; make leakage-static (FR-12)
 #   5. test                  — pytest tests/ (build-tool tests; integration skipped)
 #   6. upstream-pristine     — make check-upstream-pristine (FR-15 / C3 gate)
-#   7. parity                — make parity (placeholder; M6.2 makes it real)
+#   7. parity                — make parity (FR-16 CLI surfaces, M6.2a real gate)
 #   8. check-legacy-untouched — DECLARED but skipped in CI (legacy repo not present)
 #
 # Tool versions are pinned to spec § Tech Stack:
@@ -21,8 +21,8 @@
 # Branch protection on `main` MUST be configured manually in the GitHub UI
 # to require these jobs. The workflow only DECLARES them; GitHub enforces.
 # Required checks should include: lint, typecheck, build, leakage, test,
-# upstream-pristine. (`parity` is non-blocking until M6.2; `check-legacy-
-# untouched` is skipped in CI by design — see job comment.)
+# upstream-pristine, parity. (`check-legacy-untouched` is skipped in CI by
+# design — see job comment.)
 
 name: ci
 
@@ -237,23 +237,49 @@ jobs:
         run: make check-upstream-pristine
 
   # ---------------------------------------------------------------------------
-  # 7. parity — make parity. Placeholder until M6.2a/M6.2b implement the
-  #    real gate against ghcr.io/nadicodeai/argo-agent:0.14.0. Non-blocking
-  #    for now: a failure or a stub-not-implemented exit is reported but
-  #    does NOT fail the workflow (continue-on-error). Once M6.2 lands,
-  #    drop continue-on-error and the `|| echo …` shim.
+  # 7. parity — FR-16 customer-parity gate (M6.2a: CLI surfaces only).
+  #
+  #    Runs `make parity` which drives `tools/parity_runner.py` against
+  #    the locally-built `:dev` image and the locally-pulled legacy
+  #    `:latest` image. The runner diffs normalized legacy stdout against
+  #    the new image's raw stdout for surfaces 1-3 (--help, --version,
+  #    doctor --static); any non-empty diff fails the job.
+  #
+  #    Baseline is :latest, not :0.14.0 — the latter was never pushed.
+  #    See AGENTS.md § Parity baseline for the rationale.
+  #
+  #    Surfaces 4-7 (API server, MCP, hooks, OAuth, session persistence)
+  #    land in M6.2b; until then the parity gate covers CLI only.
   # ---------------------------------------------------------------------------
   parity:
-    name: parity (M6 stub — non-blocking)
+    name: parity (FR-16 CLI surfaces)
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: make parity (stub — not yet a gate)
+      - uses: astral-sh/setup-uv@v5
+      - name: Install Python ${{ env.PYTHON_VERSION }}
+        run: uv python install ${{ env.PYTHON_VERSION }}
+      - name: Install system deps (quilt + zstd for `make image`)
         run: |
-          make parity || echo "parity not yet implemented (M6); not a gate yet"
+          sudo apt-get update
+          sudo apt-get install -y quilt zstd
+      - name: Install Python deps (pyyaml for build pipeline)
+        run: |
+          uv venv .venv
+          . .venv/bin/activate
+          uv pip install pyyaml
+      - name: docker pull legacy baseline
+        run: docker pull ghcr.io/nadicodeai/argo-agent:latest
+      - name: make image (build :dev locally)
+        run: |
+          . .venv/bin/activate
+          make image
+      - name: make parity
+        run: |
+          . .venv/bin/activate
+          make parity
 
   # ---------------------------------------------------------------------------
   # 8. check-legacy-untouched — DECLARED but SKIPPED in CI.
