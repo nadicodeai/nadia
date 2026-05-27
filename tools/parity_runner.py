@@ -46,19 +46,25 @@ Baseline image
 --------------
 
 The spec references ``ghcr.io/nadicodeai/argo-agent:0.14.0`` as the
-legacy baseline. **That tag was never pushed to GHCR.** The only
-available tag at the legacy registry is ``ghcr.io/nadicodeai/argo-agent
-:latest``. The runner defaults to ``:latest`` and documents the gap.
-If a future legacy release publishes specific version tags, update
-this default and the spec's referenced version. See AGENTS.md for the
-full rationale.
+legacy baseline. As of issue #1's resolution that tag is published by
+``.github/workflows/publish-legacy-baseline.yml`` (one-shot,
+``workflow_dispatch``) which builds the maintainer's frozen
+``~/Code/argo-agent`` tree at SHA ``9b8cf6bf5`` (whose pyproject.toml
+reports version 0.14.0) and pushes it to GHCR. The runner now defaults
+to ``:0.14.0``.
 
-Note that ``:latest`` (as pulled at the time M6.2a landed) reports
-``Hermes Agent v0.8.0`` while the new image reports ``Argo Agent
-v0.14.0`` — i.e. the legacy ``:latest`` is an OLDER image than the
-spec-named 0.14.0 tag. The parity diff for ``--help`` reflects that
-gap (new image has a feature superset). That is a documentation
-problem, not a regression.
+History (for posterity): the previous default was ``:latest``, which
+as pulled at the time M6.2a landed reported ``Hermes Agent v0.8.0`` —
+i.e. an OLDER image than the spec-named 0.14.0 tag. That version gap
+forced three surfaces (``help``, ``version``, ``session-init``) to
+``XFAIL`` against ``:latest``; against the true ``:0.14.0`` baseline
+they are expected to converge. ``tests/parity-expected.yml`` still
+lists them until ``make parity`` against the new baseline confirms
+they evaporate, at which point a follow-up commit prunes the list.
+
+If a future legacy release publishes a later version tag (``:0.15.0``,
+etc.) update this default and the publish-legacy-baseline workflow's
+``LEGACY_SHA`` env in lockstep.
 
 Invocation
 ----------
@@ -93,7 +99,14 @@ from pathlib import Path
 from typing import Sequence
 
 DEFAULT_NEW_IMAGE = "ghcr.io/nadicodeai/argo:dev"
-DEFAULT_LEGACY_IMAGE = "ghcr.io/nadicodeai/argo-agent:latest"
+# Spec FR-16 baseline. Built + published by
+# `.github/workflows/publish-legacy-baseline.yml` (one-shot, workflow_dispatch)
+# from the maintainer's frozen ~/Code/argo-agent tree at SHA 9b8cf6bf5.
+# Until that workflow has run successfully the tag is NOT pullable and CI
+# parity will fail at `docker pull`; the help/version/session-init entries
+# in tests/parity-expected.yml are still listed for that interim state and
+# get pruned in a follow-up after `make parity` confirms they evaporate.
+DEFAULT_LEGACY_IMAGE = "ghcr.io/nadicodeai/argo-agent:0.14.0"
 
 # Repository root, resolved relative to this file. Used to anchor
 # fixture mounts (``tests/fixtures/parity-{mcp,hooks}``) so the runner

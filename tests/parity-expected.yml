@@ -1,5 +1,20 @@
 # Parity-suite expected-FAIL whitelist (FR-16 / AC-7, M6 architect)
 #
+# STATE (issue #1, in progress)
+# -----------------------------
+# Entries below tagged "version-gap" reflect the OLD legacy baseline
+# (:latest = v0.8.0). The new baseline ghcr.io/nadicodeai/argo-agent
+# :0.14.0 is built + published by
+# `.github/workflows/publish-legacy-baseline.yml` (one-shot,
+# workflow_dispatch). These version-gap entries (help, version,
+# session-init) WILL BE REMOVED in a follow-up commit after the
+# workflow has run and `make parity` against the new :0.14.0 baseline
+# confirms the XFAILs evaporate. Do not prune them prematurely — until
+# we have empirical PASS evidence the version-gap reasoning still
+# applies (the runner defaults to :0.14.0 but treats missing-image as
+# an exit-2 structural error, so a pre-publish run still reports the
+# same XFAILs against any locally-cached image).
+#
 # Each entry below names a parity surface that is EXPECTED to FAIL
 # against the currently-pinned legacy baseline image, along with the
 # reason. When the runner is invoked with ``--allow-expected`` (CI
@@ -39,6 +54,7 @@
 
 expected:
   - surface: help
+    # version-gap: pending re-validation against :0.14.0 baseline (issue #1).
     reason: baseline-version gap (legacy :latest is v0.8.0; new is v0.14.0)
     notes: |
       The v0.14.0 image ships a superset of subcommands and flags over
@@ -47,6 +63,7 @@ expected:
       legacy image is published.
 
   - surface: version
+    # version-gap: pending re-validation against :0.14.0 baseline (issue #1).
     reason: baseline-version gap (legacy reports v0.8.0; new reports v0.14.0)
     notes: |
       Both images report their package version verbatim; legacy
@@ -54,6 +71,7 @@ expected:
       a regression in the rebrand pipeline.
 
   - surface: session-init
+    # version-gap: pending re-validation against :0.14.0 baseline (issue #1).
     reason: persistence-layout drift between v0.8.0 (legacy) and v0.14.0 (new)
     notes: |
       v0.14.0 creates ``logs/agent.log`` and ``logs/errors.log`` on

@@ -91,27 +91,36 @@ Other useful queries: `quilt series` (list), `quilt top` (which patch is on top)
 
 ## Parity baseline
 
-`tools/parity_runner.py` (M6) drives the customer-parity gate (FR-16, AC-7). The spec names `ghcr.io/nadicodeai/argo-agent:0.14.0` as the legacy baseline, but **that tag was never pushed to GHCR**. The runner defaults to `ghcr.io/nadicodeai/argo-agent:latest`, which as pulled today reports `Hermes Agent v0.8.0` (an OLDER version than the spec-named 0.14.0). The diff vs the new image is therefore a feature superset (additive), not a regression.
+`tools/parity_runner.py` (M6) drives the customer-parity gate (FR-16, AC-7). The spec names `ghcr.io/nadicodeai/argo-agent:0.14.0` as the legacy baseline. As of issue #1's resolution that tag is built + published by `.github/workflows/publish-legacy-baseline.yml` (one-shot, `workflow_dispatch`) from the maintainer's frozen `~/Code/argo-agent` tree at SHA `9b8cf6bf5` (whose `pyproject.toml` reports version 0.14.0). The runner's `DEFAULT_LEGACY_IMAGE` constant now points at `:0.14.0`.
 
-To keep the gate useful in this in-between state, the runner accepts `--allow-expected` (default for `make parity` and for the CI parity job) which reclassifies surfaces named in `tests/parity-expected.yml` as `XFAIL` — they are reported but do NOT drive a non-zero exit. Any surface FAILing that is NOT on the whitelist still blocks the gate. To see the unmasked diff during development:
+**Pre-publish prerequisite.** The frozen legacy SHA `9b8cf6bf58e23723d4d021fda529f3f3f397646d` is local-only on the maintainer's workstation; `nadicode/main` is behind it. Before running the workflow the maintainer MUST push the frozen ref to the remote (this does NOT modify the legacy worktree, only adds a tag, so AGENTS.md § Hard rule "Don't touch `~/Code/argo-agent`" is preserved):
+
+```bash
+cd ~/Code/argo-agent
+git push nadicode 9b8cf6bf58e23723d4d021fda529f3f3f397646d:refs/tags/baseline-v0.14.0
+```
+
+**Workflow lifecycle.** `tests/parity-expected.yml` still lists the three "version-gap" XFAILs (`help`, `version`, `session-init`) pending re-validation. After the workflow has published `:0.14.0` and a local `make parity` confirms they evaporate, a follow-up commit prunes them from the whitelist and (if no XFAILs remain) drops `--allow-expected` from `make parity`. Until then, CI's `docker pull ghcr.io/nadicodeai/argo-agent:0.14.0` step will 404 — that's the intended signal that the publish workflow has not yet been triggered.
+
+To keep the gate useful while the baseline catches up, the runner accepts `--allow-expected` (default for `make parity` and for the CI parity job) which reclassifies surfaces named in `tests/parity-expected.yml` as `XFAIL` — they are reported but do NOT drive a non-zero exit. Any surface FAILing that is NOT on the whitelist still blocks the gate. To see the unmasked diff during development:
 
 ```bash
 make parity-strict   # or: python tools/parity_runner.py
 ```
 
-Current per-surface status against the locally-built images:
+Per-surface status (pre-publish snapshot; expected to change after the `:0.14.0` baseline lands):
 
 | Surface         | Status              | Reason                                              |
 | --------------- | ------------------- | --------------------------------------------------- |
-| `help`          | XFAIL (was FAIL)    | v0.14.0 subcommand superset over v0.8.0             |
-| `version`       | XFAIL (was FAIL)    | v0.14.0 banner vs v0.8.0 banner                     |
+| `help`          | XFAIL (pending re-validation) | v0.14.0 subcommand superset over v0.8.0 baseline |
+| `version`       | XFAIL (pending re-validation) | v0.14.0 banner vs v0.8.0 banner          |
 | `doctor-static` | SKIPPED             | legacy v0.8.0 lacks the `--static` flag (M3 target) |
 | `mcp-list`      | PASS                | Dockerfile fix landed (M6 follow-up)                |
 | `hook-fire`     | SKIPPED             | legacy v0.8.0 has no `hooks` subcommand             |
 | `auth-start`    | PASS                | proxied via `auth list`; both empty + identical     |
-| `session-init`  | XFAIL (was FAIL)    | persistence layout drift v0.8.0 → v0.14.0           |
+| `session-init`  | XFAIL (pending re-validation) | persistence layout drift v0.8.0 → v0.14.0 |
 
-Lifecycle: when a real v0.14.0 legacy image is published (M7+ tracking), DROP entries from `tests/parity-expected.yml` that no longer FAIL and re-tighten the gate. Anything still on the list at that point is a true semantic divergence and should be filed as a tracked issue, not silently accepted.
+Anything still on the XFAIL list AFTER the `:0.14.0` baseline has been published and `make parity` has been re-run is a true semantic divergence and should be filed as a tracked issue, not silently accepted.
 
 ## Slim image (M5/M6 history)
 

@@ -1,0 +1,148 @@
+# argo — one-shot publisher for the legacy parity baseline image (issue #1).
+#
+# Purpose.
+#   tools/parity_runner.py compares ghcr.io/nadicodeai/argo:dev against a
+#   legacy baseline image. Spec FR-16 names ghcr.io/nadicodeai/argo-agent
+#   :0.14.0 as that baseline, but the tag was never pushed — only :latest
+#   exists today, and it reports v0.8.0 (older than spec). Three parity
+#   surfaces (`help`, `version`, `session-init`) XFAIL because of that gap.
+#
+#   This workflow builds the LEGACY argo-agent source (frozen on the
+#   maintainer's workstation at SHA 9b8cf6bf58e23723d4d021fda529f3f3f397646d,
+#   which pyproject.toml reports as version 0.14.0) and publishes it as
+#   ghcr.io/nadicodeai/argo-agent:0.14.0 so the parity gate can compare
+#   against a TRUE same-version baseline.
+#
+# Prerequisite (one-time, manual).
+#   The frozen SHA 9b8cf6bf5 must be reachable on the
+#   github.com/nadicodeai/argo-agent remote so `actions/checkout` can fetch
+#   it. As of issue #1's authoring, the legacy SHA is local-only on the
+#   maintainer's machine; nadicode/main is at fb27b46d05a (5 commits
+#   behind the frozen point). Push it as a tag/branch BEFORE running this
+#   workflow:
+#
+#       cd ~/Code/argo-agent
+#       git push nadicode 9b8cf6bf58e23723d4d021fda529f3f3f397646d:refs/tags/baseline-v0.14.0
+#
+#   Doing so does not modify the legacy worktree (per spec G5 / AGENTS.md
+#   "Hard rules"); it only publishes a ref to GitHub for CI consumption.
+#
+# Trigger.
+#   workflow_dispatch only. This is a one-shot publish; it is intentionally
+#   NOT wired to push events. Re-run manually if the baseline ever needs to
+#   be rebuilt (e.g. base-image security refresh).
+#
+# Auth.
+#   Uses the workflow's GITHUB_TOKEN with packages:write below. GHCR
+#   accepts that token for images under the repo's owner namespace
+#   (nadicodeai), so no external PAT is required.
+#
+# Architecture.
+#   linux/amd64 only. Multi-arch is OUT OF SCOPE for this baseline — the
+#   parity runner only ever consumes the image on the CI x86_64 runner
+#   and on amd64 maintainer workstations. Issue #8 tracks multi-arch
+#   builds for release artifacts; the legacy baseline does not need it.
+#
+# Image lifecycle after this runs.
+#   1. The :0.14.0 tag is pullable from ghcr.io/nadicodeai/argo-agent.
+#   2. `make parity` against the new constant (set in tools/parity_runner.py)
+#      should report 0 XFAIL for help/version/session-init — these will
+#      converge against a TRUE v0.14.0 baseline.
+#   3. After verification, the corresponding entries are dropped from
+#      tests/parity-expected.yml in a follow-up commit (NOT this workflow).
+
+name: publish-legacy-baseline
+
+on:
+  workflow_dispatch:
+
+# Single shared lock with docker-publish so concurrent runs don't race
+# the registry. cancel-in-progress: false because the image build IS the
+# artifact — interrupting mid-push wastes a 10+ minute build.
+concurrency:
+  group: publish-legacy-baseline
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  # Frozen legacy point. Must match `cd ~/Code/argo-agent && git rev-parse HEAD`
+  # on the maintainer's workstation (verified at issue #1 authoring time).
+  LEGACY_SHA: 9b8cf6bf58e23723d4d021fda529f3f3f397646d
+  LEGACY_IMAGE: ghcr.io/nadicodeai/argo-agent:0.14.0
+
+jobs:
+  build-and-publish:
+    name: build + push legacy baseline (linux/amd64)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out frozen legacy source
+        uses: actions/checkout@v4
+        with:
+          repository: nadicodeai/argo-agent
+          ref: ${{ env.LEGACY_SHA }}
+          # fetch-depth: 1 — we only need the tree at that SHA. The
+          # legacy Dockerfile does not consult git history.
+          fetch-depth: 1
+
+      - name: Verify checkout SHA matches frozen point
+        # Defense in depth: if `actions/checkout` ever resolves the ref to
+        # a different SHA (force-push above the tag, etc.), abort before
+        # publishing a misleading :0.14.0 tag.
+        run: |
+          actual=$(git rev-parse HEAD)
+          if [ "$actual" != "${{ env.LEGACY_SHA }}" ]; then
+            echo "::error::checkout SHA mismatch: expected ${{ env.LEGACY_SHA }}, got $actual" >&2
+            exit 1
+          fi
+          echo "OK: HEAD = $actual"
+
+      - name: Verify pyproject.toml version = 0.14.0
+        # Second defense: the baseline tag :0.14.0 is only honest if the
+        # source actually reports version 0.14.0. Fail loudly otherwise.
+        run: |
+          ver=$(grep -E '^version\s*=' pyproject.toml | head -1 | sed -E 's/^version[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/')
+          if [ "$ver" != "0.14.0" ]; then
+            echo "::error::pyproject.toml version mismatch: expected 0.14.0, got $ver" >&2
+            exit 1
+          fi
+          echo "OK: pyproject.toml version = $ver"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: docker build legacy baseline
+        # Single-arch amd64. The legacy Dockerfile honors TARGETARCH (it
+        # builds for arm64 too) but the parity gate only consumes amd64,
+        # so we skip the cross-build cost.
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.LEGACY_IMAGE }}
+          # No cache. This workflow runs maybe once per quarter; cache
+          # invalidation would be lossier than just rebuilding.
+          provenance: false
+          sbom: false
+
+      - name: Summary
+        run: |
+          echo "## Legacy baseline published" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- image: \`${{ env.LEGACY_IMAGE }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- source SHA: \`${{ env.LEGACY_SHA }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- pyproject version: 0.14.0" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Next steps (see issue #1):" >> "$GITHUB_STEP_SUMMARY"
+          echo "1. \`make parity\` locally to confirm help/version/session-init XFAILs evaporate." >> "$GITHUB_STEP_SUMMARY"
+          echo "2. Drop the corresponding entries from \`tests/parity-expected.yml\`." >> "$GITHUB_STEP_SUMMARY"
+          echo "3. Remove \`--allow-expected\` from \`make parity\` if no XFAILs remain." >> "$GITHUB_STEP_SUMMARY"

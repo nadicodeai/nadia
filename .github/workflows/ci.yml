@@ -276,7 +276,12 @@ jobs:
           . .venv/bin/activate
           uv pip install pyyaml
       - name: docker pull legacy baseline
-        run: docker pull ghcr.io/nadicodeai/argo-agent:latest
+        # :0.14.0 is published by .github/workflows/publish-legacy-baseline.yml
+        # (one-shot, workflow_dispatch). Until that workflow has run
+        # successfully this pull will 404 and parity CI will fail loudly.
+        # That is the intended signal — see issue #1 and AGENTS.md
+        # § Parity baseline.
+        run: docker pull ghcr.io/nadicodeai/argo-agent:0.14.0
       - name: make image (build :dev locally)
         run: |
           . .venv/bin/activate
