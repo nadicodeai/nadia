@@ -1,0 +1,92 @@
+# Root-level gitleaks config for the source tree (pre-build).
+#
+# The overlay/.gitleaks.toml is the runtime/customer-image version and
+# only takes effect post-rebrand inside dist/argo/. This file applies
+# to the git pre-push hook scanning the source tree (which includes
+# the upstream/ subtree + squash commits that brought it in).
+#
+# Allowlist patterns match BOTH bare paths (as they appear in squash
+# commits' tree state — e.g. `tests/agent/...`) AND `upstream/`-prefixed
+# paths (as they appear in HEAD). Inherited from legacy argo-agent.
+
+[extend]
+useDefault = true
+extendPaths = ["~/.config/gitleaks.toml"]
+
+[[allowlists]]
+description = "Pristine upstream subtree — audited at upstream's source"
+paths = [
+  '''upstream/.*''',
+]
+
+[[allowlists]]
+description = "Test fixtures — fake keys exercise detection/redaction code paths"
+paths = [
+  '''tests/.*''',
+  '''overlay/tests/.*''',
+]
+
+[[allowlists]]
+description = "Website docs — configuration examples, curl placeholders, env-var lists"
+paths = [
+  '''website/docs/.*''',
+  '''website/i18n/.*''',
+]
+
+[[allowlists]]
+description = "Bundled and optional skills — instruction docs include API-shape examples"
+paths = [
+  '''skills/.*''',
+  '''optional-skills/.*''',
+]
+
+[[allowlists]]
+description = "Redaction module — by design contains example secret patterns"
+paths = [
+  '''agent/redact\.py''',
+]
+
+[[allowlists]]
+description = "OAuth public client IDs (Anthropic, Google, Codex, etc.) — public by RFC 6749"
+paths = [
+  '''(?:argo|hermes)_cli/auth\.py''',
+  '''(?:argo|hermes)_cli/copilot_auth\.py''',
+  '''agent/anthropic_adapter\.py''',
+  '''agent/google_oauth\.py''',
+]
+
+[[allowlists]]
+description = "Historical paths — files present in git history (pre-rename or removed)"
+paths = [
+  '''hermes_cli/.*''',
+  '''tests/hermes_cli/.*''',
+  '''evals/.*''',
+  '''exprted\.jsonl''',
+  '''mixture_of_agents_tool\.py''',
+]
+
+[[allowlists]]
+description = "Public ElevenLabs / VAPI voice identifiers — public model handles"
+regexes = [
+  '''VAPI_DEFAULT_VOICE_ID''',
+]
+
+[[allowlists]]
+description = "Discord snowflake IDs (DISCORD_ALLOWED_USERS, DISCORD_HOME_CHANNEL) — public by Discord's data model"
+regexes = [
+  '''DISCORD_ALLOWED_USERS''',
+  '''DISCORD_HOME_CHANNEL''',
+]
+
+[[allowlists]]
+description = "Quilt patches re-author upstream content; same allowlist applies"
+paths = [
+  '''patches/.*\.patch''',
+]
+
+[[allowlists]]
+description = "argo-rename.yaml and overlay/.gitleaks.toml legitimately contain example patterns"
+paths = [
+  '''argo-rename\.yaml''',
+  '''overlay/\.gitleaks\.toml''',
+]
