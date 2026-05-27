@@ -140,6 +140,8 @@ Issue #2 split the image into TWO variants so customers pick by deployment shape
 
 A bare `docker pull ghcr.io/nadicodeai/argo` resolves to `:latest` = full variant — backward compat with pre-issue-#2 callers that expected the customer-parity surface. CLI-only callers MUST explicitly opt into `:slim`.
 
+> **HEADS-UP for existing pullers of `:latest`.** Prior to issue #2 the `:latest` tag pointed at the 371 MB slim image (the only variant that existed). Issue #2 re-points `:latest` at the ~4.5 GB full variant so docker-compose recipes ported from legacy `~/Code/argo-agent` Just Work. Existing CI / build pipelines that pull `:latest` for CLI-only workloads (`argo --help`, `argo doctor --static`) will see a ~12× size increase on their next pull. Two migration paths: switch the pull target to `:slim` / `:latest-slim` (recommended for CLI-only flows — same surface, ~12× smaller), or pin the slim tag at an explicit short SHA (e.g. `ghcr.io/nadicodeai/argo:174d8886-slim`) until the migration window closes. The full image is the right default for customers; CLI-only pullers MUST opt out explicitly.
+
 **Local builds.**
 - `make image` → builds `runtime-slim` and tags `:dev` (preserved name for backward compat with `scripts/publish.sh`).
 - `make image-full` → builds `runtime-full` and tags `:dev-full`.

@@ -44,6 +44,31 @@
 #   docker buildx build --target runtime-full -t argo:latest .
 #
 # `make image` defaults to runtime-slim. `make image-full` builds runtime-full.
+#
+# Base image divergence from legacy
+# ---------------------------------
+# Legacy `~/Code/argo-agent/Dockerfile` builds on `debian:13.4` (trixie)
+# and installs Python 3 via apt. The slim+full stages here build on
+# `python:3.13-slim-bookworm` (Debian 12 + an upstream-built CPython).
+# This is INTENTIONAL: bookworm's stable LTS posture + the python-slim
+# base lets pip install -e . land prebuilt wheels for psutil / pydantic-core
+# / cryptography without dragging the full build-essential toolchain into
+# the runtime layer. Trade-offs vs legacy:
+#
+#   - glibc differs slightly (bookworm 2.36 vs trixie 2.39). Native deps
+#     that linked against trixie's newer glibc may surface manylinux_2_36
+#     wheel-resolution warnings; the wheels themselves still work.
+#   - libssl is OpenSSL 3.0 (bookworm) vs OpenSSL 3.2 (trixie). All TLS
+#     paths in upstream's runtime deps exercise the stdlib `ssl` module,
+#     which is satisfied by either.
+#   - Python toolchain is upstream's official 3.13.x (slim variant); legacy
+#     uses Debian's packaged python3 (3.13.x via trixie). Behaviour is
+#     identical for our use; the wheel-resolution surface differs.
+#
+# This trade-off is locked in for issue #2 — switching base images is
+# higher-risk than the SUPERVISION/ENTRYPOINT repair pass demands. Revisit
+# (perhaps unifying on trixie + apt python) if the wheel-skew surfaces
+# real bugs in the customer-parity surface.
 
 ARG PYTHON_VERSION=3.13-slim-bookworm
 
@@ -209,17 +234,36 @@ ENV PYTHONUNBUFFERED=1
 # legacy Dockerfile line 9.
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/argo/.playwright
 
-# Apt deps for the full feature surface. Kept tight: only what the legacy
-# image carries that affects TUI / voice / browser / dashboard. Heavier
-# legacy extras (build-essential, openssh-client, docker-cli, ripgrep)
-# are intentionally NOT added — they are dev-loop conveniences, not
-# customer-facing runtime needs.
+# Apt deps for the full feature surface. The set tracks legacy
+# `~/Code/argo-agent/Dockerfile`'s runtime apt closure (line 18-21) for
+# customer-parity. The deltas vs. an "absolute minimum" picture:
 #
 #   nodejs, npm           → TUI dashboard build + launch.
 #   ffmpeg                → voice mode audio pipeline.
 #   curl, xz-utils        → s6-overlay tarball fetch + extraction.
 #   procps                → ps/top inside the container (legacy parity;
 #                           also used by some MCP servers).
+#   ripgrep               → `tools/file_operations.py` shells out to `rg`
+#                           for file search; the fallback to `find`+`grep`
+#                           is correct but markedly slower. Legacy ships it
+#                           in the customer-facing image (review #6).
+#   openssh-client        → `argo_cli/profile_distribution.py` clones
+#                           profile bundles from `git@` / `ssh://` URLs at
+#                           runtime; without ssh that path errors out.
+#   gcc, python3-dev,     → Native-compile toolchain for `tools/lazy_deps.py`.
+#   libffi-dev              The lazy installer pip-installs platform extras
+#                           (sounddevice, brotlicffi, mautrix[encryption],
+#                           asyncpg, …) on first use; some lack manylinux
+#                           wheels for arm64 and fall back to source builds.
+#                           Legacy carries the same toolchain in runtime for
+#                           the same reason.
+#
+# Legacy ALSO carries build-essential + docker-cli. We omit both:
+#   - build-essential is a superset of gcc + libc6-dev that pulls in g++
+#     / dpkg-dev; lazy_deps installs don't need C++.
+#   - docker-cli inside the container is for nested-docker workflows that
+#     mount /var/run/docker.sock; nothing in the customer-facing surface
+#     uses it.
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         nodejs \
@@ -227,7 +271,12 @@ RUN apt-get update && \
         ffmpeg \
         curl \
         xz-utils \
-        procps && \
+        procps \
+        ripgrep \
+        openssh-client \
+        gcc \
+        python3-dev \
+        libffi-dev && \
     rm -rf /var/lib/apt/lists/*
 
 # ---------- s6-overlay install ----------
@@ -310,27 +359,77 @@ ENV ARGO_HOME=/opt/data
 RUN mkdir -p /opt/data && chown argo:argo /opt/data
 VOLUME ["/opt/data"]
 
-# s6-overlay service wiring would normally COPY a docker/s6-rc.d/ tree
-# here (mirroring legacy ~/Code/argo-agent/docker/). The slim+full
-# layout doesn't yet carry an overlay-owned s6-rc.d/ tree — the
-# supervised dashboard + per-profile gateway services are wired
-# upstream-side in a follow-up. For now /init is PID 1 so customers can
-# `docker exec` and so SIGCHLD reaping behaves correctly; the
-# main-program wrapper falls back to launching argo directly when no
-# s6-rc.d services are registered.
+# ---------- s6-overlay service wiring ----------
+# The renamed source tree under /opt/argo/docker/ carries the supervision
+# scripts that were lifted from upstream (hermes/main-hermes →
+# argo/main-argo) by the build-time rename engine. We install them into
+# the canonical s6-overlay paths here so /init sees them at PID 1.
 #
-# TODO(issue #2 follow-up): lift docker/s6-rc.d/ + docker/cont-init.d/
-# from legacy into overlay/ and add an overlay→dist path so the
-# dashboard + per-profile gateway services come up automatically.
+# Layout under /opt/argo/docker/ (post-rename):
+#   docker/s6-rc.d/dashboard/{run,finish,type,dependencies.d/base}
+#   docker/s6-rc.d/main-argo/{run,type,dependencies.d/base}
+#   docker/s6-rc.d/user/contents.d/{dashboard,main-argo}
+#   docker/cont-init.d/015-supervise-perms
+#   docker/cont-init.d/02-reconcile-profiles
+#   docker/stage2-hook.sh   (root-level cont-init logic)
+#   docker/main-wrapper.sh  (CMD wrapper — see ENTRYPOINT below)
+#
+# Permissions: the rename engine preserves modes via shutil.copy2, so the
+# `run` / `finish` / `stage2-hook.sh` / `main-wrapper.sh` files are already
+# 0755 on disk. The `--chmod=0755` on the cont-init.d COPYs is belt-and-
+# braces (matches legacy's explicit chmod).
+#
+# Per-profile gateway services are registered DYNAMICALLY at runtime by
+# the profile create/delete hooks (Phase 4 of legacy's s6 plan); they
+# live under /run/service/ (tmpfs) and are reconciled on container
+# restart by /etc/cont-init.d/02-reconcile-profiles.
+USER root
+# `cp -a` preserves modes (so the 0755 on run/finish/stage2-hook.sh survives)
+# but also preserves ownership. The source files were COPY --chown=argo:argo'd
+# in the slim stage, so we explicitly re-chown the installed copies to root
+# so s6-overlay can supervise them with its standard expectations.
+RUN cp -a /opt/argo/docker/s6-rc.d/. /etc/s6-overlay/s6-rc.d/ && \
+    chown -R root:root /etc/s6-overlay/s6-rc.d/ && \
+    mkdir -p /etc/cont-init.d && \
+    printf '#!/bin/sh\nexec /opt/argo/docker/stage2-hook.sh\n' \
+        > /etc/cont-init.d/01-argo-setup && \
+    chmod 0755 /etc/cont-init.d/01-argo-setup && \
+    cp /opt/argo/docker/cont-init.d/015-supervise-perms /etc/cont-init.d/015-supervise-perms && \
+    cp /opt/argo/docker/cont-init.d/02-reconcile-profiles /etc/cont-init.d/02-reconcile-profiles && \
+    chown root:root /etc/cont-init.d/015-supervise-perms /etc/cont-init.d/02-reconcile-profiles && \
+    chmod 0755 /etc/cont-init.d/015-supervise-perms /etc/cont-init.d/02-reconcile-profiles
 
-# Drop privileges. /init runs as root (required for cont-init.d UID
-# remap) and each supervised service drops via s6-setuidgid.
-USER argo
-WORKDIR /home/argo
+# /init must run as root so the stage2 cont-init hook can chown the
+# volume + usermod/groupmod the argo user for ARGO_UID/ARGO_GID remap.
+# Each supervised service then drops to the argo user via s6-setuidgid
+# in its own `run` script. Legacy does the same (see legacy Dockerfile
+# lines 155-158). We intentionally do NOT switch to `USER argo` here:
+# the slim stage ends with `USER argo`, but for full /init must be root.
+#
+# main-wrapper.sh and each s6 `run` script do their own `cd /opt/data`
+# before dropping privileges, so we don't need to reset WORKDIR from
+# the slim stage's `/home/argo` — it's irrelevant to /init.
 
-# Default invocation: bare `argo`, supervised by s6-overlay's /init.
-# When s6-rc.d service slots are registered (follow-up), /init starts
-# them before exec'ing the CMD. With no slots registered today, /init
-# behaves like a thin PID-1 wrapper around argo.
-ENTRYPOINT ["/init"]
-CMD ["argo"]
+# ENTRYPOINT mirrors legacy ~/Code/argo-agent/Dockerfile:223. /init is
+# PID 1 (s6-svscan); it sets up the supervision tree, runs
+# /etc/cont-init.d/* (our stage2 hook + supervise-perms +
+# reconcile-profiles), starts s6-rc services declared in
+# /etc/s6-overlay/s6-rc.d/, then exec's its remaining argv as the
+# container's "main program" with stdin/stdout/stderr inherited. When
+# the main program exits, /init begins stage-3 shutdown and the container
+# exits with the program's exit code.
+#
+# main-wrapper.sh is prepended to user-supplied args automatically:
+#
+#   docker run <image>                  → /init main-wrapper.sh    (CMD default)
+#   docker run <image> chat -q "hi"     → /init main-wrapper.sh chat -q hi
+#   docker run <image> sleep infinity   → /init main-wrapper.sh sleep infinity
+#   docker run <image> --tui            → /init main-wrapper.sh --tui
+#
+# main-wrapper.sh handles arg routing (bare-exec vs argo subcommand vs
+# no-args), drops to the argo user via s6-setuidgid, and exec's the
+# final program so its exit code becomes the container exit code.
+# Without the wrapper-as-ENTRYPOINT, leading-dash args like `--version`
+# or `--tui` would be intercepted by /init's POSIX shell.
+ENTRYPOINT [ "/init", "/opt/argo/docker/main-wrapper.sh" ]
+CMD [ ]
