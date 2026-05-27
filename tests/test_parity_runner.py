@@ -494,6 +494,101 @@ def test_hook_fixture_present_and_executable() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Expected-FAIL whitelist (M6 architect).
+# ---------------------------------------------------------------------------
+
+
+def test_expected_file_present_at_default_location() -> None:
+    """The shipped expected-FAIL YAML loads cleanly."""
+    p = parity_runner.DEFAULT_EXPECTED_FILE
+    assert p.is_file(), f"missing expected-FAIL whitelist: {p}"
+    loaded = parity_runner._load_expected_fails(p)
+    # Every entry's surface MUST be a real declared surface — guards
+    # against typo'd whitelist entries silently allowing nothing.
+    for name in loaded:
+        assert name in parity_runner.SURFACES, (
+            f"expected-FAIL entry {name!r} is not a known surface; "
+            f"known surfaces: {sorted(parity_runner.SURFACES)}"
+        )
+
+
+def test_load_expected_fails_missing_file_returns_empty(tmp_path: Path) -> None:
+    """``--expected-file`` pointing at a missing path is treated as 'no whitelist'."""
+    missing = tmp_path / "nope.yml"
+    assert parity_runner._load_expected_fails(missing) == {}
+
+
+def test_load_expected_fails_parses_reasons(tmp_path: Path) -> None:
+    """Whitelist entries surface their reason text."""
+    p = tmp_path / "expected.yml"
+    p.write_text(
+        "expected:\n"
+        "  - surface: help\n"
+        "    reason: baseline gap\n"
+        "  - surface: version\n"
+        "    reason: v0.8.0 vs v0.14.0\n",
+        encoding="utf-8",
+    )
+    out = parity_runner._load_expected_fails(p)
+    assert out == {"help": "baseline gap", "version": "v0.8.0 vs v0.14.0"}
+
+
+def test_runner_allow_expected_classifies_fail_as_xfail(tmp_path: Path) -> None:
+    """With ``--allow-expected`` and a whitelist entry, a FAIL becomes XFAIL.
+
+    Exercises the CLI end-to-end without docker by pre-seeding a runner
+    invocation that mocks ``run_surface`` to return a synthetic FAIL.
+    """
+    # Build a tiny whitelist on the fly.
+    yml = tmp_path / "exp.yml"
+    yml.write_text(
+        "expected:\n"
+        "  - surface: help\n"
+        "    reason: synthetic baseline gap\n",
+        encoding="utf-8",
+    )
+    fake_result = parity_runner.SurfaceResult(
+        surface="help",
+        status="FAIL",
+        new_exit=0,
+        legacy_exit=0,
+        new_stdout="new",
+        legacy_stdout_raw="legacy",
+        legacy_stdout_normalized="legacy-norm",
+        diff="--- legacy\n+++ new\n",
+    )
+    with mock.patch.object(parity_runner, "run_surface", return_value=fake_result):
+        rc = parity_runner._main(
+            [
+                "--surface",
+                "help",
+                "--allow-expected",
+                "--expected-file",
+                str(yml),
+            ],
+        )
+    # XFAIL must not contribute to a non-zero exit.
+    assert rc == 0
+
+
+def test_runner_strict_mode_fails_without_allow_expected(tmp_path: Path) -> None:
+    """Without ``--allow-expected``, the same FAIL exits 1."""
+    fake_result = parity_runner.SurfaceResult(
+        surface="help",
+        status="FAIL",
+        new_exit=0,
+        legacy_exit=0,
+        new_stdout="new",
+        legacy_stdout_raw="legacy",
+        legacy_stdout_normalized="legacy-norm",
+        diff="--- legacy\n+++ new\n",
+    )
+    with mock.patch.object(parity_runner, "run_surface", return_value=fake_result):
+        rc = parity_runner._main(["--surface", "help"])
+    assert rc == 1
+
+
+# ---------------------------------------------------------------------------
 # Integration test — exercises the real runner against real images.
 # ---------------------------------------------------------------------------
 
@@ -510,6 +605,7 @@ def _docker_image_present(image: str) -> bool:
 
 
 @pytest.mark.integration
+@pytest.mark.timeout(300)
 def test_parity_runner_against_real_images() -> None:
     """Drive every FR-16 surface against the locally-available images.
 

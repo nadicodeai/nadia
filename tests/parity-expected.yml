@@ -1,0 +1,73 @@
+# Parity-suite expected-FAIL whitelist (FR-16 / AC-7, M6 architect)
+#
+# Each entry below names a parity surface that is EXPECTED to FAIL
+# against the currently-pinned legacy baseline image, along with the
+# reason. When the runner is invoked with ``--allow-expected`` (CI
+# default), each entry here downgrades that surface's FAIL to
+# ``XFAIL`` and does NOT contribute to the runner's exit code. Any
+# surface FAILing that is NOT listed here remains a real FAIL and
+# blocks CI.
+#
+# Why this file exists
+# --------------------
+# The spec (FR-16) names ``ghcr.io/nadicodeai/argo-agent:0.14.0`` as
+# the legacy baseline. That tag was never published — only ``:latest``
+# is available, and it reports ``Hermes Agent v0.8.0`` (an OLDER
+# version). The parity gate therefore sees a feature SUPERSET (new
+# v0.14.0 image has subcommands and behaviors absent from v0.8.0).
+# Until a real v0.14.0 baseline is published this gap will produce
+# stable, well-understood diffs that are NOT regressions. This file
+# tracks them by name so the gate stays useful.
+#
+# Lifecycle
+# ---------
+# 1. M6 (now): six surfaces listed below; gate is strict-with-XFAIL.
+# 2. M7 (first real sync): if upstream publishes a real v0.14.0
+#    legacy image, re-point ``DEFAULT_LEGACY_IMAGE`` in
+#    ``tools/parity_runner.py`` and DROP all entries from this file
+#    that no longer FAIL. Anything still on the list at that point is
+#    a true semantic divergence and must be filed as a tracked issue.
+# 3. M8 (docs freeze): cross-reference this file from AGENTS.md so
+#    new contributors understand why some FAILs are "expected".
+#
+# Schema
+# ------
+# expected:
+#   - surface: <name>           # one of SURFACES.keys() in parity_runner
+#     reason:  <one-liner>      # short, human-readable
+#     notes:   <multi-line>     # optional; longer context
+
+expected:
+  - surface: help
+    reason: baseline-version gap (legacy :latest is v0.8.0; new is v0.14.0)
+    notes: |
+      The v0.14.0 image ships a superset of subcommands and flags over
+      v0.8.0. The diff is purely additive (new help text mentions
+      features v0.8.0 did not have). Re-evaluate when a real v0.14.0
+      legacy image is published.
+
+  - surface: version
+    reason: baseline-version gap (legacy reports v0.8.0; new reports v0.14.0)
+    notes: |
+      Both images report their package version verbatim; legacy
+      :latest = v0.8.0, new :dev = v0.14.0. Pure baseline drift, not
+      a regression in the rebrand pipeline.
+
+  - surface: session-init
+    reason: persistence-layout drift between v0.8.0 (legacy) and v0.14.0 (new)
+    notes: |
+      v0.14.0 creates ``logs/agent.log`` and ``logs/errors.log`` on
+      first session run. v0.8.0 (running as root in-container) also
+      creates ``SOUL.md``, ``cron/``, ``memories/``, ``sessions/`` —
+      visible to the host as ``DIR_PERMISSION_DENIED`` since they are
+      owned by uid 0 inside the container's user namespace. Both are
+      legitimate; with a real v0.14.0 legacy image this surface should
+      converge.
+
+# Surfaces explicitly NOT on this list (asserted PASS or SKIPPED at M6
+# close, MUST stay green / change-controlled):
+#   - doctor-static (SKIPPED — legacy v0.8.0 lacks --static; would be
+#                    PASS against real v0.14.0)
+#   - mcp-list      (PASS — Dockerfile fix from M6 follow-up landed)
+#   - hook-fire     (SKIPPED — legacy v0.8.0 has no `hooks` subcommand)
+#   - auth-start    (PASS)

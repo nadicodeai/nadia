@@ -102,6 +102,12 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 FIXTURE_MCP_DIR = REPO_ROOT / "tests" / "fixtures" / "parity-mcp"
 FIXTURE_HOOKS_DIR = REPO_ROOT / "tests" / "fixtures" / "parity-hooks"
 
+# Expected-FAIL whitelist. When ``--allow-expected`` is on, surfaces
+# listed here are reclassified ``XFAIL`` (expected failure) and do
+# not contribute to the runner's exit code. See the YAML file for the
+# full schema, rationale, and lifecycle.
+DEFAULT_EXPECTED_FILE = REPO_ROOT / "tests" / "parity-expected.yml"
+
 # Substitution table for hermes→argo normalization of legacy output.
 #
 # Ordered longest-prefix-first so composite identifiers (``hermes-agent``,
@@ -283,14 +289,14 @@ class SurfaceResult:
     """
 
     surface: str
-    status: str  # "PASS" | "FAIL" | "SKIPPED"
+    status: str  # "PASS" | "FAIL" | "SKIPPED" | "XFAIL"
     new_exit: int
     legacy_exit: int
     new_stdout: str
     legacy_stdout_raw: str
     legacy_stdout_normalized: str
-    diff: str  # empty unless status == "FAIL"
-    skip_reason: str = ""
+    diff: str  # empty unless status in {"FAIL", "XFAIL"}
+    skip_reason: str = ""  # reused for XFAIL reason text
 
     @property
     def passed(self) -> bool:
@@ -545,6 +551,15 @@ def _run_artifact_surface(
     # ``shutil.rmtree(ignore_errors=True)`` — leftover dirs are under
     # /tmp and harmless.
     host_home = Path(tempfile.mkdtemp(prefix="parity-home-"))
+    # The new image runs as a non-root user (uid 10000 ``argo``); the
+    # legacy image runs as root in-container. ``mkdtemp`` creates 0700
+    # owned by the invoking host uid, which the in-container argo user
+    # cannot write to. Loosen permissions to 0777 so both images can
+    # populate the mount uniformly — host security is provided by the
+    # parent tmp dir (sticky bit) and by the fact that the tmpdir name
+    # is per-process. This is the parity-runner equivalent of the
+    # legacy image's root-runs-everywhere assumption (M6 architect fix).
+    os.chmod(host_home, 0o777)
     try:
         cmd: list[str] = ["docker", "run", "--rm"]
         for host, container in spec.volumes:
@@ -670,6 +685,29 @@ def run_surface(
     )
 
 
+def _load_expected_fails(path: Path) -> dict[str, str]:
+    """Load the expected-FAIL whitelist from ``path``.
+
+    Returns a mapping ``surface_name -> reason``. Returns an empty
+    mapping if ``path`` does not exist (so the flag is safe on
+    clean checkouts without the YAML present).
+    """
+    if not path.exists():
+        return {}
+    import yaml  # local import: pyyaml is an existing dep but not used elsewhere here
+
+    with path.open(encoding="utf-8") as fp:
+        data = yaml.safe_load(fp) or {}
+    entries = data.get("expected", []) or []
+    out: dict[str, str] = {}
+    for entry in entries:
+        name = entry.get("surface")
+        reason = entry.get("reason", "expected-fail")
+        if name:
+            out[name] = reason
+    return out
+
+
 def _format_result(result: SurfaceResult, *, verbose: bool) -> str:
     """Pretty-print one SurfaceResult for terminal/CI logs."""
     lines = [
@@ -678,6 +716,9 @@ def _format_result(result: SurfaceResult, *, verbose: bool) -> str:
     ]
     if result.status == "SKIPPED":
         lines.append(f"  skipped: {result.skip_reason}")
+        return "\n".join(lines)
+    if result.status == "XFAIL":
+        lines.append(f"  expected-fail: {result.skip_reason}")
         return "\n".join(lines)
     if result.status == "FAIL":
         if result.new_exit != result.legacy_exit:
@@ -726,6 +767,20 @@ def _main(argv: Sequence[str] | None = None) -> int:
         action="store_true",
         help="show full normalized diffs on FAIL",
     )
+    parser.add_argument(
+        "--allow-expected",
+        action="store_true",
+        help=(
+            "treat surfaces listed in tests/parity-expected.yml as XFAIL "
+            "(non-blocking). Use in CI until the legacy baseline catches "
+            "up to v0.14.0; see AGENTS.md § Parity baseline."
+        ),
+    )
+    parser.add_argument(
+        "--expected-file",
+        default=str(DEFAULT_EXPECTED_FILE),
+        help=f"path to expected-FAIL whitelist YAML (default: {DEFAULT_EXPECTED_FILE})",
+    )
     ns = parser.parse_args(argv)
 
     surfaces = list(SURFACES.keys()) if ns.surface == "ALL" else [ns.surface]
@@ -743,19 +798,47 @@ def _main(argv: Sequence[str] | None = None) -> int:
         print(f"parity_runner: {exc}", file=sys.stderr)
         return 2
 
+    # Apply expected-FAIL reclassification IFF --allow-expected is set.
+    expected: dict[str, str] = {}
+    if ns.allow_expected:
+        expected = _load_expected_fails(Path(ns.expected_file))
+        reclassified: list[SurfaceResult] = []
+        for r in results:
+            if r.status == "FAIL" and r.surface in expected:
+                # Build an XFAIL clone; preserve diff & exit codes for diagnostics.
+                reclassified.append(
+                    SurfaceResult(
+                        surface=r.surface,
+                        status="XFAIL",
+                        new_exit=r.new_exit,
+                        legacy_exit=r.legacy_exit,
+                        new_stdout=r.new_stdout,
+                        legacy_stdout_raw=r.legacy_stdout_raw,
+                        legacy_stdout_normalized=r.legacy_stdout_normalized,
+                        diff=r.diff,
+                        skip_reason=expected[r.surface],
+                    ),
+                )
+            else:
+                reclassified.append(r)
+        results = reclassified
+
     print(f"parity runner — {len(results)} surface(s)")
     print(f"  new:    {ns.new_image}")
     print(f"  legacy: {ns.legacy_image}")
+    if ns.allow_expected:
+        print(f"  expected-fail file: {ns.expected_file} ({len(expected)} entries)")
     print("")
     for r in results:
         print(_format_result(r, verbose=ns.verbose))
 
     n_pass = sum(1 for r in results if r.status == "PASS")
     n_skip = sum(1 for r in results if r.status == "SKIPPED")
+    n_xfail = sum(1 for r in results if r.status == "XFAIL")
     n_fail = sum(1 for r in results if r.status == "FAIL")
     print("")
     summary = (
-        f"pass={n_pass} skip={n_skip} fail={n_fail} "
+        f"pass={n_pass} skip={n_skip} xfail={n_xfail} fail={n_fail} "
         f"total={len(results)}"
     )
     if n_fail == 0:

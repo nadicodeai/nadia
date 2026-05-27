@@ -35,7 +35,8 @@ help:
 	@echo "  make lint             ruff check (M4.3)"
 	@echo "  make typecheck        ty check (M4.3)"
 	@echo "  make test             pytest (M4.3)"
-	@echo "  make parity           Parity suite vs legacy image (M6)"
+	@echo "  make parity           Parity suite vs legacy image (M6; XFAIL-aware)"
+	@echo "  make parity-strict    Parity suite without expected-FAIL whitelist"
 	@echo "  make check-legacy-untouched  Verify ~/Code/argo-agent untouched (M2.4a)"
 	@echo "  make check-upstream-pristine Verify upstream/ matches last sync commit (M4.1)"
 	@echo ""
@@ -129,7 +130,18 @@ test:
 	fi
 
 .PHONY: parity
+# `--allow-expected` reclassifies surfaces listed in
+# tests/parity-expected.yml as XFAIL (non-blocking) so the gate is
+# strict-against-regressions without false-positiving on the documented
+# v0.8.0-vs-v0.14.0 baseline gap. See AGENTS.md § Parity baseline and
+# tests/parity-expected.yml for the lifecycle. Use `make parity-strict`
+# (or invoke the runner directly without the flag) to see the full
+# unmasked diff during development.
 parity:
+	python tools/parity_runner.py --allow-expected
+
+.PHONY: parity-strict
+parity-strict:
 	python tools/parity_runner.py
 
 .PHONY: check-legacy-untouched

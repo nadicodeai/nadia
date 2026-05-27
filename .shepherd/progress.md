@@ -15,7 +15,7 @@ Living log of milestone progress. Append-only timeline; do not rewrite history. 
 | M3 Initial patch series | complete | 9 / 9 | M3 closed @ b789a4d; 6 patches + 29 assertions + overlay; refactor `2dcdd70` + architect `b789a4d` (AC-8 PROVEN) |
 | M4 CI gates | complete | 5 / 5 | M4 closed @ 4c0f1f24; AC-2/3/4/8/9/10/11 anchored; refactor `f3ee50ea` + architect `4c0f1f24` |
 | M5 Docker pipeline | complete | 3 / 3 | M5 closed @ 174d88862; AC-8 PROVEN (tree-hash 6709428a…); NFR-3 image-size parity deferred to M6 by design (slim 371MB vs legacy 4.71GB) |
-| M6 Parity suite | pending | 0 / 3 | — |
+| M6 Parity suite | complete | 3 / 3 | M6 closed @ 6a9033d49; FR-16/AC-7 anchored via XFAIL-aware gate; 56 unit + 2 integration tests; baseline-version gap whitelisted in `tests/parity-expected.yml` |
 | M7 First real sync | pending | 0 / 2 | — |
 | M8 Documentation freeze | pending | 0 / 3 | — |
 
@@ -176,16 +176,34 @@ Status values: `pending` · `in-progress` · `blocked` · `complete`.
 **Goal:** `make parity` drives the new image and legacy `ghcr.io/nadicodeai/argo-agent:0.14.0` through 7 surfaces; diffs are empty modulo brand-string substitution.
 
 **Tasks:**
-- [ ] M6.1 Pull legacy baseline image and verify it runs
-- [ ] M6.2a Write `tools/parity_runner.py` for CLI surfaces (`--help`, `--version`, `argo doctor --static`)
-- [ ] M6.2b Extend parity runner for backend surfaces (API server, MCP, hooks, OAuth, session persistence) with fixtures/stubs
+- [x] M6.1 Pull legacy baseline image and verify it runs — see `82f4444f1` (M6.2a landed with baseline pull + verify)
+- [x] M6.2a Write `tools/parity_runner.py` for CLI surfaces — commit `82f4444f1` 2026-05-27
+- [x] M6.2b Extend parity runner for backend surfaces — commit `726e9227c` 2026-05-27 (+ `bdc6baff4`, `6660b4b30`, `57e9c9103`)
 
-**Checkpoint:** All 7 parity surfaces pass with zero non-brand diffs. Any deferred surfaces explicitly listed with rationale.
+**Plus M6 architect-closure work** (this milestone):
+- [x] Fix session-init permission mismatch (host tmpdir chmod 0777 so uid-10000 argo can write) — parity_runner.py
+- [x] Add `tests/parity-expected.yml` whitelist for baseline-version-gap FAILs (help, version, session-init)
+- [x] Add `--allow-expected` flag to parity_runner; `make parity` uses it by default; `make parity-strict` for the unmasked view
+- [x] Add `@pytest.mark.timeout(300)` to `test_parity_runner_against_real_images` (real run is ~50s, exceeds pytest.ini's 30s default)
+- [x] Update CI parity job comment + name to reflect XFAIL-aware gate
+- [x] AGENTS.md "Parity baseline" rewritten to current state
 
-**Maps to spec:** AC-7; G3.
+**Checkpoint status: PASSED 2026-05-27.**
+- `python -m pytest -q` → 56 passed (was 51 pre-architect; +5 new tests for expected-FAIL loader & CLI flow).
+- `python -m pytest -m integration tests/test_dist_determinism.py` → AC-8 still PROVEN (tree-hash `6709428a…`, 28.94s).
+- `python tools/parity_runner.py --allow-expected` → exit 0, pass=2 skip=2 xfail=3 fail=0 across 7 surfaces.
+- `python tools/parity_runner.py` (strict) → exit 1, surfaces 7 of which 3 still FAIL on the documented baseline-version gap (intentional; that's the unmasked signal for development use).
+- `make build` → 7 patches applied, 22 overlay files, assertions satisfied, manifest written.
+- AC-7 status: ANCHORED through XFAIL whitelist. Full re-tightening to "all PASS" deferred to M7 when a real v0.14.0 baseline is published.
+
+**Maps to spec:** AC-7 (anchored with documented XFAIL exceptions); G3 (anchored; full closure at M7).
 
 **Notes:**
-- (none yet)
+- Baseline-image reality: `ghcr.io/nadicodeai/argo-agent:0.14.0` was never published. The runner uses `:latest` (= v0.8.0). Three surfaces FAIL solely on this version gap (help/version/session-init). All three are whitelisted in `tests/parity-expected.yml` with a reason and a notes block describing what each diff looks like.
+- The parity gate is strict-against-regressions while XFAIL-aware against the baseline gap. This was the better of options (a)–(d) in the architect prompt: (a) strict would block all PRs on the baseline gap; (b) auto-superset would over-approve real additive regressions; (d) non-blocking would not signal regressions. (c) — surface-name whitelist — is what we picked.
+- session-init has TWO distinct issues that look alike: a permission-mismatch bug in the runner (FIXED — host tmpdir is now mode 0777 so the uid-10000 argo user in the new image can write through the bind mount) AND a real persistence-layout drift between v0.8.0 (creates SOUL.md, cron/, memories/, sessions/) and v0.14.0 (creates logs/agent.log, logs/errors.log). After the permission fix the surface still FAILs strict but the FAIL is now a CLEAN drift (not a permission error), which is exactly what AC-7 should surface. Whitelisted with reason "persistence-layout drift v0.8.0 → v0.14.0".
+- mcp-list / hook-fire / auth-start are already PASS-or-SKIP without whitelist. doctor-static would PASS against a real v0.14.0 image; the SKIP today is purely because legacy v0.8.0 has no `--static` flag (M3 added it on the new side).
+- ci.yml's parity job uses `make parity` (XFAIL-aware) without `continue-on-error` — the gate IS now blocking for real regressions while accepting the baseline gap. This is the M5-architect-recommended posture, narrowed.
 
 ---
 
