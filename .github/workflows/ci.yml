@@ -268,10 +268,17 @@ jobs:
             docker pull ghcr.io/nadicodeai/argo-agent:${{ env.LEGACY_TAG }}
             docker save ghcr.io/nadicodeai/argo-agent:${{ env.LEGACY_TAG }} -o /tmp/legacy-image.tar
           fi
-      - name: make image (build :dev locally)
+      - name: make image-full (build :dev-full locally)
+        # Issue #2 / NFR-3 resolution: parity runs against the FULL
+        # variant because the legacy v0.14.0 baseline has the full
+        # feature surface (node/npm/ffmpeg/playwright/s6-overlay).
+        # Comparing :dev (slim) vs legacy:0.14.0 would hide
+        # browser/voice/TUI/dashboard divergence. Building :dev-full
+        # adds ~10-15 min to the parity job; gated to this single job
+        # so the rest of CI stays fast.
         run: |
           . .venv/bin/activate
-          make image
+          make image-full
       - name: make parity (XFAIL-aware; strict-against-regressions)
         run: |
           . .venv/bin/activate

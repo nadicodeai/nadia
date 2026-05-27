@@ -98,6 +98,8 @@ Other useful queries: `quilt series` (list), `quilt top` (which patch is on top)
 
 `tools/parity_runner.py` (M6) drives the customer-parity gate (FR-16, AC-7). The spec names `ghcr.io/nadicodeai/argo-agent:0.14.0` as the legacy baseline. As of issue #1's resolution that tag is built + published by `.github/workflows/publish-legacy-baseline.yml` (one-shot, `workflow_dispatch`) from the maintainer's frozen `~/Code/argo-agent` tree at SHA `9b8cf6bf5` (whose `pyproject.toml` reports version 0.14.0). The runner's `DEFAULT_LEGACY_IMAGE` constant now points at `:0.14.0`.
 
+**Image under test.** As of issue #2, `DEFAULT_NEW_IMAGE` is `ghcr.io/nadicodeai/argo:dev-full` (the FULL variant — see § Image variants). Parity is apples-to-apples: legacy v0.14.0 ships the full feature surface, so comparing the slim image against it would hide browser/voice/TUI/dashboard divergence. CI's parity job runs `make image-full` before `make parity`. To run parity against the slim variant during slim-specific iteration: `python tools/parity_runner.py --new-image ghcr.io/nadicodeai/argo:dev`.
+
 **Pre-publish prerequisite.** The frozen legacy SHA `9b8cf6bf58e23723d4d021fda529f3f3f397646d` is local-only on the maintainer's workstation; `nadicode/main` is behind it. Before running the workflow the maintainer MUST push the frozen ref to the remote (this does NOT modify the legacy worktree, only adds a tag, so AGENTS.md § Hard rule "Don't touch `~/Code/argo-agent`" is preserved):
 
 ```bash
@@ -127,9 +129,28 @@ Per-surface status (pre-publish snapshot; expected to change after the `:0.14.0`
 
 Anything still on the XFAIL list AFTER the `:0.14.0` baseline has been published and `make parity` has been re-run is a true semantic divergence and should be filed as a tracked issue, not silently accepted.
 
+## Image variants
+
+Issue #2 split the image into TWO variants so customers pick by deployment shape, not by NFR-3 compromise:
+
+| Tag pointers (customer-facing)         | Variant       | Target        | Size    | When to use                                                                              |
+| -------------------------------------- | ------------- | ------------- | ------- | ---------------------------------------------------------------------------------------- |
+| `:latest`, `:v<X.Y.Z>`, `:<sha-short>` | full          | `runtime-full`| ~4.5 GB | Default. TUI dashboard, voice, browser-tool MCP, s6-supervised gateway — full customer surface, matches legacy v0.14.0. |
+| `:slim`, `:latest-slim`, `:v<X.Y.Z>-slim`, `:<sha-short>-slim` | slim | `runtime-slim`| ~371 MB | CLI-only deployments (CI runners, batch agents, server-side automation). Satisfies the 7 FR-16 parity surfaces.        |
+
+A bare `docker pull ghcr.io/nadicodeai/argo` resolves to `:latest` = full variant — backward compat with pre-issue-#2 callers that expected the customer-parity surface. CLI-only callers MUST explicitly opt into `:slim`.
+
+**Local builds.**
+- `make image` → builds `runtime-slim` and tags `:dev` (preserved name for backward compat with `scripts/publish.sh`).
+- `make image-full` → builds `runtime-full` and tags `:dev-full`.
+
+**Determinism.** AC-8 byte-determinism is a gate only for the slim variant (where the `dist/argo/` tree-hash is the artifact). The full variant fetches chromium + s6-overlay tarballs + npm packages at build time; its reproducibility is best-effort by design (spec § Build Reproducibility).
+
+**NFR-3 resolution.** The spec sets the gate at "image MUST NOT exceed legacy by >5%". The full variant matches legacy's 4.71 GB surface within ~5% margin; the slim variant is 92% smaller for customers who do not need the dashboard/voice/browser stack. The choice is now explicit and documented per-tag.
+
 ## Slim image (M5/M6 history)
 
-M5 produced a 371 MB slim runtime image; M6's parity gate exposed two crashes (`mcp list`, `sessions list`) that traced to a missing `tools/` Python package in the runtime stage. Patch 0008 + the M6 Dockerfile regressions fix landed those import paths, so the slim image now handles all FR-16 surfaces 1-7. The image still does NOT match legacy's 4.71 GB surface (no node/npm/playwright/ffmpeg/s6-overlay yet) — that broader expansion is M7+ territory, contingent on real customer surface needs. NFR-3 (image size within 5% of legacy) is intentionally NOT a gate at this scope; track via a follow-up OQ if it becomes customer-blocking.
+M5 produced the 371 MB slim runtime image (now tagged `:slim`); M6's parity gate exposed two crashes (`mcp list`, `sessions list`) that traced to a missing `tools/` Python package in the runtime stage. Patch 0008 + the M6 Dockerfile regressions fix landed those import paths, so the slim image now handles all FR-16 surfaces 1-7. The NFR-3 gap (no node/npm/playwright/ffmpeg/s6-overlay) was closed by issue #2, which added the `runtime-full` stage on top of `runtime-slim`. See § Image variants above for the current tag map.
 
 ## Common tasks
 

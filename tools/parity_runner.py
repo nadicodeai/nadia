@@ -98,7 +98,15 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Sequence
 
-DEFAULT_NEW_IMAGE = "ghcr.io/nadicodeai/argo:dev"
+# Default to the FULL variant (issue #2). The parity gate's purpose is
+# "new ≡ legacy"; legacy v0.14.0 ships the full feature surface
+# (node/npm/ffmpeg/playwright/s6-overlay) so the apples-to-apples
+# comparison is :dev-full vs the legacy image. The slim variant
+# (:dev) still satisfies the 7 FR-16 surfaces in isolation, but
+# parity must run against full so any browser/voice/TUI/dashboard
+# divergence is observable. Override with --new-image to run parity
+# against :dev (CLI-only smoke) when iterating on slim-specific changes.
+DEFAULT_NEW_IMAGE = "ghcr.io/nadicodeai/argo:dev-full"
 # Spec FR-16 baseline. Built + published by
 # `.github/workflows/publish-legacy-baseline.yml` (one-shot, workflow_dispatch)
 # from the maintainer's frozen ~/Code/argo-agent tree at SHA 9b8cf6bf5.

@@ -4,6 +4,16 @@
 # Maps to spec FR-7 (image tagging conventions), FR-11 (Docker-only —
 # no PyPI), plan M5.2, OQ-13 (GHCR token handling).
 #
+# SCOPE (issue #2). This script is the LOCAL MAINTAINER convenience for
+# pushing the SLIM variant only (built by `make image` -> :dev). CI's
+# `.github/workflows/docker-publish.yml` is the source of truth for the
+# two-variant tag scheme (slim + full) and bypasses this script. A local
+# maintainer pushing via `make publish` thus emits slim-variant images
+# under the legacy bare-tag scheme (:<sha>, :latest); that is intentional
+# for hot-fix flows where waiting on CI is not viable. Push the full
+# variant by triggering the workflow (workflow_dispatch), not via this
+# script.
+#
 # Tag-decision tree (FR-7).
 #   :dev                Local builder. NEVER pushed (built by `make image`).
 #   :<git-sha-short>    Pushed on every successful publish (main builds + releases).

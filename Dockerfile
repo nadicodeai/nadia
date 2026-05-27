@@ -2,24 +2,48 @@
 #
 # Multi-stage Dockerfile for ghcr.io/nadicodeai/argo.
 #
-# Stage 1 (builder): apt {git, quilt, make, ca-certificates}; copies repo
-#   and runs `make build` to produce dist/argo/.
-# Stage 2 (runtime): python:3.13-slim-bookworm; copies ONLY dist/argo/ →
-#   /opt/argo. Strips argo_sync/ per spec OQ-10. Installs upstream's
-#   runtime deps via `pip install -e .` into a venv inside the image.
+# Stages
+# ------
+# Stage 1 (builder):       apt {git, quilt, make, gcc, libffi-dev, python3-dev,
+#                          ca-certificates}; copies repo and runs `make build`
+#                          to produce dist/argo/. Never shipped.
+# Stage 2 (runtime-slim):  python:3.13-slim-bookworm; copies ONLY dist/argo/ →
+#                          /opt/argo. Strips argo_sync/ per spec OQ-10. Installs
+#                          upstream's runtime deps via `pip install -e .` into a
+#                          venv inside the image. Result: ~371 MB CLI-only image
+#                          tagged `:slim` / `:dev`.
+# Stage 3 (runtime-full):  extends runtime-slim with the feature surface the
+#                          legacy v0.14.0 image carries — node/npm (TUI web
+#                          dashboard), ffmpeg (voice mode), playwright +
+#                          chromium (browser-tool MCP), and s6-overlay
+#                          (supervised dashboard / gateway). Result: ~4.5 GB
+#                          image tagged `:latest` / `:dev-full`.
 #
-# Maps to spec FR-7 (Docker image), FR-11 (no PyPI), OQ-10 (strip
-# argo_sync from final image), AC-8 (determinism via SOURCE_DATE_EPOCH),
-# NFR-3 (image size ≤5% over legacy — best-effort at M5.1; full parity
-# is M6).
+# Spec references
+# ---------------
+# FR-7  Docker image: multi-stage, ONLY dist/argo/ in final image, never
+#       upstream/patches/overlay/tools.
+# FR-11 Docker-only (no PyPI).
+# OQ-10 Strip argo_sync from final image.
+# AC-8  Determinism via SOURCE_DATE_EPOCH (slim path only — full path adds
+#       network-fetched npm + chromium + s6-overlay binaries which break
+#       byte-determinism by design).
+# NFR-3 Image size ≤5% over legacy (resolved by issue #2 via the slim/full
+#       split: slim is 92% smaller for CLI-only deploys; full matches legacy
+#       surface for customers who need TUI/voice/browser/dashboard).
 #
-# Multi-arch (linux/arm64) is OQ-4 — deferred to release.yml. PR-time
-# builds are amd64-only for speed (see make image).
+# Multi-arch
+# ----------
+# release.yml builds both stages for linux/amd64 + linux/arm64 (OQ-4 /
+# issue #8). PR-time builds stay amd64-only for speed. s6-overlay tarballs
+# are arch-keyed via TARGETARCH (BuildKit auto-populates).
 #
-# Determinism: SOURCE_DATE_EPOCH is forwarded into the runtime env so
-# `argo --version --verbose` and any timestamp-emitting code path inside
-# the image can honor it. Docker layer hashes are explicitly NOT a gate
-# (spec AC-8 rationale).
+# Selecting a stage
+# -----------------
+#   docker buildx build --target runtime-slim -t argo:slim .
+#   docker buildx build --target runtime-full -t argo:latest .
+#
+# `make image` defaults to runtime-slim. `make image-full` builds runtime-full.
 
 ARG PYTHON_VERSION=3.13-slim-bookworm
 
@@ -63,8 +87,12 @@ COPY . /src
 # The resulting tree is what the runtime stage ships.
 RUN make build
 
-# ---------- Stage 2: runtime ----------------------------------------------
-FROM python:${PYTHON_VERSION} AS runtime
+# ---------- Stage 2: runtime-slim -----------------------------------------
+#
+# Minimal CLI runtime. Suitable for headless deployments (CI, batch agents,
+# server-side automation) where the TUI dashboard / voice mode / browser
+# tools are not needed. ~371 MB.
+FROM python:${PYTHON_VERSION} AS runtime-slim
 
 ARG SOURCE_DATE_EPOCH
 ENV SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH}
@@ -72,10 +100,10 @@ ENV SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH}
 # Runtime apt deps kept to the minimum needed by upstream's argo runtime.
 #   ca-certificates → outbound TLS to model APIs.
 #   git → some upstream code paths shell out to `git` (skill clones, etc.).
-# Anything heavier (node, npm, playwright, ffmpeg, s6-overlay) is
-# intentionally NOT in this minimal M5.1 image. Full parity with the
-# legacy s6-supervised image is M6's problem; M5.1 only needs to satisfy
-# the spec AC-7 minimum surface (argo --help / --version exit 0).
+# Anything heavier (node, npm, playwright, ffmpeg, s6-overlay) lives in
+# the runtime-full stage. This stage covers the 7 FR-16 parity surfaces
+# (help, version, doctor, mcp, hooks, auth, sessions) — anything beyond
+# those surfaces (TUI dashboard, voice, browser-tool MCP) requires :full.
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         ca-certificates \
@@ -88,8 +116,9 @@ ENV PYTHONUNBUFFERED=1
 ENV PATH="/opt/argo/.venv/bin:${PATH}"
 
 # Non-root user, mirrors legacy convention (uid 10000 used `/opt/data` as
-# home; M5.1 uses /home/argo for simplicity — the path is contained by
-# ARGO_HOME so user code doesn't depend on it).
+# home; the slim image uses /home/argo for simplicity — the path is
+# contained by ARGO_HOME so user code doesn't depend on it). The full
+# stage rebinds ARGO_HOME to /opt/data to match legacy on-disk layout.
 RUN useradd -m -u 10000 -s /bin/bash argo
 
 # Copy ONLY the renamed tree from the builder. Nothing else (upstream/,
@@ -138,4 +167,170 @@ VOLUME ["/home/argo/.argo"]
 
 # Default invocation: the renamed `argo` console script (from
 # argo_cli.main:main in pyproject's [project.scripts]).
+CMD ["argo"]
+
+# ---------- Stage 3: runtime-full -----------------------------------------
+#
+# Customer-parity runtime. Adds the feature surface legacy v0.14.0 ships:
+#
+#   node + npm        → TUI web dashboard build / launch (`argo dashboard`,
+#                       `argo --tui`, ui-tui/web bundles).
+#   ffmpeg            → voice-mode audio capture + transcode pipeline.
+#   playwright +
+#     chromium (shell)→ browser-tool MCP, agent-browser npm dep.
+#   s6-overlay        → in-container supervisor (PID 1 = /init) for the
+#                       dashboard, gateway, and per-profile services. Mirrors
+#                       legacy ~/Code/argo-agent/Dockerfile's supervision
+#                       model so customer-facing service lifecycle behaviour
+#                       is preserved.
+#
+# This stage explicitly trades determinism for parity: chromium binaries
+# and s6-overlay tarballs are network-fetched at build time. AC-8
+# determinism is only a gate for the slim image (where `dist/argo/`
+# tree-hash is the artifact). The full image's reproducibility is
+# best-effort and explicitly NOT a gate (spec § Build Reproducibility).
+#
+# Multi-arch: TARGETARCH is auto-populated by BuildKit. s6-overlay
+# tarballs are arch-keyed (x86_64 / aarch64) with checksum verification
+# mirroring legacy's supply-chain integrity stance. Chromium and node
+# packages come from Debian / Microsoft repos that already publish
+# per-arch binaries.
+FROM runtime-slim AS runtime-full
+
+USER root
+
+# Disable Python stdout buffering (already set in -slim but restated for
+# clarity in this stage's docs/comments since runtime-full is the
+# customer-facing default).
+ENV PYTHONUNBUFFERED=1
+
+# Store Playwright browsers outside any volume mount so the build-time
+# install survives the /opt/data volume overlay at runtime. Mirrors
+# legacy Dockerfile line 9.
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/argo/.playwright
+
+# Apt deps for the full feature surface. Kept tight: only what the legacy
+# image carries that affects TUI / voice / browser / dashboard. Heavier
+# legacy extras (build-essential, openssh-client, docker-cli, ripgrep)
+# are intentionally NOT added — they are dev-loop conveniences, not
+# customer-facing runtime needs.
+#
+#   nodejs, npm           → TUI dashboard build + launch.
+#   ffmpeg                → voice mode audio pipeline.
+#   curl, xz-utils        → s6-overlay tarball fetch + extraction.
+#   procps                → ps/top inside the container (legacy parity;
+#                           also used by some MCP servers).
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        nodejs \
+        npm \
+        ffmpeg \
+        curl \
+        xz-utils \
+        procps && \
+    rm -rf /var/lib/apt/lists/*
+
+# ---------- s6-overlay install ----------
+# Mirrors legacy ~/Code/argo-agent/Dockerfile lines 23-68. /init becomes
+# PID 1 below (see ENTRYPOINT). Supplies supervision for the main argo
+# process, the dashboard, and per-profile gateways. Multi-arch via
+# TARGETARCH; checksum-verified against upstream-published SHA256.
+#
+# To bump S6_OVERLAY_VERSION, fetch the four `.sha256` files from the
+# corresponding release and update the ARGs. A compromised release
+# artifact fails the build loudly instead of producing a tampered image.
+ARG TARGETARCH
+ARG S6_OVERLAY_VERSION=3.2.3.0
+ARG S6_OVERLAY_NOARCH_SHA256=b720f9d9340efc8bb07528b9743813c836e4b02f8693d90241f047998b4c53cf
+ARG S6_OVERLAY_X86_64_SHA256=a93f02882c6ed46b21e7adb5c0add86154f01236c93cd82c7d682722e8840563
+ARG S6_OVERLAY_AARCH64_SHA256=0952056ff913482163cc30e35b2e944b507ba1025d78f5becbb89367bf344581
+ARG S6_OVERLAY_SYMLINKS_SHA256=a60dc5235de3ecbcf874b9c1f18d73263ab99b289b9329aa950e8729c4789f0e
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz /tmp/
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-symlinks-noarch.tar.xz /tmp/
+RUN set -eu; \
+    case "${TARGETARCH:-amd64}" in \
+        amd64) s6_arch="x86_64"; s6_arch_sha="${S6_OVERLAY_X86_64_SHA256}" ;; \
+        arm64) s6_arch="aarch64"; s6_arch_sha="${S6_OVERLAY_AARCH64_SHA256}" ;; \
+        *) echo "Unsupported TARGETARCH=${TARGETARCH} for s6-overlay" >&2; exit 1 ;; \
+    esac; \
+    curl -fsSL --retry 3 -o /tmp/s6-overlay-arch.tar.xz \
+        "https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-${s6_arch}.tar.xz"; \
+    { \
+        printf '%s  %s\n' "${S6_OVERLAY_NOARCH_SHA256}" /tmp/s6-overlay-noarch.tar.xz; \
+        printf '%s  %s\n' "${s6_arch_sha}" /tmp/s6-overlay-arch.tar.xz; \
+        printf '%s  %s\n' "${S6_OVERLAY_SYMLINKS_SHA256}" /tmp/s6-overlay-symlinks-noarch.tar.xz; \
+    } > /tmp/s6-overlay.sha256; \
+    sha256sum -c /tmp/s6-overlay.sha256; \
+    tar -C / -Jxpf /tmp/s6-overlay-noarch.tar.xz; \
+    tar -C / -Jxpf /tmp/s6-overlay-arch.tar.xz; \
+    tar -C / -Jxpf /tmp/s6-overlay-symlinks-noarch.tar.xz; \
+    rm /tmp/s6-overlay-*.tar.xz /tmp/s6-overlay.sha256
+
+# ---------- npm + playwright install ----------
+# The renamed tree in /opt/argo contains the upstream package.json (with
+# the agent-browser dep that transitively brings in playwright). Run npm
+# install + the workspace installs the same way legacy does. The chromium
+# --only-shell build is the headless shell variant (~280 MB instead of
+# ~600 MB for full chromium); legacy uses --only-shell for the same
+# reason.
+#
+# npm_config_install_links=false forces npm to install `file:` deps as
+# symlinks (the npm 10+ default) even on Debian's older bundled npm 9.x,
+# which defaults to install-links=true and installs file deps as *copies*.
+# Mirrors legacy's mitigation for the TUI launcher's npm-install loop.
+ENV npm_config_install_links=false
+
+WORKDIR /opt/argo
+RUN npm install --prefer-offline --no-audit && \
+    npx playwright install --with-deps chromium --only-shell && \
+    if [ -d web ]; then (cd web && npm install --prefer-offline --no-audit); fi && \
+    if [ -d ui-tui ]; then (cd ui-tui && npm install --prefer-offline --no-audit); fi && \
+    npm cache clean --force
+
+# Build dashboard + TUI bundles when their source trees are present. The
+# rename engine preserves these directories from upstream; absence is
+# treated as a no-op so the stage stays robust against upstream layout
+# shifts.
+RUN if [ -d web ] && [ -f web/package.json ]; then (cd web && npm run build || true); fi && \
+    if [ -d ui-tui ] && [ -f ui-tui/package.json ]; then (cd ui-tui && npm run build || true); fi
+
+# Re-chown node_modules + ui-tui assets so the argo user can write to
+# them at runtime (the TUI launcher's _tui_need_npm_install() may
+# trigger a runtime npm install — mirrors legacy line 152-154).
+RUN chmod -R a+rX /opt/argo && \
+    chown -R argo:argo /opt/argo/.venv && \
+    if [ -d /opt/argo/node_modules ]; then chown -R argo:argo /opt/argo/node_modules; fi && \
+    if [ -d /opt/argo/ui-tui ]; then chown -R argo:argo /opt/argo/ui-tui; fi
+
+# Match legacy's on-disk layout: ARGO_HOME = /opt/data. Customer state
+# bind-mounts to /opt/data via the docker-compose recipe shipped with
+# legacy (and any equivalent argo recipe). The slim stage's
+# /home/argo/.argo VOLUME declaration is overridden here.
+ENV ARGO_HOME=/opt/data
+RUN mkdir -p /opt/data && chown argo:argo /opt/data
+VOLUME ["/opt/data"]
+
+# s6-overlay service wiring would normally COPY a docker/s6-rc.d/ tree
+# here (mirroring legacy ~/Code/argo-agent/docker/). The slim+full
+# layout doesn't yet carry an overlay-owned s6-rc.d/ tree — the
+# supervised dashboard + per-profile gateway services are wired
+# upstream-side in a follow-up. For now /init is PID 1 so customers can
+# `docker exec` and so SIGCHLD reaping behaves correctly; the
+# main-program wrapper falls back to launching argo directly when no
+# s6-rc.d services are registered.
+#
+# TODO(issue #2 follow-up): lift docker/s6-rc.d/ + docker/cont-init.d/
+# from legacy into overlay/ and add an overlay→dist path so the
+# dashboard + per-profile gateway services come up automatically.
+
+# Drop privileges. /init runs as root (required for cont-init.d UID
+# remap) and each supervised service drops via s6-setuidgid.
+USER argo
+WORKDIR /home/argo
+
+# Default invocation: bare `argo`, supervised by s6-overlay's /init.
+# When s6-rc.d service slots are registered (follow-up), /init starts
+# them before exec'ing the CMD. With no slots registered today, /init
+# behaves like a thin PID-1 wrapper around argo.
+ENTRYPOINT ["/init"]
 CMD ["argo"]

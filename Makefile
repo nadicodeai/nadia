@@ -28,7 +28,8 @@ help:
 	@echo "  make sync-reset       Wipe .sync-workdir/ (M4.2)"
 	@echo ""
 	@echo "Docker:"
-	@echo "  make image            Build ghcr.io/nadicodeai/argo:dev (M5.1)"
+	@echo "  make image            Build slim variant -> ghcr.io/nadicodeai/argo:dev (M5.1)"
+	@echo "  make image-full       Build full variant -> ghcr.io/nadicodeai/argo:dev-full (issue #2)"
 	@echo "  make publish          Push image to ghcr.io (M5.2)"
 	@echo ""
 	@echo "Quality gates:"
@@ -89,20 +90,38 @@ sync-reset:
 # Docker (M5 wires the real implementation)
 # -----------------------------------------------------------------------------
 
-# M5.1: build the runtime image via multi-stage Dockerfile.
+# M5.1 + issue #2: build the runtime image via multi-stage Dockerfile.
+#
+# Two variants ship (NFR-3 resolution — see AGENTS.md § Image variants):
+#   :slim / :dev       — runtime-slim target, ~371 MB CLI-only.
+#   :latest / :dev-full — runtime-full target, ~4.5 GB customer-parity.
 #
 # Multi-arch (linux/arm64) is OQ-4 — deferred to release.yml. PR-time
 # builds are linux/amd64 only for speed; CI release builds go multi-arch.
 #
 # SOURCE_DATE_EPOCH propagates the commit timestamp into the image for
-# AC-8 determinism (best-effort — Docker layer hashes are NOT a gate).
+# AC-8 determinism. Determinism is a gate ONLY for the slim variant
+# (where the `dist/argo/` tree-hash is the artifact); the full variant
+# fetches chromium + s6-overlay + npm tarballs at build time and is
+# best-effort by design (spec § Build Reproducibility).
 .PHONY: image
 image:
 	docker buildx build \
 		--build-arg SOURCE_DATE_EPOCH=$$(git log -1 --format=%ct) \
 		--platform linux/amd64 \
+		--target runtime-slim \
 		--load \
 		-t ghcr.io/nadicodeai/argo:dev \
+		.
+
+.PHONY: image-full
+image-full:
+	docker buildx build \
+		--build-arg SOURCE_DATE_EPOCH=$$(git log -1 --format=%ct) \
+		--platform linux/amd64 \
+		--target runtime-full \
+		--load \
+		-t ghcr.io/nadicodeai/argo:dev-full \
 		.
 
 .PHONY: publish

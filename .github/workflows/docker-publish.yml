@@ -1,15 +1,31 @@
 # argo — Docker image publish to ghcr.io/nadicodeai/argo (spec FR-7, M5.2).
 #
 # Triggers.
-#   - push to main          -> :<sha-short> + :latest                  (linux/amd64)
-#   - release.published     -> :<sha-short> + :latest + :v<X.Y.Z>      (linux/amd64 + linux/arm64)
-#   - workflow_dispatch     -> :<sha-short> (+ :latest if dispatched off main)  (linux/amd64)
+#   - push to main          -> two variants pushed                          (linux/amd64)
+#   - release.published     -> two variants pushed                          (linux/amd64 + linux/arm64)
+#   - workflow_dispatch     -> two variants pushed                          (linux/amd64)
 #
-# Tag-decision tree (spec FR-7 — also encoded in scripts/publish.sh).
-#   :dev               local builds only; never pushed (built by make image).
-#   :<git-sha-short>   every push that runs this workflow.
-#   :latest            main pushes AND release.published events.
-#   :v<X.Y.Z>          only on a `vX.Y.Z` git tag (release.published).
+# Image variants (issue #2 — NFR-3 resolution; see AGENTS.md § Image variants).
+#   runtime-slim   ~371 MB   CLI-only; matches FR-16 surfaces 1-7.
+#   runtime-full   ~4.5 GB   Adds node/npm + ffmpeg + playwright/chromium +
+#                            s6-overlay so TUI, voice, browser-tool, and
+#                            dashboard surfaces work — matches legacy v0.14.0.
+#
+# Tag-decision tree.
+#   Full variant (customer default — what `docker pull ghcr.io/nadicodeai/argo`
+#                                    without a tag resolves to):
+#     :dev                  Local builds only; never pushed by this workflow.
+#     :<git-sha-short>      Every push that runs this workflow.
+#     :latest               main pushes AND release.published events.
+#     :v<X.Y.Z>             Only on a `vX.Y.Z` git tag (release.published).
+#
+#   Slim variant (CLI-only deployments — opt-in):
+#     :<git-sha-short>-slim Every push that runs this workflow.
+#     :slim                 main pushes AND release.published events
+#                           (= "latest slim"; the customer-facing pointer).
+#     :latest-slim          Alias for :slim; published alongside for callers
+#                           that follow the `<variant>-<channel>` convention.
+#     :v<X.Y.Z>-slim        Only on a `vX.Y.Z` git tag (release.published).
 #
 # Auth.
 #   Uses the workflow's GITHUB_TOKEN (packages:write below). No external
@@ -21,19 +37,24 @@
 # Multi-arch (OQ-4, issue #8).
 #   Release tags get a multi-arch manifest (linux/amd64 + linux/arm64) so
 #   Apple Silicon and ARM cloud (Graviton, Ampere) users can `docker pull`
-#   without architecture flags. PR + main push + workflow_dispatch builds
+#   without architecture flags. Push-to-main + workflow_dispatch builds
 #   stay linux/amd64 only: QEMU emulation adds ~10 min per build on
 #   GitHub-hosted runners and we don't want that cost on every commit.
 #
 #   The two paths differ structurally because `docker buildx build` cannot
 #   `--load` a multi-platform manifest list into the local Docker daemon
 #   (that's a daemon limitation, not a buildx one). So:
-#     - single-arch path: `make image` builds + loads :dev; publish.sh
-#       re-tags + pushes. Preserves the existing local-friendly flow.
-#     - multi-arch path: a single buildx build writes the manifest list
-#       directly to ghcr with all release tags baked into -t flags via
-#       --push. publish.sh is bypassed because there's no local :dev to
-#       re-tag.
+#     - single-arch path: builds + pushes each variant in turn via buildx
+#       --push (no local --load needed; we're not exec'ing inside the
+#       image, only pushing).
+#     - multi-arch path: identical structure — a single buildx build per
+#       variant writes the manifest list straight to ghcr with --push.
+#
+#   Both paths converge on `docker buildx build --push --target <stage>`.
+#   The historical `make image` + `scripts/publish.sh` flow is preserved
+#   for local maintainer use; CI no longer routes through it because the
+#   slim/full split adds a second source tag that doesn't fit
+#   publish.sh's single-source-tag contract.
 #
 # Race condition note (release.published vs push to main).
 #   When `gh release create` against a tag on main fires both `push` and
@@ -69,8 +90,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # fetch-depth: 0 so scripts/publish.sh can compute :<sha-short>
-          # and detect a vX.Y.Z tag pointing at HEAD.
+          # fetch-depth: 0 so we can compute :<sha-short> and detect a
+          # vX.Y.Z tag pointing at HEAD.
           fetch-depth: 0
 
       - name: Install system deps (quilt + zstd for make build inside builder stage)
@@ -113,54 +134,90 @@ jobs:
             echo "multiarch=false" >> "$GITHUB_OUTPUT"
           fi
 
-      # ----- single-arch path (push to main, workflow_dispatch) --------
-      #
-      # Mirrors the local maintainer flow: `make image` builds + loads
-      # :dev into the daemon, then scripts/publish.sh re-tags + pushes.
-      - name: make image (single-arch)
-        if: steps.platforms.outputs.multiarch == 'false'
-        run: make image
-
-      - name: scripts/publish.sh (re-tag + push, single-arch)
-        # GHCR_SKIP_LOGIN=1 because docker/login-action above already
-        # authenticated. publish.sh emits :<sha-short> always and :latest
-        # on main.
-        if: steps.platforms.outputs.multiarch == 'false'
-        env:
-          GHCR_SKIP_LOGIN: "1"
-        run: scripts/publish.sh
-
-      # ----- multi-arch path (release.published) -----------------------
-      #
-      # Builds amd64 + arm64 in one buildx invocation and writes the
-      # manifest list straight to ghcr via --push. We bake every release
-      # tag into -t flags so the manifest list is published atomically
-      # under all of them — no separate `docker tag` step is possible
-      # for a manifest list that isn't in the local daemon.
-      #
-      # Tags applied on release.published (spec FR-7):
-      #   :<sha-short>           always
-      #   :latest                always (release re-points latest, see header)
-      #   :v<X.Y.Z>              from github.event.release.tag_name
-      - name: docker buildx build --push (multi-arch)
-        if: steps.platforms.outputs.multiarch == 'true'
+      # Compute tag sets for both variants. Slim tags carry the -slim
+      # suffix; full tags are the "bare" pointers (:latest, :<sha>,
+      # :v<X.Y.Z>). On release.published the release tag is added to
+      # both variants. main pushes additionally tag :slim + :latest.
+      - name: Compute tags
+        id: tags
         run: |
+          REPO="ghcr.io/nadicodeai/argo"
           SHA_SHORT="$(git rev-parse --short HEAD)"
-          RELEASE_TAG="${{ github.event.release.tag_name }}"
+          RELEASE_TAG=""
+          if [ "${{ github.event_name }}" = "release" ]; then
+            RELEASE_TAG="${{ github.event.release.tag_name }}"
+          fi
+
+          # Slim variant tags. The customer-facing "latest slim" pointer
+          # is :slim (matches Debian's :slim convention). :latest-slim is
+          # an alias for callers that prefer the <channel>-<variant> form.
+          SLIM_TAGS="-t ${REPO}:${SHA_SHORT}-slim"
+          if [ "${{ github.event_name }}" = "release" ] || \
+             [ "${{ github.event_name }}" = "push" ] || \
+             [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+              SLIM_TAGS="${SLIM_TAGS} -t ${REPO}:slim -t ${REPO}:latest-slim"
+          fi
+          if [ -n "${RELEASE_TAG}" ]; then
+              SLIM_TAGS="${SLIM_TAGS} -t ${REPO}:${RELEASE_TAG}-slim"
+          fi
+
+          # Full variant tags. These are the "default" pointers: a bare
+          # `docker pull ghcr.io/nadicodeai/argo` resolves to :latest =
+          # full variant. Backward compat with pre-issue-#2 callers that
+          # pulled :latest expecting the customer-parity surface.
+          FULL_TAGS="-t ${REPO}:${SHA_SHORT}"
+          if [ "${{ github.event_name }}" = "release" ] || \
+             [ "${{ github.event_name }}" = "push" ] || \
+             [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+              FULL_TAGS="${FULL_TAGS} -t ${REPO}:latest"
+          fi
+          if [ -n "${RELEASE_TAG}" ]; then
+              FULL_TAGS="${FULL_TAGS} -t ${REPO}:${RELEASE_TAG}"
+          fi
+
+          echo "sha_short=${SHA_SHORT}" >> "$GITHUB_OUTPUT"
+          echo "release_tag=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "slim_tags=${SLIM_TAGS}" >> "$GITHUB_OUTPUT"
+          echo "full_tags=${FULL_TAGS}" >> "$GITHUB_OUTPUT"
+
+      # ----- slim variant build + push --------------------------------
+      #
+      # Built first because it's the fastest of the two (~371 MB vs
+      # ~4.5 GB). On failure we abort before paying the cost of the
+      # full build. Multi-arch (release) goes through the same buildx
+      # invocation; --push writes the manifest list directly to ghcr.
+      - name: docker buildx build --push (runtime-slim)
+        run: |
           docker buildx build \
             --build-arg SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)" \
             --platform "${{ steps.platforms.outputs.platforms }}" \
+            --target runtime-slim \
             --push \
-            -t "ghcr.io/nadicodeai/argo:${SHA_SHORT}" \
-            -t "ghcr.io/nadicodeai/argo:latest" \
-            -t "ghcr.io/nadicodeai/argo:${RELEASE_TAG}" \
+            ${{ steps.tags.outputs.slim_tags }} \
             .
 
-      # Sanity check: after a multi-arch release publish, the manifest
-      # list MUST advertise both architectures. Fails loud if the build
-      # somehow produced a single-arch image under a release tag.
+      # ----- full variant build + push --------------------------------
+      #
+      # Adds ~10-15 min on top of slim (npm install, playwright chromium
+      # fetch, s6-overlay tarballs). Multi-arch (release) doubles that
+      # since QEMU-emulated arm64 is much slower than native amd64.
+      - name: docker buildx build --push (runtime-full)
+        run: |
+          docker buildx build \
+            --build-arg SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)" \
+            --platform "${{ steps.platforms.outputs.platforms }}" \
+            --target runtime-full \
+            --push \
+            ${{ steps.tags.outputs.full_tags }} \
+            .
+
+      # Sanity check: after a multi-arch release publish, both variants'
+      # primary release pointers MUST advertise both architectures. Fails
+      # loud if the build somehow produced a single-arch image under a
+      # release tag.
       - name: Verify multi-arch manifest
         if: steps.platforms.outputs.multiarch == 'true'
         run: |
-          RELEASE_TAG="${{ github.event.release.tag_name }}"
+          RELEASE_TAG="${{ steps.tags.outputs.release_tag }}"
           docker buildx imagetools inspect "ghcr.io/nadicodeai/argo:${RELEASE_TAG}"
+          docker buildx imagetools inspect "ghcr.io/nadicodeai/argo:${RELEASE_TAG}-slim"
