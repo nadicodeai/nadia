@@ -6,6 +6,16 @@
 # are intentionally NOT rewritten — they must still point at the
 # upstream NousResearch/hermes-agent LICENSE file so attribution
 # survives the rename engine pass.
+#
+# Additionally (M3.1, IU-AC-9 static gate), the renamed
+# `argo_cli/main.py` `OFFICIAL_REPO_URLS` set (defined at upstream
+# `hermes_cli/main.py:7319-7332`, compared against by `_is_fork()`)
+# MUST list `nadicodeai/argo` in both HTTPS and SSH forms — otherwise
+# every `argo update` from a release-branch install would print
+# "⚠ Updating from fork: ..." to customers. Pinned here (not in a
+# dedicated patch) because the rename engine already rewrites the
+# set cleanly; the assertion catches any future regression where
+# the rewrite stops covering this slot.
 
 path:README.md raw.githubusercontent.com/nadicodeai/argo/main/scripts/install.sh
 path:README.md raw.githubusercontent.com/nadicodeai/argo/main/scripts/install.ps1
@@ -19,3 +29,9 @@ path:CONTRIBUTING.md git clone --recurse-submodules https://github.com/nadicodea
 path:CONTRIBUTING.md Use [GitHub Issues](https://github.com/nadicodeai/argo/issues)
 path:README.md github.com/NousResearch/hermes-agent/blob/main/LICENSE
 path:README.zh-CN.md github.com/NousResearch/hermes-agent/blob/main/LICENSE
+
+# IU-AC-9 (static): OFFICIAL_REPO_URLS rebrand in renamed argo_cli/main.py
+path:argo_cli/main.py https://github.com/nadicodeai/argo.git
+path:argo_cli/main.py git@github.com:nadicodeai/argo.git
+path:argo_cli/main.py https://github.com/nadicodeai/argo
+path:argo_cli/main.py git@github.com:nadicodeai/argo
