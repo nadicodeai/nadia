@@ -12,7 +12,8 @@ Living log of milestone progress. Append-only timeline; do not rewrite history. 
 |---|---|---|---|
 | M1 Bootstrap | complete | 9 / 9 | M1 closed @ 8ba174d (make build green, 2593 files renamed) |
 | M2 Audit & validate baseline | complete | 5 / 5 | M2 closed @ 16cb79a (all gates green) |
-| M3 Initial patch series | in-progress | 7 / 9 | 5 patches active + assertion runner + .gitleaks overlay + .quiltrc; 0002 dispatched; 0008 skipped (audit) |
+| M3 Initial patch series | complete | 9 / 9 | M3 closed @ bc6c272; 6 patches + 29 assertions + overlay; M3.9 audit-skipped |
+| M4 CI gates | pending | 0 / 5 | next |
 | M2 Audit & validate baseline | pending | 0 / 5 | — |
 | M3 Initial patch series | pending | 0 / 9 | — |
 | M4 CI gates | pending | 0 / 5 | — |
@@ -95,7 +96,7 @@ Status values: `pending` · `in-progress` · `blocked` · `complete`.
 **Tasks:**
 - [x] M3.1 `tools/run_assertions.py` (FR-14 enforcer) + wired into `tools/build.py` — commit `348f131d` 2026-05-27. 6 unit tests pass.
 - [x] M3.2 Patch 0001 fork-notice README — dispatched as implementer; cherry-picked `bdf5ea2b`. 18-line patch, 2 assertions.
-- [⏳] M3.3 Patch 0002 rebrand install URLs — dispatched 12:08 UTC; in flight. Audit determined IS needed (install/clone/issues URLs in 3 exception-listed files still point at upstream).
+- [x] M3.3 Patch 0002 rebrand install URLs — implementer cherry-picked `221b2f3b`; coordinator added L904 CONTRIBUTING.md follow-up (Issues link) per `bc6c2724`. 92-line patch (3 files: README.md, README.zh-CN.md, CONTRIBUTING.md), 12 assertions. Audit confirmed needed.
 - [x] M3.4 Patch 0003 gate PyPI workflow — implementer cherry-picked `570035b8`. 61-line patch (Option A: preserve + gate), 3 assertions.
 - [x] M3.5 Patch 0004 gate Vercel/docs deploy — implementer cherry-picked `5333a6c4`. 52-line patch (3 jobs gated across 2 workflows), 6 assertions.
 - [x] M3.6 Patch 0005 Docker→ghcr — implementer cherry-picked `ece78e8e`. 146-line patch (1 file, 4 jobs), 4 assertions. Image name `ghcr.io/nadicodeai/argo` (new, not `…/argo-agent`).
