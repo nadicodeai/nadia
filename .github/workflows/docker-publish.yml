@@ -1,0 +1,107 @@
+# argo — Docker image publish to ghcr.io/nadicodeai/argo (spec FR-7, M5.2).
+#
+# Triggers.
+#   - push to main          -> :<sha-short> + :latest
+#   - release.published     -> :<sha-short> + :latest + :v<X.Y.Z>
+#   - workflow_dispatch     -> :<sha-short> (+ :latest if dispatched off main)
+#
+# Tag-decision tree (spec FR-7 — also encoded in scripts/publish.sh).
+#   :dev               local builds only; never pushed (built by make image).
+#   :<git-sha-short>   every push that runs this workflow.
+#   :latest            main pushes AND release.published events.
+#   :v<X.Y.Z>          only on a `vX.Y.Z` git tag (release.published).
+#
+# Auth.
+#   Uses the workflow's GITHUB_TOKEN (packages:write below). No external
+#   secret is required for ghcr push under the repo's own namespace
+#   (nadicodeai/argo). Spec OQ-13's "GHCR_TOKEN PAT" is the LOCAL
+#   maintainer path, not the CI path — CI uses GITHUB_TOKEN which is
+#   provisioned per-run with minimal scope.
+#
+# Multi-arch (OQ-4).
+#   Deferred. PR + main push builds are linux/amd64 only for speed.
+#   Multi-arch (linux/amd64 + linux/arm64) is gated to release.yml in M7
+#   once arm64 wheel availability for upstream deps is confirmed.
+#
+# Race condition note (release.published vs push to main).
+#   When `gh release create` against a tag on main fires both `push` and
+#   `release.published`, both target :latest. concurrency.group below
+#   serializes them; the release job wins by ordering (release.published
+#   re-tags :latest to the release commit, which is identical to main's
+#   HEAD anyway). The push side is idempotent.
+
+name: docker-publish
+
+on:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+# Serialize publish jobs so concurrent main pushes + release events
+# don't race the :latest re-tag. cancel-in-progress: false because each
+# image build IS the artifact — interrupting one mid-push wastes work.
+concurrency:
+  group: docker-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  image-and-publish:
+    name: build + push (linux/amd64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # fetch-depth: 0 so scripts/publish.sh can compute :<sha-short>
+          # and detect a vX.Y.Z tag pointing at HEAD.
+          fetch-depth: 0
+
+      - name: Install system deps (quilt + zstd for make build inside builder stage)
+        # Buildx isolates the builder stage's apt installs, but make/quilt
+        # may also be invoked by tooling outside the Dockerfile in future
+        # phases (e.g. running `make build` on the runner to seed a cache).
+        # Keeping the install here means callers of `make image` always
+        # have a viable host even when buildx is unused.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y quilt zstd
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: make image
+        # Builds linux/amd64 only per OQ-4. The resulting image is loaded
+        # into the local Docker daemon as ghcr.io/nadicodeai/argo:dev,
+        # which scripts/publish.sh then re-tags + pushes.
+        run: make image
+
+      - name: scripts/publish.sh (re-tag + push)
+        # GHCR_SKIP_LOGIN=1 because docker/login-action above already
+        # authenticated. publish.sh emits :<sha-short> always, :latest on
+        # main, and :v<X.Y.Z> when a version tag points at HEAD (which
+        # is the case on release.published events).
+        env:
+          GHCR_SKIP_LOGIN: "1"
+        run: scripts/publish.sh
+
+      # On release.published, additionally ensure :latest tracks the
+      # release tag. publish.sh above already pushed :latest if the
+      # release tag was made on main (the usual case), but we re-assert
+      # here to make the intent explicit and to cover release-from-
+      # non-main edge cases (hotfix branches, etc.).
+      - name: Re-point :latest at release
+        if: github.event_name == 'release'
+        run: |
+          docker tag ghcr.io/nadicodeai/argo:dev ghcr.io/nadicodeai/argo:latest
+          docker push ghcr.io/nadicodeai/argo:latest

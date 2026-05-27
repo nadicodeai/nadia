@@ -106,8 +106,7 @@ image:
 
 .PHONY: publish
 publish:
-	@echo "make publish: not yet implemented (M5.2)"
-	@exit 1
+	scripts/publish.sh
 
 # -----------------------------------------------------------------------------
 # Quality gates (M4.3 wires real implementations)
