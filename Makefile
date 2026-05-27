@@ -37,6 +37,7 @@ help:
 	@echo "  make test             pytest (M4.3)"
 	@echo "  make parity           Parity suite vs legacy image (M6)"
 	@echo "  make check-legacy-untouched  Verify ~/Code/argo-agent untouched (M2.4a)"
+	@echo "  make check-upstream-pristine Verify upstream/ matches last sync commit (M4.1)"
 	@echo ""
 	@echo "Patch ops:"
 	@echo "  make patch-new NAME=<slug>   Start a new patch (M3.1)"
@@ -134,6 +135,10 @@ check-legacy-untouched:
 		echo "tools/check_legacy_untouched.sh not yet implemented (M2.4a)"; \
 		exit 1; \
 	fi
+
+.PHONY: check-upstream-pristine
+check-upstream-pristine:
+	python tools/check_upstream_pristine.py
 
 # -----------------------------------------------------------------------------
 # Patch operations (M3.1 wires the real implementations)
