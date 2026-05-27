@@ -1,0 +1,37 @@
+Subject: Default install.sh BRANCH to "release" for argo customers
+
+Upstream's scripts/install.sh declares BRANCH="main" at line 73 as a
+plain default (NOT the ${BRANCH:-main} env-override form). The
+--branch <X> flag overrides at line ~102 via BRANCH="$2".
+
+argo's customer-facing tree lives on the long-lived `release` branch
+(IU-FR-3, IU-FR-4): CI force-pushes the renamed dist/argo/ there after
+every successful release build. The public install one-liner
+
+    curl -fsSL https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh | bash
+
+MUST therefore clone `release` (runnable renamed tree), not `main`
+(workshop layout — upstream/, patches/, .shepherd/, NOT runnable as
+a customer install).
+
+Changing the default to "release" keeps the --branch arg-parsing
+escape hatch intact: developers can still pass `--branch main`
+explicitly to clone the workshop layout (documented use case in
+.shepherd/install-update/spec.md § IU-FR-6 closing sentence).
+
+Spec IU-FR-7, IU-AC-4 (see .shepherd/install-update/spec.md).
+Plan M4.1 (see .shepherd/install-update/plan.md).
+
+Index: .sync-workdir/scripts/install.sh
+===================================================================
+--- .sync-workdir.orig/scripts/install.sh
++++ .sync-workdir/scripts/install.sh
+@@ -70,7 +70,7 @@ DETECTED_BROWSER_EXECUTABLE=""
+ USE_VENV=true
+ RUN_SETUP=true
+ SKIP_BROWSER=false
+-BRANCH="main"
++BRANCH="release"
+ ENSURE_DEPS=""
+ POSTINSTALL_MODE=false
+

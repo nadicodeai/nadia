@@ -1,0 +1,26 @@
+# Assertions for 0006-install-default-branch-release.patch
+#
+# Pins the post-patch state of the renamed install.sh's default branch.
+# Without this, a future rename-engine regression (or accidental patch
+# drop) could silently flip the default back to "main" — and customers
+# running the public curl|bash one-liner would clone the workshop
+# (NOT runnable) instead of the release branch.
+#
+# Per spec IU-FR-7 (the `OFFICIAL_REPO_URLS` rebrand FR cited in the
+# task) and IU-AC-4 (the customer install one-liner AC), the renamed
+# scripts/install.sh MUST default $BRANCH to "release". The --branch
+# arg-parsing path at line ~102 is intentionally NOT pinned: developers
+# pass `--branch main` explicitly to clone the workshop layout for
+# fork development.
+#
+# tools/run_assertions.py format: "path:<glob> <literal>" — the literal
+# string must appear inside files matching the glob. Per the module
+# docstring, regex anchors (^ / $) match the whole file (no MULTILINE),
+# so we pin the literal bash-assignment form. If the rename engine
+# (or a future sync conflict) flips it back to `main`, this literal
+# will no longer appear under scripts/install.sh and the build fails
+# loudly. The build-time grep in plan.md M4.1 verification (run_assertions
+# exit 0, plus a separate ^BRANCH="(main|release)"$ grep) gives the
+# same guarantee from the human verifier side.
+
+path:scripts/install.sh BRANCH="release"
