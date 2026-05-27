@@ -1,0 +1,120 @@
+Subject: Wire --static and --live into hermes doctor
+
+Wire two fork-owned leakage-scan modes into `hermes doctor` so the
+post-rename `argo doctor --static / --live` subcommands are reachable
+from upstream's main argparse tree.
+
+The scan logic itself ships as an additive overlay file
+(overlay/hermes_cli/doctor_leakage.py — renamed to
+argo_cli/doctor_leakage.py at build time). This patch is the wiring
+glue: argparse flags (--static, --live, --rename-yaml, --repo-root,
+--live-cmd) on the existing `doctor` subparser, and a dispatch branch
+in cmd_doctor that calls run_static / run_live before the upstream
+health checks. Flagless `hermes doctor` keeps upstream behavior.
+
+Mirrors legacy argo-agent commit c51d68e1b (the in-tree rename branch),
+adapted for the pristine-fork architecture where this lives as a
+quilt patch against upstream/ rather than an edit in tracked source.
+
+Surfaces gap exposed by the M6.2a parity runner: `argo doctor --static`
+was unrecognized in the new image because main.py never dispatched the
+flag to the overlay module that already provided run_static / run_live.
+
+--- a/hermes_cli/main.py
++++ b/hermes_cli/main.py
+@@ -6144,7 +6144,41 @@ def cmd_hooks(args):
+ 
+ 
+ def cmd_doctor(args):
+-    """Check configuration and dependencies."""
++    """Check configuration and dependencies.
++
++    Registered via argparse in build_parser (single-function handler, not class-based).
++    --static and --live are dispatched to doctor_leakage before the general checks run.
++    """
++    import sys as _sys
++    from pathlib import Path as _Path
++
++    leakage_static = getattr(args, "leakage_static", False)
++    leakage_live = getattr(args, "leakage_live", False)
++
++    if leakage_static or leakage_live:
++        from hermes_cli.doctor_leakage import run_static, run_live
++
++        # Resolve rename_yaml and repo_root from args or defaults.
++        _here = _Path(__file__).parent.parent
++        rename_yaml_arg = getattr(args, "rename_yaml", None)
++        repo_root_arg = getattr(args, "repo_root", None)
++        rename_yaml = _Path(rename_yaml_arg) if rename_yaml_arg else (_here / "argo-rename.yaml")
++        repo_root = _Path(repo_root_arg) if repo_root_arg else _here
++
++        hits = []
++        if leakage_static:
++            hits.extend(run_static(repo_root, rename_yaml, verbose=True))
++        if leakage_live:
++            live_cmd = getattr(args, "live_cmd", None)
++            hits.extend(run_live(rename_yaml, live_cmd=live_cmd, verbose=True))
++
++        if hits:
++            print(f"\n{len(hits)} leakage hit(s) found.", file=_sys.stderr)
++            _sys.exit(1)
++        else:
++            print("No leakage detected.")
++            _sys.exit(0)
++
+     from hermes_cli.doctor import run_doctor
+ 
+     run_doctor(args)
+@@ -12150,6 +12184,52 @@ def main():
+             "doctor` first to see active advisories and their IDs."
+         ),
+     )
++    # --static leakage scan (registered via doctor_leakage.py)
++    doctor_parser.add_argument(
++        "--static",
++        action="store_true",
++        dest="leakage_static",
++        help=(
++            "Scan the repo tree for upstream-identifier leakage using "
++            "argo-rename.yaml mappings, exceptions, and skip_contexts. "
++            "Exit 0 on zero hits; non-zero otherwise."
++        ),
++    )
++    # --live leakage scan (spawns subprocess and checks output)
++    doctor_parser.add_argument(
++        "--live",
++        action="store_true",
++        dest="leakage_live",
++        help=(
++            "Run a subprocess and capture its output, then scan for "
++            "upstream-identifier leakage. Exit 0 on zero hits; non-zero otherwise."
++        ),
++    )
++    # Shared leakage flags used by both --static and --live
++    doctor_parser.add_argument(
++        "--rename-yaml",
++        metavar="PATH",
++        default=None,
++        dest="rename_yaml",
++        help="Path to argo-rename.yaml (default: <repo-root>/argo-rename.yaml).",
++    )
++    doctor_parser.add_argument(
++        "--repo-root",
++        metavar="PATH",
++        default=None,
++        dest="repo_root",
++        help="Root directory to scan for --static (default: repo root).",
++    )
++    doctor_parser.add_argument(
++        "--live-cmd",
++        metavar="CMD",
++        default=None,
++        dest="live_cmd",
++        help=(
++            "Shell command to run for --live leakage check. "
++            "Defaults to `hermes --help`, `hermes --version`, `hermes doctor --static`."
++        ),
++    )
+     doctor_parser.set_defaults(func=cmd_doctor)
+ 
+     # =========================================================================
