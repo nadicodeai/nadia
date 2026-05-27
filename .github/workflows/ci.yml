@@ -172,9 +172,13 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # 5. test — pytest tests/ (build-tool tests; integration marker skipped by
-  #    pytest.ini default `-m 'not integration'`). Does NOT need quilt because
-  #    the build-tool tests don't shell out to it; they exercise tools/ Python
-  #    helpers directly.
+  #    pytest.ini default `-m 'not integration'`). Then runs the AC-8
+  #    determinism integration test explicitly so the gate is actually
+  #    enforced in CI (pytest.ini's default would otherwise deselect it).
+  #
+  #    quilt + zstd are required because the AC-8 step shells out to
+  #    `make build` twice; the build-tool default-marker tests don't need
+  #    them, but installing once for the whole job is simpler than splitting.
   # ---------------------------------------------------------------------------
   test:
     name: test (pytest)
@@ -186,6 +190,10 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - name: Install Python ${{ env.PYTHON_VERSION }}
         run: uv python install ${{ env.PYTHON_VERSION }}
+      - name: Install system deps (quilt + zstd for AC-8 determinism build)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y quilt zstd
       - name: Install pytest + pyyaml
         run: |
           uv venv .venv
@@ -195,10 +203,19 @@ jobs:
             "pytest-asyncio==${PYTEST_ASYNCIO_VERSION}" \
             "pytest-timeout==${PYTEST_TIMEOUT_VERSION}" \
             pyyaml
-      - name: pytest
+      - name: pytest (default markers — integration skipped)
         run: |
           . .venv/bin/activate
           pytest tests/
+      - name: pytest -m integration tests/test_dist_determinism.py (AC-8 gate)
+        # Spec AC-8 / NFR-4: dist/argo/ MUST be bit-identical across two
+        # builds at the same SHA with SOURCE_DATE_EPOCH set. The test is
+        # `@pytest.mark.integration` so the default `tests/` run above
+        # skips it; we run it explicitly here so AC-8 is a real CI gate
+        # (not just a local-only check). ~60-90s for two make build runs.
+        run: |
+          . .venv/bin/activate
+          pytest -m integration tests/test_dist_determinism.py
 
   # ---------------------------------------------------------------------------
   # 6. upstream-pristine — FR-15 / C3. Verifies upstream/ matches the last
