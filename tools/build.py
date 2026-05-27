@@ -164,16 +164,18 @@ def _copy_overlay() -> list[str]:
     return added
 
 
-def _run_rebrand(upstream_sha: str) -> int:
-    """Run tools/rebrand.py against dist/argo/. Returns files touched count.
+def _run_rebrand(upstream_sha: str) -> list[str]:
+    """Run tools/rebrand.py against dist/argo/. Returns sorted files-touched list.
 
-    Lets rebrand.py write its own sync-manifest.json under dist/argo/.argo/;
-    build.py reads it back to populate the build-manifest's
-    files_touched_by_rename field. Both manifests ship in the artifact —
-    the sync-manifest documents what the engine did; the build-manifest
-    documents the whole pipeline.
+    Invokes rebrand.py with ``--no-manifest`` so the rename engine does NOT
+    write its own ``.argo/sync-manifest.json`` (which would carry a
+    wall-clock ``ran_at`` not honouring ``SOURCE_DATE_EPOCH``, breaking
+    AC-8 determinism). Instead, rebrand.py emits the touched-files list
+    as a single JSON object on stdout; we parse it and fold the list into
+    the authoritative ``build-manifest.json`` written below
+    (spec FR-6: one manifest is enough).
     """
-    _log("rename: tools/rebrand.py dist/argo/")
+    _log("rename: tools/rebrand.py dist/argo/ (--no-manifest, JSON on stdout)")
     result = subprocess.run(
         [
             sys.executable,
@@ -181,6 +183,7 @@ def _run_rebrand(upstream_sha: str) -> int:
             str(DIST_DIR),
             "--upstream-sha",
             upstream_sha,
+            "--no-manifest",
         ],
         text=True,
         encoding="utf-8",
@@ -193,16 +196,20 @@ def _run_rebrand(upstream_sha: str) -> int:
             "rename",
             f"tools/rebrand.py failed\nstdout: {result.stdout}\nstderr: {result.stderr}",
         )
-    # Parse the "rebrand: N files touched" line. Best-effort; manifest is
-    # the authoritative count.
-    n = 0
-    for line in result.stdout.splitlines():
-        if line.startswith("rebrand:"):
-            try:
-                n = int(line.split()[1])
-            except (IndexError, ValueError):
-                pass
-    return n
+    try:
+        data = json.loads(result.stdout)
+    except json.JSONDecodeError as exc:
+        raise BuildError(
+            "rename",
+            f"tools/rebrand.py emitted non-JSON stdout: {exc}\nstdout: {result.stdout}",
+        ) from exc
+    files = data.get("files_touched", [])
+    if not isinstance(files, list):
+        raise BuildError(
+            "rename",
+            f"tools/rebrand.py JSON missing files_touched list: {data!r}",
+        )
+    return sorted(str(f) for f in files)
 
 
 def _run_assertions(applied_patches: list[str]) -> list[str]:
@@ -237,15 +244,6 @@ def _upstream_sha() -> str:
     if not commit_file.is_file():
         return ""
     return commit_file.read_text(encoding="utf-8").strip()
-
-
-def _files_touched_by_rename(manifest_dir: Path) -> list[str]:
-    """Pull files_touched out of the engine's own manifest if it wrote one."""
-    sync_manifest = manifest_dir / ".argo" / "sync-manifest.json"
-    if not sync_manifest.is_file():
-        return []
-    data = json.loads(sync_manifest.read_text(encoding="utf-8"))
-    return sorted(data.get("files_touched", []))
 
 
 def _write_build_manifest(
@@ -289,8 +287,7 @@ def build() -> int:
     _copy_upstream()
     applied = _apply_patches()
     overlay_added = _copy_overlay()
-    _run_rebrand(upstream_sha)
-    touched = _files_touched_by_rename(DIST_DIR)
+    touched = _run_rebrand(upstream_sha)
     assertions = _run_assertions(applied)
     _write_build_manifest(
         upstream_sha=upstream_sha,

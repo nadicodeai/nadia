@@ -65,7 +65,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--no-manifest",
         action="store_true",
-        help="skip writing .argo/sync-manifest.json (build.py writes its own)",
+        help=(
+            "skip writing .argo/sync-manifest.json; emit {\"files_touched\": [...]} "
+            "JSON to stdout instead. Used by tools/build.py to preserve AC-8 "
+            "determinism (engine manifest carries wall-clock ran_at)."
+        ),
     )
     args = parser.parse_args(argv)
 
@@ -80,8 +84,25 @@ def main(argv: list[str] | None = None) -> int:
         cfg = RenameConfig.load(args.rename_yaml)
         engine = RenameEngine(cfg)
         if args.no_manifest:
+            # No on-disk sync-manifest. Print the touched-files list as JSON to
+            # stdout so `tools/build.py` can fold it into the build-manifest.
+            # This is the deterministic path: no wall-clock `ran_at` is ever
+            # written to disk, so SOURCE_DATE_EPOCH determinism is preserved
+            # without patching overlay/hermes_sync/ (which is lifted verbatim).
             touched = engine.apply(args.target)
-            n = len(touched)
+            try:
+                rel = sorted(
+                    str(p.relative_to(args.target.resolve())).replace("\\", "/")
+                    for p in (Path(t).resolve() for t in touched)
+                )
+            except ValueError:
+                # Fallback: at least one path was not under target — emit as-is.
+                rel = sorted(str(p) for p in touched)
+            import json
+
+            sys.stdout.write(json.dumps({"files_touched": rel}, sort_keys=True))
+            sys.stdout.write("\n")
+            n = len(rel)
         else:
             manifest_path = engine.apply_and_write_manifest(
                 args.target, upstream_sha=args.upstream_sha
@@ -94,7 +115,14 @@ def main(argv: list[str] | None = None) -> int:
         print(f"rebrand failed: {exc}", file=sys.stderr)
         return 1
 
-    print(f"rebrand: {n} files touched in {args.target}")
+    # Counter line goes to stderr in --no-manifest mode so stdout stays
+    # parseable JSON. Otherwise keep the legacy stdout behaviour for
+    # interactive invocations.
+    msg = f"rebrand: {n} files touched in {args.target}"
+    if args.no_manifest:
+        print(msg, file=sys.stderr)
+    else:
+        print(msg)
     return 0
 
 
