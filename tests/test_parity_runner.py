@@ -1,11 +1,13 @@
 """tests/test_parity_runner.py — unit + integration tests for parity_runner.
 
 Default suite (no marker) covers pure-Python behavior — normalization
-mapping, diff function, exit-code mismatch detection — without invoking
-docker. The single ``@pytest.mark.integration`` test drives the real
-runner against the locally-built ``:dev`` and locally-pulled legacy
-``:latest`` images; it skips gracefully if either is missing so the
-default ``pytest tests/`` run never depends on the local docker state.
+mapping, diff function, SKIP detection, JSON-volatility stripping,
+artifact-dir summarization, exit-code mismatch detection — without
+invoking docker. The single ``@pytest.mark.integration`` test drives
+the real runner against the locally-built ``:dev`` and locally-pulled
+legacy ``:latest`` images; it skips gracefully if either is missing
+so the default ``pytest tests/`` run never depends on local docker
+state.
 
 Baseline image note
 -------------------
@@ -23,9 +25,11 @@ publishes a real ``:0.14.0`` tag, update spec FR-16 and the runner's
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
+from unittest import mock
 
 import pytest
 
@@ -131,8 +135,282 @@ def test_parity_error_hierarchy() -> None:
 
 
 def test_surfaces_in_scope() -> None:
-    """M6.2a defines exactly three CLI surfaces."""
-    assert set(parity_runner.SURFACES) == {"help", "version", "doctor-static"}
+    """M6.2b defines exactly seven FR-16 surfaces (M6.2a's 3 + 4 backend)."""
+    assert set(parity_runner.SURFACES) == {
+        "help",
+        "version",
+        "doctor-static",
+        "mcp-list",
+        "hook-fire",
+        "auth-start",
+        "session-init",
+    }
+
+
+def test_backend_surfaces_have_proper_specs() -> None:
+    """Each backend surface MUST declare new_args, legacy_args, legacy_entrypoint.
+
+    Specifically: mcp-list and hook-fire mount fixtures; session-init
+    declares an artifact dir. This guards against accidentally regressing
+    a surface to a CLI-only spec.
+    """
+    mcp = parity_runner.SURFACES["mcp-list"]
+    assert mcp.legacy_entrypoint == "hermes"
+    assert any(c == "/fixtures" for _, c in mcp.volumes)
+
+    hook = parity_runner.SURFACES["hook-fire"]
+    assert any(c == "/fixtures" for _, c in hook.volumes)
+
+    auth = parity_runner.SURFACES["auth-start"]
+    # auth-start exercises ``auth list`` on both images — same shape.
+    assert auth.new_args[:2] == ("argo", "auth")
+    assert auth.legacy_args[:1] == ("auth",)
+
+    session = parity_runner.SURFACES["session-init"]
+    assert session.container_artifact_dir is not None
+    assert session.artifact_path == ""
+
+
+# ---------------------------------------------------------------------------
+# SKIP detection — argparse "invalid choice" / "unrecognized arguments".
+# ---------------------------------------------------------------------------
+
+
+def test_skip_detector_invalid_choice_triggers_skip() -> None:
+    """The legacy ``hermes hook --help`` argparse failure must be caught."""
+    legacy_stdout = (
+        "usage: hermes [-h] [--version] {chat,model,...} ...\n"
+        "hermes: error: argument command: invalid choice: 'hooks' "
+        "(choose from chat, model, ...)\n"
+    )
+    assert parity_runner._looks_like_missing_subcommand(legacy_stdout, 2)
+
+
+def test_skip_detector_unrecognized_arguments_triggers_skip() -> None:
+    """``unrecognized arguments: --plugin-dir`` is the parent-parser variant."""
+    legacy_stdout = "hermes: error: unrecognized arguments: --plugin-dir /x\n"
+    assert parity_runner._looks_like_missing_subcommand(legacy_stdout, 2)
+
+
+def test_skip_detector_module_not_found_is_NOT_skip() -> None:
+    """``ModuleNotFoundError`` is a real crash, not a missing subcommand.
+
+    Important: the slim :dev image currently crashes with
+    ``ModuleNotFoundError: No module named 'tools'`` on ``argo mcp list``.
+    That MUST be reported as FAIL, not SKIP — the slim image is broken
+    and we want the parity gate to surface that.
+    """
+    stdout = (
+        "Traceback (most recent call last):\n"
+        "  File '/opt/argo/.venv/bin/argo', line 6, in <module>\n"
+        "ModuleNotFoundError: No module named 'tools'\n"
+    )
+    assert not parity_runner._looks_like_missing_subcommand(stdout, 1)
+
+
+def test_skip_detector_exit_zero_is_never_skip() -> None:
+    """A command that exits 0 is by definition not a missing-subcommand."""
+    # Even if the magic phrase appears, exit-0 means the binary ran fine.
+    stdout = "hermes: error: invalid choice: 'foo' (this is a doc example)\n"
+    assert not parity_runner._looks_like_missing_subcommand(stdout, 0)
+
+
+# ---------------------------------------------------------------------------
+# Artifact-dir summarization (session-init surface).
+# ---------------------------------------------------------------------------
+
+
+def test_summarize_artifact_dir_empty(tmp_path: Path) -> None:
+    """An empty directory produces an empty string (no entries)."""
+    assert parity_runner._summarize_artifact_dir(tmp_path) == ""
+
+
+def test_summarize_artifact_dir_missing(tmp_path: Path) -> None:
+    """A path that doesn't exist returns the missing-marker line."""
+    nonexistent = tmp_path / "nope"
+    out = parity_runner._summarize_artifact_dir(nonexistent)
+    assert "missing" in out
+
+
+def test_summarize_artifact_dir_files(tmp_path: Path) -> None:
+    """Non-JSON files are summarized by size bucket; sorted by relpath."""
+    (tmp_path / "a.txt").write_text("")
+    (tmp_path / "b.txt").write_text("x" * 100)
+    (tmp_path / "c.txt").write_text("x" * 5000)
+    out = parity_runner._summarize_artifact_dir(tmp_path)
+    lines = out.strip().split("\n")
+    assert lines == [
+        "a.txt\tFILE\tempty",
+        "b.txt\tFILE\tsmall",
+        "c.txt\tFILE\tlarge",
+    ]
+
+
+def test_summarize_artifact_dir_strips_volatile_json(tmp_path: Path) -> None:
+    """JSON files have their volatile keys removed before summarization."""
+    payload = {
+        "session_id": "abc-123",
+        "created_at": "2026-05-27T00:00:00Z",
+        "stable_field": "kept",
+        "nested": {"id": "drop-me", "kind": "session"},
+    }
+    (tmp_path / "session.json").write_text(json.dumps(payload))
+    out = parity_runner._summarize_artifact_dir(tmp_path)
+    # Volatile keys gone; stable keys + nested.kind preserved.
+    assert "session_id" not in out
+    assert "created_at" not in out
+    assert "drop-me" not in out
+    assert "stable_field" in out
+    assert '"kind": "session"' in out
+
+
+def test_summarize_artifact_dir_stable_across_runs(tmp_path: Path) -> None:
+    """Re-running the summarizer on the same tree yields byte-identical output.
+
+    Critical for the parity diff: any non-determinism here would flap.
+    """
+    (tmp_path / "a.json").write_text('{"id": 1, "k": "v"}')
+    (tmp_path / "b.json").write_text('{"id": 2, "k": "v"}')
+    (tmp_path / "sub").mkdir()
+    (tmp_path / "sub" / "c.txt").write_text("hello")
+    first = parity_runner._summarize_artifact_dir(tmp_path)
+    second = parity_runner._summarize_artifact_dir(tmp_path)
+    assert first == second
+
+
+def test_strip_volatile_json_recurses_into_lists() -> None:
+    """``_strip_volatile_json`` walks lists of dicts too."""
+    src = {
+        "items": [
+            {"id": 1, "name": "a"},
+            {"id": 2, "name": "b"},
+        ],
+        "session_id": "drop",
+    }
+    out = parity_runner._strip_volatile_json(src)
+    assert out == {"items": [{"name": "a"}, {"name": "b"}]}
+
+
+# ---------------------------------------------------------------------------
+# run_surface() — unit tests with mocked subprocess.
+# ---------------------------------------------------------------------------
+
+
+def _fake_run(
+    new_out: str,
+    new_exit: int,
+    legacy_out: str,
+    legacy_exit: int,
+) -> mock.MagicMock:
+    """Build a docker_run side-effect that returns new-then-legacy."""
+    return mock.MagicMock(
+        side_effect=[(new_exit, new_out), (legacy_exit, legacy_out)],
+    )
+
+
+def test_run_surface_pass_for_matching_output() -> None:
+    """If exit codes match and normalized outputs match → PASS."""
+    new = "Argo Agent v0.14.0\n"
+    legacy = "Hermes Agent v0.14.0\n"  # normalizes to identical
+    with mock.patch.object(parity_runner, "_check_image_present"), \
+         mock.patch.object(parity_runner, "_docker_run", _fake_run(new, 0, legacy, 0)):
+        result = parity_runner.run_surface(
+            "version", new_image="img:new", legacy_image="img:old"
+        )
+    assert result.status == "PASS"
+    assert result.passed is True
+    assert result.diff == ""
+
+
+def test_run_surface_fail_for_diverging_output() -> None:
+    """Same exit, different content → FAIL with a non-empty diff."""
+    new = "Argo Agent v0.14.0\n"
+    legacy = "Hermes Agent v0.8.0\n"  # normalizes to Argo Agent v0.8.0
+    with mock.patch.object(parity_runner, "_check_image_present"), \
+         mock.patch.object(parity_runner, "_docker_run", _fake_run(new, 0, legacy, 0)):
+        result = parity_runner.run_surface(
+            "version", new_image="img:new", legacy_image="img:old"
+        )
+    assert result.status == "FAIL"
+    assert result.passed is False
+    assert "v0.8.0" in result.diff
+    assert "v0.14.0" in result.diff
+
+
+def test_run_surface_skip_when_legacy_lacks_subcommand() -> None:
+    """Legacy argparse "invalid choice" → SKIPPED, not FAIL."""
+    legacy_argparse = (
+        "usage: hermes [...]\n"
+        "hermes: error: argument command: invalid choice: 'hooks'\n"
+    )
+    new = "usage: argo hooks [-h] {list,test,doctor} ...\n"
+    with mock.patch.object(parity_runner, "_check_image_present"), \
+         mock.patch.object(
+             parity_runner, "_docker_run", _fake_run(new, 0, legacy_argparse, 2)
+         ):
+        result = parity_runner.run_surface(
+            "hook-fire", new_image="img:new", legacy_image="img:old"
+        )
+    assert result.status == "SKIPPED"
+    assert "legacy" in result.skip_reason
+    assert result.diff == ""
+
+
+def test_run_surface_skip_when_new_lacks_subcommand() -> None:
+    """If the NEW image is what's missing the subcommand, that's also SKIP.
+
+    Defensive: we'd never expect the new image to lack a v0.14.0
+    subcommand, but if a future refactor drops one we want SKIP not
+    FAIL — the gate would then surface the regression upstream.
+    """
+    legacy_ok = "no sessions found\n"
+    new_argparse = (
+        "argo: error: argument command: invalid choice: 'sessions'\n"
+    )
+    with mock.patch.object(parity_runner, "_check_image_present"), \
+         mock.patch.object(
+             parity_runner, "_docker_run", _fake_run(new_argparse, 2, legacy_ok, 0)
+         ):
+        result = parity_runner.run_surface(
+            "auth-start", new_image="img:new", legacy_image="img:old"
+        )
+    assert result.status == "SKIPPED"
+    assert "new" in result.skip_reason
+
+
+def test_run_surface_module_not_found_is_FAIL_not_skip() -> None:
+    """The slim :dev image's ``ModuleNotFoundError`` is a real regression."""
+    new = (
+        "Traceback (most recent call last):\n"
+        "ModuleNotFoundError: No module named 'tools'\n"
+    )
+    legacy = "No MCP servers configured.\n"
+    with mock.patch.object(parity_runner, "_check_image_present"), \
+         mock.patch.object(
+             parity_runner, "_docker_run", _fake_run(new, 1, legacy, 0)
+         ):
+        result = parity_runner.run_surface(
+            "mcp-list", new_image="img:new", legacy_image="img:old"
+        )
+    assert result.status == "FAIL"
+    assert result.new_exit == 1
+    assert result.legacy_exit == 0
+
+
+def test_run_surface_unknown_raises_keyerror() -> None:
+    """Asking for a surface we don't ship is a programmer error → KeyError."""
+    with mock.patch.object(parity_runner, "_check_image_present"):
+        with pytest.raises(KeyError):
+            parity_runner.run_surface(
+                "no-such-surface",
+                new_image="img:new",
+                legacy_image="img:old",
+            )
+
+
+# ---------------------------------------------------------------------------
+# CLI surface — argparse wiring.
+# ---------------------------------------------------------------------------
 
 
 def test_runner_help_succeeds() -> None:
@@ -149,6 +427,11 @@ def test_runner_help_succeeds() -> None:
     assert "--new-image" in res.stdout
     assert "--legacy-image" in res.stdout
     assert "doctor-static" in res.stdout
+    # M6.2b surfaces are advertised in --help via the argparse choices.
+    assert "mcp-list" in res.stdout
+    assert "hook-fire" in res.stdout
+    assert "auth-start" in res.stdout
+    assert "session-init" in res.stdout
 
 
 def test_runner_rejects_unknown_surface() -> None:
@@ -185,6 +468,32 @@ def test_runner_image_not_found_exits_2() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Fixtures must be checked in.
+# ---------------------------------------------------------------------------
+
+
+def test_mcp_fixture_present_and_valid() -> None:
+    """The MCP plugin fixture is a real JSON file with required keys."""
+    f = REPO_ROOT / "tests" / "fixtures" / "parity-mcp" / "plugins" / "example.json"
+    assert f.is_file(), f"missing MCP fixture: {f}"
+    data = json.loads(f.read_text())
+    assert "name" in data
+    assert "transport" in data
+    assert "command" in data
+
+
+def test_hook_fixture_present_and_executable() -> None:
+    """The hook fixture is a real executable script."""
+    f = REPO_ROOT / "tests" / "fixtures" / "parity-hooks" / "hook.sh"
+    assert f.is_file(), f"missing hook fixture: {f}"
+    # On POSIX, the script must have the exec bit set or the binary
+    # under test won't be able to run it. (Git tracks file mode.)
+    import stat
+    mode = f.stat().st_mode
+    assert mode & stat.S_IXUSR, "hook.sh must be executable"
+
+
+# ---------------------------------------------------------------------------
 # Integration test — exercises the real runner against real images.
 # ---------------------------------------------------------------------------
 
@@ -202,14 +511,16 @@ def _docker_image_present(image: str) -> bool:
 
 @pytest.mark.integration
 def test_parity_runner_against_real_images() -> None:
-    """Drive every CLI surface against the locally-available images.
+    """Drive every FR-16 surface against the locally-available images.
 
     Skips when either image is missing (CI is responsible for pulling /
     building before invoking this gate). When both images are present
-    the runner MUST produce a per-surface report; AC-7 will eventually
-    require exit 0, but the current legacy ``:latest`` is older than
-    the new ``:dev`` so non-zero is expected until the baseline tag is
-    re-pinned (see module docstring).
+    the runner MUST produce a per-surface report covering all 7
+    surfaces; per-surface outcomes vary (the legacy ``:latest`` is
+    v0.8.0, so several FR-16 backend surfaces SKIP; the slim ``:dev``
+    image has a known ``ModuleNotFoundError`` on ``mcp list`` /
+    ``sessions list`` which surfaces as FAIL — that's the M5 follow-up
+    flag, not a runner bug).
     """
     new_image = parity_runner.DEFAULT_NEW_IMAGE
     legacy_image = parity_runner.DEFAULT_LEGACY_IMAGE
@@ -224,15 +535,18 @@ def test_parity_runner_against_real_images() -> None:
         stderr=subprocess.PIPE,
         encoding="utf-8",
         check=False,
+        timeout=300,
     )
-    # The runner MUST print one [PASS|FAIL] line per surface regardless
-    # of outcome; that's the contract that gates AC-7 for CLI surfaces.
-    assert "surface=help" in res.stdout
-    assert "surface=version" in res.stdout
-    assert "surface=doctor-static" in res.stdout
-    # Exit code is 0 (all pass) or 1 (regression). Anything else (2)
-    # would be a structural failure, which means the gate itself is
-    # broken — fail the test in that case.
+    # The runner MUST emit one status line per surface (PASS, FAIL,
+    # or SKIPPED) — that's the contract for AC-7 reporting.
+    for surface in parity_runner.SURFACES:
+        assert f"surface={surface}" in res.stdout, (
+            f"runner did not report surface={surface}; "
+            f"stdout={res.stdout!r}"
+        )
+    # Exit code is 0 (all PASS-or-SKIP) or 1 (at least one FAIL).
+    # 2 would be a structural failure (gate itself broken) — fail the
+    # test in that case so the gate's reliability is itself gated.
     assert res.returncode in (0, 1), (
         f"runner returned structural-error exit {res.returncode}; "
         f"stdout={res.stdout!r} stderr={res.stderr!r}"

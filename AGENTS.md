@@ -60,8 +60,8 @@ quilt top                    # show currently-top patch
 
 ## Parity baseline
 
-`tools/parity_runner.py` (M6.2a) drives the customer-parity gate
-(FR-16, AC-7). The spec names `ghcr.io/nadicodeai/argo-agent:0.14.0`
+`tools/parity_runner.py` (M6.2a + M6.2b) drives the customer-parity
+gate (FR-16, AC-7). The spec names `ghcr.io/nadicodeai/argo-agent:0.14.0`
 as the legacy baseline, but **that tag was never pushed to GHCR**.
 The runner defaults to `ghcr.io/nadicodeai/argo-agent:latest` instead.
 The legacy repo's `pyproject.toml` does report version 0.14.0, so
@@ -73,6 +73,39 @@ a feature superset; the diff is a version gap, not a regression).
 If a future legacy release publishes a real `:0.14.0` tag, update the
 spec's FR-16 reference and the runner's `DEFAULT_LEGACY_IMAGE`, then
 re-pin the AC-7 gate.
+
+M6.2b adds FR-16 surfaces 4-7 (`mcp-list`, `hook-fire`, `auth-start`,
+`session-init`) with per-surface SKIP handling — when EITHER image
+exits with argparse's `invalid choice` / `unrecognized arguments`
+pattern the runner records `SKIPPED` rather than `FAIL`, because the
+surface is legitimately absent on that side. Current per-surface
+status against the locally-built images:
+
+| Surface         | Status   | Reason                                              |
+| --------------- | -------- | --------------------------------------------------- |
+| `help`          | FAIL     | v0.14.0 ships subcommand superset over v0.8.0       |
+| `version`       | FAIL     | v0.14.0 banner vs v0.8.0 banner                     |
+| `doctor-static` | SKIPPED  | both images lack the `--static` flag (M3 target)    |
+| `mcp-list`      | FAIL     | slim `:dev` crashes: `No module named 'tools'`      |
+| `hook-fire`     | SKIPPED  | legacy v0.8.0 has no `hooks` subcommand             |
+| `auth-start`    | PASS     | proxied via `auth list`; both empty + identical     |
+| `session-init`  | FAIL     | slim `:dev` `sessions list` hits same `tools` crash |
+
+## Slim image gap (M6 follow-up)
+
+The `mcp-list` and `session-init` FAILs share a root cause: the slim
+`:dev` image produced by M5's `make image` strips the upstream `tools/`
+Python package, but `argo_cli.mcp_config` and the sessions DB layer
+import from it (`from tools.mcp_tool import _ENV_VAR_PATTERN`). The
+binary itself starts (so `--help`, `--version`, `auth list` all work),
+but any subcommand that touches MCP plugin discovery or the session
+store crashes with `ModuleNotFoundError: No module named 'tools'`.
+
+This was flagged by M5's architect ("slim 371MB vs legacy 4.71GB —
+needs expansion"). M6.2b's runner catches it as a parity FAIL, which
+is exactly the signal AC-7 should surface. Fixing it is an M5/M7
+follow-up (likely "ship the upstream `tools/` package in the wheel
+manifest" — see `dist/argo/pyproject.toml`).
 
 ## Where to read more
 

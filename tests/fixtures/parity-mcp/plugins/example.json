@@ -1,0 +1,9 @@
+{
+  "name": "example-mcp",
+  "description": "Minimal MCP plugin manifest used by the parity runner.",
+  "version": "0.0.1",
+  "transport": "stdio",
+  "command": "/bin/true",
+  "args": [],
+  "env": {}
+}
