@@ -132,6 +132,7 @@ def preserved_dist(tmp_path: Path):
 
 
 @pytest.mark.integration
+@pytest.mark.timeout(180)  # two full builds, ~30 s each; default 30 s timeout would kill us
 def test_dist_argo_bit_identical_across_two_builds_with_sde(preserved_dist):
     """Spec AC-8 verification gate.
 
