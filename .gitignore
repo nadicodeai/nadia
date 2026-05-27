@@ -3,9 +3,11 @@ dist/
 .sync-workdir/
 
 # Quilt state
+.pc/
 .quilt/
 *.rej
 *.orig
+*.patch~
 
 # Python
 __pycache__/
