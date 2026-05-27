@@ -101,6 +101,20 @@ jobs:
           . .venv/bin/activate
           make leakage-static
 
+      - name: Apply release bump to dist/argo (mirror argo_release.py)
+        # The local workshop run of tools/argo_release.py already wrote
+        # the bumped __version__ + __release_date__ into the local
+        # dist/argo/ before tagging — but the CI rebuild above produces
+        # a pristine dist/argo/ that still carries upstream's values.
+        # IU-NFR-3 byte-equivalence between the local tarball and the
+        # release-branch tree requires CI to apply the same bump. The
+        # values are recovered from the annotated tag's subject (set
+        # by argo_release.py as "Argo Agent vX.Y.Z (YYYY.M.D)").
+        run: |
+          . .venv/bin/activate
+          python tools/apply_release_bump.py --from-tag "${GITHUB_REF_NAME}"
+          grep -E '__version__|__release_date__' dist/argo/argo_cli/__init__.py | head -2
+
       - name: Build deterministic release tarball (IU-NFR-3 / AC-8)
         # IU-NFR-3 ("release tarball deterministic"): two builds on the
         # same SHA + SOURCE_DATE_EPOCH MUST produce byte-identical
