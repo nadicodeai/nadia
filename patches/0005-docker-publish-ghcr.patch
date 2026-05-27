@@ -27,8 +27,10 @@ correct in `dist/argo/` automatically.
 
 Spec FR-7 (Docker image), FR-11 (Docker-only distribution).
 
---- a/.github/workflows/docker-publish.yml
-+++ b/.github/workflows/docker-publish.yml
+Index: .sync-workdir/.github/workflows/docker-publish.yml
+===================================================================
+--- .sync-workdir.orig/.github/workflows/docker-publish.yml
++++ .sync-workdir/.github/workflows/docker-publish.yml
 @@ -26,6 +26,9 @@ on:
  
  permissions:
@@ -38,8 +40,8 @@ Spec FR-7 (Docker image), FR-11 (Docker-only distribution).
 +  packages: write
  
  # Concurrency: push/release runs are NEVER cancelled so every merge gets
- # its own :main or release-tagged image.  :latest is guarded separately
-@@ -37,7 +40,11 @@ concurrency:
+ # its own image.  PR runs reuse a PR-scoped group with
+@@ -36,7 +39,11 @@ concurrency:
    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
  
  env:
@@ -52,7 +54,7 @@ Spec FR-7 (Docker image), FR-11 (Docker-only distribution).
  
  jobs:
    # ---------------------------------------------------------------------------
-@@ -130,12 +137,13 @@ jobs:
+@@ -129,12 +136,13 @@ jobs:
            source .venv/bin/activate
            python -m pytest tests/docker/ -v --tb=short
  
@@ -69,7 +71,7 @@ Spec FR-7 (Docker image), FR-11 (Docker-only distribution).
  
        # Push amd64 by digest only (no tag).  The merge job assembles the
        # tagged manifest list.  `push-by-digest=true` is docker's recommended
-@@ -218,12 +226,13 @@ jobs:
+@@ -211,12 +219,13 @@ jobs:
          with:
            image: ${{ env.IMAGE_NAME }}:test
  
@@ -86,7 +88,7 @@ Spec FR-7 (Docker image), FR-11 (Docker-only distribution).
  
        - name: Push arm64 by digest
          id: push
-@@ -292,11 +301,12 @@ jobs:
+@@ -272,11 +281,12 @@ jobs:
        - name: Set up Docker Buildx
          uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
  
@@ -100,46 +102,5 @@ Spec FR-7 (Docker image), FR-11 (Docker-only distribution).
 +          username: ${{ github.actor }}
 +          password: ${{ secrets.GITHUB_TOKEN }}
  
-       # Read the git revision label off the current :main manifest, then
-       # use `git merge-base --is-ancestor` to check whether our commit is
-@@ -309,7 +319,7 @@ jobs:
-         id: main_check
-         run: |
-           set -euo pipefail
--          image=nousresearch/hermes-agent
-+          image=ghcr.io/nadicodeai/argo
- 
-           image_json=$(
-             docker buildx imagetools inspect "${image}:main" \
-@@ -439,17 +449,18 @@ jobs:
-       - name: Set up Docker Buildx
-         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
- 
--      - name: Log in to Docker Hub
-+      - name: Log in to GitHub Container Registry
-         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
-         with:
--          username: ${{ secrets.DOCKERHUB_USERNAME }}
--          password: ${{ secrets.DOCKERHUB_TOKEN }}
-+          registry: ghcr.io
-+          username: ${{ github.actor }}
-+          password: ${{ secrets.GITHUB_TOKEN }}
- 
-       - name: Decide whether to move :latest
-         id: latest_check
-         run: |
-           set -euo pipefail
--          image=nousresearch/hermes-agent
-+          image=ghcr.io/nadicodeai/argo
- 
-           image_json=$(
-             docker buildx imagetools inspect "${image}:latest" \
-@@ -515,7 +526,7 @@ jobs:
-           RELEASE_TAG: ${{ needs.merge.outputs.release_tag }}
-         run: |
-           set -euo pipefail
--          image=nousresearch/hermes-agent
-+          image=ghcr.io/nadicodeai/argo
-           docker buildx imagetools create \
-             --tag "${image}:latest" \
-             "${image}:${RELEASE_TAG}"
+       - name: Create manifest list and push
+         working-directory: /tmp/digests
