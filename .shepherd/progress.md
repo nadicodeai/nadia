@@ -10,7 +10,7 @@ Living log of milestone progress. Append-only timeline; do not rewrite history. 
 
 | Milestone | Status | Tasks | Notes |
 |---|---|---|---|
-| M1 Bootstrap | pending | 0 / 9 | — |
+| M1 Bootstrap | in-progress | 1 / 9 | M1.1 done @ f3c39ea |
 | M2 Audit & validate baseline | pending | 0 / 5 | — |
 | M3 Initial patch series | pending | 0 / 9 | — |
 | M4 CI gates | pending | 0 / 5 | — |
@@ -30,7 +30,7 @@ Status values: `pending` · `in-progress` · `blocked` · `complete`.
 **Goal:** Repo skeleton + upstream subtree + engine lift + minimal build orchestrator. `make build` against an empty patch series produces a clean `dist/argo/`.
 
 **Tasks:**
-- [ ] M1.1 Create repo skeleton
+- [x] M1.1 Create repo skeleton — commit `f3c39ea` 2026-05-27
 - [ ] M1.2 Add upstream subtree at pinned SHA
 - [ ] M1.3 Lift rename engine to overlay (with `argo_sync → hermes_sync` textual rewrite)
 - [ ] M1.4 Lift argo-rename.yaml verbatim
