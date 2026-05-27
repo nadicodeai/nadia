@@ -22,7 +22,7 @@ flag to the overlay module that already provided run_static / run_live.
 
 --- a/hermes_cli/main.py
 +++ b/hermes_cli/main.py
-@@ -6144,7 +6144,41 @@ def cmd_hooks(args):
+@@ -6144,7 +6144,50 @@ def cmd_hooks(args):
  
  
  def cmd_doctor(args):
@@ -42,10 +42,19 @@ flag to the overlay module that already provided run_static / run_live.
 +        from hermes_cli.doctor_leakage import run_static, run_live
 +
 +        # Resolve rename_yaml and repo_root from args or defaults.
++        # When --rename-yaml is not explicitly passed AND no yaml is at the
++        # default repo-root path (the published-image case — argo-rename.yaml
++        # is build-time config, not shipped with the runtime per spec FR-7),
++        # fall back to None so run_static / run_live load the build-time-baked
++        # constants from hermes_cli._rename_defaults (issue #4).
 +        _here = _Path(__file__).parent.parent
 +        rename_yaml_arg = getattr(args, "rename_yaml", None)
 +        repo_root_arg = getattr(args, "repo_root", None)
-+        rename_yaml = _Path(rename_yaml_arg) if rename_yaml_arg else (_here / "argo-rename.yaml")
++        if rename_yaml_arg:
++            rename_yaml = _Path(rename_yaml_arg)
++        else:
++            _default_yaml = _here / "argo-rename.yaml"
++            rename_yaml = _default_yaml if _default_yaml.is_file() else None
 +        repo_root = _Path(repo_root_arg) if repo_root_arg else _here
 +
 +        hits = []
@@ -65,7 +74,7 @@ flag to the overlay module that already provided run_static / run_live.
      from hermes_cli.doctor import run_doctor
  
      run_doctor(args)
-@@ -12150,6 +12184,52 @@ def main():
+@@ -12150,6 +12193,52 @@ def main():
              "doctor` first to see active advisories and their IDs."
          ),
      )

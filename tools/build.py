@@ -36,6 +36,11 @@ OVERLAY_DIR = REPO_ROOT / "overlay"
 PATCHES_DIR = REPO_ROOT / "patches"
 ASSERTS_DIR = PATCHES_DIR / "asserts"
 RENAME_YAML = REPO_ROOT / "argo-rename.yaml"
+# Overlay constants module baked from argo-rename.yaml so `argo doctor --static`
+# works in the published image where the yaml is intentionally absent
+# (issue #4). Regenerated on every build to keep the yaml as single source of
+# truth.
+RENAME_DEFAULTS = OVERLAY_DIR / "hermes_cli" / "_rename_defaults.py"
 
 
 class BuildError(RuntimeError):
@@ -131,6 +136,38 @@ def _apply_patches() -> list[str]:
             f"quilt push -a failed\nstdout: {result.stdout}\nstderr: {result.stderr}",
         )
     return applied
+
+
+def _regenerate_rename_defaults() -> None:
+    """Regenerate overlay/hermes_cli/_rename_defaults.py from argo-rename.yaml.
+
+    Keeps the baked Python constants in lock-step with the yaml on every
+    build. The published Docker image relies on this module for
+    ``argo doctor --static`` since argo-rename.yaml is not shipped at
+    runtime (spec FR-7, issue #4).
+    """
+    _log("rename-defaults: tools/generate_rename_defaults.py")
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "tools" / "generate_rename_defaults.py"),
+            "--rename-yaml",
+            str(RENAME_YAML),
+            "--out",
+            str(RENAME_DEFAULTS),
+        ],
+        text=True,
+        encoding="utf-8",
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise BuildError(
+            "rename-defaults",
+            f"tools/generate_rename_defaults.py failed\n"
+            f"stdout: {result.stdout}\nstderr: {result.stderr}",
+        )
 
 
 def _copy_overlay() -> list[str]:
@@ -286,6 +323,7 @@ def build() -> int:
     _clean_dist()
     _copy_upstream()
     applied = _apply_patches()
+    _regenerate_rename_defaults()
     overlay_added = _copy_overlay()
     touched = _run_rebrand(upstream_sha)
     assertions = _run_assertions(applied)
