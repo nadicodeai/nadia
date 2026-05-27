@@ -102,9 +102,16 @@ COPY --from=builder --chown=argo:argo /src/dist/argo /opt/argo
 # argo_sync/ is a build-time tool, not a runtime API. Keeping it in
 # the runtime image would let customers re-run the rename engine
 # against the shipped tree (small attack surface; pointless capability).
-# Also strip tests/ (dev-only) and tools/ (build-time) if they snuck
-# through — defense in depth against spec leakage.
-RUN rm -rf /opt/argo/argo_sync /opt/argo/tests /opt/argo/tools
+# Also strip tests/ (dev-only).
+#
+# NOTE: /opt/argo/tools is intentionally PRESERVED. Upstream's
+# pyproject.toml declares `tools` as a runtime package, and several
+# argo_cli modules (mcp_config, sessions DB) import from it at
+# runtime. The M5.1 implementer's defensive `rm tools/` broke
+# `argo mcp list` and `argo sessions list` — caught by the M6 parity
+# suite. The strip is now scoped to OUR build-time tools (none of
+# which land in dist/) plus upstream's tests; nothing else.
+RUN rm -rf /opt/argo/argo_sync /opt/argo/tests
 
 # Install upstream's runtime deps. Upstream's pyproject.toml lists the
 # package and its dep closure; `pip install -e .` resolves and installs
@@ -115,6 +122,12 @@ RUN python -m venv .venv && \
     .venv/bin/pip install --no-cache-dir --upgrade pip && \
     .venv/bin/pip install --no-cache-dir -e . && \
     chown -R argo:argo /opt/argo/.venv
+
+# Ensure ARGO_HOME exists and is writable by the argo user. Without
+# this, `argo mcp list` / `argo sessions list` (and anything else that
+# does `ensure_argo_home()`) hit PermissionError because the COPY above
+# may have created /home/argo/.argo as root. Caught by M6 parity.
+RUN mkdir -p "${ARGO_HOME}" && chown -R argo:argo /home/argo
 
 # Drop privileges. From here on the container runs as the argo user.
 USER argo
