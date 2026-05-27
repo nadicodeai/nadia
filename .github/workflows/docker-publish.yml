@@ -1,9 +1,9 @@
 # argo — Docker image publish to ghcr.io/nadicodeai/argo (spec FR-7, M5.2).
 #
 # Triggers.
-#   - push to main          -> :<sha-short> + :latest
-#   - release.published     -> :<sha-short> + :latest + :v<X.Y.Z>
-#   - workflow_dispatch     -> :<sha-short> (+ :latest if dispatched off main)
+#   - push to main          -> :<sha-short> + :latest                  (linux/amd64)
+#   - release.published     -> :<sha-short> + :latest + :v<X.Y.Z>      (linux/amd64 + linux/arm64)
+#   - workflow_dispatch     -> :<sha-short> (+ :latest if dispatched off main)  (linux/amd64)
 #
 # Tag-decision tree (spec FR-7 — also encoded in scripts/publish.sh).
 #   :dev               local builds only; never pushed (built by make image).
@@ -18,10 +18,22 @@
 #   maintainer path, not the CI path — CI uses GITHUB_TOKEN which is
 #   provisioned per-run with minimal scope.
 #
-# Multi-arch (OQ-4).
-#   Deferred. PR + main push builds are linux/amd64 only for speed.
-#   Multi-arch (linux/amd64 + linux/arm64) is gated to release.yml in M7
-#   once arm64 wheel availability for upstream deps is confirmed.
+# Multi-arch (OQ-4, issue #8).
+#   Release tags get a multi-arch manifest (linux/amd64 + linux/arm64) so
+#   Apple Silicon and ARM cloud (Graviton, Ampere) users can `docker pull`
+#   without architecture flags. PR + main push + workflow_dispatch builds
+#   stay linux/amd64 only: QEMU emulation adds ~10 min per build on
+#   GitHub-hosted runners and we don't want that cost on every commit.
+#
+#   The two paths differ structurally because `docker buildx build` cannot
+#   `--load` a multi-platform manifest list into the local Docker daemon
+#   (that's a daemon limitation, not a buildx one). So:
+#     - single-arch path: `make image` builds + loads :dev; publish.sh
+#       re-tags + pushes. Preserves the existing local-friendly flow.
+#     - multi-arch path: a single buildx build writes the manifest list
+#       directly to ghcr with all release tags baked into -t flags via
+#       --push. publish.sh is bypassed because there's no local :dev to
+#       re-tag.
 #
 # Race condition note (release.published vs push to main).
 #   When `gh release create` against a tag on main fires both `push` and
@@ -52,7 +64,7 @@ permissions:
 
 jobs:
   image-and-publish:
-    name: build + push (linux/amd64)
+    name: build + push
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -72,6 +84,13 @@ jobs:
           with-uv: "false"
           python-version: ""
 
+      # QEMU registers binfmt_misc handlers so the runner (amd64) can
+      # execute arm64 binaries during the build. Only matters on the
+      # multi-arch release path, but the action is a no-op-cheap (~2 s)
+      # when only the host arch is requested, so we run it unconditionally
+      # to keep the step list simple.
+      - uses: docker/setup-qemu-action@v3
+
       - uses: docker/setup-buildx-action@v3
 
       - name: Log in to ghcr.io
@@ -81,28 +100,67 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: make image
-        # Builds linux/amd64 only per OQ-4. The resulting image is loaded
-        # into the local Docker daemon as ghcr.io/nadicodeai/argo:dev,
-        # which scripts/publish.sh then re-tags + pushes.
+      # Decide build platforms. Multi-arch only on release.published; every
+      # other trigger stays amd64 for build-time speed.
+      - name: Compute build platforms
+        id: platforms
+        run: |
+          if [ "${{ github.event_name }}" = "release" ] && [ "${{ github.event.action }}" = "published" ]; then
+            echo "platforms=linux/amd64,linux/arm64" >> "$GITHUB_OUTPUT"
+            echo "multiarch=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "platforms=linux/amd64" >> "$GITHUB_OUTPUT"
+            echo "multiarch=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ----- single-arch path (push to main, workflow_dispatch) --------
+      #
+      # Mirrors the local maintainer flow: `make image` builds + loads
+      # :dev into the daemon, then scripts/publish.sh re-tags + pushes.
+      - name: make image (single-arch)
+        if: steps.platforms.outputs.multiarch == 'false'
         run: make image
 
-      - name: scripts/publish.sh (re-tag + push)
+      - name: scripts/publish.sh (re-tag + push, single-arch)
         # GHCR_SKIP_LOGIN=1 because docker/login-action above already
-        # authenticated. publish.sh emits :<sha-short> always, :latest on
-        # main, and :v<X.Y.Z> when a version tag points at HEAD (which
-        # is the case on release.published events).
+        # authenticated. publish.sh emits :<sha-short> always and :latest
+        # on main.
+        if: steps.platforms.outputs.multiarch == 'false'
         env:
           GHCR_SKIP_LOGIN: "1"
         run: scripts/publish.sh
 
-      # On release.published, additionally ensure :latest tracks the
-      # release tag. publish.sh above already pushed :latest if the
-      # release tag was made on main (the usual case), but we re-assert
-      # here to make the intent explicit and to cover release-from-
-      # non-main edge cases (hotfix branches, etc.).
-      - name: Re-point :latest at release
-        if: github.event_name == 'release'
+      # ----- multi-arch path (release.published) -----------------------
+      #
+      # Builds amd64 + arm64 in one buildx invocation and writes the
+      # manifest list straight to ghcr via --push. We bake every release
+      # tag into -t flags so the manifest list is published atomically
+      # under all of them — no separate `docker tag` step is possible
+      # for a manifest list that isn't in the local daemon.
+      #
+      # Tags applied on release.published (spec FR-7):
+      #   :<sha-short>           always
+      #   :latest                always (release re-points latest, see header)
+      #   :v<X.Y.Z>              from github.event.release.tag_name
+      - name: docker buildx build --push (multi-arch)
+        if: steps.platforms.outputs.multiarch == 'true'
         run: |
-          docker tag ghcr.io/nadicodeai/argo:dev ghcr.io/nadicodeai/argo:latest
-          docker push ghcr.io/nadicodeai/argo:latest
+          SHA_SHORT="$(git rev-parse --short HEAD)"
+          RELEASE_TAG="${{ github.event.release.tag_name }}"
+          docker buildx build \
+            --build-arg SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)" \
+            --platform "${{ steps.platforms.outputs.platforms }}" \
+            --push \
+            -t "ghcr.io/nadicodeai/argo:${SHA_SHORT}" \
+            -t "ghcr.io/nadicodeai/argo:latest" \
+            -t "ghcr.io/nadicodeai/argo:${RELEASE_TAG}" \
+            .
+
+      # Sanity check: after a multi-arch release publish, the manifest
+      # list MUST advertise both architectures. Fails loud if the build
+      # somehow produced a single-arch image under a release tag.
+      - name: Verify multi-arch manifest
+        if: steps.platforms.outputs.multiarch == 'true'
+        run: |
+          RELEASE_TAG="${{ github.event.release.tag_name }}"
+          docker buildx imagetools inspect "ghcr.io/nadicodeai/argo:${RELEASE_TAG}"
