@@ -1,0 +1,17 @@
+# Project-level quilt configuration.
+#
+# Ensures every `quilt refresh` produces patches in `diff -up --git`
+# format (FR-2): with a/-b/ prefixes, no timestamps (deterministic
+# bytes for the AC-8 dist/-tree determinism gate), and using git's
+# extended diff format so file renames and mode bits are representable.
+#
+# Without this, maintainers running `quilt refresh` from interactive
+# shells would produce patches with wall-clock timestamps and no
+# a/-b/ prefixes — they'd still apply, but they'd hash-differ across
+# regenerations, breaking determinism.
+
+QUILT_DIFF_OPTS="-p"
+QUILT_REFRESH_ARGS="-p ab --no-timestamps --no-index"
+QUILT_PATCH_OPTS="--unified"
+QUILT_PATCHES=patches
+QUILT_SERIES=series
