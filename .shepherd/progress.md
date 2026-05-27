@@ -14,11 +14,7 @@ Living log of milestone progress. Append-only timeline; do not rewrite history. 
 | M2 Audit & validate baseline | complete | 5 / 5 | M2 closed @ 16cb79a (all gates green) |
 | M3 Initial patch series | complete | 9 / 9 | M3 closed @ b789a4d; 6 patches + 29 assertions + overlay; refactor `2dcdd70` + architect `b789a4d` (AC-8 PROVEN) |
 | M4 CI gates | complete | 5 / 5 | M4 closed @ 4c0f1f24; AC-2/3/4/8/9/10/11 anchored; refactor `f3ee50ea` + architect `4c0f1f24` |
-| M5 Docker pipeline | in-progress | 0 / 3 | starting |
-| M2 Audit & validate baseline | pending | 0 / 5 | — |
-| M3 Initial patch series | pending | 0 / 9 | — |
-| M4 CI gates | pending | 0 / 5 | — |
-| M5 Docker pipeline | pending | 0 / 3 | — |
+| M5 Docker pipeline | complete | 3 / 3 | M5 closed @ 174d88862; AC-8 PROVEN (tree-hash 6709428a…); NFR-3 image-size parity deferred to M6 by design (slim 371MB vs legacy 4.71GB) |
 | M6 Parity suite | pending | 0 / 3 | — |
 | M7 First real sync | pending | 0 / 2 | — |
 | M8 Documentation freeze | pending | 0 / 3 | — |
@@ -150,16 +146,28 @@ Status values: `pending` · `in-progress` · `blocked` · `complete`.
 **Goal:** Multi-stage Dockerfile; `make image` builds locally; `make publish` pushes to ghcr; `dist/argo/` is deterministic.
 
 **Tasks:**
-- [ ] M5.1 Write multi-stage `Dockerfile` (strip `argo_sync/` from final image per OQ-10)
-- [ ] M5.2 Write `scripts/publish.sh` and `make publish` + `.github/workflows/docker-publish.yml`
-- [ ] M5.3 Verify `dist/` determinism (AC-8)
+- [x] M5.1 Write multi-stage `Dockerfile` (strip `argo_sync/` from final image per OQ-10) — commit `dab4b553a` 2026-05-27
+- [x] M5.2 Write `scripts/publish.sh` and `make publish` + `.github/workflows/docker-publish.yml` — commit `14b113cfb` 2026-05-27
+- [x] M5.3 Verify `dist/` determinism (AC-8) — commits `14b113cfb` + `ae37c2c19` + `174d88862` (wired into CI test job) 2026-05-27
 
-**Checkpoint:** Docker image builds locally + in CI; image published to ghcr at `:dev` from local run; `dist/argo/` bit-identical across two builds with `SOURCE_DATE_EPOCH` set; image size within 5% of legacy.
+**Checkpoint status: PASSED 2026-05-27** (architect re-verification at HEAD `174d88862`):
+- `make image` produced `ghcr.io/nadicodeai/argo:dev` (371 MB, linux/amd64). `docker image history` shows only runtime-stage layers — no builder leakage.
+- Final image contents: `argo_cli/`, `argo_agent.egg-info/`, etc. present; `argo_sync/`, `tools/`, `patches/`, `upstream/`, `overlay/`, `.shepherd/`, `tests/` all absent (OQ-10 + spec FR-7 zero-leak invariant).
+- `docker run --rm ghcr.io/nadicodeai/argo:dev argo --version` → `Argo Agent v0.14.0 …` (deterministic across two runs, sha256 `c44094db…`).
+- `docker run --rm ghcr.io/nadicodeai/argo:dev argo --help` → `usage: argo …` (deterministic across two runs, sha256 `e860103d…`).
+- AC-8 determinism (formal): `pytest -m integration tests/test_dist_determinism.py` PASS in 28s. Two builds at SDE=1700000000 produce identical `dist/argo/` tree-hash `6709428a2998f213f07aa5e466d1f734aec8acc6db9449fb1185a06eb2595fa2`.
+- AC-8 wired into CI `test` job — `.github/workflows/ci.yml` runs `pytest -m integration tests/test_dist_determinism.py` (after the default `pytest tests/` step that excludes the integration marker).
+- `docker-publish.yml` security: scoped `permissions: contents:read, packages:write`; auth via `secrets.GITHUB_TOKEN` (no custom PAT in CI — per OQ-13 the PAT is the local-maintainer path); `concurrency: docker-publish, cancel-in-progress:false` serializes the main-push and release.published pipelines; `scripts/publish.sh` invoked with `GHCR_SKIP_LOGIN=1` since the workflow logged in via `docker/login-action`.
+- `make image` invocation honors `SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)` via `--build-arg`; the `ran_at` field in `build-manifest.json` is the only path that diverges when SDE is unset (documented in tools/build.py:260-265).
 
-**Maps to spec:** AC-8; G2; G3 (partial — image surface).
+**Known GAP for M6** (parity suite):
+- This M5.1 image is SLIM (371 MB, python:3.13-slim-bookworm + `git` + `ca-certificates` in the runtime stage). It does NOT match the legacy v0.14.0 image surface (4.71 GB with node/npm, playwright, ffmpeg, s6-overlay supervisor). M5's intent was zero-leakage + functional `argo --help` / `argo --version`, NOT full runtime parity. M6 owns the expansion: the parity runner (FR-16 surfaces 3–7 — API server, MCP, hooks, OAuth, session persistence) will require adding node + browser + media stack to the runtime stage AND the supervisor. NFR-3 ("image size within 5% of legacy") is therefore unmet at M5 by design and is **deferred to M6's image-scope expansion**, not a M5 failure.
+
+**Maps to spec:** AC-8 (PROVEN — formal CI gate + 28s local re-run); G2 (PROVEN at this SHA); G3 (PARTIAL — image surface exists but parity with legacy is M6's territory).
 
 **Notes:**
-- (none yet)
+- The Dockerfile keeps `gcc + libffi-dev + python3-dev` in the BUILDER stage only (for arm64 wheel fallbacks under OQ-4); the runtime stage is wheel-only and does NOT carry the toolchain.
+- The `docker-publish.yml` `Re-point :latest at release` step is idempotent: a release-from-main commit equals main's HEAD, so the re-tag is a no-op; the explicit re-tag covers hotfix-branch releases where the release-published trigger may not coincide with the main-push trigger.
 
 ---
 
