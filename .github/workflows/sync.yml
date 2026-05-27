@@ -24,11 +24,17 @@
 #     triggers `workflow_dispatch` once unblocked.
 #
 # Token scope.
-#   Uses the default `GITHUB_TOKEN` ONLY. No external secrets. Permissions
-#   are scoped per-job (contents:write to commit, pull-requests:write to
-#   open the PR, issues:write to open the failure issue). The bot identity
-#   `argo-sync-bot <noreply@nadicodeai.com>` is configured inline; nothing
-#   to provision out-of-band.
+#   The push + commit step uses the default `GITHUB_TOKEN`. The `gh pr
+#   create` step uses `secrets.SYNC_BOT_TOKEN` (a fine-grained PAT) so the
+#   resulting PR is opened by the PAT identity — which is REQUIRED for
+#   downstream `pull_request` workflows (i.e. ci.yml) to fire on the PR
+#   (issue #6; GitHub Actions intentionally suppresses `pull_request`
+#   events from PRs opened by `GITHUB_TOKEN` to prevent recursion).
+#   The failure-issue step still uses `GITHUB_TOKEN` since it does not
+#   need to trigger downstream workflows. See AGENTS.md § Sync bot token
+#   setup for how to provision the PAT.
+#   The bot identity `argo-sync-bot <noreply@nadicodeai.com>` is
+#   configured inline; nothing else to provision out-of-band.
 #
 # Branch protection.
 #   Branch protection on `main` SHOULD NOT block this workflow's PRs from
@@ -105,12 +111,35 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Push + open PR
+      # Guard: SYNC_BOT_TOKEN must be configured before we try to open a PR.
+      # Without it the `gh pr create` step would fail opaquely; this step
+      # turns the failure into a single clear error pointing at AGENTS.md.
+      # See issue #6 + AGENTS.md § Sync bot token setup.
+      - name: Verify sync bot token
         if: steps.sync.outcome == 'success' && steps.changed.outputs.changed == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SYNC_BOT_TOKEN: ${{ secrets.SYNC_BOT_TOKEN }}
+        run: |
+          if [ -z "${SYNC_BOT_TOKEN}" ]; then
+            echo "::error::secrets.SYNC_BOT_TOKEN is not set. See AGENTS.md § Sync bot token setup."
+            exit 1
+          fi
+
+      - name: Push branch
+        if: steps.sync.outcome == 'success' && steps.changed.outputs.changed == 'true'
         run: |
           git push -u origin "${{ steps.branch.outputs.branch }}"
+
+      # `gh pr create` MUST use the PAT (SYNC_BOT_TOKEN), not GITHUB_TOKEN.
+      # Reason: PRs opened by GITHUB_TOKEN do NOT fire downstream
+      # `pull_request` workflows (anti-recursion behavior), so ci.yml would
+      # never run on the weekly sync PR. With the PAT, the PR is authored
+      # by that identity and ci.yml triggers normally. Issue #6.
+      - name: Open PR
+        if: steps.sync.outcome == 'success' && steps.changed.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_BOT_TOKEN }}
+        run: |
           gh pr create --base main --head "${{ steps.branch.outputs.branch }}" \
             --title "sync: upstream weekly (auto-generated)" \
             --body "Weekly automated upstream sync. Triggered by .github/workflows/sync.yml. Review the sync commit, run CI, merge if green."

@@ -62,6 +62,10 @@ A typical weekly sync:
 
 `.sync-workdir/` is gitignored and persistent across sync attempts; it is NOT `dist/argo/`, which is regenerated on every build.
 
+### Sync bot token setup
+
+The weekly `sync.yml` workflow opens its PR with `secrets.SYNC_BOT_TOKEN` (a fine-grained PAT), not the default `GITHUB_TOKEN`. This is REQUIRED so the PR fires downstream `pull_request` workflows (i.e. `ci.yml`) — GitHub intentionally suppresses those events for PRs opened by `GITHUB_TOKEN` (issue #6). Provision once via GitHub Settings → Developer settings → Personal access tokens → Fine-grained tokens; scope the token to the `nadicodeai/argo` repository with `Pull requests: write` + `Contents: write`, then save it under repo settings → Secrets and variables → Actions as `SYNC_BOT_TOKEN`. The workflow's "Verify sync bot token" step fails fast with a pointer to this section if the secret is missing.
+
 ## Quilt cheatsheet
 
 Five commands cover ~99% of patch work:
