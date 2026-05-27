@@ -1,0 +1,14 @@
+# Assertions for patches/0003-ci-gate-pypi-publish.patch (FR-14).
+#
+# Confirms that the upstream PyPI publish workflow is gated off in
+# the built tree. Catches the failure mode where `quilt refresh` after
+# manual conflict resolution silently drops one of the gating lines.
+
+# 1. The workflow file still exists in dist/argo/.
+path:.github/workflows/upload_to_pypi.yml
+
+# 2. The Nadicode gating marker comment landed (header text).
+path:.github/workflows/upload_to_pypi.yml Nadicode fork
+
+# 3. At least one `if: false` gate is present in the workflow.
+path:.github/workflows/upload_to_pypi.yml if: false

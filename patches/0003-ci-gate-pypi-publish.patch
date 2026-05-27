@@ -1,0 +1,61 @@
+--- a/.github/workflows/upload_to_pypi.yml
++++ b/.github/workflows/upload_to_pypi.yml
+@@ -1,11 +1,18 @@
+ name: Publish to PyPI
+ 
+-# Triggered by CalVer tag pushes from scripts/release.py (e.g. v2026.5.15)
+-# Can also be triggered manually from the Actions tab as an escape hatch.
++# Nadicode fork: this workflow is intentionally INERT.
++#
++# Nadicode does not publish argo-agent to PyPI — Nadicode does not own
++# that PyPI name and the fork distributes only as the Docker image
++# ghcr.io/nadicodeai/argo. The workflow file is preserved so future
++# upstream syncs merge cleanly, but the original tag-push trigger is
++# removed and every job is gated `if: false`.
++#
++# Re-enable by:
++#   1. Restoring the `push: tags: ['v20*']` trigger below.
++#   2. Removing the `if: false` gate from each job.
++#   3. Configuring a PYPI_API_TOKEN secret for a Nadicode-owned PyPI name.
+ on:
+-  push:
+-    tags:
+-      - 'v20*'  # CalVer tags: v2026.5.15, v2026.5.15.2, etc.
+   workflow_dispatch:
+     inputs:
+       confirm_tag:
+@@ -24,6 +31,12 @@ concurrency:
+ 
+ jobs:
+   build:
++    # Nadicode fork: gated off. Nadicode does not publish argo-agent to
++    # PyPI — the "argo-agent" name is not owned by Nadicode, and the
++    # fork's only distribution channel is the Docker image
++    # ghcr.io/nadicodeai/argo. Re-enable when Nadicode owns a PyPI name
++    # and wants tag-triggered publishes (see the header comment).
++    if: false
+     name: Build distribution 📦
+     runs-on: ubuntu-latest
+     steps:
+@@ -87,6 +100,7 @@ jobs:
+           path: dist/
+ 
+   publish:
++    if: false  # Nadicode fork: see comment on `build` job
+     name: Publish to PyPI
+     needs: build
+     runs-on: ubuntu-latest
+@@ -110,9 +124,10 @@ jobs:
+ 
+   sign:
+     name: Sign and attach to GitHub Release
+-    # Only runs on tag pushes — release.py creates the GitHub Release,
+-    # and workflow_dispatch won't have a matching release to attach to.
+-    if: startsWith(github.ref, 'refs/tags/')
++    # Nadicode fork: gated off (see `build` job). Combined with the
++    # original tag-push guard so re-enabling only requires flipping
++    # the `false &&` prefix below.
++    if: false && startsWith(github.ref, 'refs/tags/')
+     needs: publish
+     runs-on: ubuntu-latest
+     permissions:
