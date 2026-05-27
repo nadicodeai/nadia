@@ -11,7 +11,8 @@ Living log of milestone progress. Append-only timeline; do not rewrite history. 
 | Milestone | Status | Tasks | Notes |
 |---|---|---|---|
 | M1 Bootstrap | complete | 9 / 9 | M1 closed @ 8ba174d (make build green, 2593 files renamed) |
-| M2 Audit & validate baseline | in-progress | 0 / 5 | starting |
+| M2 Audit & validate baseline | complete | 5 / 5 | M2 closed @ 16cb79a (all gates green) |
+| M3 Initial patch series | pending | 0 / 9 | next |
 | M2 Audit & validate baseline | pending | 0 / 5 | — |
 | M3 Initial patch series | pending | 0 / 9 | — |
 | M4 CI gates | pending | 0 / 5 | — |
@@ -64,18 +65,26 @@ Status values: `pending` · `in-progress` · `blocked` · `complete`.
 **Goal:** Rename config audited for new layout; leakage scanner working; sync fixtures recorded; legacy baseline hash captured.
 
 **Tasks:**
-- [ ] M2.1 Audit `argo-rename.yaml` for new layout (incl. URL mapping update for `nadicodeai/argo`)
-- [ ] M2.2 Write `tools/verify_no_leakage.py` + leakage_positive/negative/stylized fixtures
-- [ ] M2.3 Test mode preservation across build
-- [ ] M2.4 Record `tests/fixtures/sync-fixture-200/` (baseline tree + forward-delta patch, ≥100-file delta)
-- [ ] M2.4a Record `.shepherd/legacy-baseline.sha256` + write `tools/check_legacy_untouched.sh`
+- [x] M2.1 Audit `argo-rename.yaml`: dropped 5 orphan exceptions, updated URL mapping → `nadicodeai/argo` — commit `65ef804` 2026-05-27
+- [x] M2.2 `tools/verify_no_leakage.py` + leakage_positive/negative/stylized fixtures + 3 pytest tests pass — commit `3fd4fca` 2026-05-27
+- [x] M2.3 mode preservation: 56 executables checked, 0 mismatches — commit `7935f01` 2026-05-27
+- [x] M2.4a `tools/check_legacy_untouched.sh` + recorded baseline `b8e58957…` for legacy HEAD `9b8cf6bf5` — commit `9c93c1f` 2026-05-27
+- [x] M2.4 `sync-fixture-200/` recorded: 25 MB tarball + 763 KB forward-delta patch + 157-file diff — commit `16cb79a` 2026-05-27
 
-**Checkpoint:** `make build && make leakage-static` exit 0; mode preservation verified; sync fixture recorded; legacy baseline hash committed.
+**Checkpoint status: PASSED 2026-05-27.**
+- `make build && make leakage-static` both exit 0.
+- Positive/negative/stylized fixtures all classified correctly.
+- Mode preservation: 56/56 OK.
+- argo-rename.yaml audited: 0 orphan exceptions; URL mapping = `nadicodeai/argo`.
+- Legacy baseline recorded; `make check-legacy-untouched` exits 0 (== expected HEAD `9b8cf6bf5`).
+- sync-fixture-200 baseline + forward delta recorded; 157 ≥ 100 (G1 threshold satisfied).
 
-**Maps to spec:** AC-1, AC-5, AC-6; G5 (via M2.4a).
+**Maps to spec:** AC-1 (bootstrap), AC-5 (rename idempotency), AC-6 (zero-leakage), G5 (legacy baseline anchor); AC-2 testable from M4.2 once `tools/sync.py` consumes the fixture.
 
 **Notes:**
-- (none yet)
+- M2.2 negative-fixture initially failed because docstring lines outside URL context legitimately contained `hermes` and the scanner correctly flagged them. Fixed by ensuring every fixture `hermes` is inside a URL or 40-hex sha (scanner discipline reinforced — no escape hatch for "comments are fine").
+- M2.4 baseline=`b6ca56f6` is HEAD~50 from our pin `a890389b…`. 157-file delta hits the G1 ≥100 threshold without going overboard (200-commit walk produces 940-file diffs — unnecessarily large).
+- 25 MB tarball is direct-committed (not Git LFS) — defensible at this scale; revisit if it causes CI clone-time pain.
 
 ---
 
