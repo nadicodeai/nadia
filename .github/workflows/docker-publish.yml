@@ -67,9 +67,10 @@ jobs:
         # phases (e.g. running `make build` on the runner to seed a cache).
         # Keeping the install here means callers of `make image` always
         # have a viable host even when buildx is unused.
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y quilt zstd
+        uses: ./.github/actions/argo-setup
+        with:
+          with-uv: "false"
+          python-version: ""
 
       - uses: docker/setup-buildx-action@v3
 

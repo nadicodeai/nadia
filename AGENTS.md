@@ -88,6 +88,7 @@ Other useful queries: `quilt series` (list), `quilt top` (which patch is on top)
 - **Load-bearing patches need `patches/asserts/<name>.txt`** with grep patterns (FR-14). Catches `quilt refresh` silently dropping fork lines after conflict resolution. List the patch's basename in `patches/asserts/manifest.txt`.
 - **Reproducible builds: `SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)` before `make build`.** Required for AC-8 (`dist/argo/` byte-identity across machines). `make image` already sets it via `--build-arg`.
 - **Don't touch `~/Code/argo-agent`.** Legacy in-tree-rename repo, frozen at HEAD `9b8cf6bf5`. `make check-legacy-untouched` verifies.
+- **CI prelude lives in `.github/actions/argo-setup/`.** Composite action that installs uv + Python + apt + pip deps for every workflow job; edit it (not the workflow preludes) when bumping `setup-uv`, the Python pin, or the default apt package list.
 
 ## Parity baseline
 

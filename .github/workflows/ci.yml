@@ -61,14 +61,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v5
-      - name: Install Python ${{ env.PYTHON_VERSION }}
-        run: uv python install ${{ env.PYTHON_VERSION }}
-      - name: Install ruff
-        run: |
-          uv venv .venv
-          . .venv/bin/activate
-          uv pip install "ruff==${RUFF_VERSION}"
+      - uses: ./.github/actions/argo-setup
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          apt-packages: ""
+          pip-packages: "ruff==${{ env.RUFF_VERSION }}"
       - name: ruff check
         run: |
           . .venv/bin/activate
@@ -86,14 +83,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v5
-      - name: Install Python ${{ env.PYTHON_VERSION }}
-        run: uv python install ${{ env.PYTHON_VERSION }}
-      - name: Install ty + pyyaml (tools/ imports it)
-        run: |
-          uv venv .venv
-          . .venv/bin/activate
-          uv pip install "ty==${TY_VERSION}" pyyaml
+      - uses: ./.github/actions/argo-setup
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          apt-packages: ""
+          pip-packages: "ty==${{ env.TY_VERSION }} pyyaml"
       - name: ty check
         run: |
           . .venv/bin/activate
@@ -111,18 +105,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v5
-      - name: Install Python ${{ env.PYTHON_VERSION }}
-        run: uv python install ${{ env.PYTHON_VERSION }}
-      - name: Install system deps (quilt for patch series, zstd for fixture tarballs)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y quilt zstd
-      - name: Install Python build deps (pyyaml for tools/, rename engine)
-        run: |
-          uv venv .venv
-          . .venv/bin/activate
-          uv pip install pyyaml
+      - uses: ./.github/actions/argo-setup
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          pip-packages: "pyyaml"
       - name: make build
         run: |
           . .venv/bin/activate
@@ -149,18 +135,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v5
-      - name: Install Python ${{ env.PYTHON_VERSION }}
-        run: uv python install ${{ env.PYTHON_VERSION }}
-      - name: Install system deps (quilt + zstd for build pipeline)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y quilt zstd
-      - name: Install Python deps
-        run: |
-          uv venv .venv
-          . .venv/bin/activate
-          uv pip install pyyaml
+      - uses: ./.github/actions/argo-setup
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          pip-packages: "pyyaml"
       - name: make build (recreate dist/argo/ for the scan)
         run: |
           . .venv/bin/activate
@@ -187,22 +165,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v5
-      - name: Install Python ${{ env.PYTHON_VERSION }}
-        run: uv python install ${{ env.PYTHON_VERSION }}
-      - name: Install system deps (quilt + zstd for AC-8 determinism build)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y quilt zstd
-      - name: Install pytest + pyyaml
-        run: |
-          uv venv .venv
-          . .venv/bin/activate
-          uv pip install \
-            "pytest==${PYTEST_VERSION}" \
-            "pytest-asyncio==${PYTEST_ASYNCIO_VERSION}" \
-            "pytest-timeout==${PYTEST_TIMEOUT_VERSION}" \
-            pyyaml
+      - uses: ./.github/actions/argo-setup
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          pip-packages: "pytest==${{ env.PYTEST_VERSION }} pytest-asyncio==${{ env.PYTEST_ASYNCIO_VERSION }} pytest-timeout==${{ env.PYTEST_TIMEOUT_VERSION }} pyyaml"
       - name: pytest (default markers — integration skipped)
         run: |
           . .venv/bin/activate
@@ -230,9 +196,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v5
-      - name: Install Python ${{ env.PYTHON_VERSION }}
-        run: uv python install ${{ env.PYTHON_VERSION }}
+      - uses: ./.github/actions/argo-setup
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          apt-packages: ""
       - name: make check-upstream-pristine
         run: make check-upstream-pristine
 
@@ -263,18 +230,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v5
-      - name: Install Python ${{ env.PYTHON_VERSION }}
-        run: uv python install ${{ env.PYTHON_VERSION }}
-      - name: Install system deps (quilt + zstd for `make image`)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y quilt zstd
-      - name: Install Python deps (pyyaml for build pipeline + runner YAML)
-        run: |
-          uv venv .venv
-          . .venv/bin/activate
-          uv pip install pyyaml
+      - uses: ./.github/actions/argo-setup
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          pip-packages: "pyyaml"
       - name: docker pull legacy baseline
         # :0.14.0 is published by .github/workflows/publish-legacy-baseline.yml
         # (one-shot, workflow_dispatch). Until that workflow has run

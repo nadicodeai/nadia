@@ -68,21 +68,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: astral-sh/setup-uv@v5
-
-      - name: Install Python 3.13
-        run: uv python install 3.13
-
-      - name: Install system deps (quilt for patch series, zstd for fixture tarballs)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y quilt zstd
-
-      - name: Install Python deps (pyyaml for tools/)
-        run: |
-          uv venv .venv
-          . .venv/bin/activate
-          uv pip install pyyaml
+      - uses: ./.github/actions/argo-setup
+        with:
+          pip-packages: "pyyaml"
 
       - name: Configure git identity
         run: |

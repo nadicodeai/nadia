@@ -66,7 +66,7 @@ Conflicts: spec > plan > standards. If you find drift, fix the lower doc, not th
 - `tools/` — build-time Python scripts. Never shipped in the runtime image.
 - `scripts/` — shell entrypoints invoked from the Makefile.
 - `Makefile`, `Dockerfile` — stable user-facing surface.
-- `.github/workflows/` — CI.
+- `.github/workflows/` — CI. Shared setup (uv + Python + apt + pip) is factored into `.github/actions/argo-setup/action.yml`; edit the composite, not the per-job prelude.
 - `.shepherd/` — spec, plan, standards, progress.
 - `argo-rename.yaml` — declarative rename config.
 - `README.md`, `AGENTS.md`, `.gitignore`, `.gitattributes`.
