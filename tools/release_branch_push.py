@@ -272,6 +272,35 @@ def _init_orphan_branch(scratch: Path, branch: str, source_sha: str) -> str:
 # ---------------------------------------------------------------------------
 
 
+def _resolve_remote_lease(scratch: Path, remote_url: str, branch: str) -> str | None:
+    """Look up the remote's current SHA for ``branch`` via ``ls-remote``.
+
+    Returns the SHA string, or ``None`` if the branch does not exist
+    remotely (first bootstrap). Used to express an explicit lease since
+    the scratch repo is a fresh ``git init`` with no remote-tracking ref
+    for ``--force-with-lease`` to discover implicitly.
+    """
+    result = subprocess.run(
+        ["git", "ls-remote", remote_url, f"refs/heads/{branch}"],
+        cwd=str(scratch),
+        text=True,
+        encoding="utf-8",
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise PushFailedError(
+            f"git ls-remote failed (exit {result.returncode})\n"
+            f"stderr: {result.stderr}",
+            step="push",
+        )
+    line = result.stdout.strip().splitlines()
+    if not line:
+        return None
+    return line[0].split("\t", 1)[0]
+
+
 def _push_or_describe(
     scratch: Path,
     remote_url: str,
@@ -283,11 +312,27 @@ def _push_or_describe(
 
     On ``--dry-run``: prints the planned command and returns; never
     contacts the remote.
+
+    The scratch repo is a fresh ``git init`` with no remote-tracking
+    ref, so ``--force-with-lease`` without an explicit expected SHA
+    would always reject as "stale info". We resolve the remote's
+    current SHA via ``ls-remote`` and pass it as the explicit lease
+    value: ``--force-with-lease=<branch>:<expected-sha>``.
+
+    First-bootstrap case (no remote branch yet): pass plain
+    ``--force-with-lease`` (no lease key) — git treats it as
+    "succeed only if ref does not exist remotely", which is exactly
+    the bootstrap invariant.
     """
+    lease_sha = None if dry_run else _resolve_remote_lease(scratch, remote_url, branch)
+    if lease_sha is None:
+        lease_flag = "--force-with-lease"
+    else:
+        lease_flag = f"--force-with-lease={branch}:{lease_sha}"
     push_cmd = [
         "git",
         "push",
-        "--force-with-lease",
+        lease_flag,
         remote_url,
         f"{branch}:{branch}",
     ]
