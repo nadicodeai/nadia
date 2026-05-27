@@ -1,0 +1,171 @@
+# argo — release publisher (IU-FR-3, IU-FR-9, IU-AC-12, IU-AC-14, M4.2).
+#
+# Trigger.
+#   Push of a CalVer tag matching `v20*` (e.g. `v2026.5.28`,
+#   `v2026.5.28.2`). Tags are cut by the workshop-side wrapper
+#   `tools/argo_release.py` (M4.3a), which ALSO creates the GitHub
+#   Release object via `gh release create <tag>` BEFORE pushing the tag.
+#   That ordering is load-bearing for the upload step below.
+#
+# Coordination with `tools/argo_release.py` (per plan.md § M4.2).
+#   The release object already exists by the time this workflow fires
+#   (the workshop wrapper called `gh release create` before pushing the
+#   tag). Calling `gh release create` again here would 422 with
+#   "release already exists". This workflow therefore ONLY uploads
+#   assets via `gh release upload --clobber`. If you ever change
+#   `tools/argo_release.py` to defer release creation to CI, flip the
+#   final step to `gh release create` and remove this note.
+#
+# Pipeline.
+#   1. checkout (fetch-depth: 0 — required for SOURCE_DATE_EPOCH).
+#   2. setup (uv + Python 3.13 + apt: quilt + zstd + pyyaml) via the
+#      `argo-setup` composite action (issue #7 factoring).
+#   3. make build              — fail fast on rename-engine errors.
+#   4. make leakage-static     — IU-AC-14 gate; a hermes string leaking
+#                                into the customer-facing tree blocks
+#                                the release.
+#   5. tar deterministically   — IU-NFR-3 / foundation AC-8.
+#   6. sha256 sums             — covers the tarball and install scripts.
+#   7. release_branch_push.py  — force-with-lease push dist/argo/ →
+#                                origin/release (IU-FR-3 / IU-AC-3).
+#   8. gh release upload …     — attach assets to the pre-existing
+#                                release object created by
+#                                tools/argo_release.py (M4.3a).
+#
+# Concurrency.
+#   standards.md mandates a serialized release group so two tag pushes
+#   racing do not produce inconsistent release-branch state. We do NOT
+#   cancel-in-progress because each tag push is its own artifact run —
+#   killing one mid-push would leave dist/argo/ partially mirrored.
+#
+# Permissions.
+#   `contents: write` because we both (a) `git push` to refs/heads/release
+#   via release_branch_push.py and (b) upload release assets via
+#   `gh release upload`. The default GITHUB_TOKEN with that scope suffices.
+#
+# Explicitly NOT doing here (IU-FR-13).
+#   No PyPI publish. argo is shipped as a tarball + install scripts on
+#   the release object and as a force-pushed `release` branch tree;
+#   PyPI is forbidden by spec until IU-FR-13 is reversed.
+
+name: release
+
+on:
+  push:
+    tags:
+      - 'v20*'
+
+# Single shared lock per standards.md "Force-push to release". Two tag
+# pushes racing the orphan-branch force-push would otherwise corrupt the
+# release branch state. cancel-in-progress: false because the asset
+# upload + branch push IS the deliverable.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: release (build + leakage + branch push + asset upload)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # fetch-depth: 0 so the SOURCE_DATE_EPOCH fallback can read
+          # `git log -1 --format=%ct` against the full history; the
+          # tag-only shallow clone would lose ancestors.
+          fetch-depth: 0
+
+      - uses: ./.github/actions/argo-setup
+        with:
+          python-version: "3.13"
+          # quilt + zstd come for free from the composite default; pyyaml
+          # is needed by tools/verify_no_leakage.py during make
+          # leakage-static.
+          pip-packages: "pyyaml"
+
+      - name: make build
+        # Fail fast on rename-engine errors. dist/argo/ is the input to
+        # every downstream step.
+        run: |
+          . .venv/bin/activate
+          make build
+
+      - name: make leakage-static (IU-AC-14 gate)
+        # IU-AC-14: no hermes string leaks into the release tree. Any
+        # finding here aborts the release before the tarball or branch
+        # push runs.
+        run: |
+          . .venv/bin/activate
+          make leakage-static
+
+      - name: Build deterministic release tarball (IU-NFR-3 / AC-8)
+        # IU-NFR-3 ("release tarball deterministic"): two builds on the
+        # same SHA + SOURCE_DATE_EPOCH MUST produce byte-identical
+        # tarballs. The flags below match foundation AC-8 standards.
+        #
+        # SOURCE_DATE_EPOCH derivation:
+        #   - First try `git -C dist/argo log -1 --format=%ct` — this
+        #     intentionally fails because dist/argo/ is not a git repo
+        #     (it is gitignored on main). The fallback is the repo-root
+        #     `git log -1 --format=%ct`, which gives the tag-commit
+        #     timestamp. Either way SOURCE_DATE_EPOCH ends up pinned to
+        #     a content-derived integer.
+        run: |
+          set -euo pipefail
+          export SOURCE_DATE_EPOCH=$(git -C dist/argo log -1 --format=%ct 2>/dev/null || git log -1 --format=%ct)
+          echo "SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH}"
+          tar --mtime=@${SOURCE_DATE_EPOCH} --sort=name --owner=0 --group=0 --numeric-owner \
+            -czf "argo-${GITHUB_REF_NAME}.tar.gz" -C dist/argo .
+          ls -l "argo-${GITHUB_REF_NAME}.tar.gz"
+
+      - name: Compute sha256 sums
+        # The release ships the tarball + the standalone install scripts
+        # as assets. Sums let customers verify integrity without trusting
+        # the GitHub Release UI. install.ps1 is presence-gated because
+        # an air-gapped/Linux-only rename-engine config could legitimately
+        # produce a Linux-only release tree.
+        run: |
+          set -euo pipefail
+          FILES=("argo-${GITHUB_REF_NAME}.tar.gz" "dist/argo/scripts/install.sh")
+          if [ -f "dist/argo/scripts/install.ps1" ]; then
+            FILES+=("dist/argo/scripts/install.ps1")
+          fi
+          sha256sum "${FILES[@]}" > sha256sums.txt
+          cat sha256sums.txt
+
+      - name: Force-push dist/argo/ to origin/release (IU-FR-3)
+        # The release branch is the customer-facing storefront tree.
+        # release_branch_push.py uses --force-with-lease (never --force)
+        # and injects identity via `git -c user.*` flags so it never
+        # mutates the runner's global config.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          . .venv/bin/activate
+          python tools/release_branch_push.py \
+            --dist-root dist/argo \
+            --remote-url "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            --branch release \
+            --source-sha "${GITHUB_SHA}"
+
+      - name: Upload assets to the existing release (M4.3a coordination)
+        # tools/argo_release.py (M4.3a) already created the release
+        # object via `gh release create` BEFORE pushing the tag that
+        # triggered this workflow. Calling `gh release create` here
+        # would 422. `gh release upload --clobber` is idempotent:
+        # safe to re-run, overwrites previously uploaded assets with
+        # the same name.
+        #
+        # install.ps1 is presence-gated to mirror the sha256 step.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          ASSETS=("argo-${GITHUB_REF_NAME}.tar.gz" "dist/argo/scripts/install.sh" "sha256sums.txt")
+          if [ -f "dist/argo/scripts/install.ps1" ]; then
+            ASSETS+=("dist/argo/scripts/install.ps1")
+          fi
+          gh release upload "${GITHUB_REF_NAME}" "${ASSETS[@]}" --clobber
