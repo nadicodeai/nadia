@@ -1,0 +1,26 @@
+# Build outputs
+dist/
+.sync-workdir/
+
+# Quilt state
+.quilt/
+*.rej
+*.orig
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# Local environment
+.env
+.env.local

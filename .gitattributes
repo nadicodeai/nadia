@@ -1,0 +1,19 @@
+# Mark vendored upstream so GitHub language stats don't count it as ours
+upstream/* linguist-vendored=true
+
+# Normalize line endings — quilt produces patches that mis-apply with CRLF
+* text=auto eol=lf
+*.sh text eol=lf
+*.py text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.toml text eol=lf
+*.md text eol=lf
+
+# Binary types
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.tar.zst binary
