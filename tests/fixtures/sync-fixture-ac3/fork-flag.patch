@@ -1,0 +1,15 @@
+diff --git a/baseline.py b/baseline.py
+--- a/baseline.py
++++ b/baseline.py
+@@ -14,5 +14,11 @@ def main(argv=None):
+     return cmd_existing(argv)
+ 
+ 
++def cmd_new_flag(args):
++    """Fork-only command added by the AC-3 fork patch."""
++    print("argo fork: --new-flag invoked")
++    return 0
++
++
+ if __name__ == "__main__":
+     raise SystemExit(main())

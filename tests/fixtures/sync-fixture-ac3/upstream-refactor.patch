@@ -1,0 +1,20 @@
+diff --git a/baseline.py b/baseline.py
+--- a/baseline.py
++++ b/baseline.py
+@@ -3,8 +3,14 @@
+ import sys
+ 
+ 
+-def cmd_existing(args):
+-    print("upstream existing behavior")
++def _existing_message() -> str:
++    return "upstream existing behavior (refactored)"
++
++
++def cmd_existing(args, *, verbose=False):
++    print(_existing_message())
++    if verbose:
++        print(f"args={args!r}")
+     return 0
+ 
+ 

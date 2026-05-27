@@ -1,0 +1,17 @@
+# Patterns that MUST appear in baseline.py after both
+# upstream-refactor.patch and fork-flag.patch are applied. Mirrors the
+# FR-14 patches/asserts/<patch>.txt convention. One pattern per line,
+# fixed-string match. Lines starting with `#` are comments.
+
+# From the upstream refactor (head of file).
+def _existing_message
+upstream existing behavior (refactored)
+def cmd_existing(args, *, verbose=False)
+
+# From the fork patch (tail of file).
+def cmd_new_flag
+argo fork: --new-flag invoked
+
+# Unchanged context that must still be present.
+def main(argv=None)
+if __name__ == "__main__":
