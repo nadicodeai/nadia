@@ -1,0 +1,2 @@
+path:tests/tools/test_browser_supervisor.py
+ARGO_E2E_BROWSER
