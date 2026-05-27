@@ -1,0 +1,17 @@
+# Assertions for 0004-ci-gate-vercel-deploy.patch
+# Patterns are checked against dist/argo/ after rename. Default is fixed-string;
+# `regex:` prefix for regex, `path:` to restrict to a path glob.
+# Confirms the upstream docs-deploy workflows are gated off (file kept for
+# reference / future sync re-enable) and carry the Nadicode-fork comment.
+
+# Both gated workflow files survive the build.
+path:.github/workflows/deploy-site.yml
+path:.github/workflows/skills-index.yml
+
+# Each gated job carries the explanatory comment.
+path:.github/workflows/deploy-site.yml Nadicode fork
+path:.github/workflows/skills-index.yml Nadicode fork
+
+# The actual gate: `if: false &&` short-circuits the job.
+path:.github/workflows/deploy-site.yml if: false &&
+path:.github/workflows/skills-index.yml if: false &&
