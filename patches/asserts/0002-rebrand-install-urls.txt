@@ -1,0 +1,25 @@
+# Assertions for patch 0002-rebrand-install-urls.
+#
+# These three files (README.md, README.zh-CN.md, CONTRIBUTING.md) are in
+# argo-rename.yaml's `exceptions:` list, so the build-time rename engine
+# does NOT rewrite tokens inside them. URL rewrites must come from this
+# patch. The positive assertions below confirm install / clone / issues
+# URLs point at the fork (nadicodeai/argo). The license-attribution
+# assertions confirm the upstream LICENSE link is still present —
+# rewriting it would violate MIT attribution.
+
+# Category A — user-actionable URLs point at the fork.
+path:README.md raw.githubusercontent.com/nadicodeai/argo/main/scripts/install.sh
+path:README.md raw.githubusercontent.com/nadicodeai/argo/main/scripts/install.ps1
+path:README.md git clone https://github.com/nadicodeai/argo.git
+path:README.md (https://github.com/nadicodeai/argo/issues)
+path:README.zh-CN.md raw.githubusercontent.com/nadicodeai/argo/main/scripts/install.sh
+path:README.zh-CN.md git clone https://github.com/nadicodeai/argo.git
+path:README.zh-CN.md (https://github.com/nadicodeai/argo/issues)
+path:README.zh-CN.md (https://github.com/nadicodeai/argo/discussions)
+path:CONTRIBUTING.md git clone --recurse-submodules https://github.com/nadicodeai/argo.git
+
+# Category B — attribution URLs remain pointing at upstream.
+# License link (MIT attribution requirement).
+path:README.md github.com/NousResearch/hermes-agent/blob/main/LICENSE
+path:README.zh-CN.md github.com/NousResearch/hermes-agent/blob/main/LICENSE
