@@ -9,3 +9,4 @@
 0006-install-default-branch-release.patch
 0007-browser-test-skip-gate.patch
 0008-doctor-static-live-wiring.patch
+0009-update-default-branch-release.patch

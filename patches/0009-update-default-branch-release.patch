@@ -1,0 +1,63 @@
+Subject: Default _resolve_update_branch() to "release" for argo customers
+
+Upstream's hermes_cli/main.py:8369 declares:
+
+    return (getattr(args, "branch", None) or "main").strip() or "main"
+
+centralizing the `--branch` argument parsing for cmd_update's check
+path, git-update path, and ZIP-fallback path. The default is "main"
+because upstream's installable tree lives on `main`.
+
+argo's customer-facing tree lives on the long-lived `release` branch
+(spec line 28, IU-FR-3, IU-FR-4): `install.sh` is patched by
+0006-install-default-branch-release.patch to clone `release`, and the
+spec states "Both `install.sh` (curl URL) and `cmd_update`
+(`git pull`) target `origin/release`."
+
+The spec's author assumed `_cmd_update_impl` would inherit the cloned
+branch via `git pull` with no explicit branch. In practice
+_cmd_update_impl resolves the target branch through
+_resolve_update_branch(args) at hermes_cli/main.py:6985, 8738, 8905
+and the result is passed to `git rev-list HEAD..origin/<branch>` and
+`git pull origin <branch>`. With the upstream default "main", an argo
+customer who installed via the patched install.sh ends up:
+
+  1. Cloned `release` (correct).
+  2. `argo update --check` reports
+     "Update available: N commits behind origin/main".
+  3. `argo update` switches local checkout to `main` (workshop —
+     contains upstream/, patches/, .shepherd/, NOT runnable) and
+     git-pulls — wrecking the install.
+
+This regression was directly observed during M4.3b end-to-end manual
+verification on a fresh Ubuntu 22.04 container — see progress.md for
+the captured "⚕ Update available: 82 commits behind origin/main"
+output.
+
+Flipping both literals on this single line to "release" makes argo's
+cmd_update target the same branch install.sh cloned, satisfying
+spec IU-FR-7 and IU-AC-9 end-to-end. The --branch arg-parsing escape
+hatch is intact: developers can still pass `argo update --branch main`
+explicitly to update against the workshop layout if they want to.
+
+The patch surgically touches only the default literal; the function
+signature, the args.branch override semantics, and the empty/whitespace
+handling are byte-identical to upstream.
+
+Spec line 28, IU-FR-7, IU-FR-8, IU-AC-9 (see
+.shepherd/install-update/spec.md).
+Plan M4.1 follow-up (see .shepherd/install-update/plan.md).
+
+Index: .sync-workdir/hermes_cli/main.py
+===================================================================
+--- .sync-workdir.orig/hermes_cli/main.py
++++ .sync-workdir/hermes_cli/main.py
+@@ -8409,7 +8409,7 @@ def _resolve_update_branch(args) -> str:
+     ``--branch`` (check path, git-update path, ZIP-fallback path) agrees on
+     the same answer.
+     """
+-    return (getattr(args, "branch", None) or "main").strip() or "main"
++    return (getattr(args, "branch", None) or "release").strip() or "release"
+ 
+ 
+ def _cmd_update_check(branch: str = "main", *, branch_explicit: bool = False):
