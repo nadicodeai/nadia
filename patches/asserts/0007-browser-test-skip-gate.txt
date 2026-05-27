@@ -1,2 +1,10 @@
+# Assertions for 0007-browser-test-skip-gate.patch
+#
+# After `make build`, the browser supervisor test file must survive
+# in dist/argo/ and gate on the (renamed) ARGO_E2E_BROWSER env var
+# instead of upstream's plain Chrome/Chromium-presence check. The
+# `HERMES_E2E_BROWSER` in the patch source is rewritten by the
+# rename engine.
+
 path:tests/tools/test_browser_supervisor.py
 ARGO_E2E_BROWSER

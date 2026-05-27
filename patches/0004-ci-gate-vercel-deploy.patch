@@ -1,7 +1,5 @@
-Index: argo/.github/workflows/deploy-site.yml
-===================================================================
---- argo.orig/.github/workflows/deploy-site.yml
-+++ argo/.github/workflows/deploy-site.yml
+--- a/.github/workflows/deploy-site.yml
++++ b/.github/workflows/deploy-site.yml
 @@ -22,14 +22,26 @@ concurrency:
  
  jobs:
@@ -31,10 +29,8 @@ Index: argo/.github/workflows/deploy-site.yml
      runs-on: ubuntu-latest
      environment:
        name: github-pages
-Index: argo/.github/workflows/skills-index.yml
-===================================================================
---- argo.orig/.github/workflows/skills-index.yml
-+++ argo/.github/workflows/skills-index.yml
+--- a/.github/workflows/skills-index.yml
++++ b/.github/workflows/skills-index.yml
 @@ -47,7 +47,13 @@ jobs:
    # everything in one pipeline); we just kick it on a schedule.
    trigger-deploy:

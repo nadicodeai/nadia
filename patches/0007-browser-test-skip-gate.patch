@@ -1,7 +1,5 @@
-Index: argo/tests/tools/test_browser_supervisor.py
-===================================================================
---- argo.orig/tests/tools/test_browser_supervisor.py
-+++ argo/tests/tools/test_browser_supervisor.py
+--- a/tests/tools/test_browser_supervisor.py
++++ b/tests/tools/test_browser_supervisor.py
 @@ -27,8 +27,9 @@ import pytest
  
  

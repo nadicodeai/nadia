@@ -1,3 +1,12 @@
+# Assertions for 0002-rebrand-install-urls.patch
+#
+# After `make build`, the install URLs and clone/issues URLs in
+# README.md, README.zh-CN.md, and CONTRIBUTING.md must point at
+# nadicodeai/argo (the rebrand target). The two final LICENSE links
+# are intentionally NOT rewritten — they must still point at the
+# upstream NousResearch/hermes-agent LICENSE file so attribution
+# survives the rename engine pass.
+
 path:README.md raw.githubusercontent.com/nadicodeai/argo/main/scripts/install.sh
 path:README.md raw.githubusercontent.com/nadicodeai/argo/main/scripts/install.ps1
 path:README.md git clone https://github.com/nadicodeai/argo.git
