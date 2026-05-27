@@ -88,10 +88,21 @@ sync-reset:
 # Docker (M5 wires the real implementation)
 # -----------------------------------------------------------------------------
 
+# M5.1: build the runtime image via multi-stage Dockerfile.
+#
+# Multi-arch (linux/arm64) is OQ-4 — deferred to release.yml. PR-time
+# builds are linux/amd64 only for speed; CI release builds go multi-arch.
+#
+# SOURCE_DATE_EPOCH propagates the commit timestamp into the image for
+# AC-8 determinism (best-effort — Docker layer hashes are NOT a gate).
 .PHONY: image
 image:
-	@echo "make image: not yet implemented (M5.1)"
-	@exit 1
+	docker buildx build \
+		--build-arg SOURCE_DATE_EPOCH=$$(git log -1 --format=%ct) \
+		--platform linux/amd64 \
+		--load \
+		-t ghcr.io/nadicodeai/argo:dev \
+		.
 
 .PHONY: publish
 publish:
