@@ -1,0 +1,137 @@
+# argo — weekly upstream sync (spec FR-8, OQ-3)
+#
+# Purpose.
+#   Pulls upstream hermes-agent, re-applies our quilt patch series, runs
+#   `make build` as verification, and opens a PR for human review. The
+#   maintainer reviews the sync commit (diff in upstream/ + any refreshed
+#   patches), waits for ci.yml to go green on the PR, then merges.
+#
+# Cadence.
+#   Mondays at 06:00 UTC (cron '0 6 * * 1'). Weekly is the spec OQ-3
+#   decision: daily is too noisy (most weeks produce no upstream delta),
+#   monthly lags security fixes (spec § Risks: 7-day SLA on upstream
+#   security propagation). `workflow_dispatch` is always available for
+#   manual / emergency syncs (e.g. a CVE landing mid-week).
+#
+# Failure modes.
+#   - `make sync` succeeds AND produces a commit -> push branch, open PR.
+#   - `make sync` succeeds AND tree is unchanged (upstream already at our
+#     pin) -> no-op, no PR, no issue. Detected via `git diff main...HEAD`
+#     being empty before the push step.
+#   - `make sync` fails (typically quilt conflict per FR-9) -> open a
+#     GitHub Issue tagged with the date; maintainer resolves manually via
+#     the FR-9 procedure (`.sync-workdir/` + `make sync-resume`) and then
+#     triggers `workflow_dispatch` once unblocked.
+#
+# Token scope.
+#   Uses the default `GITHUB_TOKEN` ONLY. No external secrets. Permissions
+#   are scoped per-job (contents:write to commit, pull-requests:write to
+#   open the PR, issues:write to open the failure issue). The bot identity
+#   `argo-sync-bot <noreply@nadicodeai.com>` is configured inline; nothing
+#   to provision out-of-band.
+#
+# Branch protection.
+#   Branch protection on `main` SHOULD NOT block this workflow's PRs from
+#   being merged after review — the bot goes through the same PR review
+#   flow as a human contributor. The bot never pushes directly to `main`;
+#   it pushes to `argo/sync-YYYYMMDD` and opens a PR against `main`.
+#
+# How to disable temporarily.
+#   Set `if: false` on the `sync` job below (or comment out the `schedule`
+#   trigger). Re-enable by reverting.
+
+name: sync
+
+on:
+  schedule:
+    # Mondays 06:00 UTC. Spec OQ-3.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+# Never cancel a sync in progress — `git subtree pull` + `quilt push -a`
+# + `make build` is non-trivial work and an interrupted run can leave
+# `.sync-workdir/` in a half-applied state on the runner. Queue instead.
+concurrency:
+  group: sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: weekly upstream sync
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write           # commit the sync on a fresh branch
+      pull-requests: write      # open the sync PR
+      issues: write             # open a failure issue on conflict
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Install Python 3.13
+        run: uv python install 3.13
+
+      - name: Install system deps (quilt for patch series, zstd for fixture tarballs)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y quilt zstd
+
+      - name: Install Python deps (pyyaml for tools/)
+        run: |
+          uv venv .venv
+          . .venv/bin/activate
+          uv pip install pyyaml
+
+      - name: Configure git identity
+        run: |
+          git config user.name "argo-sync-bot"
+          git config user.email "noreply@nadicodeai.com"
+
+      - name: Create sync branch
+        id: branch
+        run: |
+          BRANCH="argo/sync-$(date -u +%Y%m%d)"
+          git checkout -b "$BRANCH"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Run make sync
+        id: sync
+        run: |
+          . .venv/bin/activate
+          make sync
+        continue-on-error: true
+
+      # No-op detection: if make sync succeeded but didn't change the tree
+      # relative to main (upstream already at our pin), skip PR creation.
+      # `git diff --quiet` exits 0 when there's no diff, 1 when there is.
+      - name: Detect no-op sync
+        id: changed
+        if: steps.sync.outcome == 'success'
+        run: |
+          if git diff --quiet origin/main...HEAD; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No upstream delta — skipping PR."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Push + open PR
+        if: steps.sync.outcome == 'success' && steps.changed.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git push -u origin "${{ steps.branch.outputs.branch }}"
+          gh pr create --base main --head "${{ steps.branch.outputs.branch }}" \
+            --title "sync: upstream weekly (auto-generated)" \
+            --body "Weekly automated upstream sync. Triggered by .github/workflows/sync.yml. Review the sync commit, run CI, merge if green."
+
+      - name: Open failure issue
+        if: steps.sync.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "sync: weekly upstream sync failed ($(date -u +%Y-%m-%d))" \
+            --body "Weekly sync via .github/workflows/sync.yml failed. Check the workflow run log for the failing patch / conflicting hunks. Resolve via the FR-9 procedure (manual conflict resolution + make sync-resume) or trigger workflow_dispatch after fixing the patch."
