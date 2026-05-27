@@ -339,6 +339,26 @@ def _quilt_push_all() -> subprocess.CompletedProcess[str]:
     )
 
 
+def _quilt_push_is_success(result: subprocess.CompletedProcess[str]) -> bool:
+    """Return True if a `quilt push -a` invocation should be treated as success.
+
+    Quilt exits 0 on a normal push that applied at least one patch. It exits
+    2 with the message ``File series fully applied, ends at patch ...`` on
+    stderr when invoked against a series that is already fully applied
+    (which happens during ``--resume`` if the operator manually ran
+    ``quilt push -a`` mid-resolve). That state is success, not failure —
+    every patch is on disk and the workdir is in the post-push state we
+    want. Treat it accordingly.
+    """
+    if result.returncode == 0:
+        return True
+    if result.returncode == 2:
+        combined = (result.stdout or "") + (result.stderr or "")
+        if "File series fully applied" in combined:
+            return True
+    return False
+
+
 def _quilt_refresh_top() -> subprocess.CompletedProcess[str]:
     return _run(
         ["quilt", "refresh"],
@@ -491,7 +511,7 @@ def run_default(upstream_url: str, branch: str) -> int:
     else:
         _log("apply patch series via quilt push -a")
         result = _quilt_push_all()
-        if result.returncode != 0:
+        if not _quilt_push_is_success(result):
             top = _quilt_top()
             _write_sync_state(
                 {
@@ -568,9 +588,11 @@ def run_resume() -> int:
     _log(f"refreshed patches copied back: {refreshed or '(none changed)'}")
 
     # 3. Re-run quilt push -a to confirm the remainder applies.
+    #    Quilt exits 2 with "File series fully applied" on stderr when the
+    #    operator manually pushed the series mid-resolve; that is success.
     _log("re-run quilt push -a to confirm the rest of the series applies")
     push_result = _quilt_push_all()
-    if push_result.returncode != 0:
+    if not _quilt_push_is_success(push_result):
         top = _quilt_top()
         _write_sync_state(
             {
