@@ -74,19 +74,15 @@ leakage-static:
 # Sync workflow (M4.2 wires the real implementation)
 # -----------------------------------------------------------------------------
 
-.PHONY: sync
+.PHONY: sync sync-resume sync-reset
 sync:
-	@echo "make sync: not yet implemented (M4.2)"
-	@exit 1
+	python tools/sync.py
 
-.PHONY: sync-resume
 sync-resume:
-	@echo "make sync-resume: not yet implemented (M4.2)"
-	@exit 1
+	python tools/sync.py --resume
 
-.PHONY: sync-reset
 sync-reset:
-	rm -rf .sync-workdir/
+	python tools/sync.py --reset
 
 # -----------------------------------------------------------------------------
 # Docker (M5 wires the real implementation)
