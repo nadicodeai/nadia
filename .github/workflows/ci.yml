@@ -49,6 +49,12 @@ env:
   PYTEST_VERSION: "9.0.2"
   PYTEST_ASYNCIO_VERSION: "1.3.0"
   PYTEST_TIMEOUT_VERSION: "2.4.0"
+  # Legacy parity baseline tag. Single source of truth for both the
+  # parity job's `docker pull` and the actions/cache key that avoids
+  # re-pulling ~4.71 GB per CI run (issue #9). Bumping this tag
+  # automatically rotates the cache key so a stale tarball won't be
+  # restored against a newer image.
+  LEGACY_TAG: "0.14.0"
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -234,13 +240,34 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           pip-packages: "pyyaml"
-      - name: docker pull legacy baseline
+      - name: Restore legacy image cache
+        # Issue #9: the legacy baseline image is ~4.71 GB and rarely
+        # changes (tag is pinned by LEGACY_TAG at workflow env scope).
+        # Cache the `docker save` tarball across runs so a hit drops the
+        # parity job's image-fetch time from ~30s + bandwidth to <5s.
+        # The key includes LEGACY_TAG so bumping the tag rotates caches
+        # rather than restoring a stale tarball.
+        uses: actions/cache@v4
+        with:
+          path: /tmp/legacy-image.tar
+          key: legacy-image-${{ env.LEGACY_TAG }}
+      - name: docker load or pull legacy baseline
         # :0.14.0 is published by .github/workflows/publish-legacy-baseline.yml
         # (one-shot, workflow_dispatch). Until that workflow has run
         # successfully this pull will 404 and parity CI will fail loudly.
         # That is the intended signal — see issue #1 and AGENTS.md
         # § Parity baseline.
-        run: docker pull ghcr.io/nadicodeai/argo-agent:0.14.0
+        #
+        # Cache hit path: restore the tarball and `docker load` it.
+        # Cache miss path: `docker pull` then `docker save` so the next
+        # run on the same LEGACY_TAG hits the cache.
+        run: |
+          if [ -f /tmp/legacy-image.tar ]; then
+            docker load -i /tmp/legacy-image.tar
+          else
+            docker pull ghcr.io/nadicodeai/argo-agent:${{ env.LEGACY_TAG }}
+            docker save ghcr.io/nadicodeai/argo-agent:${{ env.LEGACY_TAG }} -o /tmp/legacy-image.tar
+          fi
       - name: make image (build :dev locally)
         run: |
           . .venv/bin/activate
