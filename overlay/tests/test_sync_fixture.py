@@ -21,13 +21,22 @@ Marked ``@pytest.mark.integration``; skipped by default. Re-enable with
 
 from __future__ import annotations
 
-import os
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+
+# overlay/tests/ is not a Python package (no __init__.py — overlay files
+# ship as a flat copy into dist/argo/tests/), so import the sibling
+# helpers module via sys.path.
+sys.path.insert(0, str(Path(__file__).parent))
+from _sync_fixture_helpers import (  # noqa: E402
+    extract_baseline_tree as _extract_baseline_tree_impl,
+    git_env_no_signing as _git_env_no_signing,
+    run as _run,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 FIXTURE_DIR = REPO_ROOT / "tests" / "fixtures" / "sync-fixture-200"
@@ -57,56 +66,9 @@ def _read_sha_from_readme(label: str) -> str:
     raise RuntimeError(f"could not find {label} in {FIXTURE_README}")
 
 
-def _run(
-    cmd: list[str],
-    *,
-    cwd: Path,
-    env: dict[str, str] | None = None,
-    check: bool = True,
-) -> subprocess.CompletedProcess[str]:
-    result = subprocess.run(
-        cmd,
-        cwd=str(cwd),
-        text=True,
-        encoding="utf-8",
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        env=env,
-        check=False,
-    )
-    if check and result.returncode != 0:
-        raise AssertionError(
-            f"command failed: {' '.join(cmd)}\n"
-            f"cwd: {cwd}\n"
-            f"stdout: {result.stdout}\n"
-            f"stderr: {result.stderr}"
-        )
-    return result
-
-
-def _git_env_no_signing() -> dict[str, str]:
-    """Disable signing + GPG inside the test's git invocations."""
-    env = os.environ.copy()
-    env.update(
-        {
-            "GIT_AUTHOR_NAME": "argo-test",
-            "GIT_AUTHOR_EMAIL": "argo-test@example.invalid",
-            "GIT_COMMITTER_NAME": "argo-test",
-            "GIT_COMMITTER_EMAIL": "argo-test@example.invalid",
-            "GIT_CONFIG_GLOBAL": "/dev/null",
-            "GIT_CONFIG_SYSTEM": "/dev/null",
-        }
-    )
-    return env
-
-
 def _extract_baseline_tree(dest: Path) -> None:
-    """Extract the zstd-compressed baseline tarball into *dest*."""
-    dest.mkdir(parents=True, exist_ok=True)
-    subprocess.run(
-        ["tar", "--use-compress-program=unzstd", "-xf", str(BASELINE_TARBALL), "-C", str(dest)],
-        check=True,
-    )
+    """Extract this fixture's baseline tarball into *dest*."""
+    _extract_baseline_tree_impl(BASELINE_TARBALL, dest)
 
 
 def _build_local_upstream_replica(workdir: Path, env: dict[str, str]) -> Path:

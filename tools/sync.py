@@ -428,6 +428,13 @@ def _stage_and_commit(
     if amend:
         # Replace the subtree merge commit message with our sync: format
         # while keeping all staged content (the subtree merge itself).
+        #
+        # Failure mode: if `git commit --amend` exits non-zero (e.g. a
+        # pre-commit hook rejects), `_git` raises SyncError and the
+        # subtree-merge commit on HEAD keeps its original auto-generated
+        # message; the refreshed patches stay staged in the index for the
+        # operator to inspect with `git status` and recover manually
+        # (re-run amend, or commit fresh + `git reset --soft HEAD^`).
         _git(repo, "commit", "--amend", "-m", msg, check=True)
         _log(f"amended commit: {msg}")
         return

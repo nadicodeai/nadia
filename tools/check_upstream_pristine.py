@@ -67,6 +67,24 @@ def _run_git(args: list[str], *, cwd: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
+def _git_or_raise(
+    args: list[str], *, cwd: Path, step: str, what: str
+) -> subprocess.CompletedProcess[str]:
+    """Run ``git`` and raise :class:`UpstreamPristineError` on non-zero exit.
+
+    *what* is a short description of the operation used in the error
+    message (e.g. ``"git log"``); *step* is the label propagated to the
+    typed error for CI bucketing.
+    """
+    result = _run_git(args, cwd=cwd)
+    if result.returncode != 0:
+        raise UpstreamPristineError(
+            f"{what} failed: {result.stderr.strip()}",
+            step=step,
+        )
+    return result
+
+
 def _verify_repo_structure(repo_root: Path) -> None:
     """Defensive checks: repo exists, ``upstream/`` exists and is non-trivial."""
     if not (repo_root / ".git").exists():
@@ -98,15 +116,12 @@ def _verify_repo_structure(repo_root: Path) -> None:
 
 def _last_sync_sha(repo_root: Path) -> str:
     """Return SHA of the most recent commit that touched ``upstream/``."""
-    result = _run_git(
+    result = _git_or_raise(
         ["log", "-1", "--format=%H", "--", "upstream/"],
         cwd=repo_root,
+        step="last-sync-sha",
+        what="git log",
     )
-    if result.returncode != 0:
-        raise UpstreamPristineError(
-            f"git log failed: {result.stderr.strip()}",
-            step="last-sync-sha",
-        )
     sha = result.stdout.strip()
     if not sha:
         raise UpstreamPristineError(
@@ -119,46 +134,31 @@ def _last_sync_sha(repo_root: Path) -> str:
 
 def _committed_drift(repo_root: Path, last_sync_sha: str) -> list[str]:
     """Return paths under ``upstream/`` that differ between HEAD and last sync."""
-    result = _run_git(
+    result = _git_or_raise(
         ["diff", "--name-only", last_sync_sha, "HEAD", "--", "upstream/"],
         cwd=repo_root,
+        step="committed-diff",
+        what="git diff",
     )
-    if result.returncode != 0:
-        raise UpstreamPristineError(
-            f"git diff failed: {result.stderr.strip()}",
-            step="committed-diff",
-        )
     return [line for line in result.stdout.splitlines() if line]
 
 
 def _uncommitted_drift(repo_root: Path) -> list[str]:
     """Return paths under ``upstream/`` that differ between HEAD and worktree."""
     # Tracked changes (modifications, deletions).
-    tracked = _run_git(
+    tracked = _git_or_raise(
         ["diff", "--name-only", "HEAD", "--", "upstream/"],
         cwd=repo_root,
+        step="worktree-diff",
+        what="git diff (worktree)",
     )
-    if tracked.returncode != 0:
-        raise UpstreamPristineError(
-            f"git diff (worktree) failed: {tracked.stderr.strip()}",
-            step="worktree-diff",
-        )
     # Untracked files inside upstream/.
-    untracked = _run_git(
-        [
-            "ls-files",
-            "--others",
-            "--exclude-standard",
-            "--",
-            "upstream/",
-        ],
+    untracked = _git_or_raise(
+        ["ls-files", "--others", "--exclude-standard", "--", "upstream/"],
         cwd=repo_root,
+        step="untracked-scan",
+        what="git ls-files",
     )
-    if untracked.returncode != 0:
-        raise UpstreamPristineError(
-            f"git ls-files failed: {untracked.stderr.strip()}",
-            step="untracked-scan",
-        )
     paths: list[str] = []
     paths.extend(line for line in tracked.stdout.splitlines() if line)
     paths.extend(line for line in untracked.stdout.splitlines() if line)
