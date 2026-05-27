@@ -12,7 +12,7 @@ Living log of milestone progress. Append-only timeline; do not rewrite history. 
 |---|---|---|---|
 | M1 Bootstrap | complete | 9 / 9 | M1 closed @ 8ba174d (make build green, 2593 files renamed) |
 | M2 Audit & validate baseline | complete | 5 / 5 | M2 closed @ 16cb79a (all gates green) |
-| M3 Initial patch series | pending | 0 / 9 | next |
+| M3 Initial patch series | in-progress | 7 / 9 | 5 patches active + assertion runner + .gitleaks overlay + .quiltrc; 0002 dispatched; 0008 skipped (audit) |
 | M2 Audit & validate baseline | pending | 0 / 5 | — |
 | M3 Initial patch series | pending | 0 / 9 | — |
 | M4 CI gates | pending | 0 / 5 | — |
@@ -93,22 +93,33 @@ Status values: `pending` · `in-progress` · `blocked` · `complete`.
 **Goal:** Extract 8 fork patches from legacy as quilt patches against pristine upstream. Each patch has assertions where load-bearing.
 
 **Tasks:**
-- [ ] M3.1 Write `tools/run_assertions.py` (FR-14 enforcer) + wire into `tools/build.py`
-- [ ] M3.2 Patch 0001 — fork-notice README
-- [ ] M3.3 Patch 0002 — rebrand URLs (audit first; may be skipped)
-- [ ] M3.4 Patch 0003 — gate PyPI publish workflow
-- [ ] M3.5 Patch 0004 — gate Vercel/docs deploy
-- [ ] M3.6 Patch 0005 — Docker publish to `ghcr.io/nadicodeai/argo` (new image name)
-- [ ] M3.7 Patch 0006 — gitleaks allowlist
-- [ ] M3.8 Patch 0007 — browser-test skip gate
-- [ ] M3.9 Patch 0008 — pyproject.toml rename targets (defer if not needed)
+- [x] M3.1 `tools/run_assertions.py` (FR-14 enforcer) + wired into `tools/build.py` — commit `348f131d` 2026-05-27. 6 unit tests pass.
+- [x] M3.2 Patch 0001 fork-notice README — dispatched as implementer; cherry-picked `bdf5ea2b`. 18-line patch, 2 assertions.
+- [⏳] M3.3 Patch 0002 rebrand install URLs — dispatched 12:08 UTC; in flight. Audit determined IS needed (install/clone/issues URLs in 3 exception-listed files still point at upstream).
+- [x] M3.4 Patch 0003 gate PyPI workflow — implementer cherry-picked `570035b8`. 61-line patch (Option A: preserve + gate), 3 assertions.
+- [x] M3.5 Patch 0004 gate Vercel/docs deploy — implementer cherry-picked `5333a6c4`. 52-line patch (3 jobs gated across 2 workflows), 6 assertions.
+- [x] M3.6 Patch 0005 Docker→ghcr — implementer cherry-picked `ece78e8e`. 146-line patch (1 file, 4 jobs), 4 assertions. Image name `ghcr.io/nadicodeai/argo` (new, not `…/argo-agent`).
+- [x] M3.7 RECATEGORIZED: gitleaks allowlist as **overlay**, not patch. Upstream lacks `.gitleaks.toml`; this is a true add — commit `16b406e8`. Rename exception re-added.
+- [x] M3.8 Patch 0007 browser-test skip gate — implementer cherry-picked `32893652`. 16-line patch, 2 assertions. Introduces `HERMES_E2E_BROWSER` (renamed to `ARGO_E2E_BROWSER` at build).
+- [SKIPPED] M3.9 Patch 0008 pyproject rename targets — audit found `pyproject.toml` is already clean post-rename (name=argo-agent, scripts=argo, extras=argo-agent[*]). The catch-all `hermes-agent → argo-agent` + `hermes_cli → argo_cli` mappings cover everything. NO PATCH NEEDED.
 
-**Checkpoint:** Patches applied (or skipped with documented rationale). `make build && make leakage-static` exit 0. All FR-14 assertions pass.
+**Plus M3-relevant infrastructure work:**
+- [x] `.quiltrc` enforcing `diff -up --git` format (commit `4a3c1bad`) — `QUILT_REFRESH_ARGS='-p ab --no-timestamps --no-index'`. Caught by the 0001 implementer; needed for AC-8 determinism.
+- [x] `M3: activate 5-patch series` (commit `ab8a4048`) — wired `patches/series` + `patches/asserts/manifest.txt` for the 5 patches.
 
-**Maps to spec:** AC-12 (assertion failure mode — tested via M3.1 negative fixture).
+**Checkpoint status: PARTIAL (waiting on Patch 0002).** With 5 patches in series:
+- `make build` exits 0 (5 patches applied via quilt push -a, 18 overlay files, 2599 renames).
+- `make leakage-static` exits 0.
+- `run_assertions.py` reports 17 assertions across 5 patches satisfied.
+- `pytest tests/` 9/9 passing.
+
+**Maps to spec:** AC-12 (assertion failure mode verified via M3.1 negative fixtures); patches' content maps to FR-7, FR-11, FR-13, and the legacy fork-feature surface.
 
 **Notes:**
-- (none yet)
+- M3 used parallel implementer dispatch in worktrees per shepherd protocol (5 agents max). Each implementer wrote ONLY its patch + assertion file; coordinator merged via cherry-pick and updated series + manifest at merge time to avoid shared-state conflicts.
+- Patch 0001's implementer surfaced that `quilt refresh` default output lacks `a/`/`b/` prefixes and includes wall-clock timestamps — both would break determinism. `.quiltrc` fixes this.
+- Patch 0007's `HERMES_E2E_BROWSER` env var demonstrates the architecture's clean property: patch authors write hermes-names, the rename engine produces the customer-visible `ARGO_E2E_BROWSER` automatically.
+- M3.9 skip is the first concrete validation of the rename engine's design: changes that would have required a patch in the legacy in-tree-rename model are no-ops here because the catch-all mappings handle them at build time.
 
 ---
 
