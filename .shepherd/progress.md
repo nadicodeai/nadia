@@ -12,8 +12,8 @@ Living log of milestone progress. Append-only timeline; do not rewrite history. 
 |---|---|---|---|
 | M1 Bootstrap | complete | 9 / 9 | M1 closed @ 8ba174d (make build green, 2593 files renamed) |
 | M2 Audit & validate baseline | complete | 5 / 5 | M2 closed @ 16cb79a (all gates green) |
-| M3 Initial patch series | complete | 9 / 9 | M3 closed @ bc6c272; 6 patches + 29 assertions + overlay; M3.9 audit-skipped |
-| M4 CI gates | pending | 0 / 5 | next |
+| M3 Initial patch series | complete | 9 / 9 | M3 closed @ b789a4d; 6 patches + 29 assertions + overlay; refactor `2dcdd70` + architect `b789a4d` (AC-8 PROVEN) |
+| M4 CI gates | in-progress | 0 / 5 | dispatch starting |
 | M2 Audit & validate baseline | pending | 0 / 5 | — |
 | M3 Initial patch series | pending | 0 / 9 | — |
 | M4 CI gates | pending | 0 / 5 | — |
