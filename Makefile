@@ -129,7 +129,7 @@ parity:
 .PHONY: check-legacy-untouched
 check-legacy-untouched:
 	@if [ -x tools/check_legacy_untouched.sh ]; then \
-		tools/check_legacy_untouched.sh; \
+		tools/check_legacy_untouched.sh --verify; \
 	else \
 		echo "tools/check_legacy_untouched.sh not yet implemented (M2.4a)"; \
 		exit 1; \
