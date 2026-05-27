@@ -1,0 +1,8 @@
+# Patches whose `patches/asserts/<stem>.txt` file is REQUIRED.
+# Listed-but-missing assertion files are a build failure (FR-14).
+# Patches not listed here may still carry assertions (optional).
+0001-fork-notice-readme.patch
+0003-ci-gate-pypi-publish.patch
+0004-ci-gate-vercel-deploy.patch
+0005-docker-publish-ghcr.patch
+0007-browser-test-skip-gate.patch
