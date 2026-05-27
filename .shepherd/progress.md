@@ -10,7 +10,8 @@ Living log of milestone progress. Append-only timeline; do not rewrite history. 
 
 | Milestone | Status | Tasks | Notes |
 |---|---|---|---|
-| M1 Bootstrap | in-progress | 1 / 9 | M1.1 done @ f3c39ea |
+| M1 Bootstrap | complete | 9 / 9 | M1 closed @ 8ba174d (make build green, 2593 files renamed) |
+| M2 Audit & validate baseline | in-progress | 0 / 5 | starting |
 | M2 Audit & validate baseline | pending | 0 / 5 | — |
 | M3 Initial patch series | pending | 0 / 9 | — |
 | M4 CI gates | pending | 0 / 5 | — |
@@ -31,21 +32,30 @@ Status values: `pending` · `in-progress` · `blocked` · `complete`.
 
 **Tasks:**
 - [x] M1.1 Create repo skeleton — commit `f3c39ea` 2026-05-27
-- [ ] M1.2 Add upstream subtree at pinned SHA
-- [ ] M1.3 Lift rename engine to overlay (with `argo_sync → hermes_sync` textual rewrite)
-- [ ] M1.4 Lift argo-rename.yaml verbatim
-- [ ] M1.5 Lift overlay test assets and fixtures
-- [ ] M1.6 Lift overlay CLI shims
-- [ ] M1.7 Write `tools/rebrand.py`
-- [ ] M1.8 Write `tools/build.py`
-- [ ] M1.9 Write minimal `Makefile`
+- [x] M1.2 Add upstream subtree at pinned SHA `a890389b…` — commit `d6f27aa` 2026-05-27
+- [x] M1.3 Lift rename engine via `tools/scripts/lift_engine.py` — commit `61bbfd1` 2026-05-27
+- [x] M1.4 Lift argo-rename.yaml verbatim — bundled in `128eea2` 2026-05-27
+- [x] M1.5 Lift overlay test assets + recorded_model fixtures — bundled in `128eea2` 2026-05-27
+- [x] M1.6 doctor_leakage.py + new argo_update.py stub (OQ-6) — bundled in `128eea2` 2026-05-27
+- [x] M1.7 tools/rebrand.py (sys.path injection avoids cold-start) — commit `8ba174d` 2026-05-27
+- [x] M1.8 tools/build.py (full FR-4 pipeline; honors SOURCE_DATE_EPOCH) — commit `8ba174d` 2026-05-27
+- [x] M1.9 Makefile (full surface; scaffolded in M1.1, wired in M1.8) — commit `f3c39ea` 2026-05-27
 
 **Checkpoint:** `make build` produces `dist/argo/` ≈ upstream size ± 5%; `git status` clean; layout matches spec § Project Structure.
 
-**Maps to spec:** AC-1, AC-5 (partial).
+**Checkpoint status: PASSED 2026-05-27.**
+- `dist/argo/` size: 86M (upstream/: 86M) — within ±5%.
+- 2593 files renamed by engine; idempotent on second build (0 files touched).
+- 17 overlay files added without collision.
+- 103 residual `hermes` hits in `dist/argo/` — pending M2.2 verification against `argo-rename.yaml` exceptions/skip_contexts.
+- Layout matches spec § Project Structure.
+
+**Maps to spec:** AC-1 (bootstrap), AC-5 (rename idempotency — partial; full verification requires M5.3 + SOURCE_DATE_EPOCH).
 
 **Notes:**
-- (none yet)
+- M1.3 textual rewrite preserved lowercase `argo_sync` only; `ArgoSyncError` and other CamelCase class names retained as-is. The rename engine treats them as already-final TO-names at build time. Round-trip diff vs legacy is bit-identical.
+- M1.8 initially set `--no-manifest` on the rebrand subprocess, which dropped the file-list. Fixed in-loop: build.py now reads the engine's sync-manifest.json to populate `files_touched_by_rename` in the build-manifest.
+- M1.9 Makefile was written ahead of schedule in M1.1 to make the target surface visible from day one; `make build` no-op stubs print clear "not yet implemented" messages where targets aren't wired (sync, image, publish, lint, typecheck, parity).
 
 ---
 
