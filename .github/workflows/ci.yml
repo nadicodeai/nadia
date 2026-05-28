@@ -1,16 +1,22 @@
 # argo — per-PR / per-push CI gate (spec AC-9, FR-15)
 #
-# Runs on every pull_request and every push to main. Declares the eight
-# jobs required by spec AC-9:
+# Runs on every pull_request and every push to main. Declares twelve jobs
+# (originally the eight required by spec AC-9; install-smoke + update-smoke
+# from the install-update loop and dist-argo-tests + companion
+# save-durations from the update-cycle-smoke loop have since been added):
 #
-#   1. lint                  — ruff check (PLW1514 only, upstream convention)
-#   2. typecheck             — ty check overlay/ tools/  (pre-build source)
-#   3. build                 — make build; uploads dist/argo/.argo/build-manifest.json
-#   4. leakage               — needs: build; make leakage-static (FR-12)
-#   5. test                  — pytest tests/ (build-tool tests; integration skipped)
-#   6. upstream-pristine     — make check-upstream-pristine (FR-15 / C3 gate)
-#   7. parity                — make parity (FR-16 CLI surfaces, M6.2a real gate)
-#   8. check-legacy-untouched — DECLARED but skipped in CI (legacy repo not present)
+#    1. lint                            — ruff check (PLW1514 only, upstream convention)
+#    2. typecheck                       — ty check overlay/ tools/  (pre-build source)
+#    3. build                           — make build; uploads dist/argo/.argo/build-manifest.json
+#    4. leakage                         — needs: build; make leakage-static (FR-12)
+#    5. test                            — pytest tests/ (build-tool tests; integration skipped)
+#    6. upstream-pristine               — make check-upstream-pristine (FR-15 / C3 gate)
+#    7. parity                          — make parity (FR-16 CLI surfaces, M6.2a real gate)
+#    8. install-smoke                   — Docker-driven install.sh smoke (IU-AC-4/5/9)
+#    9. update-smoke                    — Docker-driven update flow (IU-AC-9/10/11)
+#   10. dist-argo-tests                 — 6-slice matrix over dist/argo/tests/ (UCS-AC-5/6)
+#   11. dist-argo-tests-save-durations  — companion to 10, main-only durations cache write
+#   12. check-legacy-untouched          — DECLARED but skipped in CI (legacy repo not present)
 #
 # Tool versions are pinned to spec § Tech Stack:
 #   Python  3.13 (type-check target)
@@ -22,7 +28,8 @@
 # to require these jobs. The workflow only DECLARES them; GitHub enforces.
 # Required checks should include: lint, typecheck, build, leakage, test,
 # upstream-pristine, parity. (`check-legacy-untouched` is skipped in CI by
-# design — see job comment.)
+# design — see job comment. install-smoke, update-smoke, dist-argo-tests
+# are visible-but-non-blocking pending promotion follow-ups.)
 
 name: ci
 
@@ -394,11 +401,13 @@ jobs:
             argo-uv-cache-${{ runner.os }}-
 
       - name: Restore test-durations cache
-        # Mirror of upstream tests.yml lines 35-40. We restore to a temp
-        # path because `make build` blows away dist/argo/; we copy the
-        # restored file into dist/argo/test_durations.json AFTER the
-        # build so the runner can find it. Restore-only here; the
-        # companion save-durations job below writes the cache on main.
+        # Mirror of the durations-cache restore step in upstream's
+        # tests.yml workflow (the "Restore test durations" actions/cache
+        # step). We restore to a temp path because `make build` blows
+        # away dist/argo/; we copy the restored file into
+        # dist/argo/test_durations.json AFTER the build so the runner
+        # can find it. Restore-only here; the companion save-durations
+        # job below writes the cache on main.
         id: durations-cache
         uses: actions/cache/restore@v4
         with:
@@ -495,7 +504,7 @@ jobs:
           key: argo-test-durations
 
   # ---------------------------------------------------------------------------
-  # 9. check-legacy-untouched — DECLARED but SKIPPED in CI.
+  # 12. check-legacy-untouched — DECLARED but SKIPPED in CI.
   #
   #    Spec AC-10 ("legacy repo at ~/Code/argo-agent untouched") is a
   #    LOCAL-DEV gate. The legacy repo isn't present on GitHub-hosted
