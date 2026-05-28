@@ -134,20 +134,33 @@ def test_matching_nodeid_is_xfailed_not_failed(
 def test_non_matching_entries_leave_other_items_alone(
     pytester: pytest.Pytester,
 ) -> None:
-    """Only the named nodeid is marked; siblings are untouched."""
+    """Entries pointing at nonexistent nodeids are silently inert.
+
+    A manifest is allowed to lag behind the test surface (e.g. a test
+    was deleted upstream but the XFAIL entry hasn't been pruned yet).
+    The non-matching entry MUST NOT raise, MUST NOT mark an unrelated
+    item, and MUST NOT affect collection of the items that DO exist.
+    """
     _stage_conftest(pytester)
     failing_nodeid = _write_failing_test(pytester)
     _write_manifest(
         pytester,
         "xfails:\n"
+        # Matching entry — applies to the deliberately-failing test.
         f"  - nodeid: {failing_nodeid}\n"
         "    reason: deliberately failing under M2 test harness\n"
+        "    category: X\n"
+        # Non-matching entry — refers to a nodeid that does not exist
+        # in the collected items. Must be a silent no-op.
+        "  - nodeid: tests/test_sample.py::test_nonexistent\n"
+        "    reason: stale entry kept on purpose for this assertion\n"
         "    category: X\n",
     )
 
     result = pytester.runpytest("-q", "--no-header")
 
-    # test_will_pass MUST still report as a normal pass, not xfailed.
+    # The matching entry downgrades the failing test; the non-matching
+    # entry has no observable effect — test_will_pass stays a normal pass.
     result.assert_outcomes(passed=1, failed=0, xfailed=1)
 
 
