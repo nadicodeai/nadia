@@ -285,13 +285,35 @@ jobs:
           make parity
 
   # ---------------------------------------------------------------------------
-  # 8. update-smoke — IU-AC-9 (full), IU-AC-10, IU-AC-11 (M5.3 Part A).
+  # 8. install-smoke — M5.2 Docker-driven install.sh smoke harness.
   #
-  #    Docker-driven: boots ubuntu:22.04, installs argo from the public
-  #    `release` branch install.sh, and asserts the three update-related
-  #    ACs that don't require a live Telegram. Pulls only public
-  #    artefacts — no GHCR secrets required, so this job runs on fork
-  #    PRs too.
+  #    Pulls the renamed install.sh from the live `release` branch and runs
+  #    it in a clean ubuntu:22.04 container, asserting five invariants:
+  #      1. ~/.argo/.install_method == "git"                    (IU-AC-5)
+  #      2. `argo --version` exits 0                            (IU-AC-4 exit)
+  #      3. banner matches hermes regex                         (IU-AC-4 banner)
+  #      4. `argo update --check` does NOT print fork warning   (IU-AC-9 static)
+  #      5. ~/.hermes/.install_method does not exist            (leakage)
+  #
+  #    NOT a required check yet — branch protection wiring is a follow-up.
+  #    Visible-but-non-blocking on PRs so regressions surface loudly without
+  #    gating merges before M5/M6 close.
+  # ---------------------------------------------------------------------------
+  install-smoke:
+    name: install-smoke (M5.2; IU-AC-4/5/9)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: bash tests/install_smoke/run.sh
+        run: bash tests/install_smoke/run.sh
+
+  # ---------------------------------------------------------------------------
+  # 9. update-smoke — IU-AC-9 (full), IU-AC-10, IU-AC-11 (M5.3 Part A).
+  #
+  #    Boots ubuntu:22.04, installs argo from the public `release` branch,
+  #    asserts the three update-related ACs that don't require a live
+  #    Telegram. Public artefacts only — no GHCR secrets needed.
   #
   #    NOT a required check (visible only). 15-minute timeout caps the
   #    job; the actual harness budget is < 5 minutes per spec IU-AC-15.

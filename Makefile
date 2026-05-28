@@ -40,6 +40,7 @@ help:
 	@echo "  make parity-strict    Parity suite without expected-FAIL whitelist"
 	@echo "  make check-legacy-untouched  Verify ~/Code/argo-agent untouched (M2.4a)"
 	@echo "  make check-upstream-pristine Verify upstream/ matches last sync commit (M4.1)"
+	@echo "  make install-smoke    Docker-driven install.sh smoke test (M5.2; IU-AC-4/5/9)"
 	@echo "  make update-smoke     Docker update-smoke (IU-AC-9/10/11; M5.3 Part A)"
 	@echo "  make update-smoke-telegram  Docker /update mid-flight (IU-AC-6; M5.3 Part B, currently SKIPPED)"
 	@echo ""
@@ -177,6 +178,18 @@ check-legacy-untouched:
 .PHONY: check-upstream-pristine
 check-upstream-pristine:
 	python tools/check_upstream_pristine.py
+
+# M5.2: Docker-driven install.sh smoke harness.
+#
+# Pulls the renamed install.sh from the live release branch
+# (https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh),
+# runs it in a clean ubuntu:22.04 container, and asserts five invariants
+# (.install_method=git, argo --version exits 0, banner matches hermes regex,
+# no "Updating from fork" warning, no ~/.hermes/ leakage). Closes IU-AC-4,
+# IU-AC-5, IU-AC-9 (static portion). See tests/install_smoke/run.sh.
+.PHONY: install-smoke
+install-smoke:
+	bash tests/install_smoke/run.sh
 
 # -----------------------------------------------------------------------------
 # Patch operations (M3.1 wires the real implementations)
