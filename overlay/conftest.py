@@ -5,27 +5,20 @@ rootdir conftest. Pytest discovers conftests top-down from rootdir
 before walking `testpaths`, so this is loaded ahead of
 `dist/argo/tests/conftest.py` and any per-directory conftests.
 
-What it does
-------------
-Reads `argo-xfail.yml` (sitting next to this file) and applies
-`pytest.mark.xfail(reason=..., strict=False)` to every collected item
-whose `nodeid` appears in the manifest. See `argo-xfail.yml` for the
-schema, lifecycle, and the UCS-AC-4 contract that pins this design.
+What it does: reads `argo-xfail.yml` (sitting next to this file) and
+applies `pytest.mark.xfail(reason=..., strict=False)` to every collected
+item whose `nodeid` appears in the manifest. The manifest itself is the
+canonical doc for entry shape, category taxonomy, lifecycle, and the
+`strict=False` rationale — see `argo-xfail.yml`.
 
-Why a rootdir conftest, not a plugin
-------------------------------------
+Why a rootdir conftest, not a plugin:
+
 - Zero install cost — pytest auto-discovers conftests; no `entry_points`
   shuffle in `pyproject.toml`.
 - Zero patches against `upstream/tests/conftest.py` (which becomes
   `dist/argo/tests/conftest.py`). Pure additive; sync cost = 0.
 - The hook fires at collection time, before any test body runs, so the
   XFAIL marker is in place for the runner's own reporting.
-
-Why `strict=False`
-------------------
-An XPASS (test we marked XFAIL but it actually passed) should be a
-hint that upstream fixed the test or the rebrand engine caught up — not
-a red CI. We surface XPASS in the report and triage it later.
 
 Imports kept minimal (`pytest`, `yaml`, stdlib) so this loads even when
 the venv that runs it does not yet have `[all,dev]` installed.
