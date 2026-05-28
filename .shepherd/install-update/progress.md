@@ -24,7 +24,7 @@ Foundation loop (the M1–M8 build of the patch+overlay fork architecture) lives
 - **install.sh and cmd_update target `origin/release`** via the renamed installer at `https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh`.
 - **CalVer release tags** `v<YYYY>.<M>.<D>` (same-day suffix `.2`/`.3`); `__version__` bumped per-release inside `dist/argo/argo_cli/__init__.py` (gitignored on main; lives only in tarballs + release branch); `upstream/hermes_cli/__init__.py` source stays at upstream's value until next sync.
 - **Banner format inherited verbatim.** `Argo Agent v<semver> (<calver>)` — same shape as hermes. Spec amended 2026-05-28 to match.
-- **No PyPI.** IU-FR-13 codifies the divergence; `_cmd_update_pip` inherited as unreachable code for properly-installed argo customers.
+- **No PyPI.** IU-FR-13 codifies the divergence; `_cmd_update_pip` is inherited from upstream and remains reachable for pip-installed dev trees (`pip install -e .` against the workshop), but is unreachable for properly-installed argo customers — `install.sh` writes `.install_method = git`, so `cmd_update` always takes the git path on a customer machine. The associated upstream unit tests under `tests/argo_cli/test_cmd_update.py`, `test_update_autostash.py`, `test_update_yes_flag.py`, `test_update_zip_symlink_reject.py` are XFAIL'd in `overlay/argo-xfail.yml` (M3 of `update-cycle-smoke`) with this exact framing.
 - **`tools/argo_release.py` workshop-side release driver.** Mirrors upstream `release.py` shape but operates from workshop layout; tags HEAD without committing gitignored files; calls `gh release create`.
 - **Telegram smoke tests use a fake bot fixture, never the real API.**
 - **`OFFICIAL_REPO_URLS` rebrand is load-bearing.** P0 gate via IU-AC-9.
