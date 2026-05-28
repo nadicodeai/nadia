@@ -285,7 +285,28 @@ jobs:
           make parity
 
   # ---------------------------------------------------------------------------
-  # 8. check-legacy-untouched — DECLARED but SKIPPED in CI.
+  # 8. update-smoke — IU-AC-9 (full), IU-AC-10, IU-AC-11 (M5.3 Part A).
+  #
+  #    Docker-driven: boots ubuntu:22.04, installs argo from the public
+  #    `release` branch install.sh, and asserts the three update-related
+  #    ACs that don't require a live Telegram. Pulls only public
+  #    artefacts — no GHCR secrets required, so this job runs on fork
+  #    PRs too.
+  #
+  #    NOT a required check (visible only). 15-minute timeout caps the
+  #    job; the actual harness budget is < 5 minutes per spec IU-AC-15.
+  # ---------------------------------------------------------------------------
+  update-smoke:
+    name: update-smoke (M5.3 Part A — IU-AC-9/10/11)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: make update-smoke
+        run: make update-smoke
+
+  # ---------------------------------------------------------------------------
+  # 9. check-legacy-untouched — DECLARED but SKIPPED in CI.
   #
   #    Spec AC-10 ("legacy repo at ~/Code/argo-agent untouched") is a
   #    LOCAL-DEV gate. The legacy repo isn't present on GitHub-hosted

@@ -40,6 +40,8 @@ help:
 	@echo "  make parity-strict    Parity suite without expected-FAIL whitelist"
 	@echo "  make check-legacy-untouched  Verify ~/Code/argo-agent untouched (M2.4a)"
 	@echo "  make check-upstream-pristine Verify upstream/ matches last sync commit (M4.1)"
+	@echo "  make update-smoke     Docker update-smoke (IU-AC-9/10/11; M5.3 Part A)"
+	@echo "  make update-smoke-telegram  Docker /update mid-flight (IU-AC-6; M5.3 Part B, currently SKIPPED)"
 	@echo ""
 	@echo "Patch ops:"
 	@echo "  make patch-new NAME=<slug>   Start a new patch (M3.1)"
@@ -196,6 +198,34 @@ patch-list:
 	else \
 		echo "patches/series does not exist"; \
 		exit 1; \
+	fi
+
+# -----------------------------------------------------------------------------
+# Update-smoke harness (M5.3)
+# -----------------------------------------------------------------------------
+# Part A — IU-AC-9 (full), IU-AC-10, IU-AC-11. Boots ubuntu:22.04, installs
+# argo from the public `release` branch, asserts:
+#   - no "Updating from fork" warning on `argo update` (IU-AC-9 full)
+#   - `ARGO_MANAGED=1 argo update` prints "is managed by" on stderr (IU-AC-10;
+#     exit code NOT asserted per plan § M5.3 stderr-substring note)
+#   - pre_update_backup writes a zip; `argo import` restores it (IU-AC-11)
+# Wall-clock budget < 5 min (spec IU-AC-15).
+#
+# Part B — IU-AC-6 Telegram /update mid-flight. Currently exits 77 (skipped)
+# because the assertion needs systemd (cmd_update's restart path), which a
+# vanilla ubuntu:22.04 container doesn't provide. The Makefile target treats
+# 77 as "skipped, not failed" (autotools convention).
+.PHONY: update-smoke update-smoke-telegram
+update-smoke:
+	bash tests/update_smoke/run.sh
+
+update-smoke-telegram:
+	@bash tests/update_smoke/run_telegram.sh; rc=$$?; \
+	if [ $$rc -eq 77 ]; then \
+		echo "update-smoke-telegram: SKIPPED (exit 77)"; \
+		exit 0; \
+	else \
+		exit $$rc; \
 	fi
 
 # -----------------------------------------------------------------------------
