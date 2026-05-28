@@ -26,3 +26,6 @@ __pycache__/
 # Local environment
 .env
 .env.local
+
+# Smoke-run logs from tests/test_deployment_smoke.py (AC-2 smoke harness)
+.shepherd/smoke-run-*.log
