@@ -504,24 +504,34 @@ jobs:
           key: argo-test-durations
 
   # ---------------------------------------------------------------------------
-  # 12. check-legacy-untouched — DECLARED but SKIPPED in CI.
+  # 12. check-legacy-untouched — verifies the published legacy argo-agent
+  #     repository hasn't been tampered with relative to the recorded baseline.
   #
-  #    Spec AC-10 ("legacy repo at ~/Code/argo-agent untouched") is a
-  #    LOCAL-DEV gate. The legacy repo isn't present on GitHub-hosted
-  #    runners (it lives only on the maintainer's machine, frozen at
-  #    9b8cf6bf5). The verification path is hashing-at-session-start-
-  #    and-end on the maintainer's workstation, not in CI.
-  #
-  #    Job is declared here so the AC-9 list is visually complete; the
-  #    `if: false` guard ensures GH Actions never schedules it. If we
-  #    ever decide to host a baseline-hash artifact in the repo for CI
-  #    cross-check, flip this on and wire it up.
+  #     Spec AC-10 ("legacy repo at ~/Code/argo-agent untouched") originally
+  #     framed this as a LOCAL-DEV gate; the recorded baseline in
+  #     .shepherd/legacy-baseline.sha256 lets CI run an equivalent check:
+  #     clone the public nadicodeai/argo-agent repo at the frozen SHA
+  #     (9b8cf6bf5), recompute the tree hash, and compare against the
+  #     committed baseline. Catches force-pushes / history rewrites on the
+  #     legacy remote even though the legacy worktree itself only lives on
+  #     the maintainer's machine.
   # ---------------------------------------------------------------------------
   check-legacy-untouched:
-    name: check-legacy-untouched (local-dev gate; skipped in CI)
-    if: false
+    name: check-legacy-untouched (FR-G5 / AC-10)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Clone legacy argo-agent at frozen SHA into ~/Code/argo-agent
+        run: |
+          mkdir -p "$HOME/Code"
+          git clone --no-checkout https://github.com/nadicodeai/argo-agent.git "$HOME/Code/argo-agent"
+          cd "$HOME/Code/argo-agent"
+          # Pin to the SHA recorded in .shepherd/legacy-baseline.sha256.
+          # If the legacy remote rewrote history above this SHA, fetch
+          # will fail loudly here.
+          SHA=$(awk 'NR==4 {print $2}' "$GITHUB_WORKSPACE/.shepherd/legacy-baseline.sha256")
+          git fetch --depth 1 origin "$SHA"
+          git checkout "$SHA"
+          echo "legacy HEAD = $(git rev-parse HEAD)"
       - name: make check-legacy-untouched
         run: make check-legacy-untouched

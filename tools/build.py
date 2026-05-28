@@ -82,7 +82,7 @@ def _clean_dist() -> None:
 
 
 def _copy_upstream() -> None:
-    _log(f"copy upstream/ → dist/argo/ (preserving modes)")
+    _log("copy upstream/ → dist/argo/ (preserving modes)")
     if not UPSTREAM_DIR.is_dir():
         raise BuildError("copy-upstream", f"upstream/ not found at {UPSTREAM_DIR}")
     # shutil.copytree preserves modes by default; we exclude .commit and any

@@ -40,9 +40,9 @@ if not _OVERLAY.is_dir():
 sys.path.insert(0, str(_OVERLAY))
 
 # Engine import after sys.path is configured.
-from hermes_sync.config import RenameConfig  # noqa: E402
-from hermes_sync.engine import RenameEngine  # noqa: E402
-from hermes_sync.errors import ArgoSyncError  # noqa: E402
+from hermes_sync.config import RenameConfig  # noqa: E402  # ty: ignore[unresolved-import]
+from hermes_sync.engine import RenameEngine  # noqa: E402  # ty: ignore[unresolved-import]
+from hermes_sync.errors import ArgoSyncError  # noqa: E402  # ty: ignore[unresolved-import]
 
 
 def main(argv: list[str] | None = None) -> int:
