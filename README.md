@@ -2,6 +2,18 @@
 
 argo is a self-improving AI agent distributed as a Docker image. It is maintained by [nadicodeai](https://github.com/nadicodeai) as a rebranded fork of NousResearch's [hermes-agent](https://github.com/NousResearch/hermes-agent); the agent's behavior tracks upstream weekly with a small set of fork-only patches applied on top.
 
+## Quickstart for customers
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh | bash
+```
+
+argo runs your Telegram-fronted agent. Install on a Linux box, pair a Telegram bot via the interactive setup wizard, then send `/update` over Telegram to upgrade in place. Tested on Ubuntu 22.04+; the install script also supports macOS and Termux per the upstream `install.sh`.
+
+Two optional flags: pass `--skip-setup` to skip the interactive Telegram wizard (`curl ... | bash -s -- --skip-setup`), or `--skip-browser` to skip Node/browser-tool provisioning on headless servers that lack `xz-utils`.
+
+Releases live at <https://github.com/nadicodeai/argo/releases> (CalVer).
+
 ## Quickstart
 
 ```bash

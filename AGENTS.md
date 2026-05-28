@@ -12,6 +12,24 @@ Instructions for AI agents (and humans) working on argo. Keep this short; deep r
 
 `tools/` holds the build-time Python (build.py, rebrand.py, sync.py, verify_no_leakage.py, parity_runner.py, run_assertions.py, check_upstream_pristine.py). It never ships in the image. `dist/` and `.sync-workdir/` are gitignored.
 
+## Customer install path
+
+Customers install argo directly on a Linux host (no Docker) with a single curl one-liner:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh | bash
+```
+
+Two optional flags are honoured: `--skip-setup` skips the interactive Telegram-pairing wizard at the end (useful for CI/headless bootstrap), and `--skip-browser` skips the Node/browser-tool provisioning step (useful for headless servers without `xz-utils`).
+
+What the installer puts on disk: the venv at `~/.local/share/argo/`, config + state at `~/.argo/`, and a `~/.local/bin/argo` symlink (or `/usr/local/bin/argo` when run as root). After install, `argo --version` prints `Argo Agent v0.14.1 (2026.5.28)`; the customer then runs `argo setup` for the Telegram + provider wizard and `argo gateway install && argo gateway start` to bring the bot online.
+
+Repo topology behind the URL: `main` is the workshop (this tree — upstream + patches + overlay + rename engine); `release` is the storefront (the renamed `dist/argo/` tree, force-pushed by CI). Both `install.sh` and `argo update` (`git pull`) target `origin/release`. Developers can override with `curl ... | bash -s -- --branch main` to install from the workshop instead.
+
+Releases are cut by `tools/argo_release.py` from a clean workshop checkout (CalVer tags `v<YYYY>.<M>.<D>`, same-day suffix `.2`/`.3`); the tag push fires `.github/workflows/release.yml`, which rebuilds `dist/argo/`, force-pushes it to `release`, and uploads the tarball + standalone install scripts + SHA256 sums as GitHub Release assets. Argo does NOT publish to PyPI (IU-FR-13); the URL above is the only supported customer path and is stable forever (IU-FR-4).
+
+Spec, plan, and standards for this work live in `.shepherd/install-update/`.
+
 ## Prerequisites
 
 System tools (install once):
