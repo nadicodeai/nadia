@@ -10,8 +10,8 @@ This loop = `.shepherd/update-cycle-smoke/` (UCS-AC-1..N, TBD).
 
 ## Current Status
 **Phase:** 2 — Milestone Loop.
-**Current milestone:** M4 closed (implementer). Awaiting refactorer / architect pass; UCS-AC-1 clean-baseline gate met.
-**Current task:** Architect review of M4: confirm regex tightening did not regress leakage/parity/upstream-pristine; confirm overlay/argo-xfail.yml schema unchanged; confirm `run_tests_parallel.py` exits 0 against `dist/argo/`.
+**Current milestone:** M5 closed (implementer). Awaiting refactorer / architect pass; UCS-AC-6 met; UCS-AC-5 scaffolding done (first green CI run gates full closure).
+**Current task:** Architect review of M5: confirm job shape (6-slice matrix, `fail-fast: false`, durations + uv cache, Python 3.11 in dist-internal `.venv-test`, `--slice I/N` runner flag), confirm no branch-protection change, confirm cache keys don't collide with `legacy-image-${LEGACY_TAG}`.
 
 ### M3 closure — 2026-05-28
 - Implementer: `eb4e93a33 feat(M3): XFAIL 23 cmd_update pip-path tests (UCS-AC-4 — Cluster 1)`.
@@ -105,6 +105,41 @@ One row per originally-failing pytest entity from the **pre-M1/M2 baseline** (`.
 | 29 | `tests/test_sync_resume.py` (collection error) | 3 | **S (skip-from-dist)** | M1 `git mv` to repo-root `tests/`; imports rewired to `hermes_sync.*` | Tests the `sync` build-tool module which doesn't ship in `dist/argo/`. | M1 |
 
 **Category totals:** 23 X (Cluster 1 — M3) + 1 X (Cluster 2 ntfy — M4) + 1 R (Cluster 2 env_loader — M4) + 4 S (Cluster 3 — M1) = 29 entities, all closed. **0 F (no inherited flakes).** **0 P (no new patches).**
+
+### M5 closure — 2026-05-28
+
+- Implementer: this commit. Added two jobs to `.github/workflows/ci.yml`:
+  1. `dist-argo-tests` — 6-slice matrix (`fail-fast: false`, `[1,2,3,4,5,6]`), runs on `pull_request` + `push: branches: [main]` (inherited from workflow-level `on:`). Per-shard sequence: (a) `actions/checkout@v4` with `fetch-depth: 0`; (b) `./.github/actions/argo-setup` with default Python 3.13, `pip-packages: "pyyaml"` so `tools/build.py` can run; (c) restore `argo-uv-cache-${{ runner.os }}-${{ hashFiles('upstream/pyproject.toml', 'argo-rename.yaml') }}` for `~/.cache/uv`; (d) restore `argo-test-durations` to `/tmp/argo-test-durations.json` (cache restored to temp because `make build` wipes `dist/argo/`); (e) `make build`; (f) seed `dist/argo/test_durations.json` from the temp copy; (g) `cd dist/argo && uv venv .venv-test --python 3.11 && uv pip install --python .venv-test/bin/python -e ".[all,dev]"`; (h) `cd dist/argo && .venv-test/bin/python scripts/run_tests_parallel.py --slice ${{ matrix.slice }}/6`; (i) upload per-slice `dist/argo/test_durations.json` artifact (`if: always()`). `timeout-minutes: 30` per the plan's 25-min budget plus a 5-min cushion.
+  2. `dist-argo-tests-save-durations` — companion job gated `if: always() && github.ref == 'refs/heads/main'`, `needs: dist-argo-tests`. Downloads the 6 per-slice durations artifacts, merges them with `python3 -c`, and saves to cache key `argo-test-durations`. Mirrors upstream `tests.yml` lines 110-139 exactly, only the cache key is namespaced `argo-test-durations` to avoid colliding with anything upstream-shaped.
+- Architecture decisions taken in line with plan + standards:
+  - Single workflow file: jobs landed in `.github/workflows/ci.yml`, NOT a new workflow (standards.md § Architecture line 45).
+  - Composite action reused: `./.github/actions/argo-setup` handles uv + Python 3.13 + quilt + zstd + a top-level `.venv` (pyyaml install triggers venv creation). No duplication of setup steps.
+  - Python 3.11 inside the dist-internal `.venv-test` for wheel-resolution parity with upstream's own CI (plan § M5 description). argo's other jobs above continue on 3.13 unchanged.
+  - Runner: upstream's own `scripts/run_tests_parallel.py --slice I/N` (UCS-AC-6 — no new runner). Confirmed `--slice` flag in `upstream/scripts/run_tests_parallel.py:636` and the rebrand engine preserves the flag verbatim in `dist/argo/scripts/run_tests_parallel.py`.
+  - Cache keys namespaced `argo-uv-cache-*` and `argo-test-durations` — neither collides with the existing `legacy-image-${LEGACY_TAG}` key.
+  - uv HTTP cache keyed on `hashFiles('upstream/pyproject.toml', 'argo-rename.yaml')` because `dist/argo/pyproject.toml` doesn't exist at the cache-restore step (created later by `make build`). The two source files are stable proxies — a change to either invalidates the dist `[all,dev]` resolution surface.
+  - Durations cache restore-only on PRs (cache `save` happens only on `main` via the companion job). Prevents fork PRs from poisoning the durations cache.
+  - Visible-but-non-blocking — no branch-protection change in this commit (standards.md § Boundaries → Ask first; spec.md § Boundaries → Ask first).
+- Verification (this worktree, 2026-05-28):
+  - `python -c "import yaml; yaml.safe_load(open('.github/workflows/ci.yml'))"`: PASS (YAML parses cleanly; all 12 jobs present).
+  - Job-shape introspection (via `yaml.safe_load`):
+    - `jobs.dist-argo-tests.strategy.matrix.slice` == `[1, 2, 3, 4, 5, 6]` ✓
+    - `jobs.dist-argo-tests.strategy.fail-fast` == `False` ✓
+    - `jobs.dist-argo-tests` step count: 9 ✓
+    - `jobs.dist-argo-tests-save-durations.if` == `"always() && github.ref == 'refs/heads/main'"` ✓
+    - `jobs.dist-argo-tests-save-durations.needs` == `dist-argo-tests` ✓
+    - Workflow-level `on:` == `{pull_request: None, push: {branches: [main]}}` ✓ (inherited by both new jobs).
+  - `actionlint`: NOT INSTALLED on this worktree (`which actionlint` returns empty). Documented limitation; YAML-parse fallback used per the dispatch's allowance.
+  - `upstream/scripts/run_tests_parallel.py:636` confirms `--slice I/N` is the runner's actual flag (1-indexed, e.g. `--slice 1/6`).
+  - `git diff --stat`: only `.github/workflows/ci.yml` (+167, -0) changed (and `.shepherd/update-cycle-smoke/progress.md` for this evidence section).
+- Acceptance criteria coverage (UCS-AC-5, UCS-AC-6):
+  - UCS-AC-5 (`dist-argo-tests` job exists in `.github/workflows/ci.yml`, runs on `pull_request` + `push: branches: [main]`): **scaffolding done**; first green run depends on a PR-triggered CI execution which lands when this branch hits a PR. Per plan § M5 verification, "CI run on the PR introducing this job is green for all 6 shards on first non-draft run" is the gate for full closure; the implementer contribution to UCS-AC-5 (job declared correctly) is complete.
+  - UCS-AC-6 (uses upstream's own runner — not a new one): **MET**. `scripts/run_tests_parallel.py --slice` verbatim, no wrapper, no new tool.
+
+**Risks / open items (architect's call):**
+- First-run wall-clock on the 6 shards is unknown until a PR-triggered CI execution. Plan's risk table covers the mitigation (reduce `-j` in the runner if any shard exceeds 25 min).
+- `[all,dev]` install pulls heavy optional backends; first run will populate the uv cache cold. Plan's risk table covers the fallback (drop `[all]`, add as an opt-in matrix dimension).
+- The companion `save-durations` job uses `actions/download-artifact@v4` + `actions/cache/save@v4`. Upstream uses SHA-pinned versions; argo's existing jobs use major-version pins (e.g. `actions/cache@v4`). Followed argo's convention.
 
 ### M1+M2 architect deferred (NOT blocking)
 - Pre-existing `ruff check .` errors: F401 in `tests/test_run_assertions.py:21`, F541 in `tools/build.py:85`. Both predate this loop (commits 2026-05-27).

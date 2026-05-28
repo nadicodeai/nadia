@@ -328,6 +328,173 @@ jobs:
         run: make update-smoke
 
   # ---------------------------------------------------------------------------
+  # 10. dist-argo-tests — run upstream's renamed unit test suite against
+  #     dist/argo/ (UCS-AC-5, UCS-AC-6).
+  #
+  #     Wires the ~26k renamed upstream unit tests (in dist/argo/tests/) into
+  #     CI so every push and PR exercises the rebrand product, not just the
+  #     ~7 CLI surfaces parity covers. Mirrors upstream's tests.yml shape:
+  #     6-slice matrix, fail-fast: false, durations-cache balancing, Python
+  #     3.11 inside the dist-internal venv (wheel-resolution parity with
+  #     upstream's own CI). argo's other jobs above continue on Python 3.13.
+  #
+  #     Visible-but-non-blocking initially. Promotion to a required check on
+  #     `main` is a deliberate follow-up after a green streak (per
+  #     .shepherd/update-cycle-smoke/standards.md § Boundaries → Ask first).
+  #
+  #     Caches:
+  #       - argo-uv-cache-*       : ~/.cache/uv HTTP cache, keyed on the
+  #                                 upstream/pyproject.toml + argo-rename.yaml
+  #                                 content hash. Stable proxy for
+  #                                 dist/argo/pyproject.toml (which doesn't
+  #                                 exist until after `make build`).
+  #       - argo-test-durations   : per-file wall-clock cache used by
+  #                                 scripts/run_tests_parallel.py's --slice
+  #                                 to balance shards. Restored per shard,
+  #                                 merged + saved on main by the companion
+  #                                 dist-argo-tests-save-durations job.
+  #
+  #     Names start with `argo-` so they cannot collide with the existing
+  #     `legacy-image-${LEGACY_TAG}` cache key used by the parity job.
+  # ---------------------------------------------------------------------------
+  dist-argo-tests:
+    name: dist-argo-tests (slice ${{ matrix.slice }}/6)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        slice: [1, 2, 3, 4, 5, 6]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/argo-setup
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          # `pyyaml` so `tools/build.py` can run (same pattern as the
+          # `build` job above). The dist-internal `.venv-test` is a
+          # separate uv-managed Python 3.11 venv created below.
+          pip-packages: "pyyaml"
+
+      - name: Restore uv HTTP cache
+        # The dist `[all,dev]` install pulls a large optional-backend
+        # surface (anthropic, telegram, whisper, edge-tts, modal,
+        # daytona, …). Caching ~/.cache/uv across runs keeps the
+        # per-shard install time within budget. Key is tied to the
+        # upstream pyproject + the rebrand config — both are stable
+        # proxies for dist/argo/pyproject.toml (which doesn't exist
+        # until after `make build` so we can't hashFiles() it here).
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: argo-uv-cache-${{ runner.os }}-${{ hashFiles('upstream/pyproject.toml', 'argo-rename.yaml') }}
+          restore-keys: |
+            argo-uv-cache-${{ runner.os }}-
+
+      - name: Restore test-durations cache
+        # Mirror of upstream tests.yml lines 35-40. We restore to a temp
+        # path because `make build` blows away dist/argo/; we copy the
+        # restored file into dist/argo/test_durations.json AFTER the
+        # build so the runner can find it. Restore-only here; the
+        # companion save-durations job below writes the cache on main.
+        id: durations-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/argo-test-durations.json
+          key: argo-test-durations
+
+      - name: make build
+        run: |
+          . .venv/bin/activate
+          make build
+
+      - name: Seed dist/argo/test_durations.json from cache (if any)
+        # `scripts/run_tests_parallel.py` reads test_durations.json from
+        # the repo root, which is dist/argo/ for the renamed runner.
+        # Copy in the restored cache so --slice gets balanced slicing.
+        run: |
+          if [ -f /tmp/argo-test-durations.json ]; then
+            cp /tmp/argo-test-durations.json dist/argo/test_durations.json
+            echo "Seeded dist/argo/test_durations.json from cache."
+          else
+            echo "No durations cache hit; first run will distribute by count."
+          fi
+
+      - name: Provision dist-internal .venv-test (Python 3.11 + [all,dev])
+        # Python 3.11 to match upstream tests.yml (wheel-resolution
+        # parity with upstream's own CI). argo's other jobs run on
+        # Python 3.13; this dist venv is the only 3.11 surface.
+        run: |
+          cd dist/argo
+          uv venv .venv-test --python 3.11
+          uv pip install --python .venv-test/bin/python -e ".[all,dev]"
+
+      - name: Run dist/argo tests (slice ${{ matrix.slice }}/6)
+        # Upstream's own runner (rebrand-renamed) — UCS-AC-6 forbids
+        # introducing a new runner. Per-file isolation, LPT-balanced
+        # slicing by cached durations.
+        env:
+          # Belt-and-braces: ensure tests don't accidentally hit real
+          # APIs even if env leaks in from the runner image. Mirrors
+          # upstream tests.yml.
+          OPENROUTER_API_KEY: ""
+          OPENAI_API_KEY: ""
+          NOUS_API_KEY: ""
+        run: |
+          cd dist/argo
+          .venv-test/bin/python scripts/run_tests_parallel.py --slice ${{ matrix.slice }}/6
+
+      - name: Upload per-slice durations
+        # Each shard writes its own (partial) test_durations.json. The
+        # companion save-durations job merges them on main.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: argo-test-durations-slice-${{ matrix.slice }}
+          path: dist/argo/test_durations.json
+          if-no-files-found: warn
+          retention-days: 1
+
+  # ---------------------------------------------------------------------------
+  # 11. dist-argo-tests-save-durations — merge per-slice durations and save
+  #     to cache. Gated to main so PRs only READ the cache (preventing
+  #     forks from poisoning it). Mirrors upstream's save-durations job.
+  # ---------------------------------------------------------------------------
+  dist-argo-tests-save-durations:
+    name: dist-argo-tests-save-durations (main only)
+    needs: dist-argo-tests
+    if: always() && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all slice durations
+        uses: actions/download-artifact@v4
+        with:
+          pattern: argo-test-durations-slice-*
+          path: durations
+          merge-multiple: true
+
+      - name: Merge per-slice duration data
+        run: |
+          python3 -c "
+          import json, glob
+          merged = {}
+          for f in glob.glob('durations/*test_durations.json'):
+            with open(f) as fh:
+              merged.update(json.load(fh))
+          with open('test_durations.json', 'w') as fh:
+            json.dump(merged, fh, indent=2, sort_keys=True)
+          print(f'Merged {len(merged)} file durations')
+          "
+
+      - name: Save merged durations cache
+        uses: actions/cache/save@v4
+        with:
+          path: test_durations.json
+          key: argo-test-durations
+
+  # ---------------------------------------------------------------------------
   # 9. check-legacy-untouched — DECLARED but SKIPPED in CI.
   #
   #    Spec AC-10 ("legacy repo at ~/Code/argo-agent untouched") is a
