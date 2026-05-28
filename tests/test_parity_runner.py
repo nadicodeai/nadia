@@ -135,8 +135,9 @@ def test_parity_error_hierarchy() -> None:
 
 
 def test_surfaces_in_scope() -> None:
-    """M6.2b defines exactly seven FR-16 surfaces (M6.2a's 3 + 4 backend)."""
+    """FR-16 (M6.2b) ships seven surfaces; IU-AC-7/IU-AC-8 (M6.1+M6.2) adds two."""
     assert set(parity_runner.SURFACES) == {
+        # FR-16 / M6.2b
         "help",
         "version",
         "doctor-static",
@@ -144,7 +145,46 @@ def test_surfaces_in_scope() -> None:
         "hook-fire",
         "auth-start",
         "session-init",
+        # IU-AC-7 / IU-AC-8 (install-update loop M6.1 + M6.2)
+        "install-script",
+        "cmd-update",
     }
+
+
+def test_install_script_surface_shape() -> None:
+    """IU-AC-7 surface inspects the in-image install.sh via grep.
+
+    Read-only post-install layout parity (option a in the M6 dispatch).
+    The grep pattern MUST stay narrow — broadening it pulls in upstream
+    refactors that don't break behavior, defeating the purpose of a
+    pinned-line gate. See the inline comment in SURFACES.
+    """
+    spec = parity_runner.SURFACES["install-script"]
+    # Both sides invoke ``bash -c "grep ... /opt/argo/scripts/install.sh"``;
+    # the path was probed against both the new image and the legacy
+    # baseline at SHA 9b8cf6bf5 (publish-legacy-baseline.yml's input).
+    assert spec.new_args[0] == "bash"
+    assert spec.legacy_entrypoint == "bash"
+    assert "/opt/argo/scripts/install.sh" in spec.new_args[-1]
+    assert "/opt/argo/scripts/install.sh" in spec.legacy_args[-1]
+    # The pinned constants the surface gates on.
+    for needle in ("BRANCH=", "REPO_URL_HTTPS=", "install_method"):
+        assert needle in spec.new_args[-1]
+        assert needle in spec.legacy_args[-1]
+
+
+def test_cmd_update_surface_shape() -> None:
+    """IU-AC-8 surface runs ``argo/hermes update --check`` on both sides.
+
+    --check is the read-only path: no git pull, no state mutation, no
+    network. The in-image tree has no .git/ so both sides take the
+    'not a git repository' early-return; the parity gate asserts the
+    error message is byte-equivalent modulo brand renames.
+    """
+    spec = parity_runner.SURFACES["cmd-update"]
+    assert spec.new_args == ("argo", "update", "--check")
+    assert spec.legacy_entrypoint == "hermes"
+    assert spec.legacy_args == ("update", "--check")
 
 
 def test_backend_surfaces_have_proper_specs() -> None:
@@ -432,6 +472,9 @@ def test_runner_help_succeeds() -> None:
     assert "hook-fire" in res.stdout
     assert "auth-start" in res.stdout
     assert "session-init" in res.stdout
+    # IU-AC-7 / IU-AC-8 (install-update loop M6.1 + M6.2).
+    assert "install-script" in res.stdout
+    assert "cmd-update" in res.stdout
 
 
 def test_runner_rejects_unknown_surface() -> None:

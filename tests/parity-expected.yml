@@ -82,6 +82,68 @@ expected:
       legitimate; with a real v0.14.0 legacy image this surface should
       converge.
 
+  - surface: install-script
+    # install-update loop M6.1 (IU-AC-7). Two EXPECTED divergences that
+    # the hermes→argo normalization does not (and should not) erase:
+    #   1. ``REPO_URL_HTTPS=`` — upstream's ``NousResearch/hermes-agent.git``
+    #      normalizes to ``NousResearch/argo-agent.git``, but the renamed
+    #      tree explicitly retargets to ``nadicodeai/argo.git``. The
+    #      GitHub-owner segment (``NousResearch`` vs ``nadicodeai``) is
+    #      intentionally NOT in the substitution table — owners are part
+    #      of the rebrand and must be allowed to differ.
+    #   2. ``BRANCH=`` — IU-FR-6 mandates argo defaults to ``release``
+    #      while hermes stays on ``main``. M4.1 lands the patch flipping
+    #      this in the renamed tree. The normalization table does not
+    #      (and must not) translate ``main`` ↔ ``release``.
+    # Both diffs are stable per design. If a future surface broadens to
+    # catch new divergences, this XFAIL still serves: any NEW differing
+    # line not covered by the two above will tip the diff over the
+    # XFAIL threshold and need explicit triage.
+    reason: rebrand-owner and default-branch are intentional argo↔hermes deltas
+    notes: |
+      Pinned constants the surface grep targets: BRANCH=, REPO_URL_HTTPS=,
+      install_method. Of those, BRANCH and REPO_URL_HTTPS legitimately
+      differ between argo (``release`` / ``nadicodeai/argo.git``) and
+      hermes (``main`` / ``NousResearch/hermes-agent.git`` →
+      ``NousResearch/argo-agent.git`` post-normalization). The
+      install_method-write line (``echo "git" > "$ARGO_HOME/.install_method"``
+      vs ``"$HERMES_HOME"`` → ``"$ARGO_HOME"``) IS covered by
+      normalization and should match — if it ever doesn't, that's a real
+      regression, not an XFAIL.
+
+      Lifecycle: this entry stays as long as IU-FR-6 is in effect.
+      Promoting the surface to option (b) — heavyweight install.sh
+      from-scratch comparison in a fresh ubuntu:22.04 container — would
+      need a different XFAIL pattern (the resulting trees diverge in
+      more places) and is the right call only if option (a) misses a
+      regression that option (b) would catch.
+
+  - surface: cmd-update
+    # install-update loop M6.2 (IU-AC-8). Reason for XFAIL today (issue #1):
+    # currently-pullable legacy ``:latest`` is v0.8.0 which predates the
+    # ``--check`` flag; the SKIP detector catches the
+    # ``unrecognized arguments: --check`` and reclassifies as SKIPPED.
+    # Once the publish-legacy-baseline workflow runs and the real
+    # ``:0.14.0`` tag is published, ``--check`` is available on both
+    # sides, the SKIP goes away, and the surface should PASS (or land
+    # one stable owner-segment divergence in the error message — see
+    # M6.1 notes). This entry is the XFAIL net for the interim:
+    # SKIPPED does not contribute to FAIL, and PASS supersedes XFAIL;
+    # the only way this entry "activates" is the version-gap-bridged
+    # state where output legitimately diverges.
+    reason: legacy :latest (v0.8.0) lacks --check; SKIPPED until :0.14.0 lands
+    notes: |
+      Lifecycle:
+        - Today: SKIPPED against ``:latest`` (v0.8.0). XFAIL entry is a
+          safety net only.
+        - After publish-legacy-baseline.yml runs and ``:0.14.0`` is
+          pullable: re-evaluate. If output matches modulo normalization,
+          PROMOTE to "Surfaces explicitly NOT on this list" and DELETE
+          this entry. If a stable per-fork divergence remains (e.g. the
+          error message references the configured remote URL which
+          differs between argo and hermes), tighten the ``reason`` and
+          keep the entry.
+
 # Surfaces explicitly NOT on this list (asserted PASS or SKIPPED at M6
 # close, MUST stay green / change-controlled):
 #   - doctor-static (SKIPPED — legacy v0.8.0 lacks --static; would be

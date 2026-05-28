@@ -265,6 +265,93 @@ SURFACES: dict[str, _SurfaceSpec] = {
         # mounted dir as a single relative listing.
         artifact_path="",
     ),
+    # M6.1 (closes IU-AC-7). Read-only post-install layout parity for
+    # the renamed install.sh shipped INSIDE the built image. Pins the
+    # load-bearing default-branch + repo-URL + install-method-stamp
+    # lines so that an upstream refactor or a rename-engine regression
+    # that perturbs them surfaces as a parity diff.
+    #
+    # Path discovery (probed 2026-05-28 against locally available
+    # images): both the new image (``ghcr.io/nadicodeai/argo:dev`` and
+    # ``:dev-full``) and the legacy baseline at SHA 9b8cf6bf5 (which
+    # publish-legacy-baseline.yml builds as
+    # ``ghcr.io/nadicodeai/argo-agent:0.14.0``) install the renamed
+    # tree at ``/opt/argo`` per Dockerfile WORKDIR + COPY. Upstream's
+    # un-renamed ``hermes-agent:0.14.0`` would live at ``/opt/hermes``;
+    # since the published legacy baseline is the locally renamed tree
+    # the parity-side path is also ``/opt/argo``. (The currently
+    # pull-able ``argo-agent:latest`` v0.8.0 image is upstream-built
+    # and uses ``/opt/hermes``; that path mismatch is one reason this
+    # surface XFAILs against ``:latest`` and converges against the
+    # spec-named ``:0.14.0`` baseline.)
+    #
+    # Trade-off (option a vs option b in the M6 dispatch).
+    # ----------------------------------------------------
+    # This is the LIGHTWEIGHT read-only variant: we inspect the
+    # AS-BUILT image's install.sh in place, not a fresh install.sh run.
+    # M5.2 (``tests/install_smoke/run.sh``) covers the dynamic install
+    # path end-to-end against a clean ``ubuntu:22.04`` container. M6.1
+    # complements that with a per-build apples-to-apples diff of the
+    # installer's load-bearing constants, which is fast enough to gate
+    # every CI run (no second image spin-up). Promoting this to a
+    # heavyweight install.sh-from-scratch comparison (option b) would
+    # require spinning two ``ubuntu:22.04`` containers per run and
+    # diffing the resulting trees — multi-minute cost and substantial
+    # surface-shape change; do that follow-up only if option-a parity
+    # misses a regression that option-b would have caught.
+    #
+    # Expected divergence (whitelisted in tests/parity-expected.yml).
+    # ---------------------------------------------------------------
+    # The hermes→argo normalization does NOT translate the
+    # GitHub-owner segment ``NousResearch`` → ``nadicodeai``, nor the
+    # M4.1 patched default ``BRANCH="release"`` ↔ legacy ``BRANCH="main"``.
+    # Both lines therefore appear in the diff against an upstream
+    # baseline. Both are EXPECTED and listed as XFAIL.
+    "install-script": _SurfaceSpec(
+        new_args=(
+            "bash",
+            "-c",
+            "grep -nE '^BRANCH=|^REPO_URL_HTTPS=|install_method' "
+            "/opt/argo/scripts/install.sh",
+        ),
+        legacy_entrypoint="bash",
+        legacy_args=(
+            "-c",
+            "grep -nE '^BRANCH=|^REPO_URL_HTTPS=|install_method' "
+            "/opt/argo/scripts/install.sh",
+        ),
+    ),
+    # M6.2 (closes IU-AC-8). Read-only ``update --check`` parity. Uses
+    # the check-only path (no git pull, no state mutation, no network)
+    # so the surface is safe to run in a sandboxed CI environment AND
+    # the in-image tree has no writable git checkout to begin with.
+    #
+    # Behavioral note. Against an image built from a tarball (no .git/),
+    # ``argo update --check`` exits 0 and prints
+    # ``"✗ Not a git repository — cannot check for updates."`` — see
+    # the v0.14.0 ``_cmd_update_impl`` early-return path. The parity
+    # gate therefore asserts the ERROR MESSAGE is byte-equivalent
+    # (modulo brand renames) between new and legacy, not the happy path.
+    # That's still load-bearing: it asserts the renamed code reaches
+    # the same code path and emits the same string, which is the
+    # IU-AC-8 contract for ``cmd_update`` behavior parity.
+    #
+    # Legacy-version note. The ``--check`` flag landed in
+    # hermes-agent v0.14.x; the currently-published legacy ``:latest``
+    # is v0.8.0 and rejects ``--check`` with argparse's
+    # ``unrecognized arguments: --check``. The SKIP detector catches
+    # that and reclassifies the surface as ``SKIPPED (legacy lacks
+    # subcommand)``. Against the spec-named ``:0.14.0`` baseline the
+    # surface converges to PASS (or XFAIL on stable per-fork drift).
+    #
+    # Trade-off mirrors M6.1: this is the lightweight read-only path.
+    # M5.3 (``tests/update_smoke/run.sh``) exercises the full
+    # mid-flight restart and Telegram-fronted /update path end-to-end.
+    "cmd-update": _SurfaceSpec(
+        new_args=("argo", "update", "--check"),
+        legacy_entrypoint="hermes",
+        legacy_args=("update", "--check"),
+    ),
 }
 
 
