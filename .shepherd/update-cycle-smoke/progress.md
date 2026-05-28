@@ -10,8 +10,14 @@ This loop = `.shepherd/update-cycle-smoke/` (UCS-AC-1..N, TBD).
 
 ## Current Status
 **Phase:** 2 — Milestone Loop.
-**Current milestone:** M1 + M2 closed (APPROVE). Baseline checkpoint next, then M3 + M4 in parallel.
-**Current task:** Re-run baseline (`dist/argo/scripts/run_tests_parallel.py`) to checkpoint — expect 23 failures (Cluster 1 cmd_update) + 2 failures (Cluster 2) + 0 collection errors.
+**Current milestone:** M3 closed (APPROVE). Dispatch M4 next (Cluster 2 fix + triage). Then UCS-AC-1 clean-baseline gate.
+**Current task:** Dispatch M4 implementer: (a) tighten `argo-rename.yaml` URL `skip_contexts:` regex (R-fix for `test_env_loader`); (b) **re-diagnose** `test_ntfy_plugin` from F→X (the plan's asyncio-flake diagnosis was wrong; actual log shows clean assertion `'argo-in' == 'hermes-in'` — URL skip preserves the `hermes-in` substring while the runtime correctly renamed the topic). M4 ends with 1 entry in `overlay/argo-xfail.yml` + 1 regex tightening + triage rows in this progress file.
+
+### M3 closure — 2026-05-28
+- Implementer: `eb4e93a33 feat(M3): XFAIL 23 cmd_update pip-path tests (UCS-AC-4 — Cluster 1)`.
+- Refactorer: no commit (verbose-readability trade-off correct — YAML can't fold anchor+suffix concatenation into scalars without a hook contract change).
+- Architect: APPROVE. Evidence: Cluster 1 dist run shows `26 passed, 23 xfailed`; Cluster 2 dist run shows `2 failed, 82 passed, 0 xfailed`; XFAIL ceiling 0.088% (23/26,075, well under 5%); install-update IU-FR-13 wording fix verified; 0 new lint/ty errors; hook unchanged; `pytest tests/test_overlay_xfail_hook.py` 6/6.
+
 **Last action:** Architect APPROVE on M1+M2 (`f69babf27 chore(M1+M2 hardening): gitignore .shepherd/smoke-run-*.log`). Architect ruled: (a) M1's expanded exception assertions in `tests/test_full_rename_config.py` are correctness fixes (3 stale entries removed in M2.1 audit per yaml header); APPROVE; (b) M1's pragmatic skipif split (doctor + deployment_smoke gating on `dist/argo/argo_cli/main.py` existence) is clean and accurate; APPROVE; (c) `.shepherd/smoke-run-*.log` gitignored (one architect commit); (d) conftest layering clean — `dist/argo/conftest.py` (rootdir, M2) and `dist/argo/tests/conftest.py` (per-testpaths, upstream) coexist with no fixture-collision surface; (e) patches count unchanged at 9; (f) XFAIL ceiling 0/26075 (0%) — well within 5%. Pre-existing ruff F401/F541 and ty `hermes_sync.errors` lint debt flagged as out-of-scope architect-deferred items.
 
 ### M1 evidence
