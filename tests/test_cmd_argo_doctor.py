@@ -6,6 +6,22 @@ identifiers — so the leakage scanner never flags this file.
 The upstream source identifier being tested for is referred to indirectly via
 the PROBE constant, which is *built at runtime* by querying the rename mappings
 rather than being spelled out as a literal.
+
+Layout note
+-----------
+
+This file lives at repo-root ``tests/`` because it asserts on
+``argo-rename.yaml`` (a build-tool input) and on the post-rename
+``argo doctor`` CLI surface — neither belongs in the customer artifact
+under ``dist/argo/tests/``.
+
+The ``argo doctor --static / --live`` subcommands are wired by
+``patches/0008-doctor-static-live-wiring.patch`` and only exist in the
+built tree, so this file drives the subprocess against
+``dist/argo/argo_cli.main`` rather than the pre-rename ``hermes_cli``
+sources. ``make build`` is therefore a precondition; tests SKIP cleanly
+when ``dist/argo/`` is absent so a bare ``pytest tests/`` run on a fresh
+clone never reds.
 """
 
 from __future__ import annotations
@@ -23,8 +39,23 @@ import pytest
 # file while still exercising the real detection logic.
 # ---------------------------------------------------------------------------
 
-_REPO_ROOT = Path(__file__).parent.parent
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 _RENAME_YAML = _REPO_ROOT / "argo-rename.yaml"
+_DIST_ARGO = _REPO_ROOT / "dist" / "argo"
+_DIST_ARGO_CLI_MAIN = _DIST_ARGO / "argo_cli" / "main.py"
+
+# Module-level skip: argo doctor --static/--live is patched into the CLI by
+# patches/0008-doctor-static-live-wiring.patch, applied during `make build`.
+# Without dist/argo/ we have no CLI to drive. SKIP rather than fail so a
+# bare `pytest tests/` on a fresh checkout stays green.
+pytestmark = pytest.mark.skipif(
+    not _DIST_ARGO_CLI_MAIN.exists(),
+    reason=(
+        "dist/argo/ not built; run `make build` first. argo doctor --static / "
+        "--live are wired by patches/0008-doctor-static-live-wiring.patch and "
+        "only exist in the post-build tree."
+    ),
+)
 
 
 def _load_probe_token() -> str:
@@ -53,7 +84,9 @@ _PROBE = _load_probe_token()
 # Module-level paths
 # ---------------------------------------------------------------------------
 
-_LEAKAGE_MOD = _REPO_ROOT / "argo_cli" / "doctor_leakage.py"
+# Pre-rename overlay location of the doctor leakage module (mirrors the
+# post-rename `argo_cli/doctor_leakage.py` that ships under dist/argo/).
+_LEAKAGE_MOD = _REPO_ROOT / "overlay" / "hermes_cli" / "doctor_leakage.py"
 
 
 # ---------------------------------------------------------------------------
@@ -61,19 +94,24 @@ _LEAKAGE_MOD = _REPO_ROOT / "argo_cli" / "doctor_leakage.py"
 # ---------------------------------------------------------------------------
 
 
+def _argo_cmd() -> list[str]:
+    """Argv prefix that runs the BUILT post-rename argo CLI from dist/argo/."""
+    return [sys.executable, "-m", "argo_cli.main"]
+
+
 def _run_static(repo_root: Path, rename_yaml: Path | None = None) -> subprocess.CompletedProcess:
     """Run `argo doctor --static` against *repo_root* as a subprocess."""
     yaml_path = rename_yaml or _RENAME_YAML
     return subprocess.run(
         [
-            sys.executable, "-m", "argo_cli.main",
+            *_argo_cmd(),
             "doctor", "--static",
             "--rename-yaml", str(yaml_path),
             "--repo-root", str(repo_root),
         ],
         capture_output=True,
         text=True,
-        cwd=str(_REPO_ROOT),
+        cwd=str(_DIST_ARGO),
     )
 
 
@@ -212,14 +250,14 @@ class TestDoctorLive:
         leaky_cmd = f"{sys.executable} -c \"import sys; sys.stdout.write('{token}\\\\n')\""
         result = subprocess.run(
             [
-                sys.executable, "-m", "argo_cli.main",
+                *_argo_cmd(),
                 "doctor", "--live",
                 "--rename-yaml", str(_RENAME_YAML),
                 "--live-cmd", leaky_cmd,
             ],
             capture_output=True,
             text=True,
-            cwd=str(_REPO_ROOT),
+            cwd=str(_DIST_ARGO),
         )
 
         assert result.returncode != 0, (
@@ -230,19 +268,20 @@ class TestDoctorLive:
     def test_live_clean_exits_zero(self) -> None:
         """--live exits 0 when the captured output contains no upstream tokens.
 
-        This test runs against the real repo via `argo --help` + `argo --version`
-        (the built-in fallback commands used when no --live-cmd is given).  After
-        the M3 bootstrap the install must be free of upstream identifiers.
+        This test runs against the real built tree via `argo --help` +
+        `argo --version` (the built-in fallback commands used when no
+        --live-cmd is given).  After `make build` the install must be free
+        of upstream identifiers.
         """
         result = subprocess.run(
             [
-                sys.executable, "-m", "argo_cli.main",
+                *_argo_cmd(),
                 "doctor", "--live",
                 "--rename-yaml", str(_RENAME_YAML),
             ],
             capture_output=True,
             text=True,
-            cwd=str(_REPO_ROOT),
+            cwd=str(_DIST_ARGO),
         )
 
         assert result.returncode == 0, (
