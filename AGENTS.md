@@ -47,6 +47,11 @@ Python deps come from `upstream/pyproject.toml` via `uv` (also upstream's conven
 3. **`.shepherd/progress.md`** — current milestone state.
 4. **`.shepherd/standards.md`** — coding/repo/process rules.
 
+Sub-loops (same `{spec,plan,progress,standards}.md` shape, scoped to a sibling outcome):
+
+- **`.shepherd/install-update/`** — IU-AC-1..15: customer install + `argo update` parity surfaces (closed).
+- **`.shepherd/update-cycle-smoke/`** — UCS-AC-1..8: run upstream's 26k renamed tests on `dist/argo/` in CI (closed; issue #12).
+
 ## Workflow at a glance
 
 ```bash

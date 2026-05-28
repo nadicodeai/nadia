@@ -323,3 +323,10 @@ _(populated during the Setup phase as gates are passed)_
 
 ## Architecture State
 _(populated post-Setup)_
+
+## M6 closure — 2026-05-28
+
+- **Issue #12 closed:** https://github.com/nadicodeai/argo/issues/12 — closed 2026-05-28 with a comment linking the spec, baseline log, triage table, and M5 commits.
+- **M5 commit hashes:** `9c00a4b6c` (feat: dist-argo-tests CI job) + `fabbde89c` (chore: ci.yml header inventory + un-fragile durations comment).
+- **AGENTS.md updated:** `## Reading order` section now lists both `.shepherd/install-update/` and `.shepherd/update-cycle-smoke/` sub-loops alongside the foundation loop.
+- **Summary:** update-cycle-smoke loop closed; 0 failures locally, CI job declared, issue #12 closed.
