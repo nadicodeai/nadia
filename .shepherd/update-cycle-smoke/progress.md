@@ -10,9 +10,51 @@ This loop = `.shepherd/update-cycle-smoke/` (UCS-AC-1..N, TBD).
 
 ## Current Status
 **Phase:** 2 — Milestone Loop.
-**Current milestone:** M1 + M2 — implementers + M2 refactor merged; architect pass next.
-**Current task:** Dispatch architect from merged main to harden M1+M2 slice. Then re-run baseline checkpoint.
-**Last action:** M1 (`4a3c82ac6 feat(M1)...`), M1 merge (`00e488f50`), M2 (`a1edf1c8f feat(M2)...`), M2 merge (`040c29ca5`), M2 refactor (`c9866f363 refactor(M2)...`), M2 refactor merge (`a4f6c2711`) all landed on main. Verification on merged main: `make build` PASS, all 4 M1 files absent from `dist/argo/tests/`, `dist/argo/conftest.py` + `dist/argo/argo-xfail.yml` present, `make leakage-static` PASS, `make check-upstream-pristine` PASS, `pytest tests/` 133 passed 4 deselected 0 failures.
+**Current milestone:** M1 + M2 closed (APPROVE). Baseline checkpoint next, then M3 + M4 in parallel.
+**Current task:** Re-run baseline (`dist/argo/scripts/run_tests_parallel.py`) to checkpoint — expect 23 failures (Cluster 1 cmd_update) + 2 failures (Cluster 2) + 0 collection errors.
+**Last action:** Architect APPROVE on M1+M2 (`f69babf27 chore(M1+M2 hardening): gitignore .shepherd/smoke-run-*.log`). Architect ruled: (a) M1's expanded exception assertions in `tests/test_full_rename_config.py` are correctness fixes (3 stale entries removed in M2.1 audit per yaml header); APPROVE; (b) M1's pragmatic skipif split (doctor + deployment_smoke gating on `dist/argo/argo_cli/main.py` existence) is clean and accurate; APPROVE; (c) `.shepherd/smoke-run-*.log` gitignored (one architect commit); (d) conftest layering clean — `dist/argo/conftest.py` (rootdir, M2) and `dist/argo/tests/conftest.py` (per-testpaths, upstream) coexist with no fixture-collision surface; (e) patches count unchanged at 9; (f) XFAIL ceiling 0/26075 (0%) — well within 5%. Pre-existing ruff F401/F541 and ty `hermes_sync.errors` lint debt flagged as out-of-scope architect-deferred items.
+
+### M1 evidence
+- 4 files moved from `overlay/tests/` to `tests/` via `git mv`.
+- Imports rewired pre-rename (`hermes_sync.*`) for the pure-tooling tests; subprocess targets `dist/argo/argo_cli.main` for the two CLI-driving tests with module-level skipif guards on `dist/argo/` presence.
+- Scope expansion APPROVED by architect: `tests/test_full_rename_config.py`'s 3 stale exception-membership assertions replaced with current-yaml entries (`tests/test_full_rename_config.py` self-protection, `*/_rename_defaults.py`, `.argo/**`).
+- `.shepherd/smoke-run-*.log` now gitignored by architect commit `f69babf27`.
+
+### M2 evidence
+- `overlay/argo-xfail.yml` (empty manifest with documented schema header).
+- `overlay/conftest.py` (~85 lines post-refactor; rootdir conftest with `pytest_collection_modifyitems` hook applying `pytest.mark.xfail(strict=False)` to matching nodeids).
+- `tests/test_overlay_xfail_hook.py` (6 pytester-based tests covering: entry application, empty-list no-op, missing-manifest no-op, malformed-YAML no-op, stale-entry-silently-inert, non-match-leaves-others-alone).
+- M2 refactor: deduped schema doc from conftest (manifest header is canonical); sharpened the non-match test to include a stale-entry case.
+
+### Baseline checkpoint after M1+M2 (2026-05-28)
+
+`cd dist/argo && .venv-test/bin/python scripts/run_tests_parallel.py` — runner wall 246s.
+
+| Metric | Baseline (pre-M1/M2) | Checkpoint (post-M1/M2) | Plan target |
+|---|---|---|---|
+| Collection errors | 3 | **0** | 0 ✅ |
+| Files with failures | 7 | **6** | 6 (no S-fixture failure) ✅ |
+| Test failures total | 26 | **25** | 25 (23 Cluster 1 + 2 Cluster 2) ✅ |
+| Cluster 1 (cmd_update pip-path) | 23 | **23** | 23 (M3 will XFAIL) ✅ |
+| Cluster 2 (env_loader + ntfy_plugin) | 2 | **2** | 2 (M4 will fix env_loader + triage ntfy_plugin) ✅ |
+| Patches in `patches/` | 9 | 9 | 9 (unchanged) ✅ |
+
+**Cluster 1 breakdown:**
+- `tests/argo_cli/test_cmd_update.py` (14)
+- `tests/argo_cli/test_update_autostash.py` (6)
+- `tests/argo_cli/test_update_yes_flag.py` (2)
+- `tests/argo_cli/test_update_zip_symlink_reject.py` (1)
+
+**Cluster 2 breakdown:**
+- `tests/argo_cli/test_env_loader.py::test_main_import_applies_user_env_over_shell_values` (1) — R-category per plan (URL skip_contexts regex too greedy; consumes embedded `HERMES_INFERENCE_PROVIDER`).
+- `tests/gateway/test_ntfy_plugin.py::TestStandaloneSend::test_posts_to_server` (1) — **plan diagnosed as F (asyncio flake)** but actual log shows a clean assertion failure: `'https://ntfy.example.com/argo-in' == 'https://ntfy.example.com/hermes-in'`. The test asserts on a hermes-named URL path that the URL `skip_contexts:` regex preserves verbatim, while the runtime topic was correctly renamed. → **Likely re-classifies to X**, not F. M4 implementer to confirm by reading `dist/argo/tests/gateway/test_ntfy_plugin.py:744`.
+
+Saved to `.shepherd/update-cycle-smoke/baseline-after-M1M2.log`.
+
+### M1+M2 architect deferred (NOT blocking)
+- Pre-existing `ruff check .` errors: F401 in `tests/test_run_assertions.py:21`, F541 in `tools/build.py:85`. Both predate this loop (commits 2026-05-27).
+- Pre-existing `ty check overlay/ tools/` finding: `unresolved-import hermes_sync.errors` in `tools/rebrand.py:45`. Works at runtime via sys.path injection (`tools/rebrand.py:34-40`).
+- These are repo-baseline lint debt; address in a separate cleanup commit if desired. NOT a blocker for this loop's exit gates.
 
 ### M1 evidence
 - 4 files moved from `overlay/tests/` to `tests/` via `git mv`.
