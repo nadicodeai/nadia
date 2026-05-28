@@ -55,7 +55,7 @@ EXCEPTION_PATHS: tuple[str, ...] = (
 )
 
 SKIP_CONTEXTS: tuple[str, ...] = (
-    'https?://(?!(?:(?:raw\\.)?github(?:usercontent)?\\.com/NousResearch/hermes-agent\\b|hermes-agent\\.local))[^\\s]*',
+    'https?://(?!(?:(?:raw\\.)?github(?:usercontent)?\\.com/NousResearch/hermes-agent\\b|hermes-agent\\.local))[^\\s"\'\\\\]*',
     '\\b[0-9a-f]{40}\\b',
     '\\b[0-9a-f]{64}\\b',
 )

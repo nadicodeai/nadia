@@ -79,6 +79,12 @@ skip_contexts:
   # (real upstream PyPI package), img.shields.io/badge/Docs-hermes (badge label
   # that should mirror upstream), and NousResearch/hermes-example-plugins
   # (no nadicode fork exists) — is preserved as-is.
-  - 'https?://(?!(?:(?:raw\.)?github(?:usercontent)?\.com/NousResearch/hermes-agent\b|hermes-agent\.local))[^\s]*'
+  # Negated class excludes whitespace, quotes, and backslash so the URL
+  # match stops at the closing quote / start of an escape sequence in
+  # Python/JS/YAML string literals (e.g. `"https://x.example/v1\nKEY=v\n"`
+  # source-level `\n` is a backslash + 'n' — neither matches regex `\s`,
+  # so without `\\` here the URL match would consume the embedded
+  # KEY=value tail and prevent rebrand. See M4 / UCS-AC-3.
+  - 'https?://(?!(?:(?:raw\.)?github(?:usercontent)?\.com/NousResearch/hermes-agent\b|hermes-agent\.local))[^\s"''\\]*'
   - '\b[0-9a-f]{40}\b'      # Don't rewrite inside git-sha-like 40-hex tokens.
   - '\b[0-9a-f]{64}\b'      # Don't rewrite inside sha256-like 64-hex tokens.
