@@ -1,0 +1,61 @@
+# overlay/argo-xfail.yml — XFAIL manifest for argo's rebranded test suite.
+#
+# Spec contract: UCS-AC-4 (see `.shepherd/update-cycle-smoke/spec.md`).
+# Plan contract: M2 + M3 (see `.shepherd/update-cycle-smoke/plan.md`).
+#
+# What this file is
+# -----------------
+# A whitelist of pytest nodeids that are EXPECTED to fail when running
+# upstream's renamed test suite under `dist/argo/tests/`. Each entry
+# documents a single failing test (or a parametrize variant) plus the
+# reason argo legitimately diverges from upstream's expectation.
+#
+# How it is loaded
+# ----------------
+# `overlay/conftest.py` (which becomes `dist/argo/conftest.py` after
+# `make build` — pytest's rootdir conftest, auto-discovered before
+# `dist/argo/tests/conftest.py`) reads this file at collection time via
+# `pytest_collection_modifyitems` and applies
+# `pytest.mark.xfail(reason=<reason>, strict=False)` to each matching
+# nodeid. An empty `xfails: []` list is a no-op.
+#
+# `strict=False` means: a test that unexpectedly passes shows up as
+# XPASS (informational), not red. This lets upstream-fixes percolate
+# through without breaking CI; we triage XPASSes later instead of
+# blocking on them.
+#
+# Entry shape
+# -----------
+# xfails:
+#   - nodeid: tests/argo_cli/test_cmd_update.py::TestPipUpdate::test_uses_pip_when_pip_installed
+#     reason: argo not published to PyPI per IU-FR-13; cmd_update's pip path is unused for properly-installed argo customers (install via public install.sh URL).
+#     category: X
+#
+# Field semantics
+# ---------------
+# - `nodeid`: exact pytest nodeid (as printed by `pytest --collect-only -q`).
+#   Path is relative to `dist/argo/` (pytest's rootdir at runtime). MUST
+#   match `item.nodeid` byte-for-byte; no glob, no regex.
+# - `reason`: one-line written justification. Either (a) cite a
+#   foundation-loop FR/IU-FR/IU-AC the test conflicts with intentionally,
+#   or (b) describe the upstream-test-asserts-on-hermes-state divergence
+#   the rename engine causes. "Flaky" is NOT a valid reason — flakes go
+#   to category F and are documented in progress.md, not XFAIL'd.
+# - `category`: one of {X, S, F}. See
+#   `.shepherd/update-cycle-smoke/standards.md` § Triage Categories.
+#   X = XFAIL rename-induced (this manifest's primary purpose).
+#   S = Skip-from-dist (the file should never have shipped — fix via
+#       argo-rename.yaml or by moving overlay-owned tests to repo-root
+#       tests/; entries here are only a safety net).
+#   F = Inherited flake (red on upstream's own CI; documented, not
+#       silently XFAIL'd — present here only when an upstream fix is
+#       imminent and we want the gate green in the interim).
+#
+# Lifecycle
+# ---------
+# 1. M2 (this commit): infrastructure only; empty `xfails: []`.
+# 2. M3: populate with the 23 cmd_update pip-path entries.
+# 3. Later loops: prune entries when upstream fixes the test or when
+#    rebrand engine widens to cover the case.
+
+xfails: []
