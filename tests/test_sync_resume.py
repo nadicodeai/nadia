@@ -1,4 +1,4 @@
-"""overlay/tests/test_sync_resume.py — regression tests for the resume path.
+"""tests/test_sync_resume.py — regression tests for the resume path.
 
 Pins issue #3: ``tools/sync.py --resume`` invokes ``quilt push -a`` to
 replay the patch series after a sync-conflict resolution. When the series
@@ -19,12 +19,11 @@ These tests exercise the helper directly and the resume flow via
 Layout note
 -----------
 
-``overlay/tests/`` is excluded from ``pytest.ini``'s ``testpaths`` because
-most files there reference ``argo_*`` identifiers that only exist post-
-rename in ``dist/argo/tests/``. This file exercises the pre-rename
-``tools/sync.py`` directly and is safe to invoke explicitly with::
+This file lives at repo-root ``tests/`` because it exercises the
+build-time ``tools/sync.py`` directly; it must not ship to customers
+under ``dist/argo/tests/``. Run with::
 
-    pytest overlay/tests/test_sync_resume.py -v
+    pytest tests/test_sync_resume.py -v
 """
 
 from __future__ import annotations
@@ -36,7 +35,7 @@ from unittest import mock
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 # tools/ is not a package; extend sys.path so we can import sync directly
 # (same pattern as tests/test_parity_runner.py).

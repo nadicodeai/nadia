@@ -22,6 +22,18 @@ Test matrix
       environment together with a matching provider key. Exercises the real
       model pipeline.
 
+Layout note
+-----------
+
+This file lives at repo-root ``tests/`` because it asserts on
+``argo-rename.yaml`` (a build-tool input) and on the post-rename argo
+CLI surface — neither belongs in the customer artifact under
+``dist/argo/tests/``. The CLI lives at ``dist/argo/argo_cli/main.py``
+post-build, so the subprocess invocations target the built tree directly.
+``make build`` is therefore a precondition; tests SKIP cleanly when
+``dist/argo/`` is absent so a bare ``pytest tests/`` run on a fresh
+clone stays green.
+
 Tiered model strategy
 ---------------------
 When ``ARGO_TEST_MODEL`` is set, ``test_deployment_smoke_live`` runs against
@@ -44,7 +56,6 @@ from __future__ import annotations
 
 import datetime
 import os
-import re
 import sys
 import tempfile
 from pathlib import Path
@@ -53,32 +64,71 @@ from typing import Optional
 import pytest
 
 # ---------------------------------------------------------------------------
-# Project root + log dir
+# Project root + log dir + dist preconditions
 # ---------------------------------------------------------------------------
 
-_REPO_ROOT = Path(__file__).parent.parent
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 _LOG_DIR = _REPO_ROOT / ".shepherd"
 _RENAME_YAML = _REPO_ROOT / "argo-rename.yaml"
+_DIST_ARGO = _REPO_ROOT / "dist" / "argo"
+_DIST_ARGO_CLI_MAIN = _DIST_ARGO / "argo_cli" / "main.py"
+_OVERLAY_DOCTOR_LEAKAGE = _REPO_ROOT / "overlay" / "hermes_cli" / "doctor_leakage.py"
+
+# Module-level skip: this file asserts on the post-rename argo CLI, which
+# is materialised at ``dist/argo/`` by ``make build``. Without the built tree
+# we have no CLI to drive. SKIP rather than fail so a bare ``pytest tests/``
+# on a fresh checkout stays green.
+pytestmark = pytest.mark.skipif(
+    not _DIST_ARGO_CLI_MAIN.exists(),
+    reason=(
+        "dist/argo/ not built; run `make build` first. The deployment-smoke "
+        "harness asserts AC-2 against the built argo CLI."
+    ),
+)
 
 # ---------------------------------------------------------------------------
-# Leakage detection — reuse argo_cli.doctor_leakage so the same
-# argo-rename.yaml exceptions apply.
+# Leakage detection — reuse the pre-rename overlay copy of doctor_leakage so
+# the same argo-rename.yaml exceptions apply, without depending on the dist
+# tree being importable from the test process. (Equivalent to the post-rename
+# argo_cli/doctor_leakage.py — same source, renamed.)
 # ---------------------------------------------------------------------------
+
+
+def _load_doctor_leakage():
+    """Import the overlay copy of doctor_leakage as a stand-alone module.
+
+    The dist tree's ``argo_cli.doctor_leakage`` is functionally identical
+    (it is this same source with hermes→argo applied by the rename engine),
+    but importing from ``dist/argo/`` would require massaging sys.path and
+    pulling in the rest of the post-rename argo_cli package. The overlay
+    copy is the pre-rename original — importing it directly via importlib
+    keeps the test process free of post-rename module pollution.
+    """
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "_test_doctor_leakage", _OVERLAY_DOCTOR_LEAKAGE
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def _assert_no_leakage(text: str, label: str) -> None:
     """Assert that *text* contains no upstream-identifier hits.
 
-    Uses ``argo_cli.doctor_leakage._scan_text`` so that the same
-    ``skip_contexts`` and ``mappings`` from argo-rename.yaml apply — this is
-    the identical logic used by ``argo doctor --static`` and ``--live``.
+    Uses the doctor_leakage scanner so that the same ``skip_contexts`` and
+    ``mappings`` from argo-rename.yaml apply — this is the identical logic
+    used by ``argo doctor --static`` and ``--live``.
 
     Raises ``AssertionError`` with a clear message on any hit.
     """
-    from argo_cli.doctor_leakage import _load_rename_config, _scan_text
-
-    mappings, _exc_globs, skip_patterns, probe_token = _load_rename_config(_RENAME_YAML)
-    hits = _scan_text(text, probe_token, mappings, skip_patterns, label)
+    doctor_leakage = _load_doctor_leakage()
+    mappings, _exc_globs, skip_patterns, probe_token = doctor_leakage._load_rename_config(
+        _RENAME_YAML
+    )
+    hits = doctor_leakage._scan_text(text, probe_token, mappings, skip_patterns, label)
 
     if hits:
         lines = [f"  {h.path}:{h.line_no}:{h.col_no}: {h.line_text!r}" for h in hits]
@@ -184,7 +234,7 @@ def test_help_and_version_smoke():
                 capture_output=True,
                 text=True,
                 timeout=30,
-                cwd=str(_REPO_ROOT),
+                cwd=str(_DIST_ARGO),
                 env=env,
             )
             combined_stdout += result.stdout
@@ -224,7 +274,9 @@ def test_deployment_smoke_stub():
     """
     import subprocess
 
-    from tests.fixtures.recorded_model.server import RecordedModelServer
+    # The recorded_model fixture ships under dist/argo/tests/fixtures/.
+    sys.path.insert(0, str(_DIST_ARGO))
+    from tests.fixtures.recorded_model.server import RecordedModelServer  # type: ignore[import-not-found]
 
     with tempfile.TemporaryDirectory(prefix="argo_smoke_") as argo_home:
         # Write a minimal config so argo uses the custom (stub) provider.
@@ -258,7 +310,7 @@ def test_deployment_smoke_stub():
                 capture_output=True,
                 text=True,
                 timeout=90,
-                cwd=str(_REPO_ROOT),
+                cwd=str(_DIST_ARGO),
                 env=env,
             )
 
@@ -363,7 +415,7 @@ def test_deployment_smoke_live():
             capture_output=True,
             text=True,
             timeout=90,
-            cwd=str(_REPO_ROOT),
+            cwd=str(_DIST_ARGO),
             env=env,
         )
 

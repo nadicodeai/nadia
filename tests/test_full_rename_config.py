@@ -6,18 +6,26 @@ constraints for the production rename config.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
-
-from argo_sync.config import RenameConfig
 
 # ---------------------------------------------------------------------------
 # Fixture
 # ---------------------------------------------------------------------------
 
-_REPO_ROOT = Path(__file__).parent.parent
+_REPO_ROOT = Path(__file__).resolve().parent.parent
 _CONFIG_PATH = _REPO_ROOT / "argo-rename.yaml"
+
+# overlay/ hosts the pre-rename engine sources (hermes_sync). Repo-root tests
+# import them directly via sys.path injection — same pattern as
+# tools/rebrand.py lines 34-40 and tests/test_parity_runner.py.
+_OVERLAY = _REPO_ROOT / "overlay"
+if str(_OVERLAY) not in sys.path:
+    sys.path.insert(0, str(_OVERLAY))
+
+from hermes_sync.config import RenameConfig  # noqa: E402
 
 
 @pytest.fixture(scope="module")
@@ -101,27 +109,47 @@ def test_required_to_values_correct(config: RenameConfig) -> None:
         )
 
 
-def test_exceptions_contains_shepherd(config: RenameConfig) -> None:
-    """exceptions must contain the .shepherd/** entry."""
+def test_exceptions_contains_self_test_protection(config: RenameConfig) -> None:
+    """exceptions must protect this test file (it contains hermes-* literals).
+
+    The repo-root rename test file itself contains the hermes-* string
+    literals as fixture data. When the engine runs on ``dist/argo/`` it
+    never sees this repo-root file, but the exception entry is kept so
+    runtime ``argo doctor --static`` (which can scan arbitrary trees
+    including a checkout-style layout) does not flag it.
+    """
     paths = {rule.path for rule in config.exceptions}
-    assert ".shepherd/**" in paths, (
-        f".shepherd/** not in exceptions paths: {paths}"
+    assert "tests/test_full_rename_config.py" in paths, (
+        f"tests/test_full_rename_config.py not in exceptions paths: {paths}"
     )
 
 
-def test_exceptions_contains_rename_yaml(config: RenameConfig) -> None:
-    """exceptions must contain argo-rename.yaml (self-protection)."""
+def test_exceptions_contains_rename_defaults(config: RenameConfig) -> None:
+    """exceptions must contain the generated ``_rename_defaults.py`` glob.
+
+    ``tools/generate_rename_defaults.py`` bakes the rename config into a
+    Python module so ``argo doctor --static`` works in the published image
+    where ``argo-rename.yaml`` is absent (issue #4). That module legitimately
+    contains every hermes-* FROM key as a string literal — the engine MUST
+    NOT rewrite its contents.
+    """
     paths = {rule.path for rule in config.exceptions}
-    assert "argo-rename.yaml" in paths, (
-        f"argo-rename.yaml not in exceptions paths: {paths}"
+    assert "*/_rename_defaults.py" in paths, (
+        f"*/_rename_defaults.py not in exceptions paths: {paths}"
     )
 
 
-def test_exceptions_contains_bootstrap_script(config: RenameConfig) -> None:
-    """exceptions must contain bin/argo-bootstrap.py."""
+def test_exceptions_contains_argo_metadata(config: RenameConfig) -> None:
+    """exceptions must contain the ``.argo/**`` build/sync manifest glob.
+
+    The manifests record pre-rename file paths (hermes_cli/foo.py →
+    argo_cli/foo.py) and ship with the artifact for introspection
+    (``argo --version --verbose``). They are intentionally allowed to
+    contain hermes-* string literals.
+    """
     paths = {rule.path for rule in config.exceptions}
-    assert "bin/argo-bootstrap.py" in paths, (
-        f"bin/argo-bootstrap.py not in exceptions paths: {paths}"
+    assert ".argo/**" in paths, (
+        f".argo/** not in exceptions paths: {paths}"
     )
 
 
