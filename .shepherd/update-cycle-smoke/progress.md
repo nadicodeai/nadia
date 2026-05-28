@@ -408,3 +408,66 @@ The Phase-2 composite diff cleanly delivers UCS-AC-1..8 minus UCS-AC-5's post-pu
 No M7 structural fixes needed: the hook contract is clean, the manifest schema is disciplined, no new patches were introduced, no architectural rule is violated, and the AGENTS.md mention + issue-12 closure paperwork is complete. The progress.md update documenting M7's verification state and the F-category inherited flakes is the only architect-owned change.
 
 Phase 2 + Phase 3 (M7) closed. Phase 3's M8 (cleanup) remains for the cleanup pass — outside the architect's M7 scope.
+
+## M8 closure + final report — 2026-05-28
+
+### What shipped
+
+- **M1** (`4a3c82ac6`, merged `00e488f50`) — moved 4 build-tool tests from `overlay/tests/` to `tests/` so they stop shipping into `dist/argo/tests/`. Cleared 3 collection errors + 1 fixture failure (Cluster 3, S-category).
+- **M2** (`a1edf1c8f`, merged `040c29ca5`; refactor `c9866f363`, merged `a4f6c2711`) — XFAIL infrastructure: `overlay/argo-xfail.yml` (manifest) + `overlay/conftest.py` (pytest rootdir hook with `strict=False`) + `tests/test_overlay_xfail_hook.py` (6 pytester unit tests).
+- **M1+M2 architect** (`f69babf27`) — `.shepherd/smoke-run-*.log` gitignored.
+- **Shepherd state landing** (`e3b9a6bda`, `b08a3af46`, `e9930e5f9`) — loop's spec/plan/standards/progress + baseline logs committed for traceability.
+- **M3** (`eb4e93a33`) — 23 X-category XFAILs added for the cmd_update pip-path Cluster-1 tests; IU-FR-13 wording fix in `.shepherd/install-update/progress.md`.
+- **M4** (`48ad80261`) — `argo-rename.yaml` URL `skip_contexts:` regex tightened from `[^\s]*` to `[^\s"'\\]*` (R-fix for `test_env_loader`); 1 X-category XFAIL for `test_ntfy_plugin` URL-skip preservation; 29-row triage table written to progress.md.
+- **M5** (`9c00a4b6c`; architect cleanup `fabbde89c`) — `dist-argo-tests` CI job (6-slice matrix, Python 3.11 dist venv, `--slice I/6` runner flag, `argo-uv-cache-*` + `argo-test-durations` caches, companion `dist-argo-tests-save-durations` job main-gated for fork-PR cache poisoning safety) added to `.github/workflows/ci.yml`; doc cleanup of stale "eight jobs" header + numbering.
+- **M6** (`f793d196e`) — issue [#12](https://github.com/nadicodeai/argo/issues/12) closed with linked artifacts; AGENTS.md `## Reading order` updated to list both sub-loops.
+- **M7** (`39226851a`) — Phase-3 final architect APPROVE; 2 F-category inherited flakes from upstream's `_live_system_guard` × psutil 7.2.2 documented (reproduce on pristine upstream — NOT argo bugs).
+
+### Final state (verifiable from this commit)
+
+| Metric | Value |
+|---|---|
+| Commits this loop | 17 (`d34ef1d23..HEAD`) |
+| Test files in `dist/argo/tests/` | 1,223 |
+| Test cases | 26,416 |
+| Failures (argo-attributable) | 0 |
+| Failures (F-category inherited flakes, upstream-owned) | 2 |
+| XFAILs | 24 (0.091%, ceiling 5%) |
+| New patches in `patches/` | 0 (still 9 total) |
+| Issue #12 | CLOSED |
+| Argo behavior divergence from Hermes | none (rename-only fork; see [[project-argo-rename-only]]) |
+
+### Accepted limitations
+
+- **UCS-AC-5 (CI job green run)** — declared, structurally complete. Actual green run on GH Actions only verifiable after `git push origin main`. First-run risks documented in plan.md § Risk table (workflow YAML edge cases, `[all,dev]` install size on `ubuntu-latest` runner disk, 6-shard wall-clock budget).
+- **Pre-existing lint debt** (deferred):
+  - `ruff check .`: F401 in `tests/test_run_assertions.py:21`, F541 in `tools/build.py:85`. Predate this loop (2026-05-27 commits).
+  - `ty check overlay/ tools/`: unresolved-import `hermes_sync.errors` in `tools/rebrand.py:45`. Works at runtime via sys.path injection.
+- **2 F-category inherited flakes**: `tests/agent/lsp/test_client_e2e.py::test_client_lifecycle_clean` and `tests/tools/test_terminal_timeout_output.py::TestTimeoutPreservesPartialOutput::test_timeout_includes_partial_output`. Both reproduce on pristine upstream. Documented in triage table addendum; NOT XFAILed per standards.md.
+- **`make parity` not run during M7** — local `:dev-full` image absent. Job runs in CI; deferred to first post-push CI run.
+
+### Deferred (future loops)
+
+| Item | Why deferred | Where it goes |
+|---|---|---|
+| Live e2e against real LLM provider + `/update` from TUI + real systemd respawn | Original (misunderstood) scope of this loop; cheapest answer was "run upstream's 26k tests" first. Worth doing once `dist-argo-tests` is green for a streak. | New `.shepherd/<live-e2e>/` loop. |
+| Promote `dist-argo-tests` to required check on `main` branch protection | `## Boundaries → Ask first`; needs Vadim sign-off after a green streak. | Follow-up after first 5 consecutive green runs. |
+| Sync-regression CI (`make sync` from automation) | Maintainer-facing; could chain off the new `dist-argo-tests` job. | Future loop. |
+| Cross-platform install tests (macOS, Windows) | Linux-first; matches upstream. | Future loop. |
+| Resolve the 2 F-category flakes upstream | Upstream-owned; suggest filing upstream PR or issue once we understand the psutil parent-chain race. | Upstream contribution. |
+
+### Worktrees + branch cleanup
+
+Per Shepherd protocol, `git worktree remove -f -f <path>` for non-main worktrees. **Skipped here:** the 13 `.claude/worktrees/agent-*` worktrees and their `worktree-agent-*` branches are managed by the FleetView agent runtime — the runtime keeps them around for post-hoc inspection of agent changes. Removing them with `git worktree remove -f -f` would invalidate the runtime's lock files. **Recommendation:** leave them for the runtime's own GC, or run `git worktree prune` periodically once you're done inspecting agent diffs.
+
+If forced cleanup IS desired, the commands are:
+```bash
+for w in $(git worktree list --porcelain | awk '/^worktree.*\/agent-/ {print $2}'); do
+  git worktree remove -f -f "$w" 2>/dev/null
+done
+git branch -l 'worktree-agent-*' | xargs -r git branch -D
+```
+
+### Loop verdict
+
+**update-cycle-smoke closed. APPROVED.** UCS-AC-1..4, 6, 7, 8 all met locally. UCS-AC-5 declared (post-push green-run gate pending). Triage discipline holds: 24 X-category XFAILs (0.091%), 1 R-fix in `argo-rename.yaml`, 4 S-category test relocations, 0 new patches, 2 F-category inherited flakes documented and NOT XFAILed. Argo's customer surface (`install.sh`, `argo --version`, `argo gateway`, `argo update`) is unchanged — this loop hardened the *test layer*, not the runtime.
