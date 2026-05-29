@@ -1,0 +1,104 @@
+Subject: Compare against origin/release in startup banner update check
+
+Upstream's `hermes_cli/banner.py` runs its own update-availability check
+that prints "Update available: N commits behind" on every CLI invocation.
+The check hardcodes `origin/main` at three call sites:
+
+  - `_check_via_local_git()` line 167:
+      git rev-list --count HEAD..origin/main
+  - `get_git_banner_state()` line 308:
+      _git_short_hash(repo_dir, "origin/main")
+  - `get_git_banner_state()` line 316:
+      git rev-list --count origin/main..HEAD
+
+This is a separate code path from `_cmd_update_*` (fixed by
+0009-update-default-branch-release.patch). The banner runs unconditionally
+on startup; cmd_update runs only when the user types `argo update`.
+
+For an argo customer who installed via the patched install.sh (which
+clones `release` per 0006-install-default-branch-release.patch) and whose
+`argo update` resolves to `release` per patch 0009, the banner's
+`origin/main` reference points at the workshop branch — a completely
+different history that contains M-series shepherd loops, build-tool
+patches, refactors, etc. that never propagate to `release` until a tag
+fires `.github/workflows/release.yml`.
+
+The customer-facing symptom (observed on v2026.5.29 fresh install in
+ubuntu:22.04, 2026-05-29):
+
+  $ argo --version
+  Argo Agent v0.14.1 (2026.5.29)
+  Update available: 108 commits behind — run 'argo update'
+
+  $ argo update --check
+  → Fetching from origin...
+  ✓ Already up to date.
+
+Customer sees "108 commits behind", runs `argo update`, gets "Already
+up to date" — confusing contradiction that undermines trust in the
+update mechanism. The bug is in the banner, not in cmd_update.
+
+Same fix as patch 0009: literal swap `main` → `release` at the three
+call sites. argo's customer surface lives on `release`; the banner
+should compare against the branch the customer's install actually tracks.
+
+Developers who install via `curl ... | bash -s -- --branch main` still
+see incorrect banner counts; they can ignore them (the cmd_update
+override `argo update --branch main` is the dev workflow).
+
+A future patch may switch banner.py to detect the current branch
+dynamically via `git symbolic-ref --short HEAD`, removing the
+literal-swap trade-off entirely; for now the literal swap matches
+the established 0006 + 0009 pattern.
+
+IU-FR-7, IU-FR-8 (banner consistency with cmd_update target branch).
+
+Index: .sync-workdir/hermes_cli/banner.py
+===================================================================
+--- .sync-workdir.orig/hermes_cli/banner.py
++++ .sync-workdir/hermes_cli/banner.py
+@@ -152,7 +152,7 @@ def _check_via_rev(embedded_rev: str) ->
+
+
+ def _check_via_local_git(repo_dir: Path) -> Optional[int]:
+-    """Count commits behind origin/main in a local checkout."""
++    """Count commits behind origin/release in a local checkout."""
+     try:
+         subprocess.run(
+             ["git", "fetch", "origin", "--quiet"],
+@@ -164,7 +164,7 @@ def _check_via_local_git(repo_dir: Path)
+
+     try:
+         result = subprocess.run(
+-            ["git", "rev-list", "--count", "HEAD..origin/main"],
++            ["git", "rev-list", "--count", "HEAD..origin/release"],
+             capture_output=True, text=True, timeout=5,
+             cwd=str(repo_dir),
+         )
+@@ -222,7 +222,7 @@ def check_for_updates() -> Optional[int]
+
+     Two paths: if ``ARGO_REVISION`` is set (nix builds embed it), compare
+     it to upstream main via ``git ls-remote``. Otherwise look for a local
+-    git checkout and count commits behind ``origin/main``.
++    git checkout and count commits behind ``origin/release``.
+
+     Returns the number of commits behind, ``UPDATE_AVAILABLE_NO_COUNT`` (-1)
+     if behind but the count is unknown, ``0`` if up-to-date, or ``None`` if
+@@ -305,13 +305,13 @@ def get_git_banner_state(repo_dir: Optio
+     if repo_dir is None:
+         return None
+
+-    upstream = _git_short_hash(repo_dir, "origin/main")
++    upstream = _git_short_hash(repo_dir, "origin/release")
+     local = _git_short_hash(repo_dir, "HEAD")
+     if not upstream or not local:
+         return None
+
+     ahead = 0
+     try:
+         result = subprocess.run(
+-            ["git", "rev-list", "--count", "origin/main..HEAD"],
++            ["git", "rev-list", "--count", "origin/release..HEAD"],
+             capture_output=True,
+             text=True,
+             timeout=5,

@@ -1,0 +1,21 @@
+# Assertions for 0010-banner-update-check-release-branch.patch
+#
+# Pins the post-patch state of banner.py's three origin/main → origin/release
+# swaps inside the renamed argo_cli/banner.py. Without these, a rename-
+# engine regression, sync conflict, or accidental patch drop could silently
+# flip the banner check back to comparing against origin/main while
+# cmd_update (patched by 0009) still targets origin/release. Customer sees
+# "Update available: N commits behind" on every startup while `argo update`
+# reports up-to-date — the regression this patch was written to fix.
+#
+# tools/run_assertions.py format: "path:<glob> <literal>" — the literal
+# string must appear inside files matching the glob.
+#
+# Three pinned literals — one per call site:
+#   1. _check_via_local_git()      rev-list HEAD..origin/release
+#   2. get_git_banner_state()      _git_short_hash(repo_dir, "origin/release")
+#   3. get_git_banner_state()      rev-list origin/release..HEAD
+
+path:argo_cli/banner.py "HEAD..origin/release"
+path:argo_cli/banner.py _git_short_hash(repo_dir, "origin/release")
+path:argo_cli/banner.py "origin/release..HEAD"
