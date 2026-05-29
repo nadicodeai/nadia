@@ -53,13 +53,28 @@ the established 0006 + 0009 pattern.
 
 IU-FR-7, IU-FR-8 (banner consistency with cmd_update target branch).
 
-Index: .sync-workdir/hermes_cli/banner.py
-===================================================================
---- .sync-workdir.orig/hermes_cli/banner.py
-+++ .sync-workdir/hermes_cli/banner.py
-@@ -152,7 +152,7 @@ def _check_via_rev(embedded_rev: str) ->
-
-
+--- a/hermes_cli/banner.py
++++ b/hermes_cli/banner.py
+@@ -131,14 +131,14 @@ _UPSTREAM_REPO_URL = "https://github.com
+ 
+ 
+ def _check_via_rev(local_rev: str) -> Optional[int]:
+-    """Compare an embedded git revision to upstream main via ls-remote.
++    """Compare an embedded git revision to the release branch via ls-remote.
+ 
+     Returns 0 if up-to-date, ``UPDATE_AVAILABLE_NO_COUNT`` if behind,
+     or ``None`` on failure.
+     """
+     try:
+         result = subprocess.run(
+-            ["git", "ls-remote", _UPSTREAM_REPO_URL, "refs/heads/main"],
++            ["git", "ls-remote", _UPSTREAM_REPO_URL, "refs/heads/release"],
+             capture_output=True, text=True, timeout=10,
+         )
+     except Exception:
+@@ -152,7 +152,7 @@ def _check_via_rev(local_rev: str) -> Op
+ 
+ 
  def _check_via_local_git(repo_dir: Path) -> Optional[int]:
 -    """Count commits behind origin/main in a local checkout."""
 +    """Count commits behind origin/release in a local checkout."""
@@ -67,7 +82,7 @@ Index: .sync-workdir/hermes_cli/banner.py
          subprocess.run(
              ["git", "fetch", "origin", "--quiet"],
 @@ -164,7 +164,7 @@ def _check_via_local_git(repo_dir: Path)
-
+ 
      try:
          result = subprocess.run(
 -            ["git", "rev-list", "--count", "HEAD..origin/main"],
@@ -76,24 +91,24 @@ Index: .sync-workdir/hermes_cli/banner.py
              cwd=str(repo_dir),
          )
 @@ -222,7 +222,7 @@ def check_for_updates() -> Optional[int]
-
-     Two paths: if ``ARGO_REVISION`` is set (nix builds embed it), compare
+ 
+     Two paths: if ``HERMES_REVISION`` is set (nix builds embed it), compare
      it to upstream main via ``git ls-remote``. Otherwise look for a local
 -    git checkout and count commits behind ``origin/main``.
 +    git checkout and count commits behind ``origin/release``.
-
+ 
      Returns the number of commits behind, ``UPDATE_AVAILABLE_NO_COUNT`` (-1)
      if behind but the count is unknown, ``0`` if up-to-date, or ``None`` if
-@@ -305,13 +305,13 @@ def get_git_banner_state(repo_dir: Optio
+@@ -305,7 +305,7 @@ def get_git_banner_state(repo_dir: Optio
      if repo_dir is None:
          return None
-
+ 
 -    upstream = _git_short_hash(repo_dir, "origin/main")
 +    upstream = _git_short_hash(repo_dir, "origin/release")
      local = _git_short_hash(repo_dir, "HEAD")
      if not upstream or not local:
          return None
-
+@@ -313,7 +313,7 @@ def get_git_banner_state(repo_dir: Optio
      ahead = 0
      try:
          result = subprocess.run(

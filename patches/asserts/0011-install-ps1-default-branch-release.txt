@@ -1,0 +1,7 @@
+# Assertions for 0011-install-ps1-default-branch-release.patch
+#
+# The Windows PowerShell installer must default to the release branch (the
+# runnable rebranded customer tree), mirroring install.sh's BRANCH="release"
+# (patch 0006). Guards against a regression back to the workshop "main" default.
+
+path:scripts/install.ps1 [string]$Branch = "release",

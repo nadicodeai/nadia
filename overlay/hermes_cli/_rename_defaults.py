@@ -16,11 +16,14 @@ from __future__ import annotations
 GENERATED_FROM: str = 'argo-rename.yaml'
 
 MAPPINGS: tuple[tuple[str, str], ...] = (
+    ('NousResearch/hermes-agent/main/scripts/install', 'nadicodeai/argo/release/scripts/install'),
     ('NousResearch/hermes-agent', 'nadicodeai/argo'),
+    ('NousResearch/Hermes-Agent', 'nadicodeai/argo'),
     ('hermes_tools_mcp_server', 'argo_tools_mcp_server'),
     ('hermes_bootstrap', 'argo_bootstrap'),
     ('hermes_constants', 'argo_constants'),
     ('hermes_logging', 'argo_logging'),
+    ('-Branch main', '-Branch release'),
     ('Hermes-Agent', 'Argo-Agent'),
     ('hermes-agent', 'argo-agent'),
     ('hermes_agent', 'argo_agent'),
@@ -55,9 +58,12 @@ EXCEPTION_PATHS: tuple[str, ...] = (
 )
 
 SKIP_CONTEXTS: tuple[str, ...] = (
-    'https?://(?!(?:(?:raw\\.)?github(?:usercontent)?\\.com/NousResearch/hermes-agent\\b|hermes-agent\\.local))[^\\s"\'\\\\]*',
+    'https?://(?!(?:(?:raw\\.)?github(?:usercontent)?\\.com/(?i:NousResearch/hermes-agent)\\b|hermes-agent\\.local))[^\\s"\'\\\\]*',
     '\\b[0-9a-f]{40}\\b',
     '\\b[0-9a-f]{64}\\b',
+    '(?i)\\bnous[- ]hermes[\\w./-]*',
+    '(?i)\\bhermes[-_ .]?[234][\\w.:+-]*',
+    'hermes\\[-_ \\]\\?\\[34\\]',
 )
 
 PROBE_TOKEN: str = 'hermes'

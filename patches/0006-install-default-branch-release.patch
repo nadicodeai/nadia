@@ -22,10 +22,8 @@ explicitly to clone the workshop layout (documented use case in
 Spec IU-FR-7, IU-AC-4 (see .shepherd/install-update/spec.md).
 Plan M4.1 (see .shepherd/install-update/plan.md).
 
-Index: .sync-workdir/scripts/install.sh
-===================================================================
---- .sync-workdir.orig/scripts/install.sh
-+++ .sync-workdir/scripts/install.sh
+--- a/scripts/install.sh
++++ b/scripts/install.sh
 @@ -70,7 +70,7 @@ DETECTED_BROWSER_EXECUTABLE=""
  USE_VENV=true
  RUN_SETUP=true
@@ -34,4 +32,13 @@ Index: .sync-workdir/scripts/install.sh
 +BRANCH="release"
  ENSURE_DEPS=""
  POSTINSTALL_MODE=false
-
+ 
+@@ -128,7 +128,7 @@ while [[ $# -gt 0 ]]; do
+             echo "  --no-venv      Don't create virtual environment"
+             echo "  --skip-setup   Skip interactive setup wizard"
+             echo "  --skip-browser Skip Playwright/Chromium install (browser tools won't work)"
+-            echo "  --branch NAME  Git branch to install (default: main)"
++            echo "  --branch NAME  Git branch to install (default: release)"
+             echo "  --dir PATH     Installation directory"
+             echo "                   default (non-root):  ~/.hermes/hermes-agent"
+             echo "                   default (root, Linux): /usr/local/lib/hermes-agent"

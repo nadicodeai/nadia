@@ -12,7 +12,17 @@ Architecture (.shepherd/install-update/standards.md § Architecture):
 - ``main`` = workshop. ``release`` = storefront.
 - ``dist/argo/`` is gitignored on ``main``; force-pushing to ``release``
   is the only way the renamed tree reaches a tracked git ref.
-- Force-push uses ``--force-with-lease``, never ``--force``.
+- Release history is LINEAR: each release commits ON TOP OF the previous
+  release tip, so consecutive releases share ancestry. This lets the
+  customer ``git pull --ff-only origin release`` fast-forward cleanly
+  (no "refusing to merge unrelated histories") and makes
+  ``git rev-list --count HEAD..origin/release`` meaningful. We achieve
+  this by fetching the current remote tip and committing on top of it;
+  only the first bootstrap (no remote branch yet) uses an orphan commit.
+- Force-push uses ``--force-with-lease``, never ``--force``. Because the
+  history is now linear the push is normally a fast-forward, but we keep
+  ``--force-with-lease`` as a safety belt (and to recover if a release is
+  ever amended).
 - Commit author identity is set via ``git -c user.email=... -c
   user.name=...`` flags on the commit command; the script NEVER writes
   ``git config --global`` anything (mirrors the bootstrap script's
@@ -49,9 +59,9 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRATCH_PARENT = REPO_ROOT / ".sync-workdir" / "release-push"
 
-# Bot identity used for the orphan-branch commit. Mirrors the
-# bootstrap script's "no global config writes" rule by injecting the
-# identity via per-invocation ``git -c`` flags rather than ``git config``.
+# Bot identity used for the release commit. Mirrors the bootstrap
+# script's "no global config writes" rule by injecting the identity via
+# per-invocation ``git -c`` flags rather than ``git config``.
 COMMIT_AUTHOR_EMAIL = "release-bot@nadicodeai"
 COMMIT_AUTHOR_NAME = "argo-release-bot"
 
@@ -177,12 +187,14 @@ def _verify_dist_root(dist_root: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _prepare_scratch(dist_root: Path) -> Path:
-    """Wipe and recreate ``.sync-workdir/release-push/`` with dist_root contents.
+def _prepare_scratch() -> Path:
+    """Wipe and recreate an empty ``.sync-workdir/release-push/repo`` dir.
 
-    Uses ``shutil.copytree`` to mirror ``cp -a <dist>/. <scratch>/``:
-    the renamed tree becomes the scratch repo's root (NOT nested under
-    a ``dist/argo/`` subdir).
+    The dist tree is NOT copied here: in the linear-history path the scratch
+    must first check out the previous release (which requires an empty
+    working tree), and only then is the dist tree copied in by
+    :func:`_copy_dist_into_scratch`. Keeping the copy separate lets both the
+    orphan and linear paths share the same ordering discipline.
     """
     scratch = SCRATCH_PARENT / "repo"
     if SCRATCH_PARENT.exists():
@@ -202,28 +214,59 @@ def _prepare_scratch(dist_root: Path) -> Path:
             f"could not create scratch dir {scratch}: {exc}",
             step="scratch",
         ) from exc
+    return scratch
 
+
+def _copy_dist_into_scratch(dist_root: Path, scratch: Path) -> None:
+    """Copy ``dist_root`` contents into ``scratch`` (mirrors ``cp -a
+    <dist>/. <scratch>/``): the renamed tree becomes the scratch repo's
+    root (NOT nested under a ``dist/argo/`` subdir)."""
     _log(f"scratch: copying {dist_root} → {scratch}")
     try:
         # symlinks=True preserves any symlinks the rename engine produced
-        # (e.g. binaries). dirs_exist_ok handles the just-made parent.
+        # (e.g. binaries). dirs_exist_ok handles the existing scratch dir
+        # (empty on the orphan path; cleared via `git rm` on the linear one).
         shutil.copytree(dist_root, scratch, symlinks=True, dirs_exist_ok=True)
     except OSError as exc:
         raise ScratchSetupError(
             f"could not copy {dist_root} into {scratch}: {exc}",
             step="scratch",
         ) from exc
-    return scratch
 
 
 # ---------------------------------------------------------------------------
-# Git: init + orphan branch + commit
+# Git: init + (linear or orphan) branch + commit
 # ---------------------------------------------------------------------------
 
 
-def _init_orphan_branch(scratch: Path, branch: str, source_sha: str) -> str:
-    """Initialise ``scratch`` as a git repo on orphan ``branch``; commit
-    everything; return the resulting commit SHA.
+def _commit_release(
+    scratch: Path,
+    dist_root: Path,
+    branch: str,
+    source_sha: str,
+    *,
+    remote_url: str,
+    base_sha: str | None,
+) -> str:
+    """Initialise ``scratch`` (an EMPTY dir) as a git repo on ``branch``,
+    populate it with the dist tree, and commit; return the commit SHA.
+
+    History is LINEAR when the remote branch already exists. We fetch the
+    current remote tip (``base_sha``, resolved earlier via ``ls-remote``)
+    and check the new branch out from it so the release commit has the
+    previous release as its parent. The checked-out prior release is then
+    cleared (``git rm -rfq .``) and the freshly built dist tree is copied
+    in, so the release commit's diff is exactly "previous release → this
+    release". Doing the checkout while the working tree is empty avoids
+    git's "untracked working tree files would be overwritten" abort.
+
+    First-bootstrap case (``base_sha is None``): no remote branch exists
+    yet, so we fall back to an orphan branch — the original behaviour —
+    and just copy the dist tree in.
+
+    ``--allow-empty`` is passed so a release whose tree is byte-identical
+    to the previous one still produces a commit (the pipeline must always
+    advance the branch tip).
 
     Identity is injected via ``git -c user.email=... -c user.name=...``
     flags so we never mutate the operator's global config.
@@ -231,12 +274,37 @@ def _init_orphan_branch(scratch: Path, branch: str, source_sha: str) -> str:
     _log(f"git init -q in {scratch}")
     _run(["git", "init", "-q"], cwd=scratch, step="git-init")
 
-    _log(f"git checkout --orphan {branch}")
-    _run(
-        ["git", "checkout", "--orphan", branch, "-q"],
-        cwd=scratch,
-        step="git-checkout",
-    )
+    if base_sha is None:
+        # First bootstrap: no prior release to build on; orphan it. The
+        # scratch is empty, so just lay down the dist tree.
+        _log(f"git checkout --orphan {branch} (first bootstrap, no remote tip)")
+        _run(
+            ["git", "checkout", "--orphan", branch, "-q"],
+            cwd=scratch,
+            step="git-checkout",
+        )
+        _copy_dist_into_scratch(dist_root, scratch)
+    else:
+        # Linear: base this release on the current remote tip so customers
+        # can fast-forward. Fetch the exact SHA (not just the branch name)
+        # to avoid races with concurrent pushes between ls-remote and now.
+        _log(f"git fetch {remote_url} {base_sha} (base on previous release tip)")
+        _run(
+            ["git", "fetch", "-q", "--depth", "1", remote_url, base_sha],
+            cwd=scratch,
+            step="git-fetch",
+        )
+        # Checkout into the still-empty working tree (no overwrite conflict).
+        _log(f"git checkout -b {branch} {base_sha}")
+        _run(
+            ["git", "checkout", "-q", "-b", branch, base_sha],
+            cwd=scratch,
+            step="git-checkout",
+        )
+        # Clear the checked-out prior release, then lay down the new tree.
+        _log("git rm -rfq . (clear prior release tree)")
+        _run(["git", "rm", "-rfq", "."], cwd=scratch, step="git-rm")
+        _copy_dist_into_scratch(dist_root, scratch)
 
     _log("git add -A")
     _run(["git", "add", "-A"], cwd=scratch, step="git-add")
@@ -252,6 +320,7 @@ def _init_orphan_branch(scratch: Path, branch: str, source_sha: str) -> str:
             f"user.name={COMMIT_AUTHOR_NAME}",
             "commit",
             "-q",
+            "--allow-empty",
             "-m",
             msg,
         ],
@@ -272,17 +341,23 @@ def _init_orphan_branch(scratch: Path, branch: str, source_sha: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _resolve_remote_lease(scratch: Path, remote_url: str, branch: str) -> str | None:
+def _resolve_remote_lease(remote_url: str, branch: str) -> str | None:
     """Look up the remote's current SHA for ``branch`` via ``ls-remote``.
 
     Returns the SHA string, or ``None`` if the branch does not exist
-    remotely (first bootstrap). Used to express an explicit lease since
-    the scratch repo is a fresh ``git init`` with no remote-tracking ref
-    for ``--force-with-lease`` to discover implicitly.
+    remotely (first bootstrap). This SHA serves two purposes:
+
+    1. It is the base commit the new release is built on top of (linear
+       history) — see :func:`_commit_release`.
+    2. It is the explicit lease value for ``--force-with-lease``, since the
+       scratch repo has no remote-tracking ref for git to discover
+       implicitly.
+
+    Resolved once, before the scratch repo exists, so it does not need a
+    ``cwd``.
     """
     result = subprocess.run(
         ["git", "ls-remote", remote_url, f"refs/heads/{branch}"],
-        cwd=str(scratch),
         text=True,
         encoding="utf-8",
         stdout=subprocess.PIPE,
@@ -306,25 +381,28 @@ def _push_or_describe(
     remote_url: str,
     branch: str,
     *,
+    lease_sha: str | None,
     dry_run: bool,
 ) -> None:
-    """Force-with-lease push the scratch's orphan branch to remote_url.
+    """Force-with-lease push the scratch's release branch to remote_url.
 
     On ``--dry-run``: prints the planned command and returns; never
     contacts the remote.
 
-    The scratch repo is a fresh ``git init`` with no remote-tracking
-    ref, so ``--force-with-lease`` without an explicit expected SHA
-    would always reject as "stale info". We resolve the remote's
-    current SHA via ``ls-remote`` and pass it as the explicit lease
-    value: ``--force-with-lease=<branch>:<expected-sha>``.
+    Because the release commit is now based on the current remote tip
+    (linear history), the push is normally a plain fast-forward. We still
+    use ``--force-with-lease`` as a safety belt. The scratch repo is a
+    fresh ``git init`` with no remote-tracking ref, so a bare
+    ``--force-with-lease`` would reject as "stale info"; we pass the
+    remote's current SHA (``lease_sha``, resolved earlier via
+    ``ls-remote``) as the explicit lease value:
+    ``--force-with-lease=<branch>:<expected-sha>``.
 
-    First-bootstrap case (no remote branch yet): pass plain
-    ``--force-with-lease`` (no lease key) — git treats it as
-    "succeed only if ref does not exist remotely", which is exactly
-    the bootstrap invariant.
+    First-bootstrap case (``lease_sha is None``, no remote branch yet):
+    pass plain ``--force-with-lease`` (no lease key) — git treats it as
+    "succeed only if ref does not exist remotely", which is exactly the
+    bootstrap invariant.
     """
-    lease_sha = None if dry_run else _resolve_remote_lease(scratch, remote_url, branch)
     if lease_sha is None:
         lease_flag = "--force-with-lease"
     else:
@@ -385,9 +463,27 @@ def run(
     dry_run: bool,
 ) -> int:
     _verify_dist_root(dist_root)
-    scratch = _prepare_scratch(dist_root)
-    commit_sha = _init_orphan_branch(scratch, branch, source_sha)
-    _push_or_describe(scratch, remote_url, branch, dry_run=dry_run)
+    # Resolve the current remote tip up front: it is both the base for the
+    # linear release commit and the explicit --force-with-lease value. In
+    # dry-run we still resolve it so the staged commit mirrors what a real
+    # push would produce (linear when the branch exists, orphan otherwise).
+    base_sha = _resolve_remote_lease(remote_url, branch)
+    scratch = _prepare_scratch()
+    commit_sha = _commit_release(
+        scratch,
+        dist_root,
+        branch,
+        source_sha,
+        remote_url=remote_url,
+        base_sha=base_sha,
+    )
+    _push_or_describe(
+        scratch,
+        remote_url,
+        branch,
+        lease_sha=base_sha,
+        dry_run=dry_run,
+    )
     # Always print the SHA — both real push and dry-run paths want it
     # for CI logs and operator inspection.
     print(f"scratch commit: {commit_sha}")

@@ -1,0 +1,25 @@
+Subject: Default install.ps1 $Branch to "release" for argo customers
+
+The Windows PowerShell installer declares `[string]$Branch = "main"` and clones
+that branch (`git clone --branch $Branch`, with a ZIP fallback on
+`refs/heads/$Branch.zip`). On the argo fork `main` is the workshop layout
+(upstream/, patches/, overlay/, rename engine — NOT a runnable install); the
+customer-runnable rebranded tree lives only on `release`. So a Windows customer
+running the documented `iex (irm .../install.ps1)` installs the dev workshop and
+ends up with a tree where the `argo` package is not importable/runnable.
+
+This is the exact bug patch 0006 fixed for the bash install.sh (BRANCH
+main->release); the equivalent Windows fix was never written. The `-Branch`
+override is intact (developers can still pass `-Branch main`). IU-FR-7, IU-AC-4.
+
+--- a/scripts/install.ps1
++++ b/scripts/install.ps1
+@@ -15,7 +15,7 @@
+ param(
+     [switch]$NoVenv,
+     [switch]$SkipSetup,
+-    [string]$Branch = "main",
++    [string]$Branch = "release",
+     # -Commit and -Tag are higher-precedence variants of -Branch for users
+     # who need reproducible installs (desktop installer pinning, CI, release
+     # bundles).  When set, the repository stage clones $Branch (faster than

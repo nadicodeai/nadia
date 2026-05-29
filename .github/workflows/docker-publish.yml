@@ -1,9 +1,9 @@
 # argo — Docker image publish to ghcr.io/nadicodeai/argo (spec FR-7, M5.2).
 #
 # Triggers.
-#   - push to main          -> two variants pushed                          (linux/amd64)
-#   - release.published     -> two variants pushed                          (linux/amd64 + linux/arm64)
-#   - workflow_dispatch     -> two variants pushed                          (linux/amd64)
+#   - push to main          -> two variants pushed; moves :latest/:slim      (linux/amd64)
+#   - release.published     -> two variants pushed; moves :latest/:slim      (linux/amd64 + linux/arm64)
+#   - workflow_dispatch     -> two variants pushed; immutable :<sha> only    (linux/amd64)
 #
 # Image variants (issue #2 — NFR-3 resolution; see AGENTS.md § Image variants).
 #   runtime-slim   ~371 MB   CLI-only; matches FR-16 surfaces 1-7.
@@ -110,12 +110,12 @@ jobs:
       # multi-arch release path, but the action is a no-op-cheap (~2 s)
       # when only the host arch is requested, so we run it unconditionally
       # to keep the step list simple.
-      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: Log in to ghcr.io
-        uses: docker/login-action@v3
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -140,21 +140,31 @@ jobs:
       # both variants. main pushes additionally tag :slim + :latest.
       - name: Compute tags
         id: tags
+        # github.event.release.tag_name is attacker-influenceable release
+        # payload. Bind it through env: so the runner never substitutes the
+        # raw value into shell text (command-injection hardening); the script
+        # only ever reads the quoted "$RELEASE_TAG". For non-release events
+        # github.event.release.tag_name expands to the empty string, which is
+        # exactly the desired "no release tag" sentinel.
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           REPO="ghcr.io/nadicodeai/argo"
           SHA_SHORT="$(git rev-parse --short HEAD)"
-          RELEASE_TAG=""
-          if [ "${{ github.event_name }}" = "release" ]; then
-            RELEASE_TAG="${{ github.event.release.tag_name }}"
+          if [ "${{ github.event_name }}" != "release" ]; then
+            RELEASE_TAG=""
           fi
 
           # Slim variant tags. The customer-facing "latest slim" pointer
           # is :slim (matches Debian's :slim convention). :latest-slim is
           # an alias for callers that prefer the <channel>-<variant> form.
+          # Per the tag-decision tree above, the floating :slim / :latest-slim
+          # pointers move ONLY on main push + release.published — NOT on
+          # workflow_dispatch (manual dispatch publishes only the immutable
+          # :<sha>-slim tag below).
           SLIM_TAGS="-t ${REPO}:${SHA_SHORT}-slim"
           if [ "${{ github.event_name }}" = "release" ] || \
-             [ "${{ github.event_name }}" = "push" ] || \
-             [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+             [ "${{ github.event_name }}" = "push" ]; then
               SLIM_TAGS="${SLIM_TAGS} -t ${REPO}:slim -t ${REPO}:latest-slim"
           fi
           if [ -n "${RELEASE_TAG}" ]; then
@@ -165,10 +175,12 @@ jobs:
           # `docker pull ghcr.io/nadicodeai/argo` resolves to :latest =
           # full variant. Backward compat with pre-issue-#2 callers that
           # pulled :latest expecting the customer-parity surface.
+          # Same tag-decision-tree rule as the slim block: :latest moves ONLY
+          # on main push + release.published, never on workflow_dispatch (which
+          # publishes only the immutable :<sha> tag below).
           FULL_TAGS="-t ${REPO}:${SHA_SHORT}"
           if [ "${{ github.event_name }}" = "release" ] || \
-             [ "${{ github.event_name }}" = "push" ] || \
-             [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+             [ "${{ github.event_name }}" = "push" ]; then
               FULL_TAGS="${FULL_TAGS} -t ${REPO}:latest"
           fi
           if [ -n "${RELEASE_TAG}" ]; then

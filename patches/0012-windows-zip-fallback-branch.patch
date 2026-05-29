@@ -1,0 +1,37 @@
+Subject: Make the Windows ZIP-fallback update accept the release channel
+
+`_update_via_zip` is the `argo update` fallback on Windows when git file I/O is
+broken (antivirus/NTFS filter drivers) or there is no .git directory. It guards
+`if branch != "main": sys.exit(1)` — upstream's way of refusing to silently
+update from a non-default channel. After patch 0009 the resolved default branch
+is "release", so the DEFAULT `argo update` on this path now always trips the
+guard and aborts: Windows customers (exactly the population this fallback exists
+to rescue) can never complete an update. Flip the guarded/advised channel from
+"main" to "release" so the default is accepted; the ZIP URL then resolves to
+`archive/refs/heads/release.zip` (the runnable rebranded tree), and the
+extracted-dir scan already tolerates the `argo-release/` folder name. Passing a
+non-release `--branch` is still (correctly) refused.
+
+Mirrors 0006 (install.sh BRANCH), 0009 (cmd_update branch), 0011 (install.ps1
+$Branch). IU-FR-7, IU-AC-9.
+
+--- a/hermes_cli/main.py
++++ b/hermes_cli/main.py
+@@ -6983,7 +6983,7 @@ def _update_via_zip(args):
+     # bug --branch was added to prevent. Refuse to proceed in that case
+     # rather than lie.
+     branch = _resolve_update_branch(args)
+-    if branch != "main":
++    if branch != "release":
+         print(
+             f"✗ --branch={branch} is not supported on the Windows ZIP-fallback "
+             "update path."
+@@ -6992,7 +6992,7 @@ def _update_via_zip(args):
+             "  This path runs when git file I/O is broken on the system. "
+             "Either resolve the git-side breakage (typically an antivirus "
+             "or NTFS filter holding files open) and rerun `hermes update "
+-            f"--branch {branch}`, or update against main with `hermes update`."
++            f"--branch {branch}`, or update against release with `hermes update`."
+         )
+         sys.exit(1)
+     zip_url = (
