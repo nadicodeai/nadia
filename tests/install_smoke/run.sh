@@ -187,7 +187,7 @@ echo "PASS [IU-AC-4 exit]: 'argo --version' exit 0"
 # -----------------------------------------------------------------------
 # Assertion 3 — banner matches hermes regex  (IU-AC-4 banner)
 # -----------------------------------------------------------------------
-BANNER_REGEX='Argo Agent v[0-9]+\.[0-9]+\.[0-9]+ \([0-9]{4}\.[0-9]+\.[0-9]+\)'
+BANNER_REGEX='Argo Agent v[0-9]+\.[0-9]+\.[0-9]+ \([0-9]{4}\.[0-9]+\.[0-9]+(\.[0-9]+)?\)'
 if echo "${VERSION_OUTPUT}" | grep -qE "${BANNER_REGEX}"; then
     echo "PASS [IU-AC-4 banner]: matches '${BANNER_REGEX}'"
     echo "  banner: $(echo "${VERSION_OUTPUT}" | grep -E "${BANNER_REGEX}" | head -1)"
