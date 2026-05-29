@@ -7,9 +7,7 @@
 # `/repos/.../branches/main/protection` and the modern
 # `/repos/.../rulesets` endpoints).
 #
-# Required CI checks below mirror ci.yml's job `name:` fields. The
-# `check-legacy-untouched` job is intentionally NOT required — it's a
-# local-only gate that skips in CI by design (AGENTS.md / spec).
+# Required CI checks below mirror ci.yml's job `name:` fields.
 #
 # Behavior: PUTs the protection ruleset and prints the resulting config.
 # Idempotent — re-running just overwrites with the same payload.
@@ -26,7 +24,6 @@ REQUIRED_CHECKS=(
   "leakage (static scan)"
   "test (pytest)"
   "upstream-pristine (FR-15)"
-  "parity (FR-16 all surfaces, XFAIL-aware)"
 )
 
 # Build the JSON checks array.

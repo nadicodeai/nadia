@@ -6,9 +6,8 @@
 
 mappings:
   # --- URL-form mapping (longest first; must precede bare hermes-agent) ---
-  # GitHub URLs for the upstream Hermes repo map to this fork's GitHub repo.
-  # The new repo is nadicodeai/argo (not nadicodeai/argo-agent — the legacy
-  # in-tree-rename repo). nadicode does not own nousresearch.com, so no
+  # GitHub URLs for the upstream Hermes repo map to this fork's GitHub repo
+  # (nadicodeai/argo). nadicode does not own nousresearch.com, so no
   # docs/pypi domains are rewritten.
   - {from: "NousResearch/hermes-agent", to: "nadicodeai/argo"}
   # --- Composite identifiers (longest first) ---

@@ -36,10 +36,8 @@ argo ships in two flavours so you pick the one that matches your deployment shap
 
 | Tag                                                            | Size    | When to use                                                                                                                          |
 | -------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `:latest`, `:v<X.Y.Z>`                                         | ~4.5 GB | **Default.** Full customer surface: TUI dashboard, voice mode, browser-tool MCP, s6-supervised dashboard + gateway. Matches legacy v0.14.0. |
+| `:latest`, `:v<X.Y.Z>`                                         | ~4.5 GB | **Default.** Full customer surface: TUI dashboard, voice mode, browser-tool MCP, s6-supervised dashboard + gateway. |
 | `:slim`, `:latest-slim`, `:v<X.Y.Z>-slim`                      | ~371 MB | CLI-only deployments (CI runners, batch agents, server-side automation). Satisfies `argo --help`, `--version`, `doctor`, `mcp`, `hooks`, `auth`, `sessions`. No TUI / voice / browser. |
-
-> **Heads-up if you pulled `:latest` before issue #2 landed.** Earlier `:latest` was the 371 MB slim image (the only variant that existed). It is now the ~4.5 GB full image — about a **12× size jump** for callers that were just using it for `argo --help` or `argo --version` from a CI step. If you don't need the dashboard/voice/browser stack, switch your pulls to `:slim` (same CLI surface, same fork-only patches, much smaller). The full default mirrors what legacy customers expect from the legacy `argo-agent` image.
 
 ## Fork notice
 

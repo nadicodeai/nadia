@@ -20,7 +20,7 @@ _CONFIG_PATH = _REPO_ROOT / "argo-rename.yaml"
 
 # overlay/ hosts the pre-rename engine sources (hermes_sync). Repo-root tests
 # import them directly via sys.path injection — same pattern as
-# tools/rebrand.py lines 34-40 and tests/test_parity_runner.py.
+# tools/rebrand.py lines 34-40.
 _OVERLAY = _REPO_ROOT / "overlay"
 if str(_OVERLAY) not in sys.path:
     sys.path.insert(0, str(_OVERLAY))

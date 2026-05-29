@@ -37,8 +37,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
-# tools/ is not a package; extend sys.path so we can import sync directly
-# (same pattern as tests/test_parity_runner.py).
+# tools/ is not a package; extend sys.path so we can import sync directly.
 sys.path.insert(0, str(REPO_ROOT / "tools"))
 import sync  # noqa: E402
 

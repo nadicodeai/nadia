@@ -10,7 +10,7 @@ Instructions for AI agents (and humans) working on argo. Keep this short; deep r
 2. **Fork changes live in `patches/` and `overlay/`.** `patches/` is a quilt-managed patch series. `overlay/` is additive files using **hermes-named** paths (e.g. `overlay/hermes_cli/argo_update.py`).
 3. **The hermes→argo rebrand runs at build time.** The rename engine in `overlay/hermes_sync/` walks the post-patch tree and rewrites `hermes` → `argo` (per `argo-rename.yaml`). The renamed tree lands in `dist/argo/` and gets packaged into `ghcr.io/nadicodeai/argo:latest`. Tracked source is never renamed.
 
-`tools/` holds the build-time Python (build.py, rebrand.py, sync.py, verify_no_leakage.py, parity_runner.py, run_assertions.py, check_upstream_pristine.py). It never ships in the image. `dist/` and `.sync-workdir/` are gitignored.
+`tools/` holds the build-time Python (build.py, rebrand.py, sync.py, verify_no_leakage.py, run_assertions.py, check_upstream_pristine.py). It never ships in the image. `dist/` and `.sync-workdir/` are gitignored.
 
 ## Customer install path
 
@@ -49,7 +49,7 @@ Python deps come from `upstream/pyproject.toml` via `uv` (also upstream's conven
 
 Sub-loops (same `{spec,plan,progress,standards}.md` shape, scoped to a sibling outcome):
 
-- **`.shepherd/install-update/`** — IU-AC-1..15: customer install + `argo update` parity surfaces (closed).
+- **`.shepherd/install-update/`** — IU-AC-1..15: customer install + `argo update` CLI surfaces (closed).
 - **`.shepherd/update-cycle-smoke/`** — UCS-AC-1..8: run upstream's 26k renamed tests on `dist/argo/` in CI (closed; issue #12).
 
 ## Workflow at a glance
@@ -63,9 +63,7 @@ make sync-reset                    # wipe .sync-workdir/ and start the next sync
 make image                         # docker build ghcr.io/nadicodeai/argo:dev
 make publish                       # tag + push to GHCR
 make leakage-static                # static scan: no "hermes" leaks in dist/argo/
-make parity                        # surface-diff vs legacy image (XFAIL-aware; see § Parity)
 make check-upstream-pristine       # FR-15 gate: upstream/ matches the last sync commit
-make check-legacy-untouched        # G5 gate: ~/Code/argo-agent unchanged
 make patch-new NAME=<slug>         # start a new patch
 make patch-refresh                 # quilt refresh the current patch
 make patch-list                    # cat patches/series
@@ -114,43 +112,7 @@ Other useful queries: `quilt series` (list), `quilt top` (which patch is on top)
 - **Patch format is `diff -up --git`** (handles binary, modes, renames). Enforced by `.quiltrc`.
 - **Load-bearing patches need `patches/asserts/<name>.txt`** with grep patterns (FR-14). Catches `quilt refresh` silently dropping fork lines after conflict resolution. List the patch's basename in `patches/asserts/manifest.txt`.
 - **Reproducible builds: `SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)` before `make build`.** Required for AC-8 (`dist/argo/` byte-identity across machines). `make image` already sets it via `--build-arg`.
-- **Don't touch `~/Code/argo-agent`.** Legacy in-tree-rename repo, frozen at HEAD `9b8cf6bf5`. `make check-legacy-untouched` verifies.
 - **CI prelude lives in `.github/actions/argo-setup/`.** Composite action that installs uv + Python + apt + pip deps for every workflow job; edit it (not the workflow preludes) when bumping `setup-uv`, the Python pin, or the default apt package list.
-
-## Parity baseline
-
-`tools/parity_runner.py` (M6) drives the customer-parity gate (FR-16, AC-7). The spec names `ghcr.io/nadicodeai/argo-agent:0.14.0` as the legacy baseline. As of issue #1's resolution that tag is built + published by `.github/workflows/publish-legacy-baseline.yml` (one-shot, `workflow_dispatch`) from the maintainer's frozen `~/Code/argo-agent` tree at SHA `9b8cf6bf5` (whose `pyproject.toml` reports version 0.14.0). The runner's `DEFAULT_LEGACY_IMAGE` constant now points at `:0.14.0`.
-
-**Image under test.** As of issue #2, `DEFAULT_NEW_IMAGE` is `ghcr.io/nadicodeai/argo:dev-full` (the FULL variant — see § Image variants). Parity is apples-to-apples: legacy v0.14.0 ships the full feature surface, so comparing the slim image against it would hide browser/voice/TUI/dashboard divergence. CI's parity job runs `make image-full` before `make parity`. To run parity against the slim variant during slim-specific iteration: `python tools/parity_runner.py --new-image ghcr.io/nadicodeai/argo:dev`.
-
-**Pre-publish prerequisite.** The frozen legacy SHA `9b8cf6bf58e23723d4d021fda529f3f3f397646d` is local-only on the maintainer's workstation; `nadicode/main` is behind it. Before running the workflow the maintainer MUST push the frozen ref to the remote (this does NOT modify the legacy worktree, only adds a tag, so AGENTS.md § Hard rule "Don't touch `~/Code/argo-agent`" is preserved):
-
-```bash
-cd ~/Code/argo-agent
-git push nadicode 9b8cf6bf58e23723d4d021fda529f3f3f397646d:refs/tags/baseline-v0.14.0
-```
-
-**Workflow lifecycle.** `tests/parity-expected.yml` still lists the three "version-gap" XFAILs (`help`, `version`, `session-init`) pending re-validation. After the workflow has published `:0.14.0` and a local `make parity` confirms they evaporate, a follow-up commit prunes them from the whitelist and (if no XFAILs remain) drops `--allow-expected` from `make parity`. Until then, CI's `docker pull ghcr.io/nadicodeai/argo-agent:0.14.0` step will 404 — that's the intended signal that the publish workflow has not yet been triggered.
-
-To keep the gate useful while the baseline catches up, the runner accepts `--allow-expected` (default for `make parity` and for the CI parity job) which reclassifies surfaces named in `tests/parity-expected.yml` as `XFAIL` — they are reported but do NOT drive a non-zero exit. Any surface FAILing that is NOT on the whitelist still blocks the gate. To see the unmasked diff during development:
-
-```bash
-make parity-strict   # or: python tools/parity_runner.py
-```
-
-Per-surface status (pre-publish snapshot; expected to change after the `:0.14.0` baseline lands):
-
-| Surface         | Status              | Reason                                              |
-| --------------- | ------------------- | --------------------------------------------------- |
-| `help`          | XFAIL (pending re-validation) | v0.14.0 subcommand superset over v0.8.0 baseline |
-| `version`       | XFAIL (pending re-validation) | v0.14.0 banner vs v0.8.0 banner          |
-| `doctor-static` | SKIPPED             | legacy v0.8.0 lacks the `--static` flag (M3 target) |
-| `mcp-list`      | PASS                | Dockerfile fix landed (M6 follow-up)                |
-| `hook-fire`     | SKIPPED             | legacy v0.8.0 has no `hooks` subcommand             |
-| `auth-start`    | PASS                | proxied via `auth list`; both empty + identical     |
-| `session-init`  | XFAIL (pending re-validation) | persistence layout drift v0.8.0 → v0.14.0 |
-
-Anything still on the XFAIL list AFTER the `:0.14.0` baseline has been published and `make parity` has been re-run is a true semantic divergence and should be filed as a tracked issue, not silently accepted.
 
 ## Image variants
 
@@ -158,12 +120,10 @@ Issue #2 split the image into TWO variants so customers pick by deployment shape
 
 | Tag pointers (customer-facing)         | Variant       | Target        | Size    | When to use                                                                              |
 | -------------------------------------- | ------------- | ------------- | ------- | ---------------------------------------------------------------------------------------- |
-| `:latest`, `:v<X.Y.Z>`, `:<sha-short>` | full          | `runtime-full`| ~4.5 GB | Default. TUI dashboard, voice, browser-tool MCP, s6-supervised gateway — full customer surface, matches legacy v0.14.0. |
-| `:slim`, `:latest-slim`, `:v<X.Y.Z>-slim`, `:<sha-short>-slim` | slim | `runtime-slim`| ~371 MB | CLI-only deployments (CI runners, batch agents, server-side automation). Satisfies the 7 FR-16 parity surfaces.        |
+| `:latest`, `:v<X.Y.Z>`, `:<sha-short>` | full          | `runtime-full`| ~4.5 GB | Default. TUI dashboard, voice, browser-tool MCP, s6-supervised gateway — full customer surface. |
+| `:slim`, `:latest-slim`, `:v<X.Y.Z>-slim`, `:<sha-short>-slim` | slim | `runtime-slim`| ~371 MB | CLI-only deployments (CI runners, batch agents, server-side automation). |
 
-A bare `docker pull ghcr.io/nadicodeai/argo` resolves to `:latest` = full variant — backward compat with pre-issue-#2 callers that expected the customer-parity surface. CLI-only callers MUST explicitly opt into `:slim`.
-
-> **HEADS-UP for existing pullers of `:latest`.** Prior to issue #2 the `:latest` tag pointed at the 371 MB slim image (the only variant that existed). Issue #2 re-points `:latest` at the ~4.5 GB full variant so docker-compose recipes ported from legacy `~/Code/argo-agent` Just Work. Existing CI / build pipelines that pull `:latest` for CLI-only workloads (`argo --help`, `argo doctor --static`) will see a ~12× size increase on their next pull. Two migration paths: switch the pull target to `:slim` / `:latest-slim` (recommended for CLI-only flows — same surface, ~12× smaller), or pin the slim tag at an explicit short SHA (e.g. `ghcr.io/nadicodeai/argo:174d8886-slim`) until the migration window closes. The full image is the right default for customers; CLI-only pullers MUST opt out explicitly.
+A bare `docker pull ghcr.io/nadicodeai/argo` resolves to `:latest` = full variant. CLI-only callers MUST explicitly opt into `:slim`.
 
 **Local builds.**
 - `make image` → builds `runtime-slim` and tags `:dev` (preserved name for backward compat with `scripts/publish.sh`).
@@ -171,23 +131,16 @@ A bare `docker pull ghcr.io/nadicodeai/argo` resolves to `:latest` = full varian
 
 **Determinism.** AC-8 byte-determinism is a gate only for the slim variant (where the `dist/argo/` tree-hash is the artifact). The full variant fetches chromium + s6-overlay tarballs + npm packages at build time; its reproducibility is best-effort by design (spec § Build Reproducibility).
 
-**NFR-3 resolution.** The spec sets the gate at "image MUST NOT exceed legacy by >5%". The full variant matches legacy's 4.71 GB surface within ~5% margin; the slim variant is 92% smaller for customers who do not need the dashboard/voice/browser stack. The choice is now explicit and documented per-tag.
-
-## Slim image (M5/M6 history)
-
-M5 produced the 371 MB slim runtime image (now tagged `:slim`); M6's parity gate exposed two crashes (`mcp list`, `sessions list`) that traced to a missing `tools/` Python package in the runtime stage. Patch 0008 + the M6 Dockerfile regressions fix landed those import paths, so the slim image now handles all FR-16 surfaces 1-7. The NFR-3 gap (no node/npm/playwright/ffmpeg/s6-overlay) was closed by issue #2, which added the `runtime-full` stage on top of `runtime-slim`. See § Image variants above for the current tag map.
-
 ## Common tasks
 
 - **Add a fork change.** Decide patch (modifies an upstream file) vs overlay (purely new file). Patches need assertions when load-bearing.
 - **Investigate a leakage scan failure.** `make build && python tools/verify_no_leakage.py dist/argo/ --verbose` prints the offending paths. Either fix the source so it doesn't introduce `hermes`, or add an exception to `argo-rename.yaml` with a `why:` comment.
-- **Investigate a parity FAIL.** `make parity-strict` shows the raw diff. If it's a known baseline-version gap, document in `tests/parity-expected.yml`. Otherwise it's a real regression — find the patch or overlay change that introduced it.
 - **Bump upstream.** `make sync`. If conflicts: resolve in `.sync-workdir/`, `quilt refresh`, `make sync-resume`.
 
 ## Where to read more
 
 - `.shepherd/spec.md` § Project Structure — directory layout details.
-- `.shepherd/spec.md` § Functional Requirements — FR-1 through FR-16.
+- `.shepherd/spec.md` § Functional Requirements — FR-1 through FR-15.
 - `.shepherd/standards.md` § Patch Authorship — how to write a good patch.
 - `.shepherd/standards.md` § Overlay Authorship — overlay conventions.
 - `.shepherd/standards.md` § Build-Tool Authorship — `tools/` conventions (incl. `sys.path` rule for `rebrand.py`).

@@ -1,9 +1,7 @@
 # argo — per-PR / per-push CI gate (spec AC-9, FR-15)
 #
-# Runs on every pull_request and every push to main. Declares twelve jobs
-# (originally the eight required by spec AC-9; install-smoke + update-smoke
-# from the install-update loop and dist-argo-tests + companion
-# save-durations from the update-cycle-smoke loop have since been added):
+# Runs on every pull_request and every push to main. Declares the jobs that
+# verify argo is hermes-agent renamed:
 #
 #    1. lint                            — ruff check (PLW1514 only, upstream convention)
 #    2. typecheck                       — ty check overlay/ tools/  (pre-build source)
@@ -11,12 +9,10 @@
 #    4. leakage                         — needs: build; make leakage-static (FR-12)
 #    5. test                            — pytest tests/ (build-tool tests; integration skipped)
 #    6. upstream-pristine               — make check-upstream-pristine (FR-15 / C3 gate)
-#    7. parity                          — make parity (FR-16 CLI surfaces, M6.2a real gate)
-#    8. install-smoke                   — Docker-driven install.sh smoke (IU-AC-4/5/9)
-#    9. update-smoke                    — Docker-driven update flow (IU-AC-9/10/11)
-#   10. dist-argo-tests                 — 6-slice matrix over dist/argo/tests/ (UCS-AC-5/6)
-#   11. dist-argo-tests-save-durations  — companion to 10, main-only durations cache write
-#   12. check-legacy-untouched          — DECLARED but skipped in CI (legacy repo not present)
+#    7. install-smoke                   — Docker-driven install.sh smoke (IU-AC-4/5/9)
+#    8. update-smoke                    — Docker-driven update flow (IU-AC-9/10/11)
+#    9. dist-argo-tests                 — 6-slice matrix over dist/argo/tests/ (UCS-AC-5/6)
+#   10. dist-argo-tests-save-durations  — companion to 9, main-only durations cache write
 #
 # Tool versions are pinned to spec § Tech Stack:
 #   Python  3.13 (type-check target)
@@ -27,9 +23,8 @@
 # Branch protection on `main` MUST be configured manually in the GitHub UI
 # to require these jobs. The workflow only DECLARES them; GitHub enforces.
 # Required checks should include: lint, typecheck, build, leakage, test,
-# upstream-pristine, parity. (`check-legacy-untouched` is skipped in CI by
-# design — see job comment. install-smoke, update-smoke, dist-argo-tests
-# are visible-but-non-blocking pending promotion follow-ups.)
+# upstream-pristine. install-smoke, update-smoke, and dist-argo-tests
+# are visible-but-non-blocking pending promotion follow-ups.
 
 name: ci
 
@@ -56,12 +51,6 @@ env:
   PYTEST_VERSION: "9.0.2"
   PYTEST_ASYNCIO_VERSION: "1.3.0"
   PYTEST_TIMEOUT_VERSION: "2.4.0"
-  # Legacy parity baseline tag. Single source of truth for both the
-  # parity job's `docker pull` and the actions/cache key that avoids
-  # re-pulling ~4.71 GB per CI run (issue #9). Bumping this tag
-  # automatically rotates the cache key so a stale tarball won't be
-  # restored against a newer image.
-  LEGACY_TAG: "0.14.0"
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -217,82 +206,7 @@ jobs:
         run: make check-upstream-pristine
 
   # ---------------------------------------------------------------------------
-  # 7. parity — FR-16 customer-parity gate (M6 closed: all 7 surfaces).
-  #
-  #    Runs `make parity` which drives `tools/parity_runner.py` against
-  #    the locally-built `:dev` image and the locally-pulled legacy
-  #    `:latest` image across all 7 FR-16 surfaces.
-  #
-  #    `make parity` invokes the runner with `--allow-expected`, which
-  #    reclassifies surfaces listed in tests/parity-expected.yml as
-  #    XFAIL (expected failure, non-blocking). The whitelist documents
-  #    the v0.8.0-vs-v0.14.0 baseline-version gap — three surfaces
-  #    (help, version, session-init) FAIL purely because legacy :latest
-  #    is older than the spec-named :0.14.0 tag (which was never
-  #    published). Anything failing that is NOT on the whitelist is a
-  #    real regression and blocks the merge.
-  #
-  #    Lifecycle: once a real v0.14.0 legacy image lands (M7 first real
-  #    sync), DROP entries from tests/parity-expected.yml that no longer
-  #    FAIL and re-tighten the gate. See AGENTS.md § Parity baseline.
-  # ---------------------------------------------------------------------------
-  parity:
-    name: parity (FR-16 all surfaces, XFAIL-aware)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: ./.github/actions/argo-setup
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          pip-packages: "pyyaml"
-      - name: Restore legacy image cache
-        # Issue #9: the legacy baseline image is ~4.71 GB and rarely
-        # changes (tag is pinned by LEGACY_TAG at workflow env scope).
-        # Cache the `docker save` tarball across runs so a hit drops the
-        # parity job's image-fetch time from ~30s + bandwidth to <5s.
-        # The key includes LEGACY_TAG so bumping the tag rotates caches
-        # rather than restoring a stale tarball.
-        uses: actions/cache@v4
-        with:
-          path: /tmp/legacy-image.tar
-          key: legacy-image-${{ env.LEGACY_TAG }}
-      - name: docker load or pull legacy baseline
-        # :0.14.0 is published by .github/workflows/publish-legacy-baseline.yml
-        # (one-shot, workflow_dispatch). Until that workflow has run
-        # successfully this pull will 404 and parity CI will fail loudly.
-        # That is the intended signal — see issue #1 and AGENTS.md
-        # § Parity baseline.
-        #
-        # Cache hit path: restore the tarball and `docker load` it.
-        # Cache miss path: `docker pull` then `docker save` so the next
-        # run on the same LEGACY_TAG hits the cache.
-        run: |
-          if [ -f /tmp/legacy-image.tar ]; then
-            docker load -i /tmp/legacy-image.tar
-          else
-            docker pull ghcr.io/nadicodeai/argo-agent:${{ env.LEGACY_TAG }}
-            docker save ghcr.io/nadicodeai/argo-agent:${{ env.LEGACY_TAG }} -o /tmp/legacy-image.tar
-          fi
-      - name: make image-full (build :dev-full locally)
-        # Issue #2 / NFR-3 resolution: parity runs against the FULL
-        # variant because the legacy v0.14.0 baseline has the full
-        # feature surface (node/npm/ffmpeg/playwright/s6-overlay).
-        # Comparing :dev (slim) vs legacy:0.14.0 would hide
-        # browser/voice/TUI/dashboard divergence. Building :dev-full
-        # adds ~10-15 min to the parity job; gated to this single job
-        # so the rest of CI stays fast.
-        run: |
-          . .venv/bin/activate
-          make image-full
-      - name: make parity (XFAIL-aware; strict-against-regressions)
-        run: |
-          . .venv/bin/activate
-          make parity
-
-  # ---------------------------------------------------------------------------
-  # 8. install-smoke — M5.2 Docker-driven install.sh smoke harness.
+  # 7. install-smoke — M5.2 Docker-driven install.sh smoke harness.
   #
   #    Pulls the renamed install.sh from the live `release` branch and runs
   #    it in a clean ubuntu:22.04 container, asserting five invariants:
@@ -361,8 +275,7 @@ jobs:
   #                                 merged + saved on main by the companion
   #                                 dist-argo-tests-save-durations job.
   #
-  #     Names start with `argo-` so they cannot collide with the existing
-  #     `legacy-image-${LEGACY_TAG}` cache key used by the parity job.
+  #     Names start with `argo-` to namespace cleanly from any future caches.
   # ---------------------------------------------------------------------------
   dist-argo-tests:
     name: dist-argo-tests (slice ${{ matrix.slice }}/6)
@@ -503,35 +416,3 @@ jobs:
           path: test_durations.json
           key: argo-test-durations
 
-  # ---------------------------------------------------------------------------
-  # 12. check-legacy-untouched — verifies the published legacy argo-agent
-  #     repository hasn't been tampered with relative to the recorded baseline.
-  #
-  #     Spec AC-10 ("legacy repo at ~/Code/argo-agent untouched") originally
-  #     framed this as a LOCAL-DEV gate; the recorded baseline in
-  #     .shepherd/legacy-baseline.sha256 lets CI run an equivalent check:
-  #     clone the public nadicodeai/argo-agent repo at the frozen SHA
-  #     (9b8cf6bf5), recompute the tree hash, and compare against the
-  #     committed baseline. Catches force-pushes / history rewrites on the
-  #     legacy remote even though the legacy worktree itself only lives on
-  #     the maintainer's machine.
-  # ---------------------------------------------------------------------------
-  check-legacy-untouched:
-    name: check-legacy-untouched (FR-G5 / AC-10)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Clone legacy argo-agent at frozen SHA into ~/Code/argo-agent
-        run: |
-          mkdir -p "$HOME/Code"
-          git clone --no-checkout https://github.com/nadicodeai/argo-agent.git "$HOME/Code/argo-agent"
-          cd "$HOME/Code/argo-agent"
-          # Pin to the SHA recorded in .shepherd/legacy-baseline.sha256.
-          # If the legacy remote rewrote history above this SHA, fetch
-          # will fail loudly here.
-          SHA=$(awk 'NR==4 {print $2}' "$GITHUB_WORKSPACE/.shepherd/legacy-baseline.sha256")
-          git fetch --depth 1 origin "$SHA"
-          git checkout "$SHA"
-          echo "legacy HEAD = $(git rev-parse HEAD)"
-      - name: make check-legacy-untouched
-        run: make check-legacy-untouched

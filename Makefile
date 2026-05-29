@@ -36,9 +36,6 @@ help:
 	@echo "  make lint             ruff check (M4.3)"
 	@echo "  make typecheck        ty check (M4.3)"
 	@echo "  make test             pytest (M4.3)"
-	@echo "  make parity           Parity suite vs legacy image (M6; XFAIL-aware)"
-	@echo "  make parity-strict    Parity suite without expected-FAIL whitelist"
-	@echo "  make check-legacy-untouched  Verify ~/Code/argo-agent untouched (M2.4a)"
 	@echo "  make check-upstream-pristine Verify upstream/ matches last sync commit (M4.1)"
 	@echo "  make install-smoke    Docker-driven install.sh smoke test (M5.2; IU-AC-4/5/9)"
 	@echo "  make update-smoke     Docker update-smoke (IU-AC-9/10/11; M5.3 Part A)"
@@ -149,30 +146,6 @@ test:
 		pytest -m 'not integration'; \
 	else \
 		echo "make test: pytest not available or no tests dir (M4.3)"; \
-	fi
-
-.PHONY: parity
-# `--allow-expected` reclassifies surfaces listed in
-# tests/parity-expected.yml as XFAIL (non-blocking) so the gate is
-# strict-against-regressions without false-positiving on the documented
-# v0.8.0-vs-v0.14.0 baseline gap. See AGENTS.md § Parity baseline and
-# tests/parity-expected.yml for the lifecycle. Use `make parity-strict`
-# (or invoke the runner directly without the flag) to see the full
-# unmasked diff during development.
-parity:
-	python tools/parity_runner.py --allow-expected
-
-.PHONY: parity-strict
-parity-strict:
-	python tools/parity_runner.py
-
-.PHONY: check-legacy-untouched
-check-legacy-untouched:
-	@if [ -x tools/check_legacy_untouched.sh ]; then \
-		tools/check_legacy_untouched.sh --verify; \
-	else \
-		echo "tools/check_legacy_untouched.sh not yet implemented (M2.4a)"; \
-		exit 1; \
 	fi
 
 .PHONY: check-upstream-pristine
