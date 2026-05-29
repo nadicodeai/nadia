@@ -5,7 +5,8 @@ Workshop layout means ``__version__`` and ``__release_date__`` live ONLY inside
 the built ``dist/argo/argo_cli/__init__.py`` (gitignored on ``main``) — never as
 a commit on ``main``. This script bumps those values in-place inside the built
 ``dist/argo/``, tags ``main`` HEAD with the CalVer tag, builds a deterministic
-tarball, and (optionally, with ``--publish``) creates a GitHub release.
+tarball, creates the GitHub Release object (via ``gh release create``) **before**
+pushing the tag, then pushes the tag (firing ``.github/workflows/release.yml``).
 
 It mirrors upstream's release driver shape but works from the workshop layout:
 
@@ -19,11 +20,15 @@ It mirrors upstream's release driver shape but works from the workshop layout:
   shape. Mirrored at :func:`_gh_release_create`.
 
 Companion: ``.github/workflows/release.yml`` (separate M4.2 task) fires on the
-tag push and force-pushes ``dist/argo/`` to ``release`` + uploads assets. This
-script creates the release; the workflow uploads to it (or re-uses the assets
-already attached here via ``gh release create``).
+tag push and force-pushes ``dist/argo/`` to ``release`` + uploads assets. Its
+first consumer step (``gh release view <tag>`` under ``set -euo pipefail``)
+REQUIRES the GitHub Release object to already exist when the tag push fires —
+so this script MUST create the release object *before* pushing the tag. The
+workflow then attaches assets via ``gh release upload --clobber`` (idempotent),
+so this script only needs to CREATE the release object (attaching the local
+assets here is a harmless bonus the workflow later clobbers).
 
-Pipeline (default invocation, no ``--dry-run`` and no ``--publish``):
+Pipeline (default invocation, no ``--dry-run``):
 
 1. Resolve repo root via ``git rev-parse --show-toplevel``; refuse if cwd is
    not inside a git repo.
@@ -41,17 +46,20 @@ Pipeline (default invocation, no ``--dry-run`` and no ``--publish``):
 8. Run ``make leakage-static``; abort on failure.
 9. Run ``python tools/run_assertions.py dist/argo``; abort on failure.
 10. ``git tag -a v<release-date>`` pointing at workshop ``main`` HEAD.
-11. ``git push <remote> v<release-date>`` (unless ``--dry-run``).
-12. Build the deterministic tarball under
+11. Build the deterministic tarball under
     ``.sync-workdir/release-artifacts/argo-v<release-date>.tar.gz`` using
     ``SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)`` and tar's
     ``--mtime``/``--sort``/``--owner``/``--group``/``--numeric-owner`` flags.
-13. Compute sha256 sums of the tarball + ``dist/argo/scripts/install.sh``
+12. Compute sha256 sums of the tarball + ``dist/argo/scripts/install.sh``
     (+ ``install.ps1`` if present); write ``sha256sums.txt``.
-14. If ``--publish``: run ``gh release create`` with the renamed banner title
-    and the assets above.
+13. Run ``gh release create`` with the renamed banner title, the assets above,
+    and notes generated from ``git log <prev-tag>..<new-tag>`` (or the
+    first-release note when ``--first-release`` is passed). This MUST happen
+    *before* the tag push so ``release.yml``'s ``gh release view`` succeeds.
+14. ``git push <remote> v<release-date>`` (unless ``--dry-run``) — fires
+    ``release.yml`` against the now-existing release object.
 15. Print a summary (tag, version, release date, tarball path, sha256sums
-    path, GitHub release URL when ``--publish``).
+    path, GitHub release URL).
 
 Style
 -----
@@ -276,6 +284,45 @@ def _git_head_commit_epoch(repo: Path) -> int:
         step="git",
     ).stdout.strip()
     return int(out)
+
+
+def _previous_release_tag(repo: Path, *, exclude: str) -> str | None:
+    """Return the most recent existing CalVer tag, excluding *exclude*.
+
+    Used to bound the ``git log <prev>..<new>`` range that produces release
+    notes. CalVer tags (``v20*``) sort correctly under
+    ``--sort=-version:refname`` so the first entry that is not the tag we are
+    about to cut is the immediate predecessor. Returns ``None`` when no prior
+    tag exists (the genuine first cut).
+    """
+    out = _run(
+        ["git", "tag", "-l", "v20*", "--sort=-version:refname"],
+        cwd=repo,
+        capture=True,
+        check=True,
+        step="release-notes",
+    ).stdout
+    for line in out.splitlines():
+        tag = line.strip()
+        if tag and tag != exclude:
+            return tag
+    return None
+
+
+def _commit_log_since(repo: Path, prev_tag: str, *, head: str) -> str:
+    """Return a bulleted ``git log <prev_tag>..<head>`` body for release notes.
+
+    Each commit becomes a ``- <subject> (<short-sha>)`` line. *head* is the
+    revision the new tag points at (``HEAD`` in normal runs).
+    """
+    out = _run(
+        ["git", "log", "--no-merges", "--pretty=format:- %s (%h)", f"{prev_tag}..{head}"],
+        cwd=repo,
+        capture=True,
+        check=True,
+        step="release-notes",
+    ).stdout.strip()
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -677,23 +724,59 @@ def _collect_assets(repo: Path, state: VersionState, *, dry_run: bool) -> Releas
 # ---------------------------------------------------------------------------
 
 
+def _release_notes(
+    repo: Path,
+    state: VersionState,
+    *,
+    first_release: bool,
+    dry_run: bool,
+) -> str:
+    """Build the release-notes body for ``gh release create``.
+
+    On the genuine first cut (``--first-release``), or when no prior CalVer tag
+    exists, emit the static first-release note. Otherwise generate a changelog
+    from ``git log <prev-tag>..<new-tag>`` so every release ships its own notes
+    (the previous code hardcoded "First CalVer release" on EVERY release).
+    """
+    changelog_url = (
+        f"https://github.com/nadicodeai/argo/commits/{state.tag_name}"
+    )
+    if first_release:
+        _log("--first-release: emitting static first-release note")
+        return f"First CalVer release. See changelog at {changelog_url}."
+
+    # In dry-run the new tag has not been created, so resolve the previous tag
+    # against HEAD; otherwise the new annotated tag already exists locally and
+    # is excluded from the predecessor search.
+    head = "HEAD" if dry_run else state.tag_name
+    prev_tag = _previous_release_tag(repo, exclude=state.tag_name)
+    if prev_tag is None:
+        _log("no prior CalVer tag found; falling back to first-release note")
+        return f"First CalVer release. See changelog at {changelog_url}."
+
+    body = _commit_log_since(repo, prev_tag, head=head)
+    _log(f"release notes generated from {prev_tag}..{head}")
+    header = f"Changes since {prev_tag}:"
+    if not body:
+        body = "- (no commits since previous tag)"
+    return f"{header}\n\n{body}\n\nSee changelog at {changelog_url}."
+
+
 def _gh_release_create(
     repo: Path,
     state: VersionState,
     assets: ReleaseAssets,
+    notes: str,
     *,
     dry_run: bool,
 ) -> str | None:
     """Invoke ``gh release create`` with the renamed banner title.
 
     Cites ``upstream/scripts/release.py:1887-1918``. Returns the release URL
-    (printed by ``gh``) or ``None`` in ``--dry-run`` mode.
+    (printed by ``gh``) or ``None`` in ``--dry-run`` mode. *notes* is supplied
+    by :func:`_release_notes` (per-release changelog, not a hardcoded string).
     """
     title = f"Argo Agent v{state.new_version} ({state.new_release_date})"
-    notes = (
-        f"First CalVer release. See changelog at "
-        f"https://github.com/nadicodeai/argo/commits/{state.tag_name}."
-    )
     cmd: list[str] = [
         "gh", "release", "create", state.tag_name,
         "--title", title,
@@ -725,7 +808,7 @@ class CliArgs:
     dry_run: bool
     release_date: str | None
     version: str | None
-    publish: bool
+    no_push: bool
     skip_build: bool
     remote: str
 
@@ -735,8 +818,8 @@ def _build_parser() -> argparse.ArgumentParser:
         prog="argo_release.py",
         description=(
             "Workshop-side release driver: bump version + release-date in "
-            "dist/argo/, tag main HEAD, build deterministic tarball, "
-            "optionally create a GitHub release."
+            "dist/argo/, tag main HEAD, build deterministic tarball, create the "
+            "GitHub Release object, then push the tag (firing release.yml)."
         ),
     )
     p.add_argument(
@@ -749,9 +832,9 @@ def _build_parser() -> argparse.ArgumentParser:
         "--first-release",
         action="store_true",
         help=(
-            "Pass through to behave like upstream's --first-release flag "
-            "(skips changelog-from-previous-tag logic). Required for the "
-            "first CalVer cut."
+            "Behave like upstream's --first-release flag: skip the "
+            "changelog-from-previous-tag logic and use the static first-release "
+            "note instead. Required for the genuine first CalVer cut."
         ),
     )
     p.add_argument(
@@ -769,9 +852,14 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Override __version__ explicitly (e.g., 0.14.1).",
     )
     p.add_argument(
-        "--publish",
+        "--no-push",
         action="store_true",
-        help="Run `gh release create` at the end. Without it, stops after local tag.",
+        help=(
+            "Create the tag + GitHub Release object but do NOT push the tag, so "
+            "release.yml is not fired. Preview the release object without "
+            "triggering CI. (The release object is ALWAYS created on the normal "
+            "path — release.yml's `gh release view` requires it to exist.)"
+        ),
     )
     p.add_argument(
         "--skip-build",
@@ -796,7 +884,7 @@ def _summary(
     assets: ReleaseAssets,
     *,
     release_url: str | None,
-    published: bool,
+    pushed: bool,
 ) -> str:
     bits: list[str] = [
         "",
@@ -806,11 +894,12 @@ def _summary(
         f"  release date  : {state.new_release_date} (was {state.current_release_date})",
         f"  tarball       : {assets.tarball}",
         f"  sha256sums    : {assets.sha256sums}",
+        f"  github release: {release_url or '(no URL returned)'}",
     ]
-    if published:
-        bits.append(f"  github release: {release_url or '(no URL returned)'}")
+    if pushed:
+        bits.append("  tag pushed    : yes (release.yml fired)")
     else:
-        bits.append("  github release: (skipped — pass --publish to create)")
+        bits.append("  tag pushed    : no (--no-push / --dry-run; release.yml not fired)")
     return "\n".join(bits)
 
 
@@ -830,25 +919,36 @@ def run(args: CliArgs) -> int:
         f"{state.current_release_date} → {state.new_release_date}; "
         f"tag={state.tag_name}"
     )
-    if args.first_release:
-        _log("--first-release: skipping changelog-from-previous-tag logic")
 
     _run_make_build(repo, skip=args.skip_build, dry_run=args.dry_run)
     _apply_rewrites(repo, state, dry_run=args.dry_run)
     _run_leakage_static(repo, dry_run=args.dry_run)
     _run_assertions(repo, dry_run=args.dry_run)
-    _create_tag(repo, state, dry_run=args.dry_run)
-    _push_tag(repo, state, remote=args.remote, dry_run=args.dry_run)
-    assets = _collect_assets(repo, state, dry_run=args.dry_run)
 
-    release_url: str | None = None
-    if args.publish:
-        release_url = _gh_release_create(repo, state, assets, dry_run=args.dry_run)
+    # Create the annotated tag locally, build the assets, then CREATE the
+    # GitHub Release object — all BEFORE pushing the tag. release.yml's first
+    # consumer step (`gh release view <tag>` under `set -euo pipefail`) requires
+    # the release object to already exist when the tag push fires; pushing
+    # first would make that step fail (the historical bug). The workflow
+    # re-uploads assets via `gh release upload --clobber`, so attaching them
+    # here is a harmless convenience.
+    _create_tag(repo, state, dry_run=args.dry_run)
+    assets = _collect_assets(repo, state, dry_run=args.dry_run)
+    notes = _release_notes(
+        repo, state, first_release=args.first_release, dry_run=args.dry_run
+    )
+    release_url = _gh_release_create(
+        repo, state, assets, notes, dry_run=args.dry_run
+    )
+
+    pushed = not args.no_push
+    if pushed:
+        _push_tag(repo, state, remote=args.remote, dry_run=args.dry_run)
     else:
-        _log("stopping before `gh release create` (no --publish)")
+        _log("skipping tag push (--no-push); release.yml NOT fired")
 
     print(
-        _summary(state, assets, release_url=release_url, published=args.publish),
+        _summary(state, assets, release_url=release_url, pushed=pushed and not args.dry_run),
         file=sys.stderr,
     )
     return 0
@@ -863,7 +963,7 @@ def main(argv: list[str] | None = None) -> int:
         dry_run=ns.dry_run,
         release_date=ns.release_date,
         version=ns.version,
-        publish=ns.publish,
+        no_push=ns.no_push,
         skip_build=ns.skip_build,
         remote=ns.remote,
     )

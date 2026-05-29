@@ -156,6 +156,32 @@ def _scaffold_fake_repo(root: Path) -> None:
         cwd=str(root),
         check=True,
     )
+    # Neutralise any operator-global hooks (e.g. a gitleaks pre-commit) so the
+    # synthetic commits below cannot be rejected or pollute test output.
+    subprocess.run(
+        ["git", "config", "core.hooksPath", "/dev/null"],
+        cwd=str(root),
+        check=True,
+    )
+
+
+def _commit_all(root: Path, message: str) -> str:
+    """Stage everything under ``root`` and commit with ``message``; return SHA."""
+    subprocess.run(["git", "add", "-A"], cwd=str(root), check=True)
+    subprocess.run(
+        ["git", "commit", "--quiet", "-m", message],
+        cwd=str(root),
+        check=True,
+    )
+    rev = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=str(root),
+        text=True,
+        encoding="utf-8",
+        stdout=subprocess.PIPE,
+        check=True,
+    )
+    return rev.stdout.strip()
 
 
 def test_empty_upstream_dir_exits_2(tmp_path: Path) -> None:
@@ -230,6 +256,128 @@ def test_no_history_touched_upstream_exits_2(tmp_path: Path) -> None:
     result = _run("--repo-root", str(fake), cwd=fake)
     assert result.returncode == 2
     assert "bootstrap" in result.stderr.lower() or "no commit" in result.stderr.lower()
+
+
+def _scaffold_synced_repo(root: Path) -> str:
+    """Build a repo with a bootstrap + a `sync:` commit; return the sync SHA.
+
+    Layout after this helper:
+
+      - commit 1: ``M1.2: bootstrap upstream subtree ...`` seeds ``upstream/``
+      - commit 2: ``sync: upstream <sha> (...)`` refreshes ``upstream/``
+
+    The returned SHA is the sync commit — the anchor the checker MUST diff
+    against. (Any later ``upstream/`` edit is therefore drift.)
+    """
+    _scaffold_fake_repo(root)
+    upstream = root / "upstream"
+    upstream.mkdir()
+    (upstream / ".commit").write_text("a890389b\n", encoding="utf-8")
+    (upstream / "README.md").write_text("upstream readme\n", encoding="utf-8")
+    _commit_all(root, "M1.2: bootstrap upstream subtree at hermes-agent@a890389b")
+    (upstream / "README.md").write_text("upstream readme v2\n", encoding="utf-8")
+    (upstream / ".commit").write_text("458a94e4\n", encoding="utf-8")
+    return _commit_all(root, "sync: upstream 458a94e4 (1 patch refreshed)")
+
+
+def test_committed_drift_after_sync_commit_detected(tmp_path: Path) -> None:
+    """A committed upstream/ edit ON TOP of the last `sync:` commit → exit 1.
+
+    This is the FR-15 regression: the naive "last commit touching upstream/"
+    anchor makes the offending commit its own baseline, so the diff is empty
+    and the gate passes. Anchoring to the last *sync* commit catches it.
+    """
+    fake = tmp_path / "synced-repo"
+    fake.mkdir()
+    _scaffold_synced_repo(fake)
+    # Malicious / feature-branch committed edit to upstream/ AFTER the sync.
+    (fake / "upstream" / "README.md").write_text(
+        "sneaky edit outside sync\n", encoding="utf-8"
+    )
+    _commit_all(fake, "feat: totally innocent-looking change")
+
+    result = _run("--repo-root", str(fake), cwd=fake)
+    assert result.returncode == 1, (
+        f"expected 1 (drift), got {result.returncode}\n"
+        f"stdout: {result.stdout}\nstderr: {result.stderr}"
+    )
+    assert "drift detected" in result.stderr
+    assert "upstream/README.md" in result.stderr
+
+
+def test_clean_after_sync_commit_exits_zero(tmp_path: Path) -> None:
+    """A repo whose HEAD *is* the sync commit reports pristine (exit 0)."""
+    fake = tmp_path / "synced-clean"
+    fake.mkdir()
+    _scaffold_synced_repo(fake)
+    result = _run("--repo-root", str(fake), cwd=fake)
+    assert result.returncode == 0, (
+        f"expected 0, got {result.returncode}\n"
+        f"stdout: {result.stdout}\nstderr: {result.stderr}"
+    )
+    assert "upstream pristine" in result.stdout
+
+
+def test_unrelated_bootstrap_subject_not_treated_as_anchor(tmp_path: Path) -> None:
+    """A `feat(...bootstrap_release_branch.sh)` commit is NOT a sync anchor.
+
+    Such a commit mentions "bootstrap" but is unrelated to upstream syncing;
+    treating it as the anchor would mask a real committed upstream/ edit. The
+    edit lands AFTER the sync but BEFORE the decoy, so an anchor set to the
+    decoy would (wrongly) miss it while the correct (sync) anchor catches it.
+    """
+    fake = tmp_path / "decoy-repo"
+    fake.mkdir()
+    _scaffold_synced_repo(fake)
+    # Committed upstream/ drift (between the sync and the decoy commit).
+    (fake / "upstream" / "README.md").write_text(
+        "drift before the decoy\n", encoding="utf-8"
+    )
+    _commit_all(fake, "chore: edit upstream out of band")
+    # Decoy commit whose subject merely mentions "bootstrap" but touches no
+    # upstream/ files.
+    (fake / "tools").mkdir()
+    (fake / "tools" / "bootstrap_release_branch.sh").write_text(
+        "#!/usr/bin/env bash\n", encoding="utf-8"
+    )
+    _commit_all(fake, "feat(M2.2): tools/bootstrap_release_branch.sh — seed release")
+
+    result = _run("--repo-root", str(fake), cwd=fake)
+    assert result.returncode == 1, (
+        f"expected 1 (drift), got {result.returncode}\n"
+        f"stdout: {result.stdout}\nstderr: {result.stderr}"
+    )
+    assert "upstream/README.md" in result.stderr
+
+
+def test_committed_drift_without_sync_commit_falls_back_to_root(
+    tmp_path: Path,
+) -> None:
+    """No sync-convention commit exists → anchor falls back to root → drift caught.
+
+    Guards the fallback path: even on an odd history with no ``sync:`` /
+    ``subtree:`` / bootstrap commit, a committed upstream/ edit since the
+    fork/root MUST still be flagged rather than silently passing.
+    """
+    fake = tmp_path / "no-sync-repo"
+    fake.mkdir()
+    _scaffold_fake_repo(fake)
+    upstream = fake / "upstream"
+    upstream.mkdir()
+    (upstream / ".commit").write_text("a890389b\n", encoding="utf-8")
+    (upstream / "README.md").write_text("baseline\n", encoding="utf-8")
+    # Root commit DOES track upstream/, but its subject is NOT a sync subject.
+    _commit_all(fake, "init: project skeleton")
+    # Committed edit to upstream/ with a non-sync subject.
+    (upstream / "README.md").write_text("edited outside any sync\n", encoding="utf-8")
+    _commit_all(fake, "wip: hand-edit upstream")
+
+    result = _run("--repo-root", str(fake), cwd=fake)
+    assert result.returncode == 1, (
+        f"expected 1 (drift), got {result.returncode}\n"
+        f"stdout: {result.stdout}\nstderr: {result.stderr}"
+    )
+    assert "upstream/README.md" in result.stderr
 
 
 @pytest.mark.parametrize("flag", ["--help", "-h"])

@@ -138,6 +138,22 @@ def _apply_patches() -> list[str]:
     return applied
 
 
+def _strip_quilt_state() -> None:
+    """Remove quilt's ``.pc/`` bookkeeping from ``dist/argo/`` after patches apply.
+
+    ``quilt push -a`` leaves a ``.pc/`` tree of per-patch backup copies inside
+    ``dist/argo/``. It is build-only state (needed for ``pop``/``refresh``, which
+    the build never does), so shipping it would bloat the release tarball and the
+    Docker image with pre-rename backup files (e.g. stale ``/main/`` install
+    URLs that no longer exist in the live tree). Strip it so the artifact — and
+    the rename pass that follows — only sees the real renamed tree.
+    """
+    pc_dir = DIST_DIR / ".pc"
+    if pc_dir.exists():
+        _log(f"strip quilt state: {pc_dir}")
+        shutil.rmtree(pc_dir)
+
+
 def _regenerate_rename_defaults() -> None:
     """Regenerate overlay/hermes_cli/_rename_defaults.py from argo-rename.yaml.
 
@@ -323,6 +339,7 @@ def build() -> int:
     _clean_dist()
     _copy_upstream()
     applied = _apply_patches()
+    _strip_quilt_state()
     _regenerate_rename_defaults()
     overlay_added = _copy_overlay()
     touched = _run_rebrand(upstream_sha)

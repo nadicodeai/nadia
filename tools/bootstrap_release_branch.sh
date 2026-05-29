@@ -187,8 +187,23 @@ fi
 
 # ----------------------------------------------------------------------------
 # Force-push (with-lease) the orphan branch to the workshop repo's remote URL
+#
+# The scratch repo is a fresh `git init` with no remote-tracking ref, so a
+# bare `--force-with-lease` is rejected as "stale info" whenever the branch
+# already exists remotely. Mirror tools/release_branch_push.py: resolve the
+# remote's current SHA via `git ls-remote` and pass it as the explicit lease
+# `--force-with-lease=<branch>:<sha>`. Only when the branch does NOT exist
+# remotely (true first bootstrap) do we fall back to a bare
+# `--force-with-lease`, which git treats as "succeed only if the ref is
+# absent" — exactly the bootstrap invariant.
 # ----------------------------------------------------------------------------
-echo "==> pushing $BRANCH to $REMOTE_URL (--force-with-lease)"
-git -C "$SCRATCH" push --force-with-lease "$REMOTE_URL" "$BRANCH:$BRANCH"
+REMOTE_SHA="$(git ls-remote "$REMOTE_URL" "refs/heads/$BRANCH" | awk '{print $1}')"
+if [[ -n "$REMOTE_SHA" ]]; then
+  echo "==> remote $BRANCH exists at $REMOTE_SHA; pushing (--force-with-lease=$BRANCH:$REMOTE_SHA)"
+  git -C "$SCRATCH" push "--force-with-lease=$BRANCH:$REMOTE_SHA" "$REMOTE_URL" "$BRANCH:$BRANCH"
+else
+  echo "==> remote $BRANCH absent (first bootstrap); pushing (--force-with-lease)"
+  git -C "$SCRATCH" push --force-with-lease "$REMOTE_URL" "$BRANCH:$BRANCH"
+fi
 echo
 echo "==> done. release branch SHA = $SCRATCH_SHA"

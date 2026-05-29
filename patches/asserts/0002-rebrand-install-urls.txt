@@ -17,11 +17,11 @@
 # set cleanly; the assertion catches any future regression where
 # the rewrite stops covering this slot.
 
-path:README.md raw.githubusercontent.com/nadicodeai/argo/main/scripts/install.sh
-path:README.md raw.githubusercontent.com/nadicodeai/argo/main/scripts/install.ps1
+path:README.md raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh
+path:README.md raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1
 path:README.md git clone https://github.com/nadicodeai/argo.git
 path:README.md github.com/nadicodeai/argo/issues
-path:README.zh-CN.md raw.githubusercontent.com/nadicodeai/argo/main/scripts/install.sh
+path:README.zh-CN.md raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh
 path:README.zh-CN.md git clone https://github.com/nadicodeai/argo.git
 path:README.zh-CN.md github.com/nadicodeai/argo/issues
 path:README.zh-CN.md github.com/nadicodeai/argo/discussions

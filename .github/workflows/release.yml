@@ -156,13 +156,29 @@ jobs:
         # the GitHub Release UI. install.ps1 is presence-gated because
         # an air-gapped/Linux-only rename-engine config could legitimately
         # produce a Linux-only release tree.
+        #
+        # Hash by BASENAME, not by path. Release assets are uploaded flat
+        # (install.sh, install.ps1, argo-*.tar.gz live side-by-side in the
+        # download dir), so the manifest must read e.g. `install.sh`, not
+        # `dist/argo/scripts/install.sh` — otherwise `sha256sum -c
+        # sha256sums.txt` in a flat dir fails with "No such file". This also
+        # matches tools/argo_release.py, whose _write_sha256sums() already
+        # emits `<hex>  <basename>` (p.name). The tarball already sits at the
+        # repo root, so its sha256sum line is a basename too.
         run: |
           set -euo pipefail
-          FILES=("argo-${GITHUB_REF_NAME}.tar.gz" "dist/argo/scripts/install.sh")
-          if [ -f "dist/argo/scripts/install.ps1" ]; then
-            FILES+=("dist/argo/scripts/install.ps1")
-          fi
-          sha256sum "${FILES[@]}" > sha256sums.txt
+          # Tarball is at the repo root: its name is already a basename.
+          sha256sum "argo-${GITHUB_REF_NAME}.tar.gz" > sha256sums.txt
+          # cd into the scripts dir so sha256sum records bare basenames
+          # (install.sh / install.ps1), appending to the manifest.
+          (
+            cd dist/argo/scripts
+            SCRIPTS=("install.sh")
+            if [ -f "install.ps1" ]; then
+              SCRIPTS+=("install.ps1")
+            fi
+            sha256sum "${SCRIPTS[@]}"
+          ) >> sha256sums.txt
           cat sha256sums.txt
 
       - name: Force-push dist/argo/ to origin/release (IU-FR-3)

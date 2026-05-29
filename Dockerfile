@@ -340,8 +340,8 @@ RUN npm install --prefer-offline --no-audit && \
 # rename engine preserves these directories from upstream; absence is
 # treated as a no-op so the stage stays robust against upstream layout
 # shifts.
-RUN if [ -d web ] && [ -f web/package.json ]; then (cd web && npm run build || true); fi && \
-    if [ -d ui-tui ] && [ -f ui-tui/package.json ]; then (cd ui-tui && npm run build || true); fi
+RUN if [ -d web ] && [ -f web/package.json ]; then (cd web && npm run build); fi && \
+    if [ -d ui-tui ] && [ -f ui-tui/package.json ]; then (cd ui-tui && npm run build); fi
 
 # Re-chown node_modules + ui-tui assets so the argo user can write to
 # them at runtime (the TUI launcher's _tui_need_npm_install() may
@@ -350,6 +350,13 @@ RUN chmod -R a+rX /opt/argo && \
     chown -R argo:argo /opt/argo/.venv && \
     if [ -d /opt/argo/node_modules ]; then chown -R argo:argo /opt/argo/node_modules; fi && \
     if [ -d /opt/argo/ui-tui ]; then chown -R argo:argo /opt/argo/ui-tui; fi
+
+# Point web_server.py at the built dashboard bundle. Upstream's vite build
+# emits to argo_cli/web_dist (post-rename); web_server.py reads
+# ARGO_WEB_DIST and falls back to a package-relative web_dist only when the
+# var is unset. Set it explicitly so the dashboard serves the build output
+# regardless of CWD. Mirrors dist/argo/Dockerfile.
+ENV ARGO_WEB_DIST=/opt/argo/argo_cli/web_dist
 
 # Match legacy's on-disk layout: ARGO_HOME = /opt/data. Customer state
 # bind-mounts to /opt/data via the docker-compose recipe shipped with
@@ -391,7 +398,7 @@ USER root
 RUN cp -a /opt/argo/docker/s6-rc.d/. /etc/s6-overlay/s6-rc.d/ && \
     chown -R root:root /etc/s6-overlay/s6-rc.d/ && \
     mkdir -p /etc/cont-init.d && \
-    printf '#!/bin/sh\nexec /opt/argo/docker/stage2-hook.sh\n' \
+    printf '#!/command/with-contenv sh\nexec /opt/argo/docker/stage2-hook.sh\n' \
         > /etc/cont-init.d/01-argo-setup && \
     chmod 0755 /etc/cont-init.d/01-argo-setup && \
     cp /opt/argo/docker/cont-init.d/015-supervise-perms /etc/cont-init.d/015-supervise-perms && \

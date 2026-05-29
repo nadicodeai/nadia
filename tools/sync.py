@@ -421,7 +421,12 @@ def _run_make_build(repo: Path) -> None:
     if result.returncode != 0:
         raise BuildVerificationFailedError(
             "make build failed during sync verification:\n"
-            f"stdout: {result.stdout}\nstderr: {result.stderr}",
+            f"stdout: {result.stdout}\nstderr: {result.stderr}\n\n"
+            "The subtree merge commit is on HEAD (un-amended) and the patch\n"
+            "series is fully applied in .sync-workdir/; sync state has been\n"
+            "recorded. Fix the build cause (see output above), then run\n"
+            "`make sync-resume` to re-verify and commit. To abandon and start\n"
+            "over, run `make sync-reset`.",
             step="verify-build",
         )
 
@@ -533,7 +538,22 @@ def run_default(upstream_url: str, branch: str) -> int:
             )
         refreshed = _copy_patches_back()
 
-    # 4. Verification build
+    # 4. Verification build. Record a resumable state FIRST: if `make build`
+    # fails, the subtree merge commit is already on HEAD (un-amended) and the
+    # tree is dirty (upstream/.commit + refreshed patches). Without state on
+    # disk, `make sync-resume` would die (ResumeStateMissingError) and `make
+    # sync` would die on the dirty tree, stranding the operator. The
+    # verify-build phase lets `make sync-resume` continue once the build cause
+    # is fixed: resume replays quilt push (idempotent — already fully applied),
+    # re-runs the build, and commits.
+    _write_sync_state(
+        {
+            "phase": "verify-build",
+            "failing_patch": "",
+            "upstream_sha": new_sha,
+            "previous_sha": old_sha,
+        }
+    )
     _run_make_build(repo)
 
     # 5. Commit. Amend the subtree merge commit with the sync: message
@@ -610,7 +630,20 @@ def run_resume() -> int:
             step="resume-patches",
         )
 
-    # 4. Verification build
+    # 4. Verification build. Record a resumable state FIRST (same rationale as
+    # run_default): on a build failure the workdir + commit are mid-flight, and
+    # without state on disk both `make sync-resume` and `make sync` would die.
+    # The verify-build phase lets the operator fix the build cause and re-run
+    # `make sync-resume`, which replays quilt push (already fully applied),
+    # re-runs the build, and commits.
+    _write_sync_state(
+        {
+            "phase": "verify-build",
+            "failing_patch": "",
+            "upstream_sha": new_sha,
+            "previous_sha": state.get("previous_sha", ""),
+        }
+    )
     _run_make_build(repo)
 
     # 5. Commit. On resume the subtree merge commit already exists; we

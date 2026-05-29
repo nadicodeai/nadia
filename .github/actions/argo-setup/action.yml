@@ -1,7 +1,7 @@
 # argo — composite setup action (issue #7).
 #
 # Installs the prelude that every argo CI job needs in some subset:
-#   1. uv (astral-sh/setup-uv@v5)
+#   1. uv (astral-sh/setup-uv, SHA-pinned to v5)
 #   2. CPython via `uv python install <version>`
 #   3. apt packages (quilt + zstd by default; extra packages opt-in)
 #   4. a .venv at the repo root with pip packages from `pip-packages`
@@ -37,7 +37,7 @@ runs:
   steps:
     - name: Install uv
       if: inputs.with-uv == 'true'
-      uses: astral-sh/setup-uv@v5
+      uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
 
     - name: Install Python ${{ inputs.python-version }}
       if: inputs.with-uv == 'true' && inputs.python-version != ''
