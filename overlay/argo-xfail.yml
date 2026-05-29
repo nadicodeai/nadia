@@ -181,3 +181,16 @@ xfails:
   - nodeid: tests/gateway/test_ntfy_plugin.py::TestStandaloneSend::test_posts_to_server
     reason: "Test asserts on hermes-named ntfy topic in a URL path ('https://ntfy.example.com/hermes-in'). argo-rename.yaml's URL skip_contexts preserves URL substrings verbatim per repo policy (URLs are upstream-owned); the runtime correctly builds 'argo-in' from the renamed topic. Test diverges intentionally — XFAIL until upstream parametrizes the topic name or argo's rebrand engine grows URL-internal token rewriting (separate scope)."
     category: X
+
+  # ---------------------------------------------------------------
+  # Cluster 3 — banner.py compares against origin/release (1 entry)
+  # Upstream test hardcodes subprocess mocks for `origin/main`. Patch 0010
+  # (banner-update-check-release-branch) makes banner.py compare against
+  # `origin/release` so the customer-facing "Update available: N commits
+  # behind" banner agrees with `argo update` (patched by 0009 to default
+  # to release branch). The mock now sees unexpected args and the
+  # function returns None instead of the expected dict.
+  # ---------------------------------------------------------------
+  - nodeid: tests/argo_cli/test_banner_git_state.py::test_get_git_banner_state_reads_origin_and_head
+    reason: "Patch 0010 redirects banner.py's update check from origin/main to origin/release (matching install.sh + cmd_update target branch per IU-FR-7/IU-FR-8). Upstream test hardcodes subprocess mocks for origin/main and will not match the patched code path. The behavior IS the argo customer's, intentionally divergent — banner now agrees with argo update's branch target."
+    category: X
