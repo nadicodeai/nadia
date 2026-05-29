@@ -13,12 +13,17 @@ GitHub repo was named that way. We do not carry that legacy name
 forward — see .shepherd/spec.md § Project Structure.
 
 Auth uses the workflow's built-in GITHUB_TOKEN with `packages: write`,
-so no secret setup is required. All four `docker/login-action` steps
-across the four jobs (build-amd64, build-arm64, merge, move-latest)
-are updated. The three inline `image=nousresearch/hermes-agent`
-shell vars used by the :main and :latest ancestor-check logic are
-likewise updated to `ghcr.io/nadicodeai/argo`. The `IMAGE_NAME`
-env var carries the new value.
+so no secret setup is required. All three `docker/login-action` steps
+in the current upstream workflow (build-amd64, build-arm64, merge) are
+flipped from the DOCKERHUB_* secrets to `registry: ghcr.io` +
+`github.actor` / `secrets.GITHUB_TOKEN`, and the `IMAGE_NAME` env var
+carries the new value. The `packages: write` permission is added.
+
+(Note: upstream's docker-publish.yml has since collapsed the old
+move-latest job and the inline `image=nousresearch/hermes-agent`
+ancestor-check shell vars into the merge job's `${IMAGE_NAME}`
+references, so there is nothing else to rebrand here; the assertions
+in patches/asserts/0005 pin the GHCR end-state.)
 
 Note: the four `if: github.repository == 'NousResearch/hermes-agent'`
 guards are intentionally not touched by this patch. The rename engine

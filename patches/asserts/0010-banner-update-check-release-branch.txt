@@ -11,11 +11,13 @@
 # tools/run_assertions.py format: "path:<glob> <literal>" — the literal
 # string must appear inside files matching the glob.
 #
-# Three pinned literals — one per call site:
+# Four pinned literals — one per branch-comparison call site:
 #   1. _check_via_local_git()      rev-list HEAD..origin/release
 #   2. get_git_banner_state()      _git_short_hash(repo_dir, "origin/release")
 #   3. get_git_banner_state()      rev-list origin/release..HEAD
+#   4. _check_via_rev()            ls-remote ... refs/heads/release (nix embedded-rev path)
 
 path:argo_cli/banner.py "HEAD..origin/release"
 path:argo_cli/banner.py _git_short_hash(repo_dir, "origin/release")
 path:argo_cli/banner.py "origin/release..HEAD"
+path:argo_cli/banner.py "refs/heads/release"

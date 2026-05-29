@@ -1,0 +1,6 @@
+# Assertions for 0013-install-sh-update-reset-fallback.patch
+#
+# The installer's update path must recover from a diverged/force-pushed release
+# branch instead of aborting under `set -e`. Pin the reset --hard fallback.
+
+path:scripts/install.sh git pull --ff-only origin "$BRANCH" || git reset --hard "origin/$BRANCH"

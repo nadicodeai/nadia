@@ -24,3 +24,5 @@
 # same guarantee from the human verifier side.
 
 path:scripts/install.sh BRANCH="release"
+# --help text must agree with the actual default (was stale "default: main").
+path:scripts/install.sh Git branch to install (default: release)

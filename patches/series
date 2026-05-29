@@ -8,3 +8,7 @@
 0008-doctor-static-live-wiring.patch
 0009-update-default-branch-release.patch
 0010-banner-update-check-release-branch.patch
+0011-install-ps1-default-branch-release.patch
+0012-windows-zip-fallback-branch.patch
+0013-install-sh-update-reset-fallback.patch
+0014-readme-rebrand-commands.patch

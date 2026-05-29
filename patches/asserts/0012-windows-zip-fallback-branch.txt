@@ -1,0 +1,7 @@
+# Assertions for 0012-windows-zip-fallback-branch.patch
+#
+# The Windows ZIP-fallback update path must accept the fork's default channel
+# (release), not main — otherwise the default `argo update` aborts on every
+# Windows box with broken git file I/O. Pins the post-rename guard literal.
+
+path:argo_cli/main.py if branch != "release":

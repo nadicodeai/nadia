@@ -1,0 +1,271 @@
+Subject: Rebrand command examples + config paths in the README quickstart
+
+README.md / README.zh-CN.md are engine-excepted (whole-file) so attribution —
+badges, the fork-notice block, upstream docs/LICENSE links, "Hermes Agent"
+product references — survives the rename. But that exception also left the
+copy-paste command examples as `hermes ...` and the config paths as `~/.hermes`
+/ `%LOCALAPPDATA%\hermes`, while the installed binary is `argo`
+(pyproject `[project.scripts] argo = ...`) and config lives in ~/.argo. So every
+documented quickstart command was command-not-found and the config path was
+wrong — first-run failure for anyone following the README.
+
+This patch rebrands ONLY the command invocations (`hermes <cmd>` -> `argo <cmd>`,
+`./hermes`, `~/.local/bin/hermes`) and the config-dir paths (~/.hermes ->
+~/.argo, %LOCALAPPDATA%\hermes -> %LOCALAPPDATA%\argo). It deliberately leaves
+attribution intact: the `NousResearch/hermes-agent` repo URLs, the
+`hermes-agent.nousresearch.com` docs links, and capital-"Hermes" product prose
+are untouched (the rebrand regex `\bhermes\b(?![-/.])` skips `hermes-agent` and
+URLs by construction). See tests/test_readme_commands_rebranded.py. IU-AC-4.
+
+--- a/README.md
++++ b/README.md
+@@ -16,7 +16,7 @@
+ 
+ **The self-improving AI agent originally built by [Nous Research](https://nousresearch.com), maintained in this fork by Nadicode.** It's the only agent with a built-in learning loop — it creates skills from experience, improves them during use, nudges itself to persist knowledge, searches its own past conversations, and builds a deepening model of who you are across sessions. Run it on a $5 VPS, a GPU cluster, or serverless infrastructure that costs nearly nothing when idle. It's not tied to your laptop — talk to it from Telegram while it works on a cloud VM.
+ 
+-Use any model you want — [Nous Portal](https://portal.nousresearch.com), [OpenRouter](https://openrouter.ai) (200+ models), [NovitaAI](https://novita.ai) (AI-native cloud for Model API, Agent Sandbox, and GPU Cloud), [NVIDIA NIM](https://build.nvidia.com) (Nemotron), [Xiaomi MiMo](https://platform.xiaomimimo.com), [z.ai/GLM](https://z.ai), [Kimi/Moonshot](https://platform.moonshot.ai), [MiniMax](https://www.minimax.io), [Hugging Face](https://huggingface.co), OpenAI, or your own endpoint. Switch with `hermes model` — no code changes, no lock-in.
++Use any model you want — [Nous Portal](https://portal.nousresearch.com), [OpenRouter](https://openrouter.ai) (200+ models), [NovitaAI](https://novita.ai) (AI-native cloud for Model API, Agent Sandbox, and GPU Cloud), [NVIDIA NIM](https://build.nvidia.com) (Nemotron), [Xiaomi MiMo](https://platform.xiaomimimo.com), [z.ai/GLM](https://z.ai), [Kimi/Moonshot](https://platform.moonshot.ai), [MiniMax](https://www.minimax.io), [Hugging Face](https://huggingface.co), OpenAI, or your own endpoint. Switch with `argo model` — no code changes, no lock-in.
+ 
+ <table>
+ <tr><td><b>A real terminal interface</b></td><td>Full TUI with multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output.</td></tr>
+@@ -48,19 +48,19 @@ Run this in PowerShell:
+ iex (irm https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1)
+ ```
+ 
+-The installer handles everything: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **and a portable Git Bash** (MinGit, unpacked to `%LOCALAPPDATA%\hermes\git` — no admin required, completely isolated from any system Git install).  Hermes uses this bundled Git Bash to run shell commands.
++The installer handles everything: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **and a portable Git Bash** (MinGit, unpacked to `%LOCALAPPDATA%\argo\git` — no admin required, completely isolated from any system Git install).  Hermes uses this bundled Git Bash to run shell commands.
+ 
+ If you already have Git installed, the installer detects it and uses that instead.  Otherwise a ~45MB MinGit download is all you need — it won't touch or interfere with any system Git.
+ 
+ > **Android / Termux:** The tested manual path is documented in the [Termux guide](https://hermes-agent.nousresearch.com/docs/getting-started/termux). On Termux, Hermes installs a curated `.[termux]` extra because the full `.[all]` extra currently pulls Android-incompatible voice dependencies.
+ >
+-> **Windows:** Native Windows is supported as an **early beta** — the PowerShell one-liner above installs everything, but expect rough edges and please file issues when you hit them. If you'd rather use WSL2 (our most battle-tested Windows path), the Linux command works there too. Native Windows install lives under `%LOCALAPPDATA%\hermes`; WSL2 installs under `~/.hermes` as on Linux.  The only Hermes feature that currently needs WSL2 specifically is the browser-based dashboard chat pane (it uses a POSIX PTY — classic CLI and gateway both run natively).
++> **Windows:** Native Windows is supported as an **early beta** — the PowerShell one-liner above installs everything, but expect rough edges and please file issues when you hit them. If you'd rather use WSL2 (our most battle-tested Windows path), the Linux command works there too. Native Windows install lives under `%LOCALAPPDATA%\argo`; WSL2 installs under `~/.argo` as on Linux.  The only Hermes feature that currently needs WSL2 specifically is the browser-based dashboard chat pane (it uses a POSIX PTY — classic CLI and gateway both run natively).
+ 
+ After installation:
+ 
+ ```bash
+ source ~/.bashrc    # reload shell (or: source ~/.zshrc)
+-hermes              # start chatting!
++argo              # start chatting!
+ ```
+ 
+ ---
+@@ -68,15 +68,15 @@ hermes              # start chatting!
+ ## Getting Started
+ 
+ ```bash
+-hermes              # Interactive CLI — start a conversation
+-hermes model        # Choose your LLM provider and model
+-hermes tools        # Configure which tools are enabled
+-hermes config set   # Set individual config values
+-hermes gateway      # Start the messaging gateway (Telegram, Discord, etc.)
+-hermes setup        # Run the full setup wizard (configures everything at once)
+-hermes claw migrate # Migrate from OpenClaw (if coming from OpenClaw)
+-hermes update       # Update to the latest version
+-hermes doctor       # Diagnose any issues
++argo              # Interactive CLI — start a conversation
++argo model        # Choose your LLM provider and model
++argo tools        # Configure which tools are enabled
++argo config set   # Set individual config values
++argo gateway      # Start the messaging gateway (Telegram, Discord, etc.)
++argo setup        # Run the full setup wizard (configures everything at once)
++argo claw migrate # Migrate from OpenClaw (if coming from OpenClaw)
++argo update       # Update to the latest version
++argo doctor       # Diagnose any issues
+ ```
+ 
+ 📖 **[Full documentation →](https://hermes-agent.nousresearch.com/docs/)**
+@@ -93,10 +93,10 @@ Hermes works with whatever provider you
+ One command from a fresh install:
+ 
+ ```bash
+-hermes setup --portal
++argo setup --portal
+ ```
+ 
+-That logs you in via OAuth, sets Nous as your provider, and turns on the Tool Gateway. Check what's wired up any time with `hermes portal status`. Full details on the [Tool Gateway docs page](https://hermes-agent.nousresearch.com/docs/user-guide/features/tool-gateway).
++That logs you in via OAuth, sets Nous as your provider, and turns on the Tool Gateway. Check what's wired up any time with `argo portal status`. Full details on the [Tool Gateway docs page](https://hermes-agent.nousresearch.com/docs/user-guide/features/tool-gateway).
+ 
+ You can still bring your own keys per-tool whenever you want — the gateway is per-backend, not all-or-nothing.
+ 
+@@ -104,11 +104,11 @@ You can still bring your own keys per-to
+ 
+ ## CLI vs Messaging Quick Reference
+ 
+-Hermes has two entry points: start the terminal UI with `hermes`, or run the gateway and talk to it from Telegram, Discord, Slack, WhatsApp, Signal, or Email. Once you're in a conversation, many slash commands are shared across both interfaces.
++Hermes has two entry points: start the terminal UI with `argo`, or run the gateway and talk to it from Telegram, Discord, Slack, WhatsApp, Signal, or Email. Once you're in a conversation, many slash commands are shared across both interfaces.
+ 
+ | Action | CLI | Messaging platforms |
+ |---------|-----|---------------------|
+-| Start chatting | `hermes` | Run `hermes gateway setup` + `hermes gateway start`, then send the bot a message |
++| Start chatting | `argo` | Run `argo gateway setup` + `argo gateway start`, then send the bot a message |
+ | Start fresh conversation | `/new` or `/reset` | `/new` or `/reset` |
+ | Change model | `/model [provider:model]` | `/model [provider:model]` |
+ | Set a personality | `/personality [name]` | `/personality [name]` |
+@@ -150,28 +150,28 @@ All documentation lives at **[hermes-age
+ 
+ If you're coming from OpenClaw, Hermes can automatically import your settings, memories, skills, and API keys.
+ 
+-**During first-time setup:** The setup wizard (`hermes setup`) automatically detects `~/.openclaw` and offers to migrate before configuration begins.
++**During first-time setup:** The setup wizard (`argo setup`) automatically detects `~/.openclaw` and offers to migrate before configuration begins.
+ 
+ **Anytime after install:**
+ 
+ ```bash
+-hermes claw migrate              # Interactive migration (full preset)
+-hermes claw migrate --dry-run    # Preview what would be migrated
+-hermes claw migrate --preset user-data   # Migrate without secrets
+-hermes claw migrate --overwrite  # Overwrite existing conflicts
++argo claw migrate              # Interactive migration (full preset)
++argo claw migrate --dry-run    # Preview what would be migrated
++argo claw migrate --preset user-data   # Migrate without secrets
++argo claw migrate --overwrite  # Overwrite existing conflicts
+ ```
+ 
+ What gets imported:
+ - **SOUL.md** — persona file
+ - **Memories** — MEMORY.md and USER.md entries
+-- **Skills** — user-created skills → `~/.hermes/skills/openclaw-imports/`
++- **Skills** — user-created skills → `~/.argo/skills/openclaw-imports/`
+ - **Command allowlist** — approval patterns
+ - **Messaging settings** — platform configs, allowed users, working directory
+ - **API keys** — allowlisted secrets (Telegram, OpenRouter, OpenAI, Anthropic, ElevenLabs)
+ - **TTS assets** — workspace audio files
+ - **Workspace instructions** — AGENTS.md (with `--workspace-target`)
+ 
+-See `hermes claw migrate --help` for all options, or use the `openclaw-migration` skill for an interactive agent-guided migration with dry-run previews.
++See `argo claw migrate --help` for all options, or use the `openclaw-migration` skill for an interactive agent-guided migration with dry-run previews.
+ 
+ ---
+ 
+@@ -184,8 +184,8 @@ Quick start for contributors — clone a
+ ```bash
+ git clone https://github.com/nadicodeai/argo.git
+ cd hermes-agent
+-./setup-hermes.sh     # installs uv, creates venv, installs .[all], symlinks ~/.local/bin/hermes
+-./hermes              # auto-detects the venv, no need to `source` first
++./setup-hermes.sh     # installs uv, creates venv, installs .[all], symlinks ~/.local/bin/argo
++./argo              # auto-detects the venv, no need to `source` first
+ ```
+ 
+ Manual path (equivalent to the above):
+--- a/README.zh-CN.md
++++ b/README.zh-CN.md
+@@ -14,7 +14,7 @@
+ 
+ **由 [Nous Research](https://nousresearch.com) 构建的自进化 AI 代理。** 它是唯一内置学习闭环的智能代理——从经验中创建技能，在使用中改进技能，主动持久化知识，搜索过往对话，并在跨会话中逐步构建对你的深度理解。可以在 $5 的 VPS 上运行，也可以在 GPU 集群上运行，或者使用几乎零成本的 Serverless 基础设施。它不绑定你的笔记本——你可以在 Telegram 上与它对话，而它在云端 VM 上工作。
+ 
+-支持任意模型——[Nous Portal](https://portal.nousresearch.com)、[OpenRouter](https://openrouter.ai)（200+ 模型）、[NVIDIA NIM](https://build.nvidia.com)（Nemotron）、[小米 MiMo](https://platform.xiaomimimo.com)、[z.ai/GLM](https://z.ai)、[Kimi/Moonshot](https://platform.moonshot.ai)、[MiniMax](https://www.minimax.io)、[Hugging Face](https://huggingface.co)、OpenAI，或自定义端点。使用 `hermes model` 即可切换——无需改代码，无锁定。
++支持任意模型——[Nous Portal](https://portal.nousresearch.com)、[OpenRouter](https://openrouter.ai)（200+ 模型）、[NVIDIA NIM](https://build.nvidia.com)（Nemotron）、[小米 MiMo](https://platform.xiaomimimo.com)、[z.ai/GLM](https://z.ai)、[Kimi/Moonshot](https://platform.moonshot.ai)、[MiniMax](https://www.minimax.io)、[Hugging Face](https://huggingface.co)、OpenAI，或自定义端点。使用 `argo model` 即可切换——无需改代码，无锁定。
+ 
+ <table>
+ <tr><td><b>真正的终端界面</b></td><td>完整的 TUI，支持多行编辑、斜杠命令自动补全、对话历史、中断重定向和流式工具输出。</td></tr>
+@@ -44,7 +44,7 @@ curl -fsSL https://raw.githubusercontent
+ 
+ ```bash
+ source ~/.bashrc    # 重新加载 shell（或: source ~/.zshrc）
+-hermes              # 开始对话！
++argo              # 开始对话！
+ ```
+ 
+ ---
+@@ -52,15 +52,15 @@ hermes              # 开始对话！
+ ## 快速入门
+ 
+ ```bash
+-hermes              # 交互式 CLI — 开始对话
+-hermes model        # 选择 LLM 提供商和模型
+-hermes tools        # 配置启用的工具
+-hermes config set   # 设置单个配置项
+-hermes gateway      # 启动消息网关（Telegram、Discord 等）
+-hermes setup        # 运行完整设置向导（一次性配置所有内容）
+-hermes claw migrate # 从 OpenClaw 迁移（如果来自 OpenClaw）
+-hermes update       # 更新到最新版本
+-hermes doctor       # 诊断问题
++argo              # 交互式 CLI — 开始对话
++argo model        # 选择 LLM 提供商和模型
++argo tools        # 配置启用的工具
++argo config set   # 设置单个配置项
++argo gateway      # 启动消息网关（Telegram、Discord 等）
++argo setup        # 运行完整设置向导（一次性配置所有内容）
++argo claw migrate # 从 OpenClaw 迁移（如果来自 OpenClaw）
++argo update       # 更新到最新版本
++argo doctor       # 诊断问题
+ ```
+ 
+ 📖 **[完整文档 →](https://hermes-agent.nousresearch.com/docs/)**
+@@ -77,10 +77,10 @@ Hermes 始终允许你使用任意服务
+ 全新安装时一条命令即可：
+ 
+ ```bash
+-hermes setup --portal
++argo setup --portal
+ ```
+ 
+-它会通过 OAuth 登录、把 Nous 设为推理服务商，并启用 Tool Gateway。随时用 `hermes portal status` 查看路由状态。完整说明见 [Tool Gateway 文档](https://hermes-agent.nousresearch.com/docs/user-guide/features/tool-gateway)。
++它会通过 OAuth 登录、把 Nous 设为推理服务商，并启用 Tool Gateway。随时用 `argo portal status` 查看路由状态。完整说明见 [Tool Gateway 文档](https://hermes-agent.nousresearch.com/docs/user-guide/features/tool-gateway)。
+ 
+ 你随时可以按工具单独切回自己的 API Key — Gateway 是按工具粒度生效的，不是一刀切。
+ 
+@@ -88,11 +88,11 @@ hermes setup --portal
+ 
+ ## CLI 与消息平台 快速对照
+ 
+-Hermes 有两种入口：用 `hermes` 启动终端 UI，或运行网关从 Telegram、Discord、Slack、WhatsApp、Signal 或 Email 与之对话。进入对话后，许多斜杠命令在两种界面中通用。
++Hermes 有两种入口：用 `argo` 启动终端 UI，或运行网关从 Telegram、Discord、Slack、WhatsApp、Signal 或 Email 与之对话。进入对话后，许多斜杠命令在两种界面中通用。
+ 
+ | 操作 | CLI | 消息平台 |
+ |------|-----|----------|
+-| 开始对话 | `hermes` | 运行 `hermes gateway setup` + `hermes gateway start`，然后给机器人发消息 |
++| 开始对话 | `argo` | 运行 `argo gateway setup` + `argo gateway start`，然后给机器人发消息 |
+ | 开始新对话 | `/new` 或 `/reset` | `/new` 或 `/reset` |
+ | 更换模型 | `/model [provider:model]` | `/model [provider:model]` |
+ | 设置人格 | `/personality [name]` | `/personality [name]` |
+@@ -134,28 +134,28 @@ Hermes 有两种入口：用 `hermes` �
+ 
+ 如果你来自 OpenClaw，Hermes 可以自动导入你的设置、记忆、技能和 API 密钥。
+ 
+-**首次安装时：** 安装向导（`hermes setup`）会自动检测 `~/.openclaw` 并在配置开始前提供迁移选项。
++**首次安装时：** 安装向导（`argo setup`）会自动检测 `~/.openclaw` 并在配置开始前提供迁移选项。
+ 
+ **安装后任意时间：**
+ 
+ ```bash
+-hermes claw migrate              # 交互式迁移（完整预设）
+-hermes claw migrate --dry-run    # 预览将要迁移的内容
+-hermes claw migrate --preset user-data   # 仅迁移用户数据，不含密钥
+-hermes claw migrate --overwrite  # 覆盖已有冲突
++argo claw migrate              # 交互式迁移（完整预设）
++argo claw migrate --dry-run    # 预览将要迁移的内容
++argo claw migrate --preset user-data   # 仅迁移用户数据，不含密钥
++argo claw migrate --overwrite  # 覆盖已有冲突
+ ```
+ 
+ 导入内容：
+ - **SOUL.md** — 人格文件
+ - **记忆** — MEMORY.md 和 USER.md 条目
+-- **技能** — 用户创建的技能 → `~/.hermes/skills/openclaw-imports/`
++- **技能** — 用户创建的技能 → `~/.argo/skills/openclaw-imports/`
+ - **命令白名单** — 审批模式
+ - **消息设置** — 平台配置、允许用户、工作目录
+ - **API 密钥** — 白名单中的密钥（Telegram、OpenRouter、OpenAI、Anthropic、ElevenLabs）
+ - **TTS 资产** — 工作区音频文件
+ - **工作区指令** — AGENTS.md（使用 `--workspace-target`）
+ 
+-使用 `hermes claw migrate --help` 查看所有选项，或使用 `openclaw-migration` 技能进行交互式代理引导迁移（含干运行预览）。
++使用 `argo claw migrate --help` 查看所有选项，或使用 `openclaw-migration` 技能进行交互式代理引导迁移（含干运行预览）。
+ 
+ ---
+ 
+@@ -168,8 +168,8 @@ hermes claw migrate --overwrite  # 覆�
+ ```bash
+ git clone https://github.com/nadicodeai/argo.git
+ cd hermes-agent
+-./setup-hermes.sh     # 安装 uv、创建 venv、安装 .[all]、创建符号链接 ~/.local/bin/hermes
+-./hermes              # 自动检测 venv，无需先 source
++./setup-hermes.sh     # 安装 uv、创建 venv、安装 .[all]、创建符号链接 ~/.local/bin/argo
++./argo              # 自动检测 venv，无需先 source
+ ```
+ 
+ 手动安装（等效于上述命令）：
