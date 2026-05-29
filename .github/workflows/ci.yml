@@ -89,7 +89,7 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           apt-packages: ""
-          pip-packages: "ty==${{ env.TY_VERSION }} pyyaml"
+          pip-packages: "ty==${{ env.TY_VERSION }} pyyaml pytest==${{ env.PYTEST_VERSION }}"
       - name: ty check
         run: |
           . .venv/bin/activate
@@ -98,7 +98,7 @@ jobs:
   # ---------------------------------------------------------------------------
   # 3. build — `make build` produces dist/argo/ and runs FR-14 assertions.
   #    Uploads the build manifest as a workflow artifact for downstream
-  #    inspection (parity / image jobs in later phases can consume it).
+  #    inspection by future jobs.
   # ---------------------------------------------------------------------------
   build:
     name: build (make build)
