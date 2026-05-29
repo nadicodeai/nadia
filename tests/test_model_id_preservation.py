@@ -107,6 +107,18 @@ def test_non_agentic_detector_regex_literal_keeps_hermes(rename) -> None:
         ("https://github.com/NousResearch/hermes-agent.git",
          "https://github.com/nadicodeai/argo.git"),
         ("hermes-brain:qwen3-14b-ctx16k", "argo-brain:qwen3-14b-ctx16k"),  # not a Hermes 3/4 id
+        # IRC nick-collision retry suffixes (plugins/platforms/irc/adapter.py
+        # appends hermes_, hermes_1, hermes_2, hermes_3, hermes_4, …). The bare
+        # underscore+digit forms are BRAND nicks, not model ids — an earlier
+        # `hermes[-_ .]?[234]` skip_context wrongly preserved hermes_2/3/4
+        # (digits collide with the counter), leaving a stale `hermes_2` in the
+        # shipped dist test while the runtime emitted argo_2. The underscore
+        # branch now requires a size/version tail (hermes_4_70b) so these
+        # rebrand. See tests/gateway/test_irc_adapter.py::test_nick_collision_retry.
+        ("hermes_2", "argo_2"),
+        ("hermes_3", "argo_3"),
+        ("hermes_4", "argo_4"),
+        ("hermes_, hermes_1, hermes_2", "argo_, argo_1, argo_2"),  # adapter.py:414 comment form
     ],
 )
 def test_brand_tokens_still_rebrand(rename, brand_in: str, expected_out: str) -> None:

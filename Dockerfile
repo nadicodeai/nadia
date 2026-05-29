@@ -72,6 +72,19 @@
 
 ARG PYTHON_VERSION=3.13-slim-bookworm
 
+# ---------- Node 22 LTS source stage --------------------------------------
+# Debian bookworm's apt `nodejs` package is Node 18.x, but the dashboard's
+# build toolchain (Vite — web/package-lock.json pins v7.3.2) requires Node
+# >=20.19 — on Node 18 `vite build` aborts ("Vite requires Node.js version
+# 20.19+ or 22.12+") and the @tailwindcss/oxide native binding fails to load.
+# Rather than carry Debian's EOL nodejs, copy node + npm + corepack from the
+# official node:22 image into runtime-full below. This mirrors upstream's
+# Dockerfile, which copies Node 22 for the same reason. Pinned by digest
+# (supply-chain integrity; matches this repo's SHA-pinning stance). The tag
+# digest is a multi-arch manifest list, so `COPY --from` resolves per-arch
+# under buildx.
+FROM node:22-bookworm-slim@sha256:7af03b14a13c8cdd38e45058fd957bf00a72bbe17feac43b1c15a689c029c732 AS node_source
+
 # ---------- Stage 1: builder ----------------------------------------------
 FROM python:${PYTHON_VERSION} AS builder
 
@@ -238,7 +251,10 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/opt/argo/.playwright
 # `~/Code/argo-agent/Dockerfile`'s runtime apt closure (line 18-21) for
 # customer-parity. The deltas vs. an "absolute minimum" picture:
 #
-#   nodejs, npm           → TUI dashboard build + launch.
+#   (node + npm)          → TUI dashboard build + launch. NOT apt-installed:
+#                           sourced from the node:22 stage just below this
+#                           apt block (bookworm's apt nodejs is Node 18, too
+#                           old for the Vite web build — needs Node >=20.19).
 #   ffmpeg                → voice mode audio pipeline.
 #   curl, xz-utils        → s6-overlay tarball fetch + extraction.
 #   procps                → ps/top inside the container (legacy parity;
@@ -266,8 +282,6 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/opt/argo/.playwright
 #     uses it.
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        nodejs \
-        npm \
         ffmpeg \
         curl \
         xz-utils \
@@ -278,6 +292,18 @@ RUN apt-get update && \
         python3-dev \
         libffi-dev && \
     rm -rf /var/lib/apt/lists/*
+
+# Node 22 LTS: copy the node binary plus the bundled npm + corepack JS trees
+# from the node_source stage (see the node:22 stage near the top of the file).
+# Debian bookworm's apt nodejs is Node 18 — too old for the Vite web build
+# (needs >=20.19), so node/npm are sourced from the official node:22 image
+# instead of apt. Mirrors upstream's Dockerfile.
+COPY --chmod=0755 --from=node_source /usr/local/bin/node /usr/local/bin/
+COPY --from=node_source /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/npm
+COPY --from=node_source /usr/local/lib/node_modules/corepack /usr/local/lib/node_modules/corepack
+RUN ln -sf /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
+    ln -sf /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx && \
+    ln -sf /usr/local/lib/node_modules/corepack/dist/corepack.js /usr/local/bin/corepack
 
 # ---------- s6-overlay install ----------
 # Mirrors legacy ~/Code/argo-agent/Dockerfile lines 23-68. /init becomes
