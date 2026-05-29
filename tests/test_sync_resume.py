@@ -214,3 +214,165 @@ def test_run_resume_genuine_quilt_failure_still_raises(
     assert excinfo.value.step == "resume-patches"
     # Workdir is preserved so the operator can resolve and retry.
     assert fake_resume_state.exists()
+
+
+# ---------------------------------------------------------------------------
+# Build-verification failure leaves a resumable state (BUG FIX).
+#
+# Before the fix, a BuildVerificationFailedError from _run_make_build exited
+# run_default / run_resume WITHOUT writing .sync-state.json (unlike the
+# quilt-push-failure branch). Result: an un-amended subtree commit + dirty
+# tree + a .sync-workdir/ with no state file → `make sync-resume` died with
+# ResumeStateMissingError and `make sync` died on the dirty tree. The fix
+# writes a `verify-build` state record BEFORE the build call so the operator
+# can fix the cause and run `make sync-resume`.
+# ---------------------------------------------------------------------------
+
+
+def test_run_make_build_failure_message_carries_recovery_hint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The BuildVerificationFailedError message points at `make sync-resume`.
+
+    Before the fix the error gave no recovery hint at all; the operator was
+    left with a dirty tree and no documented next step.
+    """
+    monkeypatch.setattr(
+        sync, "_run", lambda *_a, **_k: _completed(1, stdout="", stderr="leak found\n")
+    )
+    with pytest.raises(sync.BuildVerificationFailedError) as excinfo:
+        sync._run_make_build(REPO_ROOT)
+    msg = str(excinfo.value)
+    assert "make sync-resume" in msg
+    assert "make sync-reset" in msg
+
+
+@pytest.fixture
+def sync_paths(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Redirect sync's module-level paths into tmp_path (no primed state).
+
+    Returns the tmp ``.sync-workdir/`` path (not yet created).
+    """
+    workdir = tmp_path / ".sync-workdir"
+    state_file = workdir / ".sync-state.json"
+    monkeypatch.setattr(sync, "SYNC_WORKDIR", workdir)
+    monkeypatch.setattr(sync, "SYNC_STATE_FILE", state_file)
+    monkeypatch.setattr(sync, "REPO_ROOT", tmp_path)
+    return workdir
+
+
+def test_run_default_build_failure_writes_resumable_state_first(
+    sync_paths: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """run_default: a build failure leaves a verify-build state on disk.
+
+    Asserts the state file:
+      * is written BEFORE _run_make_build runs (captured at raise time), and
+      * carries the schema run_resume reads back (upstream_sha + previous_sha).
+    """
+    new_sha = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+    old_sha = "cafebabecafebabecafebabecafebabecafebabe"
+
+    monkeypatch.setattr(sync, "_check_clean_or_die", lambda _repo: None)
+    monkeypatch.setattr(sync, "_read_upstream_commit", lambda: old_sha)
+    monkeypatch.setattr(sync, "_subtree_pull", lambda *_a, **_k: new_sha)
+    monkeypatch.setattr(sync, "_write_upstream_commit", lambda _sha: None)
+    monkeypatch.setattr(sync, "_populate_sync_workdir", lambda: None)
+    monkeypatch.setattr(sync, "_read_series", lambda: ["0001-foo.patch"])
+    monkeypatch.setattr(sync, "_quilt_push_all", lambda: _completed(0))
+    monkeypatch.setattr(sync, "_copy_patches_back", lambda: [])
+    # _stage_and_commit / _clear_sync_workdir must NOT run on the failure path.
+    monkeypatch.setattr(
+        sync,
+        "_stage_and_commit",
+        mock.Mock(side_effect=AssertionError("commit must not run on build failure")),
+    )
+    monkeypatch.setattr(
+        sync,
+        "_clear_sync_workdir",
+        mock.Mock(side_effect=AssertionError("workdir must NOT be cleared on failure")),
+    )
+
+    # Capture the on-disk state at the moment the build is invoked, proving the
+    # write happens BEFORE the build (not after).
+    state_at_build_time: dict[str, object] = {}
+
+    def _failing_build(_repo: Path) -> None:
+        st = sync._read_sync_state()
+        if st is not None:
+            state_at_build_time.update(st)
+        raise sync.BuildVerificationFailedError("boom", step="verify-build")
+
+    monkeypatch.setattr(sync, "_run_make_build", _failing_build)
+
+    with pytest.raises(sync.BuildVerificationFailedError) as excinfo:
+        sync.run_default("https://example/upstream", "main")
+
+    assert excinfo.value.step == "verify-build"
+
+    # State existed BEFORE the build ran.
+    assert state_at_build_time.get("phase") == "verify-build"
+    assert state_at_build_time.get("upstream_sha") == new_sha
+    assert state_at_build_time.get("previous_sha") == old_sha
+
+    # And it is still on disk after the failure — run_resume can read it.
+    persisted = sync._read_sync_state()
+    assert persisted is not None
+    assert persisted["phase"] == "verify-build"
+    assert persisted["upstream_sha"] == new_sha
+    assert persisted["previous_sha"] == old_sha
+    # Schema matches what run_resume requires (upstream_sha is mandatory there).
+    assert set(persisted) >= {"phase", "failing_patch", "upstream_sha", "previous_sha"}
+
+
+def test_run_resume_build_failure_writes_resumable_state_first(
+    fake_resume_state: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """run_resume: a build failure re-records a verify-build state on disk.
+
+    The state must remain readable so a *second* `make sync-resume` (after the
+    operator fixes the build) can continue rather than dying with
+    ResumeStateMissingError.
+    """
+    new_sha = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+    prev_sha = "cafebabecafebabecafebabecafebabecafebabe"
+
+    monkeypatch.setattr(sync, "_quilt_refresh_top", lambda: _completed(0))
+    monkeypatch.setattr(
+        sync,
+        "_quilt_push_all",
+        lambda: _completed(2, stderr="File series fully applied, ends at patch X\n"),
+    )
+    monkeypatch.setattr(sync, "_copy_patches_back", lambda: [])
+    monkeypatch.setattr(
+        sync,
+        "_stage_and_commit",
+        mock.Mock(side_effect=AssertionError("commit must not run on build failure")),
+    )
+
+    state_at_build_time: dict[str, object] = {}
+
+    def _failing_build(_repo: Path) -> None:
+        st = sync._read_sync_state()
+        if st is not None:
+            state_at_build_time.update(st)
+        raise sync.BuildVerificationFailedError("boom", step="verify-build")
+
+    monkeypatch.setattr(sync, "_run_make_build", _failing_build)
+
+    with pytest.raises(sync.BuildVerificationFailedError):
+        sync.run_resume()
+
+    # State existed BEFORE the build ran, with verify-build phase + preserved shas.
+    assert state_at_build_time.get("phase") == "verify-build"
+    assert state_at_build_time.get("upstream_sha") == new_sha
+    assert state_at_build_time.get("previous_sha") == prev_sha
+
+    # Workdir + state survive for a follow-up `make sync-resume`.
+    assert fake_resume_state.exists()
+    persisted = sync._read_sync_state()
+    assert persisted is not None
+    assert persisted["phase"] == "verify-build"
+    assert persisted["upstream_sha"] == new_sha
