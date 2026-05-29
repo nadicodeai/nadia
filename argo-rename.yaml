@@ -129,6 +129,20 @@ skip_contexts:
   # the upstream REPO url github.com/NousResearch/hermes-agent, which MUST
   # rebrand to nadicodeai/argo. The version-digit rule below already protects
   # the model-id tail (e.g. nousresearch/hermes-4-405b) via the \b after '/'.
+  #
+  # Underscore is split out from the other separators on purpose. The IRC
+  # adapter's nick-collision retry appends an underscore + counter to the bot's
+  # brand nick — hermes_, hermes_1, hermes_2, hermes_3… (see
+  # plugins/platforms/irc/adapter.py and tests/gateway/test_irc_adapter.py).
+  # Those are BRAND tokens that MUST rebrand to argo_2 etc. A naive
+  # `hermes[-_ .]?[234]` preserved hermes_2/hermes_3/hermes_4 as if they were
+  # model ids (digits 2-4 collide with the counter), leaving a stale `hermes_2`
+  # assertion in the shipped dist test while the renamed runtime emits argo_2 —
+  # an over-preserve bug. So: an UNDERSCORE separator only marks a model id when
+  # a size/version tail follows the digit (hermes_4_70b → the `_70b` tail);
+  # a bare hermes_<digit> with no tail is the nick suffix and rebrands. The
+  # hyphen/space/dot/no-separator forms still match bare ("Hermes 3", hermes-3)
+  # because those never appear as a nick-collision suffix.
   - '(?i)\bnous[- ]hermes[\w./-]*'        # nous-hermes-2-mistral, Nous-Hermes-3, Nous-Hermes-llama-1b-v1 (no version digit)
-  - '(?i)\bhermes[-_ .]?[234][\w.:+-]*'   # Hermes-4-405B, hermes-3-70b, "Hermes 3", hermes3:70b, Hermes-4.3-36B, hermes_4_70b, nousresearch/hermes-4-405b tail
+  - '(?i)\bhermes(?:[- .]?[234][\w.:+-]*|_[234][\w.:+-]+)'   # Hermes-4-405B, hermes-3-70b, "Hermes 3", hermes3:70b, Hermes-4.3-36B, hermes_4_70b, nousresearch/hermes-4-405b tail; underscore form requires a tail so the hermes_2 IRC nick still rebrands
   - 'hermes\[-_ \]\?\[34\]'               # the model_switch.py non-agentic detector regex literal: hermes[-_ ]?[34]
