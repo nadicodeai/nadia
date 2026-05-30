@@ -194,3 +194,46 @@ xfails:
   - nodeid: tests/argo_cli/test_banner_git_state.py::test_get_git_banner_state_reads_origin_and_head
     reason: "Patch 0010 redirects banner.py's update check from origin/main to origin/release (matching install.sh + cmd_update target branch per IU-FR-7/IU-FR-8). Upstream test hardcodes subprocess mocks for origin/main and will not match the patched code path. The behavior IS the argo customer's, intentionally divergent — banner now agrees with argo update's branch target."
     category: X
+
+  # ---------------------------------------------------------------
+  # Cluster 4 — China-platform strip (10 entries)
+  # packaging-strip.yaml removes the China messaging platforms (Feishu,
+  # WeCom, DingTalk, QQ, Yuanbao) from dist/argo/ — out of scope for argo's
+  # North-Italy SMB target, lazy-imported, never enabled. The China-ONLY test
+  # files are pruned alongside their modules (packaging-strip.yaml, group
+  # china-tests). These entries cover the China-specific test CLASSES that
+  # live INSIDE otherwise-general gateway test files: their function-local
+  # `from gateway.platforms.<china> import ...` raises ImportError once the
+  # module is gone, so we XFAIL just those classes and keep each file's
+  # Discord / Matrix / Telegram coverage intact (rather than delete the file).
+  # ---------------------------------------------------------------
+  - nodeid: tests/gateway/test_stream_consumer_thread_routing.py::TestFeishuFallbackThreadRouting::test_create_uses_thread_id_when_available
+    reason: "Exercises the Feishu adapter, stripped from dist/argo via packaging-strip.yaml (China platforms are out of scope for argo's North-Italy SMB target and never enabled). The function-local FeishuAdapter import raises ImportError; the file's non-China thread-routing tests still pass. XFAIL the class instead of deleting the shared file."
+    category: X
+  - nodeid: tests/gateway/test_stream_consumer_thread_routing.py::TestFeishuFallbackThreadRouting::test_create_uses_chat_id_when_no_thread
+    reason: "Exercises the Feishu adapter, stripped from dist/argo via packaging-strip.yaml (China platforms are out of scope for argo's North-Italy SMB target and never enabled). The function-local FeishuAdapter import raises ImportError; the file's non-China thread-routing tests still pass. XFAIL the class instead of deleting the shared file."
+    category: X
+  - nodeid: tests/gateway/test_text_batching.py::TestWeComTextBatching::test_single_message_dispatched_after_delay
+    reason: "Exercises the WeCom adapter, stripped from dist/argo via packaging-strip.yaml. The function-local WeComAdapter import raises ImportError; the file's Discord/Matrix/Telegram batching tests still pass. XFAIL the China class instead of deleting the shared file."
+    category: X
+  - nodeid: tests/gateway/test_text_batching.py::TestWeComTextBatching::test_split_messages_aggregated
+    reason: "Exercises the WeCom adapter, stripped from dist/argo via packaging-strip.yaml. The function-local WeComAdapter import raises ImportError; the file's Discord/Matrix/Telegram batching tests still pass. XFAIL the China class instead of deleting the shared file."
+    category: X
+  - nodeid: tests/gateway/test_text_batching.py::TestWeComTextBatching::test_different_chats_not_merged
+    reason: "Exercises the WeCom adapter, stripped from dist/argo via packaging-strip.yaml. The function-local WeComAdapter import raises ImportError; the file's Discord/Matrix/Telegram batching tests still pass. XFAIL the China class instead of deleting the shared file."
+    category: X
+  - nodeid: tests/gateway/test_text_batching.py::TestWeComTextBatching::test_adaptive_delay_for_near_limit_chunk
+    reason: "Exercises the WeCom adapter, stripped from dist/argo via packaging-strip.yaml. The function-local WeComAdapter import raises ImportError; the file's Discord/Matrix/Telegram batching tests still pass. XFAIL the China class instead of deleting the shared file."
+    category: X
+  - nodeid: tests/gateway/test_text_batching.py::TestWeComTextBatching::test_batch_cleans_up_after_flush
+    reason: "Exercises the WeCom adapter, stripped from dist/argo via packaging-strip.yaml. The function-local WeComAdapter import raises ImportError; the file's Discord/Matrix/Telegram batching tests still pass. XFAIL the China class instead of deleting the shared file."
+    category: X
+  - nodeid: tests/gateway/test_text_batching.py::TestFeishuAdaptiveDelay::test_short_chunk_uses_normal_delay
+    reason: "Exercises the Feishu adapter, stripped from dist/argo via packaging-strip.yaml. The function-local FeishuAdapter import raises ImportError; the file's Discord/Matrix/Telegram batching tests still pass. XFAIL the China class instead of deleting the shared file."
+    category: X
+  - nodeid: tests/gateway/test_text_batching.py::TestFeishuAdaptiveDelay::test_near_limit_chunk_uses_split_delay
+    reason: "Exercises the Feishu adapter, stripped from dist/argo via packaging-strip.yaml. The function-local FeishuAdapter import raises ImportError; the file's Discord/Matrix/Telegram batching tests still pass. XFAIL the China class instead of deleting the shared file."
+    category: X
+  - nodeid: tests/gateway/test_text_batching.py::TestFeishuAdaptiveDelay::test_split_continuation_merged
+    reason: "Exercises the Feishu adapter, stripped from dist/argo via packaging-strip.yaml. The function-local FeishuAdapter import raises ImportError; the file's Discord/Matrix/Telegram batching tests still pass. XFAIL the China class instead of deleting the shared file."
+    category: X

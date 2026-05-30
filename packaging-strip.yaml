@@ -1,0 +1,162 @@
+# packaging-strip.yaml — fork-owned denylist of paths removed from dist/argo/.
+#
+# Applied by tools/build.py (`_strip_excluded_paths`) AFTER patches+overlay and
+# BEFORE the hermes→argo rename. Paths are repo-relative and HERMES-named
+# (pre-rename), matching the assembled tree at prune time.
+#
+# Why a build-time prune instead of quilt patches
+# -----------------------------------------------
+# These removals must reach BOTH the native dist/argo/ install (the `release`
+# tree) AND the Docker image (which COPYs dist/argo/), and MUST NOT create
+# upstream-merge conflicts. A denylist over the assembled tree never conflicts
+# on `make sync`: it is not a patch against upstream content. Drift is surfaced
+# loudly instead of silently —
+#   * a STALE entry (path no longer exists: upstream renamed/removed it) FAILS
+#     the build so we re-review (mirrors packaging-overrides.yaml's live gate);
+#   * a RESIDUAL China-named file surviving under gateway/platforms, tools, or
+#     skills (an upstream sync ADDED a new China platform) FAILS the build so we
+#     extend this list ("no leftovers" guarantee at the file level).
+#
+# We deliberately do NOT patch the hot wired-in files (gateway/run.py,
+# gateway/config.py) to delete the now-dead enum members / elif branches: the
+# China adapters are lazy-imported and never enabled (auto-enable needs
+# China-only config keys a North-Italy customer never sets), so those branches
+# are unreachable. Editing those volatile files every sync would cost real merge
+# conflicts for zero functional gain — upstream-merge compatibility wins.
+#
+# Tests: China-only test files import their adapter at module top (no
+# importorskip), so they must be pruned here (a pruned module would otherwise
+# break collection). The handful of GENERAL gateway tests that import a China
+# adapter inside a China-specific test CLASS are handled in overlay/argo-xfail.yml
+# instead (function-local import → collection still succeeds → xfail the class),
+# which preserves their non-China coverage (Telegram/Discord/Matrix).
+
+groups:
+  - name: china-platforms
+    why: >-
+      China-market messaging platforms — Feishu/Lark (ByteDance), DingTalk
+      (Alibaba), WeCom/Weixin/WeChat (Tencent), QQ (Tencent), Yuanbao
+      (Tencent). Zero relevance to North-Italy SMBs; lazy-imported and never
+      enabled. wecom_callback additionally parses untrusted inbound XML.
+    paths:
+      - gateway/platforms/feishu.py
+      - gateway/platforms/feishu_comment.py
+      - gateway/platforms/feishu_comment_rules.py
+      - gateway/platforms/dingtalk.py
+      - gateway/platforms/wecom.py
+      - gateway/platforms/wecom_callback.py
+      - gateway/platforms/wecom_crypto.py
+      - gateway/platforms/weixin.py
+      - gateway/platforms/qqbot
+      - gateway/platforms/yuanbao.py
+      - gateway/platforms/yuanbao_media.py
+      - gateway/platforms/yuanbao_proto.py
+      - gateway/platforms/yuanbao_sticker.py
+      # DingTalk CLI auth helper — lives in hermes_cli/, not gateway/platforms/.
+      # Its only consumer (hermes_cli/gateway.py) imports it lazily inside a
+      # try/except, so pruning is safe. (Was missed in the first pass because
+      # the residual scan only covered gateway/platforms — now widened.)
+      - hermes_cli/dingtalk_auth.py
+
+  - name: china-companion-tools
+    why: >-
+      Agent tool adapters that exist only to drive the stripped China
+      platforms (Feishu docs/drive, Tencent Yuanbao). Auto-discovered by the
+      tools/*.py registry glob, so deleting the files cleanly removes them.
+    paths:
+      - tools/feishu_doc_tool.py
+      - tools/feishu_drive_tool.py
+      - tools/yuanbao_tools.py
+
+  - name: china-skill
+    why: "Skill bundle for the stripped Tencent Yuanbao platform."
+    paths:
+      - skills/yuanbao
+
+  - name: china-tests
+    why: >-
+      Upstream tests dedicated to the stripped China platforms. They import the
+      China adapter at module top (no importorskip), so once the module is gone
+      they would error at collection — prune them with the modules they cover.
+      (General gateway tests that touch a China adapter inside a China-only test
+      class are xfailed in overlay/argo-xfail.yml instead, to keep their
+      Telegram/Discord/Matrix coverage.)
+    paths:
+      - tests/tools/test_feishu_tools.py
+      - tests/gateway/feishu_helpers.py
+      - tests/gateway/test_feishu.py
+      - tests/gateway/test_feishu_approval_buttons.py
+      - tests/gateway/test_feishu_bot_admission.py
+      - tests/gateway/test_feishu_bot_auth_bypass.py
+      - tests/gateway/test_feishu_comment.py
+      - tests/gateway/test_feishu_comment_rules.py
+      - tests/gateway/test_feishu_onboard.py
+      - tests/gateway/test_setup_feishu.py
+      - tests/gateway/test_dingtalk.py
+      - tests/gateway/test_qqbot.py
+      - tests/gateway/test_wecom.py
+      - tests/gateway/test_wecom_callback.py
+      - tests/gateway/test_weixin.py
+      - tests/gateway/platforms/test_yuanbao_recall_db_only.py
+      - tests/hermes_cli/test_dingtalk_auth.py
+      - tests/test_yuanbao_integration.py
+      - tests/test_yuanbao_markdown.py
+      - tests/test_yuanbao_pipeline.py
+      - tests/test_yuanbao_proto.py
+
+  - name: china-docs
+    why: >-
+      English user-guide documentation pages for the stripped China platforms
+      (and the Yuanbao skill). These ship under dist/argo/website (→ native
+      install and image), so prune them — the product must not document
+      features it does not have. (The zh-Hans translations of these pages are
+      removed wholesale by the zh-hans-locale group below.)
+    paths:
+      - website/docs/user-guide/messaging/dingtalk.md
+      - website/docs/user-guide/messaging/feishu.md
+      - website/docs/user-guide/messaging/qqbot.md
+      - website/docs/user-guide/messaging/wecom.md
+      - website/docs/user-guide/messaging/wecom-callback.md
+      - website/docs/user-guide/messaging/weixin.md
+      - website/docs/user-guide/messaging/yuanbao.md
+      - website/docs/user-guide/skills/bundled/yuanbao
+
+  - name: zh-hans-locale
+    why: >-
+      The entire Simplified-Chinese (zh-Hans) Docusaurus locale — a full
+      translation of the docs (~5 MB, 335 files) that ships unused in an
+      Italian-market product. The agent and the doc site use the English
+      website/docs/; zh-Hans is purely the translation layer, so dropping the
+      whole tree is safe. (zh-Hans is currently the only locale under
+      website/i18n/.)
+    paths:
+      - website/i18n/zh-Hans
+
+# ---------------------------------------------------------------------------
+# Inline content edits — for China references INSIDE a kept upstream file,
+# where a path-prune cannot help and the fork carries no quilt patch. Applied
+# by tools/build.py (`_apply_content_edits`) after the prune and before rebrand,
+# on hermes-named content (anchors chosen rename-invariant). This is a
+# build-time content transform (same class as the rebrand rename) — NOT a quilt
+# patch; patches/ and upstream/ stay pristine. Each `find` MUST match at least
+# once: a stale anchor (upstream rewrote the spot) FAILS the build loudly, so an
+# edit can never silently no-op and leave the leftover behind.
+# ---------------------------------------------------------------------------
+content_edits:
+  - name: send-message-drop-yuanbao-example
+    file: tools/send_message_tool.py
+    why: >-
+      Remove the Yuanbao delivery examples from the send_message tool
+      description (shown to the MODEL), so the agent is never told yuanbao is a
+      valid delivery target. Anchor: the exact example substring.
+    find: ", 'yuanbao:direct:<account_id>' (DM), 'yuanbao:group:<group_code>' (group chat)"
+    replace: ""
+  - name: setup-menu-hide-china-platforms
+    file: hermes_cli/gateway.py
+    why: >-
+      Filter the China platforms out of the gateway setup-menu builder
+      (_all_platforms) so `argo setup` never presents
+      feishu/dingtalk/wecom/weixin/qqbot/yuanbao. Anchor: the single stable
+      list-comprehension line that materializes _PLATFORMS.
+    find: '    platforms = [dict(p) for p in _PLATFORMS]'
+    replace: '    platforms = [dict(p) for p in _PLATFORMS if p.get("key") not in {"dingtalk", "feishu", "wecom", "wecom_callback", "weixin", "qqbot", "yuanbao"}]'
