@@ -7,6 +7,7 @@
 #    2. typecheck                       — ty check overlay/ tools/  (pre-build source)
 #    3. build                           — make build; uploads dist/argo/.argo/build-manifest.json
 #    4. leakage                         — needs: build; make leakage-static (FR-12)
+#   4b. packaging-contract              — needs: build; make check-packaging-contract (Dockerfile-vs-upstream drift)
 #    5. test                            — pytest tests/ (build-tool tests; integration skipped)
 #    6. upstream-pristine               — make check-upstream-pristine (FR-15 / C3 gate)
 #    7. install-smoke                   — Docker-driven install.sh smoke (IU-AC-4/5/9)
@@ -22,9 +23,9 @@
 #
 # Branch protection on `main` MUST be configured manually in the GitHub UI
 # to require these jobs. The workflow only DECLARES them; GitHub enforces.
-# Required checks should include: lint, typecheck, build, leakage, test,
-# upstream-pristine. install-smoke, update-smoke, and dist-argo-tests
-# are visible-but-non-blocking pending promotion follow-ups.
+# Required checks should include: lint, typecheck, build, leakage,
+# packaging-contract, test, upstream-pristine. install-smoke, update-smoke,
+# and dist-argo-tests are visible-but-non-blocking pending promotion follow-ups.
 
 name: ci
 
@@ -149,6 +150,35 @@ jobs:
         run: |
           . .venv/bin/activate
           make leakage-static
+
+  # ---------------------------------------------------------------------------
+  # 4b. packaging-contract — depends on build; re-runs make build then verifies
+  #     the shipped ./Dockerfile has not silently diverged from upstream's
+  #     packaging (the renamed-upstream oracle dist/argo/Dockerfile). This is the
+  #     forcing function for fork-vs-upstream toolchain drift (e.g. the Node-18
+  #     regression: apt nodejs vs upstream's pinned node:22). See
+  #     tools/check_packaging_contract.py + packaging-overrides.yaml.
+  # ---------------------------------------------------------------------------
+  packaging-contract:
+    name: packaging-contract (Dockerfile vs upstream)
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/argo-setup
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          pip-packages: "pyyaml"
+      - name: make build (recreate dist/argo/ oracle)
+        run: |
+          . .venv/bin/activate
+          make build
+      - name: make check-packaging-contract
+        run: |
+          . .venv/bin/activate
+          make check-packaging-contract
 
   # ---------------------------------------------------------------------------
   # 5. test — pytest tests/ (build-tool tests; integration marker skipped by

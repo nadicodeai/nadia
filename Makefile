@@ -37,6 +37,7 @@ help:
 	@echo "  make typecheck        ty check (M4.3)"
 	@echo "  make test             pytest (M4.3)"
 	@echo "  make check-upstream-pristine Verify upstream/ matches last sync commit (M4.1)"
+	@echo "  make check-packaging-contract Verify ./Dockerfile tracks upstream packaging (no drift)"
 	@echo "  make install-smoke    Docker-driven install.sh smoke test (M5.2; IU-AC-4/5/9)"
 	@echo "  make update-smoke     Docker update-smoke (IU-AC-9/10/11; M5.3 Part A)"
 	@echo "  make update-smoke-telegram  Docker /update mid-flight (IU-AC-6; M5.3 Part B, currently SKIPPED)"
@@ -151,6 +152,14 @@ test:
 .PHONY: check-upstream-pristine
 check-upstream-pristine:
 	python tools/check_upstream_pristine.py
+
+# Verify the shipped ./Dockerfile has not silently diverged from upstream's
+# packaging (the renamed-upstream oracle dist/argo/Dockerfile). Operates on an
+# existing dist/argo/ tree, like leakage-static — run `make build` first
+# (the checker exits 2 with that hint if the oracle is absent).
+.PHONY: check-packaging-contract
+check-packaging-contract:
+	python tools/check_packaging_contract.py
 
 # M5.2: Docker-driven install.sh smoke harness.
 #
