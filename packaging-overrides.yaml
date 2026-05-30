@@ -1,0 +1,97 @@
+# packaging-overrides.yaml — reviewed fork-vs-upstream packaging divergences.
+#
+# The packaging-contract gate (tools/check_packaging_contract.py) compares the
+# shipped ./Dockerfile against the renamed-upstream ORACLE (dist/argo/Dockerfile,
+# produced verbatim from upstream/Dockerfile by `make build`). Every pinned
+# external toolchain (the node base digest, the s6-overlay version + checksums)
+# MUST track the oracle; every system dep and install extra upstream ships MUST
+# be reachable in our image — UNLESS it is recorded here as a reviewed,
+# intentional divergence with a `why` and an `issue`.
+#
+# This file is the allowlist. An entry is NOT a rubber stamp: the gate also
+# checks that each exception is still LIVE in the oracle (a "stale" exception —
+# one whose upstream counterpart was removed or changed — fails the gate so it
+# gets re-reviewed instead of silently masking new drift). Keep CODEOWNERS on
+# this file so divergence diffs are reviewed.
+
+# Oracle `FROM` images (digest-pinned) that the shipped image intentionally does
+# NOT use. Keyed by image basename.
+from_exceptions:
+  - image: uv
+    why: >-
+      Upstream installs Python deps with the astral-sh/uv image + `uv sync`.
+      The fork's runtime stages build on python:3.13-slim-bookworm and install
+      with pip (see python_install note). uv is a build-tool choice, not a
+      shipped-capability difference. Issue #2 locks the base-image divergence.
+    issue: "#2"
+
+# Oracle apt packages the shipped image's apt closure does not carry, with the
+# reason (`omit` = deliberately dropped; `base-provided` = supplied by the base
+# image instead of apt).
+apt_exceptions:
+  - package: python3
+    kind: base-provided
+    why: >-
+      Upstream is debian:13.4 and apt-installs python3. The fork's base is the
+      official python:3.13-slim-bookworm image, which ships CPython 3.13 — so
+      python3 is present without an apt package. Issue #2.
+    issue: "#2"
+  - package: docker-cli
+    kind: omit
+    why: >-
+      docker-cli inside the container is for nested-docker workflows mounting
+      /var/run/docker.sock; nothing in the customer-facing surface uses it. The
+      shipped runtime-full Dockerfile documents this omission deliberately.
+    issue: "#6"
+
+# Oracle Python install extras the shipped image does not install at build time.
+#
+# !!! FLAGGED — SUSPECTED CAPABILITY GAP, pending resolution !!!
+# Upstream EAGERLY installs these (uv sync --extra all/messaging/anthropic/
+# bedrock/azure-identity) specifically "so Docker users can use these providers
+# without requiring runtime lazy-install access to PyPI (often blocked in
+# containerized envs)" (dist/argo/Dockerfile). The fork's runtime-full instead
+# runs a bare `pip install -e .` (no extras) and relies on tools/lazy_deps.py to
+# install platform packages at first use — which needs runtime PyPI access. In a
+# PyPI-blocked container the Anthropic/Bedrock/Azure providers and the messaging
+# adapters would fail to load where upstream's image works. Recorded here so the
+# gate is GREEN while the divergence is tracked, NOT because it is resolved. The
+# follow-up (rollout step 2) is to either install these extras at build time in
+# runtime-full or prove lazy_deps covers the offline case; the dual-image smoke
+# (rollout step 4) will assert `import anthropic, slack_sdk` in the built image.
+extras_exceptions:
+  - extra: all
+    why: "FLAGGED: fork defers platform extras to runtime lazy_deps; see header note."
+    issue: "TODO-extras-parity"
+  - extra: messaging
+    why: "FLAGGED: telegram/discord/slack adapters not eagerly installed; see header note."
+    issue: "TODO-extras-parity"
+  - extra: anthropic
+    why: "FLAGGED: anthropic SDK not eagerly installed; breaks PyPI-blocked containers."
+    issue: "TODO-extras-parity"
+  - extra: bedrock
+    why: "FLAGGED: boto3 (bedrock) not eagerly installed; breaks PyPI-blocked containers."
+    issue: "TODO-extras-parity"
+  - extra: azure-identity
+    why: "FLAGGED: azure-identity not eagerly installed; breaks PyPI-blocked containers."
+    issue: "TODO-extras-parity"
+
+# Informational record of larger structural divergences the gate does not (yet)
+# enforce facet-by-facet. Documented so the decision is discoverable.
+notes:
+  - facet: python_base
+    oracle_value: "debian:13.4 + uv-installed CPython"
+    fork_value: "python:3.13-slim-bookworm"
+    why: >-
+      Locked by issue #2: the python-slim base lands prebuilt wheels for
+      psutil/pydantic-core/cryptography without the full build-essential
+      toolchain. glibc/OpenSSL skew (bookworm 2.36/3.0 vs trixie 2.41/3.x) is an
+      accepted trade-off. Revisit if wheel-skew surfaces real runtime bugs.
+    issue: "#2"
+  - facet: python_install
+    oracle_value: "uv sync --frozen ... + uv pip install -e ."
+    fork_value: "pip install -e ."
+    why: >-
+      Consequence of the base-image choice (no uv in the runtime base). The
+      extras divergence it implies is tracked under extras_exceptions above.
+    issue: "#2"
