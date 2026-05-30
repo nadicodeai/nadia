@@ -8,10 +8,13 @@ Pipeline (spec FR-4):
 3. `cd dist/argo && quilt push -a` to apply the patch series.
 4. Copy `overlay/*` → `dist/argo/` (failing if any path collides
    post-patch).
-5. Run `tools/rebrand.py dist/argo/` to apply the hermes→argo rename.
-6. Run `tools/run_assertions.py` (if present, M3.1) to enforce per-patch
+5. Prune `packaging-strip.yaml` denylisted paths from `dist/argo/` (fork
+   denylist; removes the China-platform surface from BOTH the native install
+   and the image without patching hot upstream files — see that file's header).
+6. Run `tools/rebrand.py dist/argo/` to apply the hermes→argo rename.
+7. Run `tools/run_assertions.py` (if present, M3.1) to enforce per-patch
    grep assertions.
-7. Write `dist/argo/.argo/build-manifest.json` (deterministic JSON,
+8. Write `dist/argo/.argo/build-manifest.json` (deterministic JSON,
    sort_keys=True, indent=2).
 
 Exits non-zero on any step failure with a clear error message and the
@@ -41,6 +44,22 @@ RENAME_YAML = REPO_ROOT / "argo-rename.yaml"
 # (issue #4). Regenerated on every build to keep the yaml as single source of
 # truth.
 RENAME_DEFAULTS = OVERLAY_DIR / "hermes_cli" / "_rename_defaults.py"
+STRIP_YAML = REPO_ROOT / "packaging-strip.yaml"
+
+# China-platform filename tokens for the post-prune residual scan. Distinctive
+# enough to avoid false positives — note NOT "lark" (collides with the `lark`
+# parser library; the China files are named feishu/dingtalk/wecom/weixin/qqbot/
+# yuanbao). Matched against FILE NAMES only, never file content: the inert
+# enum/branch refs intentionally left in gateway/run.py & gateway/config.py are
+# never-executed dead code (see packaging-strip.yaml header), so scanning
+# content would false-positive on them.
+_CHINA_RESIDUAL_TOKENS = ("feishu", "dingtalk", "wecom", "weixin", "qqbot", "yuanbao")
+# Code dirs scanned for surviving China-named files after the prune. Covers the
+# whole gateway/ (not just platforms/) and hermes_cli/ — the latter because
+# hermes_cli/dingtalk_auth.py was a real first-pass miss the narrower scan did
+# not catch. Kept to code trees (china PLATFORM additions land here); docs under
+# website/ are handled by the china-docs denylist group, not this hard scan.
+_RESIDUAL_SCAN_DIRS = ("gateway", "hermes_cli", "tools", "skills")
 
 
 class BuildError(RuntimeError):
@@ -217,6 +236,119 @@ def _copy_overlay() -> list[str]:
     return added
 
 
+def _load_strip_doc() -> dict:
+    """Parse packaging-strip.yaml into a dict (empty if the file is absent)."""
+    if not STRIP_YAML.is_file():
+        return {}
+    import yaml  # pyyaml is a maintainer-flow prerequisite (see AGENTS.md)
+
+    return yaml.safe_load(STRIP_YAML.read_text(encoding="utf-8")) or {}
+
+
+def _load_strip_groups() -> list[dict]:
+    """Return the path-prune groups declared in packaging-strip.yaml."""
+    groups = _load_strip_doc().get("groups", []) or []
+    if not isinstance(groups, list):
+        raise BuildError("strip", "packaging-strip.yaml: 'groups' must be a list")
+    return groups
+
+
+def _strip_excluded_paths() -> list[str]:
+    """Remove packaging-strip.yaml denylisted paths from dist/argo/.
+
+    Runs after overlay and BEFORE rebrand, on the assembled (still hermes-named)
+    tree. Two self-policing guards keep the denylist honest across upstream
+    syncs (see packaging-strip.yaml header for the full rationale):
+
+      * STALE entry — a denylisted path that no longer exists raises, so the
+        entry gets re-reviewed instead of silently masking upstream drift.
+      * RESIDUAL China file — after pruning, any China-named file/dir left under
+        _RESIDUAL_SCAN_DIRS raises (an upstream sync added a new China platform
+        we have not denylisted), enforcing "no leftovers" at the file level.
+
+    Returns the sorted list of removed repo-relative paths (for the manifest).
+    """
+    removed: list[str] = []
+    for group in _load_strip_groups():
+        for raw in group.get("paths", []) or []:
+            rel = str(raw).strip()
+            if not rel:
+                continue
+            target = DIST_DIR / rel
+            if not target.exists():
+                raise BuildError(
+                    "strip",
+                    f"stale packaging-strip.yaml entry: {rel!r} not found in "
+                    f"dist/argo/ (upstream renamed or removed it?). Re-review "
+                    f"the entry in group {group.get('name', '?')!r}.",
+                )
+            if target.is_dir():
+                shutil.rmtree(target)
+            else:
+                target.unlink()
+            removed.append(rel)
+
+    # "No leftovers" assert: no China-named code may survive in the scan dirs.
+    for scan_rel in _RESIDUAL_SCAN_DIRS:
+        scan_dir = DIST_DIR / scan_rel
+        if not scan_dir.is_dir():
+            continue
+        for entry in scan_dir.rglob("*"):
+            name = entry.name.lower()
+            if any(tok in name for tok in _CHINA_RESIDUAL_TOKENS):
+                rel = entry.relative_to(DIST_DIR)
+                raise BuildError(
+                    "strip",
+                    f"un-denylisted China path survived prune: {rel} (an upstream "
+                    f"sync likely added it). Add it to packaging-strip.yaml.",
+                )
+
+    removed.sort()
+    _log(f"strip: removed {len(removed)} denylisted paths")
+    return removed
+
+
+def _apply_content_edits() -> list[str]:
+    """Apply packaging-strip.yaml ``content_edits`` (find→replace) to dist/argo/.
+
+    For China references that live INLINE inside a KEPT upstream file — where a
+    path-prune cannot help and the fork carries no quilt patch. Today: the
+    yuanbao example in the ``send_message`` tool description (model-facing) and
+    the China keys in the gateway setup-menu builder (user-facing). Runs after
+    the path-prune and BEFORE rebrand, on hermes-named content; anchors are
+    chosen rename-invariant. This is a build-time content transform (the same
+    class as the rebrand rename) — NOT a quilt patch; patches/ and upstream/
+    stay pristine.
+
+    Each rule's ``find`` MUST occur at least once: a missing anchor (upstream
+    rewrote the spot) raises, so the edit can never silently no-op and leave the
+    leftover behind — the same loud-on-drift contract as the path-prune.
+    """
+    applied: list[str] = []
+    for rule in _load_strip_doc().get("content_edits", []) or []:
+        rel = str(rule.get("file", "")).strip()
+        find = rule.get("find")
+        replace = rule.get("replace", "")
+        name = rule.get("name", rel)
+        if not rel or find is None:
+            raise BuildError("content-edit", f"content_edits rule missing file/find: {rule!r}")
+        target = DIST_DIR / rel
+        if not target.is_file():
+            raise BuildError("content-edit", f"content_edits target not found: {rel!r}")
+        text = target.read_text(encoding="utf-8")
+        if find not in text:
+            raise BuildError(
+                "content-edit",
+                f"stale content_edits anchor in {rel!r} (rule {name!r}): find-string "
+                f"not present — upstream likely rewrote it. Re-review the rule.",
+            )
+        target.write_text(text.replace(find, replace), encoding="utf-8")
+        applied.append(name)
+    if applied:
+        _log(f"content-edits: applied {len(applied)} edits")
+    return sorted(set(applied))
+
+
 def _run_rebrand(upstream_sha: str) -> list[str]:
     """Run tools/rebrand.py against dist/argo/. Returns sorted files-touched list.
 
@@ -304,6 +436,8 @@ def _write_build_manifest(
     upstream_sha: str,
     patches_applied: list[str],
     overlay_files_added: list[str],
+    paths_stripped: list[str],
+    content_edits_applied: list[str],
     files_touched_by_rename: list[str],
     assertions_checked: list[str],
 ) -> Path:
@@ -318,8 +452,10 @@ def _write_build_manifest(
         ran_at = datetime.now(timezone.utc).isoformat()
     payload = {
         "assertions_checked": sorted(assertions_checked),
+        "content_edits_applied": sorted(content_edits_applied),
         "files_touched_by_rename": files_touched_by_rename,
         "overlay_files_added": overlay_files_added,
+        "paths_stripped": sorted(paths_stripped),
         "patches_applied": patches_applied,
         "ran_at": ran_at,
         "upstream_sha": upstream_sha,
@@ -342,12 +478,16 @@ def build() -> int:
     _strip_quilt_state()
     _regenerate_rename_defaults()
     overlay_added = _copy_overlay()
+    stripped = _strip_excluded_paths()
+    content_edited = _apply_content_edits()
     touched = _run_rebrand(upstream_sha)
     assertions = _run_assertions(applied)
     _write_build_manifest(
         upstream_sha=upstream_sha,
         patches_applied=applied,
         overlay_files_added=overlay_added,
+        paths_stripped=stripped,
+        content_edits_applied=content_edited,
         files_touched_by_rename=touched,
         assertions_checked=assertions,
     )
