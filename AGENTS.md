@@ -63,6 +63,7 @@ make sync-reset                    # wipe .sync-workdir/ and start the next sync
 make image                         # docker build ghcr.io/nadicodeai/argo:dev
 make publish                       # tag + push to GHCR
 make leakage-static                # static scan: no "hermes" leaks in dist/argo/
+make dist-test                     # run dist/argo's renamed suite — the REAL gate for dist changes (mirrors CI dist-argo-tests)
 make check-upstream-pristine       # FR-15 gate: upstream/ matches the last sync commit
 make patch-new NAME=<slug>         # start a new patch
 make patch-refresh                 # quilt refresh the current patch
@@ -70,6 +71,8 @@ make patch-list                    # cat patches/series
 ```
 
 `make build` and `make leakage-static` MUST both exit 0 before any commit that touches `patches/`, `overlay/`, `tools/`, or `argo-rename.yaml`.
+
+**Landing a change on `main` REQUIRES the full dist suite green — not just build + leakage.** `ci.yml` runs on `pull_request` and push to `main` ONLY: a plain branch push runs **no CI at all**. And `make build` / `make leakage-static` / `make test` do **not** run `dist/argo/tests/` — `make test` runs the fork's *own* `tests/`. The dist suite (`make dist-test` locally; the `dist-argo-tests` matrix in CI) is the **only** gate that exercises what actually ships — it catches, e.g., a `packaging-strip.yaml` prune that breaks an upstream test which imports or enumerates a pruned module. Because `dist-argo-tests` is currently *non-blocking*, you MUST actively confirm it: **before merging any dist-affecting change to `main`, either open a PR and read the `dist-argo-tests` result, or run `make dist-test`.** Merging on the strength of local build + leakage alone shipped a red `main` once (the China strip) — do not repeat it.
 
 ## Upstream sync (the maintainer's main loop)
 
