@@ -383,6 +383,47 @@ def _quilt_top() -> str:
     return result.stdout.strip()
 
 
+def _failing_patch() -> str:
+    """The patch that `quilt push -a` actually stopped on.
+
+    `quilt top` reports the last *successfully applied* patch — NOT the one
+    that failed. When push stops on patch N, top is N-1, so naively reporting
+    `quilt top` names the wrong patch (this misled an operator into editing the
+    wrong file). The failing patch is the series entry immediately after the
+    top applied one, or the first patch if none are applied.
+    """
+    series = _read_series()
+    if not series:
+        return ""
+    top = _quilt_top()
+    if not top:
+        return os.path.basename(series[0])
+    top_base = os.path.basename(top.strip())
+    series_bases = [os.path.basename(p) for p in series]
+    try:
+        idx = series_bases.index(top_base)
+    except ValueError:
+        return ""
+    return series_bases[idx + 1] if idx + 1 < len(series_bases) else ""
+
+
+# The canonical recovery recipe for a rejected hunk, printed at the point of
+# failure so the protocol travels with the error (mirrors AGENTS.md § sync).
+_CONFLICT_RECIPE = (
+    "Resolve a rejected hunk like this — and ONLY this:\n"
+    "  1. cd .sync-workdir\n"
+    "  2. quilt push -f                # force-apply the failing patch; failed hunk -> .rej\n"
+    "  3. edit the conflicting file to apply what the .rej wanted; delete the .rej\n"
+    "  4. quilt refresh                # regenerate the patch FROM the resolved file\n"
+    "  5. cd .. && make sync-resume    # replays the series, runs the build gate, commits\n"
+    "NEVER: copy pristine files over the workdir, run extra pop/push loops, or\n"
+    "`quilt refresh` while the file is pristine (it silently drops the hunk).\n"
+    "NEVER hand-commit a sync (`git commit`/`--amend`) — sync-resume owns the\n"
+    "commit and runs `make build` first; committing by hand bypasses that gate.\n"
+    "To abandon and start over: make sync-reset."
+)
+
+
 def _copy_patches_back() -> list[str]:
     """Copy any refreshed patches from `.sync-workdir/patches/` to `patches/`.
 
@@ -517,23 +558,21 @@ def run_default(upstream_url: str, branch: str) -> int:
         _log("apply patch series via quilt push -a")
         result = _quilt_push_all()
         if not _quilt_push_is_success(result):
-            top = _quilt_top()
+            failing = _failing_patch()
             _write_sync_state(
                 {
                     "phase": "patches",
-                    "failing_patch": top,
+                    "failing_patch": failing,
                     "upstream_sha": new_sha,
                     "previous_sha": old_sha,
                 }
             )
             raise QuiltPushFailedError(
                 "quilt push -a failed.\n"
-                f"failing patch: {top or '(unknown)'}\n"
+                f"failing patch: {failing or '(unknown)'}\n"
                 f"stdout: {result.stdout}\nstderr: {result.stderr}\n\n"
-                "The .sync-workdir/ directory has been left in a half-applied\n"
-                "state. Resolve the conflict by hand inside .sync-workdir/,\n"
-                "then run `make sync-resume`. To abandon and start over,\n"
-                "run `make sync-reset`.",
+                "The .sync-workdir/ directory has been left in a half-applied state.\n\n"
+                f"{_CONFLICT_RECIPE}",
                 step="patches",
             )
         refreshed = _copy_patches_back()
@@ -613,20 +652,20 @@ def run_resume() -> int:
     _log("re-run quilt push -a to confirm the rest of the series applies")
     push_result = _quilt_push_all()
     if not _quilt_push_is_success(push_result):
-        top = _quilt_top()
+        failing = _failing_patch()
         _write_sync_state(
             {
                 "phase": "patches",
-                "failing_patch": top,
+                "failing_patch": failing,
                 "upstream_sha": new_sha,
                 "previous_sha": state.get("previous_sha", ""),
             }
         )
         raise QuiltPushFailedError(
             "quilt push -a failed after resume; another patch needs resolution.\n"
-            f"failing patch: {top or '(unknown)'}\n"
+            f"failing patch: {failing or '(unknown)'}\n"
             f"stdout: {push_result.stdout}\nstderr: {push_result.stderr}\n\n"
-            "Resolve in .sync-workdir/, then run `make sync-resume` again.",
+            f"{_CONFLICT_RECIPE}",
             step="resume-patches",
         )
 
