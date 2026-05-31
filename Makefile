@@ -17,6 +17,9 @@ help:
 	@echo "Setup:"
 	@echo "  make bootstrap        Pull upstream subtree + lift overlay assets (M1)"
 	@echo ""
+	@echo "Setup (run once per clone):"
+	@echo "  make install-hooks    Enable the pre-commit build gate (sets core.hooksPath)"
+	@echo ""
 	@echo "Build:"
 	@echo "  make build            Produce dist/argo/ from upstream + patches + overlay (M1.8)"
 	@echo "  make clean            Remove dist/ and .sync-workdir/"
@@ -51,6 +54,16 @@ help:
 # -----------------------------------------------------------------------------
 # Build (M1.8 wires the real implementation)
 # -----------------------------------------------------------------------------
+
+# Wire the tracked .githooks/ as the repo's hook dir. The pre-commit hook
+# enforces "make build + leakage-static before any patches/overlay/tools/rename
+# commit" — the executable form of the AGENTS.md build gate. core.hooksPath is
+# local git config (not cloned), so this must be run once per checkout.
+.PHONY: install-hooks
+install-hooks:
+	@git config core.hooksPath .githooks
+	@chmod +x .githooks/* 2>/dev/null || true
+	@echo "✓ pre-commit gate enabled (core.hooksPath=.githooks)"
 
 .PHONY: build
 build:

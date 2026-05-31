@@ -70,19 +70,34 @@ make patch-refresh                 # quilt refresh the current patch
 make patch-list                    # cat patches/series
 ```
 
-`make build` and `make leakage-static` MUST both exit 0 before any commit that touches `patches/`, `overlay/`, `tools/`, or `argo-rename.yaml`.
+`make build` and `make leakage-static` MUST both exit 0 before any commit that touches `patches/`, `overlay/`, `tools/`, or `argo-rename.yaml`. This is **enforced**, not honour-system: `.githooks/pre-commit` runs the gate on exactly those paths and blocks the commit on failure. Enable it once per checkout with `make install-hooks` (sets `core.hooksPath`, which git does not clone). MUST NOT bypass with `git commit --no-verify`.
 
 **Landing a change on `main` REQUIRES the full dist suite green — not just build + leakage.** `ci.yml` runs on `pull_request` and push to `main` ONLY: a plain branch push runs **no CI at all**. And `make build` / `make leakage-static` / `make test` do **not** run `dist/argo/tests/` — `make test` runs the fork's *own* `tests/`. The dist suite (`make dist-test` locally; the `dist-argo-tests` matrix in CI) is the **only** gate that exercises what actually ships — it catches, e.g., a `packaging-strip.yaml` prune that breaks an upstream test which imports or enumerates a pruned module. Because `dist-argo-tests` is currently *non-blocking*, you MUST actively confirm it: **before merging any dist-affecting change to `main`, either open a PR and read the `dist-argo-tests` result, or run `make dist-test`.** Merging on the strength of local build + leakage alone shipped a red `main` once (the China strip) — do not repeat it.
 
 ## Upstream sync (the maintainer's main loop)
 
+`make sync` is the ONLY sanctioned way to advance upstream. The tool owns the commit; you own only the conflict resolution inside `.sync-workdir/`. Hand-driving git or quilt around it is how a broken patch shipped once (2026-05-31) — don't.
+
+A patch conflict on sync is NORMAL and healthy: one of the patches edits a line upstream also changed. It fails *safely and recoverably* — that is the architecture working, not breaking. The rename engine runs at build time and is never involved in a sync conflict.
+
 A typical weekly sync:
 
 1. `make sync` — pulls upstream, advances `upstream/.commit`, populates `.sync-workdir/`, runs `quilt push -a` there, then runs `make build` for verification. If clean, commits as `sync: upstream <short-sha> (<N> patches refreshed)`.
-2. On `quilt push -a` failure, the script prints the failing patch + hunks, leaves `.sync-workdir/` half-applied, and exits non-zero. **Do not run `make build` in this state** — it would not invalidate `.sync-workdir/` (they're separate dirs, AC-11), but `make build` from the pre-sync tree is meaningless mid-sync.
-3. Resolve conflicts inside `.sync-workdir/<conflicting-file>`, then `cd .sync-workdir && quilt refresh` to regenerate the patch.
-4. `make sync-resume` — copies the refreshed patch back to `patches/`, replays the remainder of the series, runs `make build`, commits.
+2. On `quilt push -a` failure it names the **failing patch** (the one that stopped, not the last applied) and prints the recovery recipe, leaving `.sync-workdir/` half-applied. **Do not run `make build` at the repo root in this state** — it is meaningless mid-sync.
+3. **Resolve a rejected hunk with EXACTLY this recipe — nothing more:**
+   1. `cd .sync-workdir`
+   2. `quilt push -f` — force-apply the failing patch; the rejected hunk lands in a `.rej`. (Editing the file *before* this does nothing — the patch isn't applied yet, so `quilt refresh` would capture nothing.)
+   3. Edit the conflicting file to apply what the `.rej` wanted; delete the `.rej`.
+   4. `quilt refresh` — regenerate the patch **from the resolved file**.
+   5. `cd .. && make sync-resume`.
+4. `make sync-resume` — `quilt refresh`, copies refreshed patches back to `patches/`, replays the series, runs the `make build` gate, and **commits**. The commit is the tool's job, not yours.
 5. If a sync attempt is abandoned, `make sync-reset` wipes `.sync-workdir/`.
+
+**MUST NOT, during a sync:**
+- `quilt refresh` while the conflicting file is pristine/unresolved — it silently **drops the hunk** from the patch (the exact bug that shipped a broken `deploy-site.yml` gate).
+- copy pristine files over the workdir, or run pop/push loops beyond the recipe above.
+- `git commit` / `git commit --amend` a sync by hand — `sync-resume` runs `make build` *before* committing; hand-committing skips that gate. The pre-commit hook is the backstop, but follow the recipe rather than leaning on it.
+- If you've thrashed the workdir: `make sync-reset` and start clean. Never paper over it.
 
 `.sync-workdir/` is gitignored and persistent across sync attempts; it is NOT `dist/argo/`, which is regenerated on every build.
 
