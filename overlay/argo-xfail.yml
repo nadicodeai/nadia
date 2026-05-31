@@ -237,3 +237,16 @@ xfails:
   - nodeid: tests/gateway/test_text_batching.py::TestFeishuAdaptiveDelay::test_split_continuation_merged
     reason: "Exercises the Feishu adapter, stripped from dist/argo via packaging-strip.yaml. The function-local FeishuAdapter import raises ImportError; the file's Discord/Matrix/Telegram batching tests still pass. XFAIL the China class instead of deleting the shared file."
     category: X
+
+  # ---------------------------------------------------------------
+  # Cluster 5 — China-strip ripple in general (non-China) tests (2 entries)
+  # Surfaced by the dist/argo CI suite: two general tests assume the China
+  # platforms are present. Both fail at execution (not collection), so xfail
+  # applies. Kept the strip; xfailed the assumptions.
+  # ---------------------------------------------------------------
+  - nodeid: tests/gateway/test_platform_http_client_limits.py::test_helper_is_importable_from_every_platform_that_uses_it
+    reason: "Imports every persistent-httpx-client platform adapter, including the China ones (qqbot/wecom/dingtalk/wecom_callback) that argo strips via packaging-strip.yaml; the function-local import raises ModuleNotFoundError once they are gone. XFAIL — the helper's import path is still exercised for the kept adapters (signal, bluebubbles)."
+    category: X
+  - nodeid: tests/argo_cli/test_setup_openclaw_migration.py::TestGetSectionConfigSummary::test_gateway_matches_platform_registry
+    reason: "Asserts the gateway setup config-summary recognises every platform; argo's content_edits filter the China platforms out of the setup menu (_all_platforms) while their enum entries remain — an intentional divergence the test correctly detects. XFAIL while the inert China enum stubs are deliberately left in place (removing them would require patching hot gateway files)."
+    category: X
