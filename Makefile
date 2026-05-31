@@ -35,7 +35,8 @@ help:
 	@echo "Quality gates:"
 	@echo "  make lint             ruff check (M4.3)"
 	@echo "  make typecheck        ty check (M4.3)"
-	@echo "  make test             pytest (M4.3)"
+	@echo "  make test             pytest the fork's own tests/ (NOT dist/argo's)"
+	@echo "  make dist-test        Run dist/argo's renamed upstream suite (mirrors CI dist-argo-tests; the real gate for dist changes)"
 	@echo "  make check-upstream-pristine Verify upstream/ matches last sync commit (M4.1)"
 	@echo "  make check-packaging-contract Verify ./Dockerfile tracks upstream packaging (no drift)"
 	@echo "  make install-smoke    Docker-driven install.sh smoke test (M5.2; IU-AC-4/5/9)"
@@ -148,6 +149,29 @@ test:
 	else \
 		echo "make test: pytest not available or no tests dir (M4.3)"; \
 	fi
+
+# The renamed upstream test suite run against dist/argo/, EXACTLY as CI's
+# `dist-argo-tests` job does. This is the ONLY gate that exercises dist/argo
+# content changes (packaging-strip.yaml prunes, content_edits, patches, rebrand)
+# against the full suite. `make build`, `leakage-static`, and `test` (which runs
+# the fork's OWN tests/, not dist/argo's) do NOT cover it.
+#
+# CI runs this on `pull_request` + push to `main` only, and it is currently
+# *non-blocking* — so a branch pushed and merged straight to `main` (no PR)
+# bypasses it entirely. That gap shipped a red main once (China-strip: two
+# general tests that import/enumerate the pruned platforms). RUN THIS — or open
+# a PR and read the dist-argo-tests result — BEFORE merging any dist-affecting
+# change to main.
+#
+#   make dist-test                                              # full suite (heavy; provisions a 3.11 venv with [all,dev])
+#   make dist-test DIST_TEST_ARGS="--slice 1/6"                 # one CI-equivalent slice
+#   make dist-test DIST_TEST_ARGS="--paths tests/a.py:tests/b.py"  # only these files (colon-separated; fast iteration)
+.PHONY: dist-test
+dist-test: build
+	cd dist/argo && uv venv .venv-test --python 3.11
+	cd dist/argo && uv pip install --quiet --python .venv-test/bin/python -e ".[all,dev]"
+	cd dist/argo && OPENROUTER_API_KEY="" OPENAI_API_KEY="" NOUS_API_KEY="" \
+		.venv-test/bin/python scripts/run_tests_parallel.py $(DIST_TEST_ARGS)
 
 .PHONY: check-upstream-pristine
 check-upstream-pristine:
