@@ -266,20 +266,31 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/opt/argo/.playwright
 #   openssh-client        → `argo_cli/profile_distribution.py` clones
 #                           profile bundles from `git@` / `ssh://` URLs at
 #                           runtime; without ssh that path errors out.
-#   gcc, python3-dev,     → Native-compile toolchain for `tools/lazy_deps.py`.
-#   libffi-dev              The lazy installer pip-installs platform extras
-#                           (sounddevice, brotlicffi, mautrix[encryption],
+#   make, gcc, g++,       → Native-compile toolchain. Two consumers:
+#   python3-dev,            (1) `tools/lazy_deps.py` pip-installs platform extras
+#   libffi-dev              (sounddevice, brotlicffi, mautrix[encryption],
 #                           asyncpg, …) on first use; some lack manylinux
 #                           wheels for arm64 and fall back to source builds.
-#                           Legacy carries the same toolchain in runtime for
-#                           the same reason.
+#                           (2) node-gyp builds node-pty 1.1.0's C++ binding at
+#                           `npm install` time. node-pty entered the dashboard
+#                           npm tree transitively (@streamdown/math →
+#                           @nous-research/ui) in the ef3a650f upstream sync and
+#                           ships no prebuilt for node 22 / linux, so node-gyp
+#                           compiles it — which needs BOTH `make` and a C++
+#                           compiler (`g++`); `gcc` alone is insufficient.
+#   iputils-ping          → `ping` for in-container network/connectivity triage.
+#                           Upstream apt-installs it (ef3a650f); mirrored here
+#                           for parity. (python-is-python3 is the other dep
+#                           upstream added — NOT mirrored: the python:3.13-slim
+#                           base already provides `python`, and apt-installing
+#                           it would mis-symlink /usr/bin/python. Recorded as a
+#                           base-provided divergence in packaging-overrides.yaml.)
 #
-# Legacy ALSO carries build-essential + docker-cli. We omit both:
-#   - build-essential is a superset of gcc + libc6-dev that pulls in g++
-#     / dpkg-dev; lazy_deps installs don't need C++.
-#   - docker-cli inside the container is for nested-docker workflows that
-#     mount /var/run/docker.sock; nothing in the customer-facing surface
-#     uses it.
+# Legacy ALSO carries docker-cli (and the dpkg-dev remainder of build-essential).
+# We omit both: docker-cli is only for nested-docker workflows mounting
+# /var/run/docker.sock (no customer-facing surface uses it), and dpkg-dev only
+# builds .deb packages (nothing here does; libc6-dev headers arrive transitively
+# with gcc/g++).
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         ffmpeg \
@@ -287,8 +298,11 @@ RUN apt-get update && \
         xz-utils \
         procps \
         ripgrep \
+        iputils-ping \
         openssh-client \
+        make \
         gcc \
+        g++ \
         python3-dev \
         libffi-dev && \
     rm -rf /var/lib/apt/lists/*

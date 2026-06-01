@@ -36,6 +36,18 @@ apt_exceptions:
       official python:3.13-slim-bookworm image, which ships CPython 3.13 — so
       python3 is present without an apt package. Issue #2.
     issue: "#2"
+  - package: python-is-python3
+    kind: base-provided
+    why: >-
+      Upstream (ef3a650f) apt-installs python-is-python3 on its debian:13.4 base
+      to alias `python` → `python3`. The fork's python:3.13-slim-bookworm base
+      already provides BOTH `python` and `python3` (each → /usr/local/bin/
+      python3.13), so the alias is redundant. Mirroring the apt package would be
+      actively wrong: the Debian package symlinks /usr/bin/python → /usr/bin/
+      python3, which does not exist on the python image (its interpreters live in
+      /usr/local/bin), leaving a dangling `python`. Same root cause as the
+      python3 entry above. Issue #2.
+    issue: "#2"
   - package: docker-cli
     kind: omit
     why: >-
