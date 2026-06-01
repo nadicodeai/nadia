@@ -33,6 +33,7 @@ help:
 	@echo "Docker:"
 	@echo "  make image            Build slim variant -> ghcr.io/nadicodeai/argo:dev (M5.1)"
 	@echo "  make image-full       Build full variant -> ghcr.io/nadicodeai/argo:dev-full (issue #2)"
+	@echo "  make fde-container    Build FDE customer image -> ghcr.io/nadicodeai/argo:fde-dev"
 	@echo "  make publish          Push image to ghcr.io (M5.2)"
 	@echo ""
 	@echo "Quality gates:"
@@ -43,6 +44,11 @@ help:
 	@echo "  make check-upstream-pristine Verify upstream/ matches last sync commit (M4.1)"
 	@echo "  make check-packaging-contract Verify ./Dockerfile tracks upstream packaging (no drift)"
 	@echo "  make install-smoke    Docker-driven install.sh smoke test (M5.2; IU-AC-4/5/9)"
+	@echo "  make fde-container-smoke  Build and validate FDE customer container"
+	@echo "  make fde-live-smoke  Validate live Telegram/Honcho credentials from FDE_* env"
+	@echo "  make golden-vm-smoke  Docker-backed Ubuntu smoke for golden VM bake/init"
+	@echo "  make golden-vm-qemu-smoke Real QEMU/KVM Ubuntu VM smoke for golden image clone/init"
+	@echo "  make fde-vm-image     Produce dist/images/argo-fde-ubuntu-22.04.qcow2"
 	@echo "  make update-smoke     Docker update-smoke (IU-AC-9/10/11; M5.3 Part A)"
 	@echo "  make update-smoke-telegram  Docker /update mid-flight (IU-AC-6; M5.3 Part B, currently SKIPPED)"
 	@echo ""
@@ -139,6 +145,16 @@ image-full:
 		-t ghcr.io/nadicodeai/argo:dev-full \
 		.
 
+.PHONY: fde-container
+fde-container:
+	docker buildx build \
+		--build-arg SOURCE_DATE_EPOCH=$$(git log -1 --format=%ct) \
+		--platform linux/amd64 \
+		--target runtime-fde \
+		--load \
+		-t ghcr.io/nadicodeai/argo:fde-dev \
+		.
+
 .PHONY: publish
 publish:
 	scripts/publish.sh
@@ -209,6 +225,26 @@ check-packaging-contract:
 .PHONY: install-smoke
 install-smoke:
 	bash tests/install_smoke/run.sh
+
+.PHONY: golden-vm-smoke
+golden-vm-smoke:
+	bash tests/golden_vm/run.sh
+
+.PHONY: golden-vm-qemu-smoke
+golden-vm-qemu-smoke:
+	bash tests/golden_vm/run_qemu.sh
+
+.PHONY: fde-container-smoke
+fde-container-smoke:
+	bash tests/fde_container/run.sh
+
+.PHONY: fde-live-smoke
+fde-live-smoke:
+	bash tests/fde_live/run.sh
+
+.PHONY: fde-vm-image
+fde-vm-image:
+	bash scripts/fde-vm-image.sh
 
 # -----------------------------------------------------------------------------
 # Patch operations (M3.1 wires the real implementations)
