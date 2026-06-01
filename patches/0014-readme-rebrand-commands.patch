@@ -17,8 +17,10 @@ attribution intact: the `NousResearch/hermes-agent` repo URLs, the
 are untouched (the rebrand regex `\bhermes\b(?![-/.])` skips `hermes-agent` and
 URLs by construction). See tests/test_readme_commands_rebranded.py. IU-AC-4.
 
---- a/README.md
-+++ b/README.md
+Index: .sync-workdir/README.md
+===================================================================
+--- .sync-workdir.orig/README.md
++++ .sync-workdir/README.md
 @@ -16,7 +16,7 @@
  
  **The self-improving AI agent originally built by [Nous Research](https://nousresearch.com), maintained in this fork by Nadicode.** It's the only agent with a built-in learning loop — it creates skills from experience, improves them during use, nudges itself to persist knowledge, searches its own past conversations, and builds a deepening model of who you are across sessions. Run it on a $5 VPS, a GPU cluster, or serverless infrastructure that costs nearly nothing when idle. It's not tied to your laptop — talk to it from Telegram while it works on a cloud VM.
@@ -32,15 +34,15 @@ URLs by construction). See tests/test_readme_commands_rebranded.py. IU-AC-4.
  iex (irm https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1)
  ```
  
--The installer handles everything: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **and a portable Git Bash** (MinGit, unpacked to `%LOCALAPPDATA%\hermes\git` — no admin required, completely isolated from any system Git install).  Hermes uses this bundled Git Bash to run shell commands.
-+The installer handles everything: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **and a portable Git Bash** (MinGit, unpacked to `%LOCALAPPDATA%\argo\git` — no admin required, completely isolated from any system Git install).  Hermes uses this bundled Git Bash to run shell commands.
+-The installer handles everything: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **and a portable Git Bash** (MinGit, unpacked to `%LOCALAPPDATA%\hermes\git` — no admin required, completely isolated from any system Git install). Hermes uses this bundled Git Bash to run shell commands.
++The installer handles everything: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **and a portable Git Bash** (MinGit, unpacked to `%LOCALAPPDATA%\argo\git` — no admin required, completely isolated from any system Git install). Hermes uses this bundled Git Bash to run shell commands.
  
- If you already have Git installed, the installer detects it and uses that instead.  Otherwise a ~45MB MinGit download is all you need — it won't touch or interfere with any system Git.
+ If you already have Git installed, the installer detects it and uses that instead. Otherwise a ~45MB MinGit download is all you need — it won't touch or interfere with any system Git.
  
  > **Android / Termux:** The tested manual path is documented in the [Termux guide](https://hermes-agent.nousresearch.com/docs/getting-started/termux). On Termux, Hermes installs a curated `.[termux]` extra because the full `.[all]` extra currently pulls Android-incompatible voice dependencies.
  >
--> **Windows:** Native Windows is supported as an **early beta** — the PowerShell one-liner above installs everything, but expect rough edges and please file issues when you hit them. If you'd rather use WSL2 (our most battle-tested Windows path), the Linux command works there too. Native Windows install lives under `%LOCALAPPDATA%\hermes`; WSL2 installs under `~/.hermes` as on Linux.  The only Hermes feature that currently needs WSL2 specifically is the browser-based dashboard chat pane (it uses a POSIX PTY — classic CLI and gateway both run natively).
-+> **Windows:** Native Windows is supported as an **early beta** — the PowerShell one-liner above installs everything, but expect rough edges and please file issues when you hit them. If you'd rather use WSL2 (our most battle-tested Windows path), the Linux command works there too. Native Windows install lives under `%LOCALAPPDATA%\argo`; WSL2 installs under `~/.argo` as on Linux.  The only Hermes feature that currently needs WSL2 specifically is the browser-based dashboard chat pane (it uses a POSIX PTY — classic CLI and gateway both run natively).
+-> **Windows:** Native Windows is fully supported — the PowerShell one-liner above installs everything. If you'd rather use WSL2, the Linux command works there too. Native Windows install lives under `%LOCALAPPDATA%\hermes`; WSL2 installs under `~/.hermes` as on Linux.  The only Hermes feature that currently needs WSL2 specifically is the browser-based dashboard chat pane (it uses a POSIX PTY — classic CLI and gateway both run natively).
++> **Windows:** Native Windows is fully supported — the PowerShell one-liner above installs everything. If you'd rather use WSL2, the Linux command works there too. Native Windows install lives under `%LOCALAPPDATA%\argo`; WSL2 installs under `~/.argo` as on Linux.  The only Hermes feature that currently needs WSL2 specifically is the browser-based dashboard chat pane (it uses a POSIX PTY — classic CLI and gateway both run natively).
  
  After installation:
  
@@ -96,14 +98,14 @@ URLs by construction). See tests/test_readme_commands_rebranded.py. IU-AC-4.
 -Hermes has two entry points: start the terminal UI with `hermes`, or run the gateway and talk to it from Telegram, Discord, Slack, WhatsApp, Signal, or Email. Once you're in a conversation, many slash commands are shared across both interfaces.
 +Hermes has two entry points: start the terminal UI with `argo`, or run the gateway and talk to it from Telegram, Discord, Slack, WhatsApp, Signal, or Email. Once you're in a conversation, many slash commands are shared across both interfaces.
  
- | Action | CLI | Messaging platforms |
- |---------|-----|---------------------|
--| Start chatting | `hermes` | Run `hermes gateway setup` + `hermes gateway start`, then send the bot a message |
-+| Start chatting | `argo` | Run `argo gateway setup` + `argo gateway start`, then send the bot a message |
- | Start fresh conversation | `/new` or `/reset` | `/new` or `/reset` |
- | Change model | `/model [provider:model]` | `/model [provider:model]` |
- | Set a personality | `/personality [name]` | `/personality [name]` |
-@@ -150,28 +150,28 @@ All documentation lives at **[hermes-age
+ | Action                         | CLI                                           | Messaging platforms                                                              |
+ | ------------------------------ | --------------------------------------------- | -------------------------------------------------------------------------------- |
+-| Start chatting                 | `hermes`                                      | Run `hermes gateway setup` + `hermes gateway start`, then send the bot a message |
++| Start chatting                 | `argo`                                      | Run `argo gateway setup` + `argo gateway start`, then send the bot a message |
+ | Start fresh conversation       | `/new` or `/reset`                            | `/new` or `/reset`                                                               |
+ | Change model                   | `/model [provider:model]`                     | `/model [provider:model]`                                                        |
+ | Set a personality              | `/personality [name]`                         | `/personality [name]`                                                            |
+@@ -150,29 +150,29 @@ All documentation lives at **[hermes-age
  
  If you're coming from OpenClaw, Hermes can automatically import your settings, memories, skills, and API keys.
  
@@ -124,6 +126,7 @@ URLs by construction). See tests/test_readme_commands_rebranded.py. IU-AC-4.
  ```
  
  What gets imported:
+ 
  - **SOUL.md** — persona file
  - **Memories** — MEMORY.md and USER.md entries
 -- **Skills** — user-created skills → `~/.hermes/skills/openclaw-imports/`
@@ -139,7 +142,7 @@ URLs by construction). See tests/test_readme_commands_rebranded.py. IU-AC-4.
  
  ---
  
-@@ -184,8 +184,8 @@ Quick start for contributors — clone a
+@@ -185,8 +185,8 @@ Quick start for contributors — clone a
  ```bash
  git clone https://github.com/nadicodeai/argo.git
  cd hermes-agent
@@ -150,8 +153,10 @@ URLs by construction). See tests/test_readme_commands_rebranded.py. IU-AC-4.
  ```
  
  Manual path (equivalent to the above):
---- a/README.zh-CN.md
-+++ b/README.zh-CN.md
+Index: .sync-workdir/README.zh-CN.md
+===================================================================
+--- .sync-workdir.orig/README.zh-CN.md
++++ .sync-workdir/README.zh-CN.md
 @@ -14,7 +14,7 @@
  
  **由 [Nous Research](https://nousresearch.com) 构建的自进化 AI 代理。** 它是唯一内置学习闭环的智能代理——从经验中创建技能，在使用中改进技能，主动持久化知识，搜索过往对话，并在跨会话中逐步构建对你的深度理解。可以在 $5 的 VPS 上运行，也可以在 GPU 集群上运行，或者使用几乎零成本的 Serverless 基础设施。它不绑定你的笔记本——你可以在 Telegram 上与它对话，而它在云端 VM 上工作。
@@ -222,7 +227,7 @@ URLs by construction). See tests/test_readme_commands_rebranded.py. IU-AC-4.
  | 开始新对话 | `/new` 或 `/reset` | `/new` 或 `/reset` |
  | 更换模型 | `/model [provider:model]` | `/model [provider:model]` |
  | 设置人格 | `/personality [name]` | `/personality [name]` |
-@@ -134,28 +134,28 @@ Hermes 有两种入口：用 `hermes` �
+@@ -134,28 +134,28 @@ Hermes 有两种入口：用 `hermes` �
  
  如果你来自 OpenClaw，Hermes 可以自动导入你的设置、记忆、技能和 API 密钥。
  
@@ -258,7 +263,7 @@ URLs by construction). See tests/test_readme_commands_rebranded.py. IU-AC-4.
  
  ---
  
-@@ -168,8 +168,8 @@ hermes claw migrate --overwrite  # 覆�
+@@ -168,8 +168,8 @@ hermes claw migrate --overwrite  # 覆�
  ```bash
  git clone https://github.com/nadicodeai/argo.git
  cd hermes-agent

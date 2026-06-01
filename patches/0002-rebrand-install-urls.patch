@@ -1,5 +1,7 @@
---- a/CONTRIBUTING.md
-+++ b/CONTRIBUTING.md
+Index: .sync-workdir/CONTRIBUTING.md
+===================================================================
+--- .sync-workdir.orig/CONTRIBUTING.md
++++ .sync-workdir/CONTRIBUTING.md
 @@ -81,7 +81,7 @@ This isn't a quality bar — it's a coup
  ### Clone and install
  
@@ -18,8 +20,10 @@
  - Include: OS, Python version, Hermes version (`hermes version`), full error traceback
  - Include steps to reproduce
  - Check existing issues before creating duplicates
---- a/README.md
-+++ b/README.md
+Index: .sync-workdir/README.md
+===================================================================
+--- .sync-workdir.orig/README.md
++++ .sync-workdir/README.md
 @@ -35,17 +35,17 @@ Use any model you want — [Nous Portal]
  ### Linux, macOS, WSL2, Termux
  
@@ -28,10 +32,10 @@
 +curl -fsSL https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh | bash
  ```
  
- ### Windows (native, PowerShell) — Early Beta
+ ### Windows (native, PowerShell)
  
--> **Heads up:** Native Windows support is **early beta**. It installs and runs, but hasn't been road-tested as broadly as our Linux/macOS/WSL2 paths. Please [file issues](https://github.com/NousResearch/hermes-agent/issues) when you hit rough edges. For the most battle-tested Windows setup today, run the Linux/macOS one-liner above inside **WSL2**.
-+> **Heads up:** Native Windows support is **early beta**. It installs and runs, but hasn't been road-tested as broadly as our Linux/macOS/WSL2 paths. Please [file issues](https://github.com/nadicodeai/argo/issues) when you hit rough edges. For the most battle-tested Windows setup today, run the Linux/macOS one-liner above inside **WSL2**.
+-> **Heads up:** Native Windows runs Hermes without WSL — CLI, gateway, TUI, and tools all work natively. If you'd rather use WSL2, the Linux/macOS one-liner above works there too. Found a bug? Please [file issues](https://github.com/NousResearch/hermes-agent/issues).
++> **Heads up:** Native Windows runs Hermes without WSL — CLI, gateway, TUI, and tools all work natively. If you'd rather use WSL2, the Linux/macOS one-liner above works there too. Found a bug? Please [file issues](https://github.com/nadicodeai/argo/issues).
  
  Run this in PowerShell:
  
@@ -40,8 +44,8 @@
 +iex (irm https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1)
  ```
  
- The installer handles everything: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **and a portable Git Bash** (MinGit, unpacked to `%LOCALAPPDATA%\hermes\git` — no admin required, completely isolated from any system Git install).  Hermes uses this bundled Git Bash to run shell commands.
-@@ -182,7 +182,7 @@ We welcome contributions! See the [Contr
+ The installer handles everything: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **and a portable Git Bash** (MinGit, unpacked to `%LOCALAPPDATA%\hermes\git` — no admin required, completely isolated from any system Git install). Hermes uses this bundled Git Bash to run shell commands.
+@@ -183,7 +183,7 @@ We welcome contributions! See the [Contr
  Quick start for contributors — clone and go with `setup-hermes.sh`:
  
  ```bash
@@ -50,7 +54,7 @@
  cd hermes-agent
  ./setup-hermes.sh     # installs uv, creates venv, installs .[all], symlinks ~/.local/bin/hermes
  ./hermes              # auto-detects the venv, no need to `source` first
-@@ -204,7 +204,7 @@ scripts/run_tests.sh
+@@ -205,7 +205,7 @@ scripts/run_tests.sh
  
  - 💬 [Discord](https://discord.gg/NousResearch)
  - 📚 [Skills Hub](https://agentskills.io)
@@ -59,8 +63,10 @@
  - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — Linux desktop-control MCP server for Hermes and other MCP hosts, with AT-SPI accessibility trees, Wayland/X11 input, screenshots, and compositor window targeting.
  - 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Community WeChat bridge: Run Hermes Agent and OpenClaw on the same WeChat account.
  
---- a/README.zh-CN.md
-+++ b/README.zh-CN.md
+Index: .sync-workdir/README.zh-CN.md
+===================================================================
+--- .sync-workdir.orig/README.zh-CN.md
++++ .sync-workdir/README.zh-CN.md
 @@ -31,7 +31,7 @@
  ## 快速安装
  
@@ -70,7 +76,7 @@
  ```
  
  支持 Linux、macOS、WSL2 和 Android (Termux)。安装程序会自动处理平台特定的配置。
-@@ -166,7 +166,7 @@ hermes claw migrate --overwrite  # 覆�
+@@ -166,7 +166,7 @@ hermes claw migrate --overwrite  # 覆�
  贡献者快速开始——克隆并使用 `setup-hermes.sh`：
  
  ```bash

@@ -1,8 +1,16 @@
 --- a/tests/tools/test_browser_supervisor.py
 +++ b/tests/tools/test_browser_supervisor.py
+@@ -17,6 +17,7 @@ import asyncio
+ import asyncio
+ import base64
+ import json
++import os
+ import shutil
+ import subprocess
+ import tempfile
 @@ -27,8 +27,9 @@ import pytest
- 
- 
+
+
  pytestmark = pytest.mark.skipif(
 -    not shutil.which("google-chrome") and not shutil.which("chromium"),
 -    reason="Chrome/Chromium not installed",
@@ -10,5 +18,3 @@
 +    or (not shutil.which("google-chrome") and not shutil.which("chromium")),
 +    reason="Real-browser integration suite — set HERMES_E2E_BROWSER=1 and install Chrome/Chromium to run",
  )
- 
- 

@@ -1,17 +1,19 @@
---- a/.github/workflows/deploy-site.yml
-+++ b/.github/workflows/deploy-site.yml
-@@ -22,14 +22,26 @@ concurrency:
- 
- jobs:
-   deploy-vercel:
--    if: github.event_name == 'release'
+Index: .sync-workdir/.github/workflows/deploy-site.yml
+===================================================================
+--- .sync-workdir.orig/.github/workflows/deploy-site.yml
++++ .sync-workdir/.github/workflows/deploy-site.yml
+@@ -27,14 +27,26 @@ jobs:
+     # main commit needs to ship live before the next release tag — e.g.
+     # a skills-index PR that doesn't touch website/** paths and so
+     # doesn't auto-deploy via the deploy-docs path.
+-    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
 +    # Nadicode fork: gated off — upstream domain hermes-agent.nousresearch.com
 +    # is owned by NousResearch. The VERCEL_DEPLOY_HOOK secret is not
 +    # configured for this repo; the upstream pipeline expects a
 +    # Nous-controlled Vercel project. Re-enable by adding a
 +    # VERCEL_DEPLOY_HOOK secret for a Nadicode Vercel project and removing
 +    # the leading `false &&`.
-+    if: false && github.event_name == 'release'
++    if: false && (github.event_name == 'release' || github.event_name == 'workflow_dispatch')
      runs-on: ubuntu-latest
      steps:
        - name: Trigger Vercel Deploy
@@ -29,8 +31,10 @@
      runs-on: ubuntu-latest
      environment:
        name: github-pages
---- a/.github/workflows/skills-index.yml
-+++ b/.github/workflows/skills-index.yml
+Index: .sync-workdir/.github/workflows/skills-index.yml
+===================================================================
+--- .sync-workdir.orig/.github/workflows/skills-index.yml
++++ .sync-workdir/.github/workflows/skills-index.yml
 @@ -47,7 +47,13 @@ jobs:
    # everything in one pipeline); we just kick it on a schedule.
    trigger-deploy:

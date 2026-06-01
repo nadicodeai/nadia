@@ -45,6 +45,7 @@ EXCEPTION_PATHS: tuple[str, ...] = (
     '*.egg-info/**',
     '.gitleaks.toml',
     'tests/test_full_rename_config.py',
+    'argo-xfail.yml',
     '*/_rename_defaults.py',
     'README.md',
     'README.zh-CN.md',
