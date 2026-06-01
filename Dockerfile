@@ -480,3 +480,46 @@ RUN cp -a /opt/argo/docker/s6-rc.d/. /etc/s6-overlay/s6-rc.d/ && \
 # or `--tui` would be intercepted by /init's POSIX shell.
 ENTRYPOINT [ "/init", "/opt/argo/docker/main-wrapper.sh" ]
 CMD [ ]
+
+# ---------- Stage 4: runtime-fde ------------------------------------------
+#
+# Forward Deployed Engineer customer baseline. Extends runtime-full with the
+# same eager optional Python surface baked into native and VM deployments, plus
+# the customer init command. This target is intentionally separate from
+# runtime-full so the default customer image remains unchanged unless callers
+# explicitly build/pull an FDE tag.
+FROM runtime-full AS runtime-fde
+
+USER root
+
+COPY --chmod=0755 scripts/argo-customer-init /usr/local/bin/argo-customer-init
+
+RUN /opt/argo/.venv/bin/python -m pip install --no-cache-dir -U \
+        "honcho-ai==2.0.1" \
+        "python-telegram-bot[webhooks]==22.6" \
+        "edge-tts==7.2.7" \
+        "ddgs" && \
+    mkdir -p /opt/data && \
+    cat > /opt/data/SOUL.md.template <<'EOF' && \
+    cat > /opt/data/honcho.json.template <<'EOF2' && \
+    chown -R argo:argo /opt/data
+# Customer Operating Context
+
+Profile: {{PROFILE}}
+Honcho workspace: {{HONCHO_WORKSPACE}}
+Honcho peer: {{HONCHO_PEER}}
+
+Use this file for customer-specific operating context, preferences, boundaries,
+and escalation notes. Do not put long-lived secrets here.
+EOF
+{
+  "aiPeer": "argo",
+  "contextCadence": 1,
+  "dialecticCadence": 2,
+  "dialecticDepth": 1,
+  "environment": "production",
+  "pinUserPeer": true,
+  "recallMode": "hybrid",
+  "writeFrequency": "async"
+}
+EOF2

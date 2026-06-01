@@ -8,13 +8,14 @@ Pipeline (spec FR-4):
 3. `cd dist/argo && quilt push -a` to apply the patch series.
 4. Copy `overlay/*` → `dist/argo/` (failing if any path collides
    post-patch).
-5. Prune `packaging-strip.yaml` denylisted paths from `dist/argo/` (fork
+5. Copy customer-facing FDE helper scripts into `dist/argo/scripts/`.
+6. Prune `packaging-strip.yaml` denylisted paths from `dist/argo/` (fork
    denylist; removes the China-platform surface from BOTH the native install
    and the image without patching hot upstream files — see that file's header).
-6. Run `tools/rebrand.py dist/argo/` to apply the hermes→argo rename.
-7. Run `tools/run_assertions.py` (if present, M3.1) to enforce per-patch
+7. Run `tools/rebrand.py dist/argo/` to apply the hermes→argo rename.
+8. Run `tools/run_assertions.py` (if present, M3.1) to enforce per-patch
    grep assertions.
-8. Write `dist/argo/.argo/build-manifest.json` (deterministic JSON,
+9. Write `dist/argo/.argo/build-manifest.json` (deterministic JSON,
    sort_keys=True, indent=2).
 
 Exits non-zero on any step failure with a clear error message and the
@@ -45,6 +46,12 @@ RENAME_YAML = REPO_ROOT / "argo-rename.yaml"
 # truth.
 RENAME_DEFAULTS = OVERLAY_DIR / "hermes_cli" / "_rename_defaults.py"
 STRIP_YAML = REPO_ROOT / "packaging-strip.yaml"
+FDE_SCRIPT_NAMES = (
+    "argo-fde-provision.sh",
+    "argo-fde-provision.ps1",
+    "argo-customer-init",
+    "argo-customer-init.ps1",
+)
 
 # China-platform filename tokens for the post-prune residual scan. Distinctive
 # enough to avoid false positives — note NOT "lark" (collides with the `lark`
@@ -233,6 +240,24 @@ def _copy_overlay() -> list[str]:
 
     added.sort()
     _log(f"overlay: copied {len(added)} files")
+    return added
+
+
+def _copy_fde_scripts() -> list[str]:
+    """Copy customer-facing FDE helpers into the release tree's scripts dir."""
+    added: list[str] = []
+    scripts_dir = DIST_DIR / "scripts"
+    scripts_dir.mkdir(parents=True, exist_ok=True)
+    for name in FDE_SCRIPT_NAMES:
+        src = REPO_ROOT / "scripts" / name
+        if not src.is_file():
+            raise BuildError("fde-scripts", f"missing customer helper script: scripts/{name}")
+        dst = scripts_dir / name
+        if dst.exists():
+            raise BuildError("fde-scripts", f"refusing to overwrite existing dist script: scripts/{name}")
+        shutil.copy2(src, dst)
+        added.append(f"scripts/{name}")
+    _log(f"fde-scripts: copied {len(added)} files")
     return added
 
 
@@ -478,6 +503,7 @@ def build() -> int:
     _strip_quilt_state()
     _regenerate_rename_defaults()
     overlay_added = _copy_overlay()
+    fde_scripts_added = _copy_fde_scripts()
     stripped = _strip_excluded_paths()
     content_edited = _apply_content_edits()
     touched = _run_rebrand(upstream_sha)
@@ -485,7 +511,7 @@ def build() -> int:
     _write_build_manifest(
         upstream_sha=upstream_sha,
         patches_applied=applied,
-        overlay_files_added=overlay_added,
+        overlay_files_added=overlay_added + fde_scripts_added,
         paths_stripped=stripped,
         content_edits_applied=content_edited,
         files_touched_by_rename=touched,
