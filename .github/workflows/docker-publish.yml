@@ -68,16 +68,36 @@ name: docker-publish
 on:
   push:
     branches: [main]
+  # PR gate (no push): build BOTH variants so an image-breaking change is
+  # caught BEFORE it merges to main — not after. Historically docker-publish
+  # ran only post-merge, so a sync could go green on the PR (ci.yml) and still
+  # break the image on main (e.g. a new transitive npm dep like node-pty that
+  # node-gyp must compile, needing make/g++). Paths-gated to image-affecting
+  # files so unrelated PRs don't pay the ~10-15 min build. The build steps below
+  # skip --push on pull_request, so nothing is published from a PR.
+  pull_request:
+    paths:
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'upstream/**'
+      - 'patches/**'
+      - 'overlay/**'
+      - 'packaging-overrides.yaml'
+      - 'argo-rename.yaml'
+      - '.github/workflows/docker-publish.yml'
+      - '.github/actions/argo-setup/**'
   release:
     types: [published]
   workflow_dispatch:
 
-# Serialize publish jobs so concurrent main pushes + release events
-# don't race the :latest re-tag. cancel-in-progress: false because each
-# image build IS the artifact — interrupting one mid-push wastes work.
+# Serialize PUBLISH jobs (push/release) so concurrent main pushes + release
+# events don't race the :latest re-tag — cancel-in-progress: false because each
+# published image IS the artifact. PR builds publish nothing, so they get a
+# per-ref group that DOES cancel superseded runs (a new push to the PR makes the
+# in-flight build obsolete).
 concurrency:
-  group: docker-publish
-  cancel-in-progress: false
+  group: ${{ github.event_name == 'pull_request' && format('docker-publish-pr-{0}', github.ref) || 'docker-publish' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -114,7 +134,9 @@ jobs:
 
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
+      # No login on PRs: they don't push (and fork PRs lack package creds anyway).
       - name: Log in to ghcr.io
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
           registry: ghcr.io
@@ -198,13 +220,16 @@ jobs:
       # ~4.5 GB). On failure we abort before paying the cost of the
       # full build. Multi-arch (release) goes through the same buildx
       # invocation; --push writes the manifest list directly to ghcr.
-      - name: docker buildx build --push (runtime-slim)
+      - name: docker buildx build (runtime-slim) [push on non-PR]
         run: |
+          # On pull_request: build only (verify it compiles), never publish.
+          PUSH_FLAG=""
+          [ "${{ github.event_name }}" != "pull_request" ] && PUSH_FLAG="--push"
           docker buildx build \
             --build-arg SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)" \
             --platform "${{ steps.platforms.outputs.platforms }}" \
             --target runtime-slim \
-            --push \
+            $PUSH_FLAG \
             ${{ steps.tags.outputs.slim_tags }} \
             .
 
@@ -213,13 +238,18 @@ jobs:
       # Adds ~10-15 min on top of slim (npm install, playwright chromium
       # fetch, s6-overlay tarballs). Multi-arch (release) doubles that
       # since QEMU-emulated arm64 is much slower than native amd64.
-      - name: docker buildx build --push (runtime-full)
+      - name: docker buildx build (runtime-full) [push on non-PR]
         run: |
+          # On pull_request: build only (verify it compiles), never publish.
+          # This is the gate that catches an image-breaking upstream sync
+          # (e.g. node-pty needing make/g++) BEFORE it reaches main.
+          PUSH_FLAG=""
+          [ "${{ github.event_name }}" != "pull_request" ] && PUSH_FLAG="--push"
           docker buildx build \
             --build-arg SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)" \
             --platform "${{ steps.platforms.outputs.platforms }}" \
             --target runtime-full \
-            --push \
+            $PUSH_FLAG \
             ${{ steps.tags.outputs.full_tags }} \
             .
 
