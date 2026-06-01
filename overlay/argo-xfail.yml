@@ -250,3 +250,55 @@ xfails:
   - nodeid: tests/argo_cli/test_setup_openclaw_migration.py::TestGetSectionConfigSummary::test_gateway_matches_platform_registry
     reason: "Asserts the gateway setup config-summary recognises every platform; argo's content_edits filter the China platforms out of the setup menu (_all_platforms) while their enum entries remain — an intentional divergence the test correctly detects. XFAIL while the inert China enum stubs are deliberately left in place (removing them would require patching hot gateway files)."
     category: X
+
+  # ---------------------------------------------------------------
+  # Cluster 6 — China-strip ripple (sync ef3a650f): a new upstream test
+  # enumerates every own-policy adapter and imports it. The China adapters
+  # (wecom/weixin/yuanbao/qqbot) are pruned by packaging-strip.yaml, so the
+  # parametrized import raises ModuleNotFoundError for those four variants;
+  # the kept-platform variants still pass. Same class as Cluster 4/5.
+  # ---------------------------------------------------------------
+  - nodeid: tests/gateway/test_config_driven_access_policy.py::test_own_policy_adapters_declare_the_flag[gateway.platforms.wecom-WeComAdapter]
+    reason: "New upstream test enumerates+imports every own-policy adapter; the WeCom adapter is stripped from dist/argo via packaging-strip.yaml (China platforms out of scope for argo's North-Italy SMB target, never enabled) → ModuleNotFoundError. The non-China parametrize variants still pass. XFAIL the China variant; the strip stands."
+    category: X
+  - nodeid: tests/gateway/test_config_driven_access_policy.py::test_own_policy_adapters_declare_the_flag[gateway.platforms.weixin-WeixinAdapter]
+    reason: "New upstream test enumerates+imports every own-policy adapter; the Weixin adapter is stripped from dist/argo via packaging-strip.yaml (China platforms out of scope for argo's North-Italy SMB target, never enabled) → ModuleNotFoundError. The non-China parametrize variants still pass. XFAIL the China variant; the strip stands."
+    category: X
+  - nodeid: tests/gateway/test_config_driven_access_policy.py::test_own_policy_adapters_declare_the_flag[gateway.platforms.yuanbao-YuanbaoAdapter]
+    reason: "New upstream test enumerates+imports every own-policy adapter; the Yuanbao adapter is stripped from dist/argo via packaging-strip.yaml (China platforms out of scope for argo's North-Italy SMB target, never enabled) → ModuleNotFoundError. The non-China parametrize variants still pass. XFAIL the China variant; the strip stands."
+    category: X
+  - nodeid: tests/gateway/test_config_driven_access_policy.py::test_own_policy_adapters_declare_the_flag[gateway.platforms.qqbot.adapter-QQAdapter]
+    reason: "New upstream test enumerates+imports every own-policy adapter; the QQ adapter is stripped from dist/argo via packaging-strip.yaml (China platforms out of scope for argo's North-Italy SMB target, never enabled) → ModuleNotFoundError. The non-China parametrize variants still pass. XFAIL the China variant; the strip stands."
+    category: X
+
+  # ---------------------------------------------------------------
+  # Cluster 7 — cmd_update pip-path (sync ef3a650f): three new upstream
+  # tests on the pip-installed update path. Same root cause as Cluster 1 —
+  # argo is not published to PyPI (IU-FR-13); the customer install path is
+  # git (install.sh writes .install_method = git), so the pip branch these
+  # tests assert on is dead code in argo's customer flow. The captured
+  # stdout confirms each took the "Checking PyPI for updates" pip branch.
+  # ---------------------------------------------------------------
+  - nodeid: tests/argo_cli/test_cmd_update.py::TestCmdUpdateBranchFallback::test_update_on_fork_checks_upstream_when_origin_up_to_date
+    reason: "argo not published to PyPI per IU-FR-13; cmd_update's pip path is unused for properly-installed argo customers (install via public install.sh URL = git method). New upstream test asserts the pip path consults upstream/main via _sync_with_upstream_if_needed when origin is up to date — a pip-branch behavior argo's customer flow never exercises."
+    category: X
+  - nodeid: tests/argo_cli/test_cmd_update.py::TestCmdUpdateMigrationPrompt::test_version_bump_only_applies_silently_without_prompt
+    reason: "argo not published to PyPI per IU-FR-13; cmd_update's pip path is unused for properly-installed argo customers (install via public install.sh URL = git method). New upstream test asserts pip-path silent config migration on a version-only bump — a pip-branch behavior argo's customer flow never exercises."
+    category: X
+  - nodeid: tests/argo_cli/test_cmd_update.py::TestCmdUpdateMigrationPrompt::test_new_options_are_listed_by_name_before_prompt
+    reason: "argo not published to PyPI per IU-FR-13; cmd_update's pip path is unused for properly-installed argo customers (install via public install.sh URL = git method). New upstream test asserts pip-path migration-prompt option listing — a pip-branch behavior argo's customer flow never exercises."
+    category: X
+
+  # ---------------------------------------------------------------
+  # Cluster 8 — rename-induced (sync ef3a650f): the gateway lifecycle
+  # matcher test feeds a COMPUTED brand string. The parametrize case
+  # "Hermez Gateway Restart".lower().replace("z","s") evaluates to
+  # "hermes gateway restart" (deliberately z-spelled so the rebrand engine
+  # skips the source literal). The production regex _GATEWAY_LIFECYCLE_PATTERNS
+  # is correctly rebranded to match `argo gateway ...`, so it no longer
+  # matches the computed legacy-brand string. Product behavior is correct;
+  # only this brand-name-recognition test variant diverges.
+  # ---------------------------------------------------------------
+  - nodeid: tests/argo_cli/test_gateway_restart_loop.py::TestGatewayLifecyclePattern::test_argo_gateway_commands[hermes gateway restart]
+    reason: "Parametrize case computes the legacy brand string ('Hermez'->'hermes gateway restart') to test brand-name recognition; the rebrand engine rewrites the production matcher to `argo gateway`, so it correctly no longer matches the old brand. Product regex is right (matches argo gateway restart/stop/start); only this legacy-brand recognition variant diverges. XFAIL the single computed-hermes variant; the argo variants pass."
+    category: X
