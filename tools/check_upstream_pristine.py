@@ -88,6 +88,13 @@ _SYNC_SUBJECT_PATTERNS: tuple[str, ...] = (
     "^Merge commit .* as 'upstream'",
 )
 
+# GitHub's "Squash and merge" on a sync PR (and `git subtree --squash` itself)
+# emit a commit whose subject begins with this. Such a commit is intentionally
+# NOT in _SYNC_SUBJECT_PATTERNS — a plain squash drops the `sync:` subject the
+# gate anchors to, so the just-synced upstream/ reads as drift. We match it only
+# to print a self-documenting recovery hint when the gate fails (see main()).
+_GITHUB_SQUASH_SUBJECT_PREFIX = "Squashed 'upstream/' changes "
+
 
 class UpstreamPristineError(RuntimeError):
     """Structural failure (exit 2) — repo is not in a state we can check."""
@@ -197,6 +204,16 @@ def _root_sha(repo_root: Path) -> str:
             step="root-sha",
         )
     return lines[-1]
+
+
+def _head_subject(repo_root: Path) -> str:
+    """Return HEAD's commit subject (git ``%s``), or '' if it can't be read.
+
+    Used only on the failure path to recognise a squash-merged sync so the
+    gate can print a self-documenting recovery hint. Never raises.
+    """
+    result = _run_git(["log", "-1", "--format=%s", "HEAD"], cwd=repo_root)
+    return result.stdout.strip() if result.returncode == 0 else ""
 
 
 def _sync_anchor_sha(repo_root: Path) -> str:
@@ -325,6 +342,18 @@ def main(argv: list[str] | None = None) -> int:
         )
         for path in drifted:
             print(f"  {path}", file=sys.stderr)
+        if _head_subject(repo_root).startswith(_GITHUB_SQUASH_SUBJECT_PREFIX):
+            print(
+                "\nhint: HEAD looks like a squash-merged sync "
+                "(\"Squashed 'upstream/' changes ...\"). A plain squash drops "
+                "the `sync:` subject this gate anchors to, so the just-synced "
+                "upstream/ reads as drift. Recover by rewording HEAD back to "
+                "`sync: upstream <sha> (<n> patches refreshed)` via "
+                "`git commit --amend`, or re-merge the sync PR preserving that "
+                "subject (merge commit / `gh pr merge --merge`) — never a plain "
+                "squash.",
+                file=sys.stderr,
+            )
         return 1
     if not args.quiet:
         short = last_sync_sha[:12]
