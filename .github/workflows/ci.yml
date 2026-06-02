@@ -381,7 +381,7 @@ jobs:
         run: |
           cd dist/argo
           uv venv .venv-test --python 3.11
-          uv pip install --python .venv-test/bin/python -e ".[all,dev]" pytest-socket
+          uv pip install --python .venv-test/bin/python -e ".[all,dev]"
 
       - name: Run dist/argo tests (slice ${{ matrix.slice }}/6)
         # Upstream's own runner (rebrand-renamed) — UCS-AC-6 forbids
@@ -394,13 +394,6 @@ jobs:
           OPENROUTER_API_KEY: ""
           OPENAI_API_KEY: ""
           NOUS_API_KEY: ""
-          # Hermetic gate: block outbound network so external-data drift (e.g. a
-          # model catalog changing a context length) can't redden CI. Tests fall
-          # back to their static catalogs and pass deterministically; the few
-          # that genuinely need the wire are re-granted it via
-          # pytest.mark.enable_socket (overlay/conftest.py +
-          # overlay/argo-allow-socket.yml). localhost + unix sockets stay open.
-          PYTEST_ADDOPTS: "--disable-socket --allow-unix-socket --allow-hosts=127.0.0.1,::1"
         run: |
           cd dist/argo
           .venv-test/bin/python scripts/run_tests_parallel.py --slice ${{ matrix.slice }}/6
