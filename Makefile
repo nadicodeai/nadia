@@ -183,14 +183,8 @@ test:
 .PHONY: dist-test
 dist-test: build
 	cd dist/argo && uv venv .venv-test --python 3.11
-	cd dist/argo && uv pip install --quiet --python .venv-test/bin/python -e ".[all,dev]" pytest-socket
-	# Hermetic gate: block outbound network so external-data drift (e.g. a model
-	# catalog changing a context length) can't redden CI. Tests fall back to
-	# their static catalogs and pass deterministically; the few that genuinely
-	# need the wire are re-granted it via overlay/argo-allow-socket.yml. localhost
-	# + unix sockets stay open (local servers, s6 FIFOs).
+	cd dist/argo && uv pip install --quiet --python .venv-test/bin/python -e ".[all,dev]"
 	cd dist/argo && OPENROUTER_API_KEY="" OPENAI_API_KEY="" NOUS_API_KEY="" \
-		PYTEST_ADDOPTS="--disable-socket --allow-unix-socket --allow-hosts=127.0.0.1,::1" \
 		.venv-test/bin/python scripts/run_tests_parallel.py $(DIST_TEST_ARGS)
 
 .PHONY: check-upstream-pristine
