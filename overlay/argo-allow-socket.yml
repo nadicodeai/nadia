@@ -1,0 +1,56 @@
+# overlay/argo-allow-socket.yml — network allow-list for argo's dist test gate.
+#
+# Companion to argo-xfail.yml, loaded by the same `overlay/conftest.py`
+# (which becomes `dist/argo/conftest.py` after `make build`).
+#
+# What this file is
+# -----------------
+# A whitelist of pytest nodeids that LEGITIMATELY require outbound network
+# and have no offline-equivalent fallback. The dist test gate runs hermetic
+# by default (`--disable-socket --allow-unix-socket --allow-hosts=127.0.0.1,::1`,
+# wired in the Makefile `dist-test` target and CI's `dist-argo-tests` job) so
+# that external-data drift (e.g. a model catalog changing MiniMax-M3's context
+# from 1M to 512K) can never redden CI: tests that can fall back to a static
+# catalog do so and pass deterministically. The handful of tests here genuinely
+# exercise live network features, so `conftest.py` re-grants them real network
+# via `pytest.mark.enable_socket` (pytest-socket). They run for real — the
+# coverage we want — at the cost of staying exposed to real outages/drift (the
+# gate is non-blocking, so that is tolerable for this small, documented set).
+#
+# Why allow (not skip or xfail)
+# -----------------------------
+# These test real network-dependent product behavior (skill-bundle fetch,
+# vision-capability routing, provider-label resolution) — we WANT that
+# verified, so we let them use the wire rather than masking them. `standards.md`
+# forbids XFAIL'ing flakes; these aren't flakes, they're integration paths.
+#
+# Entry shape
+# -----------
+# allow_socket:
+#   - nodeid: tests/<path>::<Class>::<test>   # exact, post-rename dist nodeid
+#     reason: one-line justification (which live endpoint, why no offline path)
+#
+# Lifecycle: prune an entry if upstream mocks the call (then it passes hermetic
+# and no longer needs the wire). New network tests surface as deterministic
+# SocketBlockedError failures under the hermetic default — add them here.
+
+allow_socket:
+  # --- skills hub: fetches skill bundles from skills.sh / GitHub over HTTP ---
+  - nodeid: tests/tools/test_skills_hub.py::TestSkillsShSource::test_fetch_accepts_common_skills_sh_prefix_typo
+    reason: "SkillsShSource fetches a skill bundle from skills.sh/GitHub over real HTTP; no offline fallback — blocked socket raises SocketConnectBlockedError."
+  - nodeid: tests/tools/test_skills_hub.py::TestSkillsShSource::test_fetch_delegates_to_github_source_and_relabels_bundle
+    reason: "Fetches + relabels a bundle from the GitHub skills source over real HTTP; no offline fallback."
+  - nodeid: tests/tools/test_skills_hub.py::TestSkillsShSource::test_inspect_accepts_common_skills_sh_prefix_typo
+    reason: "Inspects a remote skills.sh bundle over real HTTP; no offline fallback."
+  - nodeid: tests/tools/test_skills_hub.py::TestSkillsShSource::test_inspect_falls_back_to_repo_skill_catalog_when_slug_differs
+    reason: "Inspect path queries the remote skills source before falling back; the remote query needs the wire."
+  # --- vision routing: resolves model vision-capability via a live lookup ---
+  - nodeid: tests/agent/test_vision_routing_31179.py::TestTextOnlyMainSkippedForVision::test_text_only_main_skipped_when_no_aggregator
+    reason: "Vision auto-detect resolves model capabilities via a live provider lookup; offline fallback returns a client instead of skipping, so the assertion diverges."
+  - nodeid: tests/agent/test_vision_routing_31179.py::TestVisionToolGating::test_browser_vision_requires_both_browser_and_vision
+    reason: "Browser-vision gating depends on live vision-capability resolution; offline it mis-gates (returns True where False is asserted)."
+  - nodeid: tests/agent/test_vision_routing_31179.py::TestVisionToolGating::test_check_vision_false_with_text_only_main_and_no_aggregator
+    reason: "check_vision_requirements() depends on live capability resolution; offline it returns True instead of the asserted False."
+  # --- xAI provider label resolved via a live provider lookup ---
+  - nodeid: tests/argo_cli/test_xai_provider_labels.py::test_xai_oauth_provider_label_is_not_collapsed_to_api_key_label
+    reason: "get_label('xai') resolves the display label ('xAI') via a live provider lookup; offline it falls back to the raw 'xai' key and the assertion diverges."

@@ -53,12 +53,10 @@ help:
 	@echo "  make update-smoke-telegram  Docker /update mid-flight (IU-AC-6; M5.3 Part B, currently SKIPPED)"
 	@echo ""
 	@echo "Patch ops:"
-	@echo "  make patch-new NAME=<slug>   Start a new patch (M3.1)"
-	@echo "  make patch-refresh           quilt refresh current patch (M3.1)"
-	@echo "  make patch-list              List patches in series (M3.1)"
+	@echo "  make patch-list              List the applied patch series (author/edit with quilt — see AGENTS.md)"
 
 # -----------------------------------------------------------------------------
-# Build (M1.8 wires the real implementation)
+# Build
 # -----------------------------------------------------------------------------
 
 # Wire the tracked .githooks/ as the repo's hook dir. The pre-commit hook
@@ -73,12 +71,7 @@ install-hooks:
 
 .PHONY: build
 build:
-	@if [ -x tools/build.py ]; then \
-		python tools/build.py; \
-	else \
-		echo "tools/build.py not yet implemented (M1.8)"; \
-		exit 1; \
-	fi
+	python tools/build.py
 
 .PHONY: clean
 clean:
@@ -86,15 +79,10 @@ clean:
 
 .PHONY: leakage-static
 leakage-static:
-	@if [ -x tools/verify_no_leakage.py ]; then \
-		python tools/verify_no_leakage.py dist/argo/; \
-	else \
-		echo "tools/verify_no_leakage.py not yet implemented (M2.2)"; \
-		exit 1; \
-	fi
+	python tools/verify_no_leakage.py dist/argo/
 
 # -----------------------------------------------------------------------------
-# Sync workflow (M4.2 wires the real implementation)
+# Sync workflow
 # -----------------------------------------------------------------------------
 
 .PHONY: sync sync-resume sync-reset
@@ -108,7 +96,7 @@ sync-reset:
 	python tools/sync.py --reset
 
 # -----------------------------------------------------------------------------
-# Docker (M5 wires the real implementation)
+# Docker
 # -----------------------------------------------------------------------------
 
 # M5.1 + issue #2: build the runtime image via multi-stage Dockerfile.
@@ -160,24 +148,21 @@ publish:
 	scripts/publish.sh
 
 # -----------------------------------------------------------------------------
-# Quality gates (M4.3 wires real implementations)
+# Quality gates — mirror the `lint (ruff)` and `typecheck (ty)` CI jobs exactly,
+# so local `make lint` / `make typecheck` give the same verdict CI does.
 # -----------------------------------------------------------------------------
 
 .PHONY: lint
 lint:
-	@echo "make lint: not yet implemented (M4.3)"
+	ruff check .
 
 .PHONY: typecheck
 typecheck:
-	@echo "make typecheck: not yet implemented (M4.3)"
+	ty check overlay/ tools/
 
 .PHONY: test
 test:
-	@if command -v pytest > /dev/null && [ -d tests ]; then \
-		pytest -m 'not integration'; \
-	else \
-		echo "make test: pytest not available or no tests dir (M4.3)"; \
-	fi
+	pytest -m 'not integration'
 
 # The renamed upstream test suite run against dist/argo/, EXACTLY as CI's
 # `dist-argo-tests` job does. This is the ONLY gate that exercises dist/argo
@@ -198,8 +183,14 @@ test:
 .PHONY: dist-test
 dist-test: build
 	cd dist/argo && uv venv .venv-test --python 3.11
-	cd dist/argo && uv pip install --quiet --python .venv-test/bin/python -e ".[all,dev]"
+	cd dist/argo && uv pip install --quiet --python .venv-test/bin/python -e ".[all,dev]" pytest-socket
+	# Hermetic gate: block outbound network so external-data drift (e.g. a model
+	# catalog changing a context length) can't redden CI. Tests fall back to
+	# their static catalogs and pass deterministically; the few that genuinely
+	# need the wire are re-granted it via overlay/argo-allow-socket.yml. localhost
+	# + unix sockets stay open (local servers, s6 FIFOs).
 	cd dist/argo && OPENROUTER_API_KEY="" OPENAI_API_KEY="" NOUS_API_KEY="" \
+		PYTEST_ADDOPTS="--disable-socket --allow-unix-socket --allow-hosts=127.0.0.1,::1" \
 		.venv-test/bin/python scripts/run_tests_parallel.py $(DIST_TEST_ARGS)
 
 .PHONY: check-upstream-pristine
@@ -247,18 +238,11 @@ fde-vm-image:
 	bash scripts/fde-vm-image.sh
 
 # -----------------------------------------------------------------------------
-# Patch operations (M3.1 wires the real implementations)
+# Patch operations — author/edit patches with quilt directly (see AGENTS.md
+# "Quilt cheatsheet"); make patch-list shows the applied series.
 # -----------------------------------------------------------------------------
 
-.PHONY: patch-new patch-refresh patch-list
-
-patch-new:
-	@echo "make patch-new NAME=<slug>: not yet implemented (M3.1)"
-	@exit 1
-
-patch-refresh:
-	@echo "make patch-refresh: not yet implemented (M3.1)"
-	@exit 1
+.PHONY: patch-list
 
 patch-list:
 	@if [ -f patches/series ]; then \
