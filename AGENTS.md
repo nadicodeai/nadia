@@ -90,8 +90,10 @@ A typical weekly sync:
    3. Edit the conflicting file to apply what the `.rej` wanted; delete the `.rej`.
    4. `quilt refresh` — regenerate the patch **from the resolved file**.
    5. `cd .. && make sync-resume`.
-4. `make sync-resume` — `quilt refresh`, copies refreshed patches back to `patches/`, replays the series, runs the `make build` gate, and **commits**. The commit is the tool's job, not yours.
+4. `make sync-resume` — `quilt refresh`, detects the refreshed patches (it diffs `patches/` against HEAD — quilt rewrites `patches/NNNN.patch` in place via `QUILT_PATCHES`, there is no copy-back), replays the series, runs the `make build` gate, and **commits**, staging all of `patches/` so every refreshed/new patch lands. The commit is the tool's job, not yours.
 5. If a sync attempt is abandoned, `make sync-reset` wipes `.sync-workdir/`.
+
+A conflict can also surface one stage **earlier — in `git subtree pull` itself** (upstream rewrote a file the old pin carried; e.g. a renamed test). `make sync` then stops with a `[subtree-pull]` error and leaves `upstream/` half-merged (a `UU` path). Resolve it by taking **upstream's** version (`git checkout --theirs <path>`; we never legitimately edit `upstream/`), `git add` it, `git commit` to finish the merge (this preserves the `git-subtree-split:` trailer the tool re-reads), then re-run `make sync`. Committing *that merge* is the tool's own printed instruction — it is NOT the forbidden hand-commit below, which is about the final `sync:` commit that `sync-resume` still owns and gates on `make build`.
 
 **MUST NOT, during a sync:**
 - `quilt refresh` while the conflicting file is pristine/unresolved — it silently **drops the hunk** from the patch (the exact bug that shipped a broken `deploy-site.yml` gate).

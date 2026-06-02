@@ -160,7 +160,7 @@ def test_run_resume_treats_fully_applied_exit_2_as_success(
     # Stub every subprocess-driven helper the resume path touches.
     monkeypatch.setattr(sync, "_quilt_refresh_top", lambda: refresh_result)
     monkeypatch.setattr(sync, "_quilt_push_all", lambda: push_result)
-    monkeypatch.setattr(sync, "_copy_patches_back", lambda: ["0005-foo.patch"])
+    monkeypatch.setattr(sync, "_refreshed_patches", lambda _repo: ["0005-foo.patch"])
     monkeypatch.setattr(sync, "_run_make_build", lambda _repo: None)
     commit_calls: list[tuple[str, list[str], bool]] = []
 
@@ -199,7 +199,7 @@ def test_run_resume_genuine_quilt_failure_still_raises(
 
     monkeypatch.setattr(sync, "_quilt_refresh_top", lambda: refresh_result)
     monkeypatch.setattr(sync, "_quilt_push_all", lambda: push_result)
-    monkeypatch.setattr(sync, "_copy_patches_back", lambda: [])
+    monkeypatch.setattr(sync, "_refreshed_patches", lambda _repo: [])
     monkeypatch.setattr(sync, "_quilt_top", lambda: "patches/0008-foo.patch")
     # Should never be reached on this path; assert so if it ever is.
     monkeypatch.setattr(
@@ -281,7 +281,7 @@ def test_run_default_build_failure_writes_resumable_state_first(
     monkeypatch.setattr(sync, "_populate_sync_workdir", lambda: None)
     monkeypatch.setattr(sync, "_read_series", lambda: ["0001-foo.patch"])
     monkeypatch.setattr(sync, "_quilt_push_all", lambda: _completed(0))
-    monkeypatch.setattr(sync, "_copy_patches_back", lambda: [])
+    monkeypatch.setattr(sync, "_refreshed_patches", lambda _repo: [])
     # _stage_and_commit / _clear_sync_workdir must NOT run on the failure path.
     monkeypatch.setattr(
         sync,
@@ -345,7 +345,7 @@ def test_run_resume_build_failure_writes_resumable_state_first(
         "_quilt_push_all",
         lambda: _completed(2, stderr="File series fully applied, ends at patch X\n"),
     )
-    monkeypatch.setattr(sync, "_copy_patches_back", lambda: [])
+    monkeypatch.setattr(sync, "_refreshed_patches", lambda _repo: [])
     monkeypatch.setattr(
         sync,
         "_stage_and_commit",
@@ -376,3 +376,85 @@ def test_run_resume_build_failure_writes_resumable_state_first(
     assert persisted is not None
     assert persisted["phase"] == "verify-build"
     assert persisted["upstream_sha"] == new_sha
+
+
+# ---------------------------------------------------------------------------
+# _refreshed_patches + _stage_and_commit — conflict-resolution patch staging.
+#
+# BUG FIX: quilt operates on the repo's patches/ dir directly during a sync
+# (QUILT_PATCHES → patches/), so a `quilt refresh` resolving a conflict
+# rewrites patches/NNNN.patch in place. The old _copy_patches_back() looked in
+# a non-existent .sync-workdir/patches/, always returned [], and _stage_and_commit
+# never staged the refreshed patch — so the sync commit carried the STALE patch
+# while the (working-tree-driven) verification build passed deceptively. A fresh
+# checkout of that commit would then fail to apply the patch.
+# ---------------------------------------------------------------------------
+
+
+def _git_init_repo(path: Path) -> None:
+    """Initialise a throwaway git repo with deterministic identity + no hooks."""
+    subprocess.run(["git", "init", "-q", str(path)], check=True)
+    for k, v in (
+        ("user.email", "t@example.com"),
+        ("user.name", "Test"),
+        ("commit.gpgsign", "false"),
+        ("core.hooksPath", "/dev/null"),  # never fire the real pre-commit gate
+    ):
+        subprocess.run(["git", "-C", str(path), "config", k, v], check=True)
+
+
+def test_refreshed_patches_detects_modified_and_new_patch(tmp_path: Path) -> None:
+    """A quilt refresh rewrites patches/ in place; detection diffs against HEAD."""
+    repo = tmp_path
+    _git_init_repo(repo)
+    patches = repo / "patches"
+    patches.mkdir()
+    tracked = patches / "0005-foo.patch"
+    tracked.write_text("hunk before\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(repo), "add", "."], check=True)
+    subprocess.run(["git", "-C", str(repo), "commit", "-qm", "seed"], check=True)
+
+    # Clean tree → nothing refreshed.
+    assert sync._refreshed_patches(repo) == []
+
+    # Simulate `quilt refresh`: rewrite a tracked patch in place...
+    tracked.write_text("hunk AFTER conflict resolution\n", encoding="utf-8")
+    # ...and a brand-new patch quilt could add (untracked).
+    (patches / "0099-new.patch").write_text("new\n", encoding="utf-8")
+
+    assert sync._refreshed_patches(repo) == ["0005-foo.patch", "0099-new.patch"]
+
+
+def test_stage_and_commit_includes_refreshed_patch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The refreshed patch MUST land in the sync commit (the core regression)."""
+    repo = tmp_path
+    _git_init_repo(repo)
+    (repo / "upstream").mkdir()
+    commit_file = repo / "upstream" / ".commit"
+    commit_file.write_text("old-sha\n", encoding="utf-8")
+    patches = repo / "patches"
+    patches.mkdir()
+    patch = patches / "0005-foo.patch"
+    patch.write_text("stale hunk\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(repo), "add", "."], check=True)
+    subprocess.run(["git", "-C", str(repo), "commit", "-qm", "seed"], check=True)
+
+    monkeypatch.setattr(sync, "UPSTREAM_COMMIT_FILE", commit_file)
+    commit_file.write_text("new-sha\n", encoding="utf-8")
+    # Simulate the in-place quilt refresh of the resolved patch.
+    patch.write_text("resolved hunk\n", encoding="utf-8")
+
+    sync._stage_and_commit(repo, "newsha1234567890", ["0005-foo.patch"], amend=False)
+
+    committed = subprocess.run(
+        ["git", "-C", str(repo), "show", "HEAD:patches/0005-foo.patch"],
+        capture_output=True, text=True, check=True,
+    ).stdout
+    assert committed == "resolved hunk\n", "refreshed patch was not committed"
+    subject = subprocess.run(
+        ["git", "-C", str(repo), "log", "-1", "--format=%s"],
+        capture_output=True, text=True, check=True,
+    ).stdout.strip()
+    assert subject.startswith("sync: upstream "), subject
