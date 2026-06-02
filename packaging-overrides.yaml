@@ -48,6 +48,17 @@ apt_exceptions:
       /usr/local/bin), leaving a dangling `python`. Same root cause as the
       python3 entry above. Issue #2.
     issue: "#2"
+  - package: python3-venv
+    kind: base-provided
+    why: >-
+      Upstream's debian:13.4 base apt-installs python3-venv so its system
+      python3 can create virtualenvs (Debian splits ensurepip/venv out of the
+      core python3 package). The fork's python:3.13-slim-bookworm base ships
+      venv + ensurepip in the stdlib, so `python -m venv /opt/argo/.venv` (the
+      runtime venv) works with no apt package. Mirroring it would be a no-op at
+      best. Same root cause as the python3 / python-is-python3 entries above.
+      Issue #2.
+    issue: "#2"
   - package: docker-cli
     kind: omit
     why: >-
