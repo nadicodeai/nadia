@@ -318,6 +318,38 @@ def test_clean_after_sync_commit_exits_zero(tmp_path: Path) -> None:
     assert "upstream pristine" in result.stdout
 
 
+def test_squash_merged_sync_reports_drift_with_recovery_hint(tmp_path: Path) -> None:
+    """A squash-merged sync ("Squash and merge") → exit 1 + a recovery hint.
+
+    GitHub's plain squash rewrites the merge subject to `Squashed 'upstream/'
+    changes ...`, which is NOT a sync anchor — so the freshly-synced upstream/
+    reads as drift (the FR-15 reddening hit on PR #17). The gate MUST stay
+    strict (still exit 1), but the failure MUST name the squash and tell the
+    operator how to recover (reword HEAD to `sync: ...`).
+    """
+    fake = tmp_path / "squash-merged-repo"
+    fake.mkdir()
+    _scaffold_synced_repo(fake)
+    # Simulate a NEWER upstream landed via GitHub "Squash and merge": one commit
+    # carrying the new upstream/ tree, whose subject is GitHub's squash default
+    # rather than a `sync:` subject.
+    (fake / "upstream" / "README.md").write_text(
+        "upstream readme v3\n", encoding="utf-8"
+    )
+    (fake / "upstream" / ".commit").write_text("1ffa22ee\n", encoding="utf-8")
+    _commit_all(fake, "Squashed 'upstream/' changes from 458a94e4..1ffa22ee (#17)")
+
+    result = _run("--repo-root", str(fake), cwd=fake)
+    assert result.returncode == 1, (
+        f"expected 1 (drift — gate stays strict), got {result.returncode}\n"
+        f"stdout: {result.stdout}\nstderr: {result.stderr}"
+    )
+    assert "drift detected" in result.stderr
+    # Self-documenting recovery hint: names the squash and the `sync:` fix.
+    assert "squash-merged sync" in result.stderr
+    assert "sync:" in result.stderr
+
+
 def test_unrelated_bootstrap_subject_not_treated_as_anchor(tmp_path: Path) -> None:
     """A `feat(...bootstrap_release_branch.sh)` commit is NOT a sync anchor.
 

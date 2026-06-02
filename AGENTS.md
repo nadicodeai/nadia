@@ -125,6 +125,7 @@ Other useful queries: `quilt series` (list), `quilt top` (which patch is on top)
 ## Hard rules
 
 - **Never edit `upstream/`.** Use a patch. CI's `upstream-pristine` job (FR-15) blocks PRs that touch it outside `make sync`.
+- **Merge sync PRs preserving the `sync:` subject** — a merge commit, or `gh pr merge --squash --subject "sync: …"`. A *plain* squash rewrites the subject to `Squashed 'upstream/' changes …`, which FR-15 doesn't recognise as a sync anchor, so it reddens `main` against the just-synced `upstream/`. Recover by amending HEAD back to `sync: …` (the gate's failure message says exactly this).
 - **Never commit `dist/` or `.sync-workdir/`.**
 - **Patches and overlay files use `hermes` names.** The engine renames at build.
 - **Patch format is `diff -up --git`** (handles binary, modes, renames). Enforced by `.quiltrc`.

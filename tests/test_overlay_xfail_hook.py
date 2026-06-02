@@ -15,6 +15,9 @@ What this test asserts
    in the same file stay clean.
 5. **Malformed entries are skipped silently.** Production safety —
    never blow up collection because of a bad manifest line.
+6. **enable_socket injection.** Nodeids in `argo-allow-socket.yml`
+   receive the `enable_socket` marker; siblings don't; a missing or
+   malformed manifest is a safe no-op.
 
 Strategy
 --------
@@ -200,3 +203,86 @@ def test_invalid_yaml_is_treated_as_empty_manifest(
 
     # No xfails applied because the manifest didn't parse.
     result.assert_outcomes(passed=1, failed=1, xfailed=0)
+
+
+# --- argo-allow-socket.yml / enable_socket marker injection -----------------
+#
+# Marker presence is asserted via `request.node.get_closest_marker(...)`, so
+# these need NO pytest-socket install in the runner env — we test that the hook
+# applies the marker, not pytest-socket's blocking behaviour (that is covered by
+# the dist gate itself running hermetic).
+
+
+def _write_allow_socket_manifest(pytester: pytest.Pytester, content: str) -> None:
+    """Write argo-allow-socket.yml at pytester's rootdir (next to conftest)."""
+    (pytester.path / "argo-allow-socket.yml").write_text(content, encoding="utf-8")
+
+
+def _write_marker_introspect_tests(pytester: pytest.Pytester) -> str:
+    """Write a tests/ file whose tests assert on their own enable_socket marker.
+
+    Returns the nodeid of the test that EXPECTS the marker, so a manifest can
+    name it.
+    """
+    (pytester.path / "tests").mkdir(exist_ok=True)
+    (pytester.path / "tests" / "test_socket_sample.py").write_text(
+        "def test_listed(request):\n"
+        "    assert request.node.get_closest_marker('enable_socket') is not None\n"
+        "\n"
+        "def test_unlisted(request):\n"
+        "    assert request.node.get_closest_marker('enable_socket') is None\n",
+        encoding="utf-8",
+    )
+    return "tests/test_socket_sample.py::test_listed"
+
+
+def test_allow_socket_marks_only_listed_nodeid(pytester: pytest.Pytester) -> None:
+    """A nodeid in argo-allow-socket.yml gets enable_socket; siblings don't."""
+    _stage_conftest(pytester)
+    listed = _write_marker_introspect_tests(pytester)
+    _write_allow_socket_manifest(
+        pytester,
+        "allow_socket:\n"
+        f"  - nodeid: {listed}\n"
+        "    reason: needs the wire for this assertion\n",
+    )
+
+    result = pytester.runpytest("-q", "--no-header")
+
+    # test_listed sees the marker, test_unlisted does not — both assertions pass.
+    result.assert_outcomes(passed=2, failed=0)
+
+
+def test_missing_allow_socket_manifest_applies_no_marker(
+    pytester: pytest.Pytester,
+) -> None:
+    """No argo-allow-socket.yml → no enable_socket marker, no crash."""
+    _stage_conftest(pytester)
+    _write_marker_introspect_tests(pytester)
+    # Deliberately write NO allow-socket manifest.
+
+    result = pytester.runpytest("-q", "--no-header")
+
+    # test_listed expects a marker and fails (none applied); test_unlisted passes.
+    # The point: collection didn't crash and no marker was injected.
+    result.assert_outcomes(passed=1, failed=1)
+
+
+def test_malformed_allow_socket_manifest_is_skipped_silently(
+    pytester: pytest.Pytester,
+) -> None:
+    """Bad allow-socket entries must not crash; well-formed ones still apply."""
+    _stage_conftest(pytester)
+    listed = _write_marker_introspect_tests(pytester)
+    _write_allow_socket_manifest(
+        pytester,
+        "allow_socket:\n"
+        "  - just-a-string\n"  # not a mapping — dropped
+        "  - nodeid: 123\n"  # nodeid not a str — dropped
+        f"  - nodeid: {listed}\n"  # well-formed — applies
+        "    reason: survives malformed neighbours\n",
+    )
+
+    result = pytester.runpytest("-q", "--no-header")
+
+    result.assert_outcomes(passed=2, failed=0)
