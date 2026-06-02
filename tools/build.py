@@ -113,12 +113,23 @@ def _copy_upstream() -> None:
         raise BuildError("copy-upstream", f"upstream/ not found at {UPSTREAM_DIR}")
     # shutil.copytree preserves modes by default; we exclude .commit and any
     # vcs metadata that might leak in.
+    #
+    # Skip Python bytecode caches: running tests against upstream/ (e.g.
+    # `PYTHONPATH=upstream pytest`) leaves untracked __pycache__/*.pyc behind,
+    # and copying them verbatim lands compiled artifacts in dist/argo/ — which
+    # the China-strip step then trips on (a stripped *.py whose orphan *.pyc
+    # survives the prune reads as un-denylisted drift). They are never source.
     for item in UPSTREAM_DIR.iterdir():
         if item.name == ".commit":
             continue  # tracking file, not part of the source tree
+        if item.name == "__pycache__" or item.suffix in (".pyc", ".pyo"):
+            continue  # bytecode cache / build artifact — never ship
         dst = DIST_DIR / item.name
         if item.is_dir():
-            shutil.copytree(item, dst, symlinks=True)
+            shutil.copytree(
+                item, dst, symlinks=True,
+                ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo"),
+            )
         else:
             shutil.copy2(item, dst)
 

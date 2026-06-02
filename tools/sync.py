@@ -313,9 +313,14 @@ def _populate_sync_workdir() -> None:
     for item in UPSTREAM_DIR.iterdir():
         if item.name == ".commit":
             continue  # tracking file, not part of the source tree
+        if item.name == "__pycache__" or item.suffix in (".pyc", ".pyo"):
+            continue  # bytecode cache (e.g. from running tests against upstream/)
         dst = SYNC_WORKDIR / item.name
         if item.is_dir():
-            shutil.copytree(item, dst, symlinks=True)
+            shutil.copytree(
+                item, dst, symlinks=True,
+                ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo"),
+            )
         else:
             shutil.copy2(item, dst)
 
@@ -424,31 +429,34 @@ _CONFLICT_RECIPE = (
 )
 
 
-def _copy_patches_back() -> list[str]:
-    """Copy any refreshed patches from `.sync-workdir/patches/` to `patches/`.
+def _refreshed_patches(repo: Path) -> list[str]:
+    """Return the patch files that differ from HEAD (i.e. were refreshed).
 
-    Returns the list of patch filenames touched (relative to `patches/`).
-    Quilt rewrites only the patch files it refreshes; we copy any patch
-    that differs from the repo's copy.
+    Quilt operates directly on the repo's ``patches/`` dir during a sync —
+    ``QUILT_PATCHES`` points there (see :func:`_quilt_env`), so a ``quilt
+    refresh`` that resolves a conflict rewrites ``patches/NNNN.patch`` *in
+    place*. There is no separate ``.sync-workdir/patches/`` to copy back from;
+    the refreshed patch shows up as a plain working-tree change (or, for a
+    brand-new patch, as an untracked file) under ``patches/``.
+
+    Detecting it that way — diffing ``patches/`` against HEAD — is what makes
+    :func:`_stage_and_commit` actually include the refreshed patch in the sync
+    commit and report an accurate ``(N patches refreshed)`` count. The old
+    copy-back logic looked in a directory that never exists, always returned
+    ``[]``, and silently dropped the refreshed patch from the commit (the
+    working tree stayed correct, so the verification build passed deceptively —
+    but a fresh checkout of that commit would fail to apply the patch).
     """
-    workdir_patches = SYNC_WORKDIR / "patches"
-    if not workdir_patches.is_dir():
-        return []
-    touched: list[str] = []
-    for patch in workdir_patches.iterdir():
-        if patch.name in {"series", ".quilt_patches", ".quilt_series"}:
-            continue
-        if not patch.is_file():
-            continue
-        repo_copy = PATCHES_DIR / patch.name
-        if not repo_copy.is_file():
-            continue
-        a = patch.read_bytes()
-        b = repo_copy.read_bytes()
-        if a != b:
-            shutil.copy2(patch, repo_copy)
-            touched.append(patch.name)
-    return sorted(touched)
+    names: set[str] = set()
+    tracked = _git_out(repo, "diff", "--name-only", "HEAD", "--", "patches")
+    untracked = _git_out(
+        repo, "ls-files", "--others", "--exclude-standard", "--", "patches"
+    )
+    for line in (*tracked.splitlines(), *untracked.splitlines()):
+        line = line.strip()
+        if line.endswith(".patch"):
+            names.add(Path(line).name)
+    return sorted(names)
 
 
 # ---------------------------------------------------------------------------
@@ -483,8 +491,11 @@ def _stage_and_commit(
     """Stage upstream/, upstream/.commit, refreshed patches; commit (or amend)."""
     _git(repo, "add", "upstream", check=False)
     _git(repo, "add", str(UPSTREAM_COMMIT_FILE.relative_to(repo)), check=False)
-    for name in refreshed_patches:
-        _git(repo, "add", f"patches/{name}", check=False)
+    # Stage the whole patches/ dir so every refreshed/new patch lands in the
+    # commit. The sync precondition guarantees a clean tree, so the only
+    # patches/ changes here are quilt refreshes from conflict resolution.
+    # (refreshed_patches drives the commit message; this guarantees the files.)
+    _git(repo, "add", "patches", check=False)
 
     msg = (
         f"sync: upstream {_short_sha(upstream_sha)} "
@@ -575,7 +586,7 @@ def run_default(upstream_url: str, branch: str) -> int:
                 f"{_CONFLICT_RECIPE}",
                 step="patches",
             )
-        refreshed = _copy_patches_back()
+        refreshed = _refreshed_patches(repo)
 
     # 4. Verification build. Record a resumable state FIRST: if `make build`
     # fails, the subtree merge commit is already on HEAD (un-amended) and the
@@ -642,9 +653,9 @@ def run_resume() -> int:
             step="resume-refresh",
         )
 
-    # 2. Copy refreshed patches back to patches/
-    refreshed = _copy_patches_back()
-    _log(f"refreshed patches copied back: {refreshed or '(none changed)'}")
+    # 2. Detect refreshed patches (quilt refresh rewrites patches/ in place).
+    refreshed = _refreshed_patches(repo)
+    _log(f"refreshed patches: {refreshed or '(none changed)'}")
 
     # 3. Re-run quilt push -a to confirm the remainder applies.
     #    Quilt exits 2 with "File series fully applied" on stderr when the
