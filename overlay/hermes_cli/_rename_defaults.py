@@ -65,6 +65,7 @@ SKIP_CONTEXTS: tuple[str, ...] = (
     '(?i)\\bnous[- ]hermes[\\w./-]*',
     '(?i)\\bhermes(?:[- .]?[234][\\w.:+-]*|_[234][\\w.:+-]+)',
     'hermes\\[-_ \\]\\?\\[34\\]',
+    'Based on Hermes Agent by Nous Research',
 )
 
 PROBE_TOKEN: str = 'hermes'
