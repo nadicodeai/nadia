@@ -7,8 +7,13 @@
 mappings:
   # --- URL-form mapping (longest first; must precede bare hermes-agent) ---
   # GitHub URLs for the upstream Hermes repo map to this fork's GitHub repo
-  # (nadicodeai/argo). nadicode does not own nousresearch.com, so no
-  # docs/pypi domains are rewritten.
+  # (nadicodeai/argo). nadicode does not own nousresearch.com, so the upstream
+  # PyPI package (pypi.org/p/hermes-agent) and the bare upstream host are NOT
+  # rewritten. The ONE nousresearch.com exception is the self-referential DOCS
+  # path (hermes-agent.nousresearch.com/docs/...), which the fork now mirrors at
+  # its own live site docs.nadicode.ai/argo/ — see the docs mapping below and the
+  # amended skip_contexts URL guard. Whole-file-excepted markdown keeps its
+  # upstream /docs links (the exception short-circuits the mapping).
   #
   # Install-script self-reference URLs additionally need their BRANCH segment
   # flipped main -> release: on the fork the runnable rebranded tree and the
@@ -20,6 +25,25 @@ mappings:
   # README*/CONTRIBUTING are engine-excepted, so their one-liners are handled by
   # patch 0002 instead. See tests/test_install_url_release_branch.py.
   - {from: "NousResearch/hermes-agent/main/scripts/install", to: "nadicodeai/argo/release/scripts/install"}
+  # --- Self-referential Argo docs site (host + /docs baseUrl swap) ---
+  # Upstream Docusaurus is host `hermes-agent.nousresearch.com` + baseUrl
+  # '/docs/'. The Argo fork now publishes the RENAMED docs (built from
+  # dist/argo/website/) at host `docs.nadicode.ai` + baseUrl '/argo/'. Rewrite
+  # the host AND the /docs prefix together so e.g.
+  #   .../docs/user-guide/cli -> docs.nadicode.ai/argo/user-guide/cli
+  # (a naive host-only swap would wrongly yield docs.nadicode.ai/docs/...). The
+  # engine sorts longest-from-first, so this key fires before the bare org slug
+  # and bare hermes-agent keys. The skip_contexts URL guard below was amended
+  # (third lookahead alternative) to RELEASE this /docs path from preservation so
+  # this mapping can fire. The BARE host (the OpenRouter HTTP-Referer attribution
+  # header), /install.sh, /llms.txt, and the img.shields.io Docs badge label stay
+  # preserved (not /docs paths / different host). Docusaurus url/baseUrl are NOT
+  # rewritten here (not /docs URLs) — they are flipped via env-override in
+  # packaging-strip.yaml content_edits. Whole-file-excepted markdown (README*.md,
+  # CONTRIBUTING.md, argo-already-has-routines.md) is NOT reached by this mapping
+  # (the exception short-circuits before skip_contexts), so its /docs links stay
+  # on the upstream host as MIT attribution.
+  - {from: "hermes-agent.nousresearch.com/docs", to: "docs.nadicode.ai/argo"}
   # The Windows-native docs invoke install.ps1 with `-Branch main`, which would
   # install the (non-runnable) workshop branch. install.ps1 now defaults to
   # release (patch 0011); flip the documented flag to match. Only appears in the
@@ -64,7 +88,7 @@ exceptions:
   - path: ".argo/**"
     why: "Build/sync manifests record the pre-rename file paths (hermes_cli/foo.py → argo_cli/foo.py). They are intentionally metadata about the rename and ship with the artifact for introspection (argo --version --verbose surfaces them)."
   - path: "*.egg-info/**"
-    why: "setuptools-generated metadata produced by `pip install -e .` inside the runtime Docker stage (issue #4 surfaced this). PKG-INFO embeds README.md / README.zh-CN.md verbatim, which are themselves excepted (fork-notice block, attribution badges, upstream docs links — MIT attribution requirement, no nadicode-hosted docs site). The egg-info is regenerated on every install and is never tracked in source. Excluding it here keeps `argo doctor --static` exit-zero clean for runtime users."
+    why: "setuptools-generated metadata produced by `pip install -e .` inside the runtime Docker stage (issue #4 surfaced this). PKG-INFO embeds README.md / README.zh-CN.md verbatim, which are themselves whole-file engine-excepted (fork-notice block, attribution badges, and the upstream docs links — README docs links intentionally stay on hermes-agent.nousresearch.com/docs as MIT attribution; patch 0014 rebrands only command examples + config paths, NOT URLs). The egg-info is regenerated on every install and is never tracked in source. Excluding it here keeps `argo doctor --static` exit-zero clean for runtime users."
   - path: ".gitleaks.toml"
     why: "Fork-owned overlay file. Allowlist regex deliberately matches historical hermes_cli/* paths (pre-rename) so gitleaks ignores files present in git history that no longer exist in HEAD. Naming those paths is required for the allowlist to work — the rename engine MUST NOT collapse `hermes_cli` here."
   - path: "tests/test_full_rename_config.py"
@@ -74,15 +98,15 @@ exceptions:
   - path: "*/_rename_defaults.py"
     why: "Build-time generated constants module (tools/generate_rename_defaults.py) baking argo-rename.yaml's mappings + exceptions + skip_contexts into a Python module so `argo doctor --static` works in the published image where the yaml is absent (issue #4). The file legitimately contains every hermes-* FROM key as a string literal — it is the rename config in Python form — so the engine MUST NOT rewrite its contents. The single-level `*/_rename_defaults.py` glob matches both the pre-rename overlay path (hermes_cli/_rename_defaults.py) and the post-rename dist path (argo_cli/_rename_defaults.py)."
   - path: "README.md"
-    why: "Fork-notice block, attribution badges, and docs links intentionally reference upstream (NousResearch/hermes-agent, hermes-agent.nousresearch.com). MIT license requires attribution and there is no Nadicode-hosted docs site."
+    why: "Whole-file engine exception. Attribution (fork-notice block, License + Fork-of badges, the NousResearch/hermes-agent repo slug) AND the docs links (hermes-agent.nousresearch.com/docs/...) intentionally reference upstream — MIT license requires attribution and the README is part of that attribution surface. Patch 0014 rebrands ONLY the copy-paste command examples (`hermes`->`argo`) and config paths (~/.hermes->~/.argo); it deliberately leaves the docs URLs upstream (see patch 0014 header + tests/test_readme_commands_rebranded.py). The /docs rename mapping does NOT reach this file (exception short-circuits)."
   - path: "README.zh-CN.md"
     why: "Same fork-notice and attribution requirements as README.md, translated."
   - path: "CONTRIBUTING.md"
-    why: "Points contributors at upstream docs site (hermes-agent.nousresearch.com) which is where the documentation actually lives."
+    why: "Whole-file engine exception. The docs links (hermes-agent.nousresearch.com/docs) and the bare-host 'Documentation site' note stay on the upstream host — the /docs rename mapping does NOT reach this file (exception short-circuits). The upstream clone URL (NousResearch/hermes-agent.git), Issues links, and discord.gg/NousResearch stay upstream per MIT attribution."
   - path: "AGENTS.md"
     why: "References upstream's hermes-example-plugins repo for plugin samples; no nadicode fork of that repo exists."
   - path: "argo-already-has-routines.md"
-    why: "Planning/comparison document that references upstream docs URLs for context."
+    why: "Whole-file engine exception. Planning/comparison document referencing the upstream docs URL (hermes-agent.nousresearch.com/docs/guides/automation-templates) for context; the /docs rename mapping does NOT reach this file (exception short-circuits), so the link stays on the upstream host — intentional, not a deploy surface."
   - path: ".github/workflows/skills-index.yml"
     why: "Fork-specific gate comments name hermes-agent.nousresearch.com when explaining why the upstream docs deploy is disabled."
   - path: ".github/workflows/deploy-site.yml"
@@ -95,12 +119,16 @@ exceptions:
 skip_contexts:
   # Preserve every URL whose host/path is NOT something nadicode controls.
   # We only rewrite GitHub URLs for the upstream hermes-agent repo (handled by
-  # the NousResearch/hermes-agent → nadicodeai/argo mapping above) and
-  # the hermes-agent.local devhost. Everything else — hermes-agent.nousresearch.com
-  # (real upstream docs site, owned by NousResearch), pypi.org/p/hermes-agent
-  # (real upstream PyPI package), img.shields.io/badge/Docs-hermes (badge label
-  # that should mirror upstream), and NousResearch/hermes-example-plugins
-  # (no nadicode fork exists) — is preserved as-is.
+  # the NousResearch/hermes-agent → nadicodeai/argo mapping above), the
+  # hermes-agent.local devhost, AND the self-referential DOCS path
+  # hermes-agent.nousresearch.com/docs (rewritten to docs.nadicode.ai/argo by the
+  # docs mapping above — the fork now hosts its own docs site, so that path is
+  # RELEASED from preservation via the third lookahead alternative below).
+  # Everything else is preserved as-is: the BARE host
+  # hermes-agent.nousresearch.com (the OpenRouter HTTP-Referer attribution header)
+  # and its /install.sh + /llms.txt paths, pypi.org/p/hermes-agent (real upstream
+  # PyPI package), img.shields.io/badge/Docs-hermes (badge label that mirrors
+  # upstream), and NousResearch/hermes-example-plugins (no nadicode fork exists).
   # Negated class excludes whitespace, quotes, and backslash so the URL
   # match stops at the closing quote / start of an escape sequence in
   # Python/JS/YAML string literals (e.g. `"https://x.example/v1\nKEY=v\n"`
@@ -112,7 +140,13 @@ skip_contexts:
   # rewritable — NOT preserved — and get rebranded by the mapping above. This
   # also keeps verify_no_leakage's skip-context coverage check from rubber-
   # stamping a capitalised Hermes-Agent leak (the two cases now agree).
-  - 'https?://(?!(?:(?:raw\.)?github(?:usercontent)?\.com/(?i:NousResearch/hermes-agent)\b|hermes-agent\.local))[^\s"''\\]*'
+  # The third lookahead alternative `hermes-agent\.nousresearch\.com/docs\b`
+  # makes the self-referential DOCS path REWRITABLE (inner lookahead matches ->
+  # OUTER preservation lookahead FAILS -> the host+/docs -> docs.nadicode.ai/argo
+  # mapping above fires). The BARE host (HTTP-Referer), /install.sh, /llms.txt,
+  # github.com/NousResearch/hermes-agent and pypi.org/p/hermes-agent do NOT match
+  # /docs, so they stay preserved.
+  - 'https?://(?!(?:(?:raw\.)?github(?:usercontent)?\.com/(?i:NousResearch/hermes-agent)\b|hermes-agent\.local|hermes-agent\.nousresearch\.com/docs\b))[^\s"''\\]*'
   - '\b[0-9a-f]{40}\b'      # Don't rewrite inside git-sha-like 40-hex tokens.
   - '\b[0-9a-f]{64}\b'      # Don't rewrite inside sha256-like 64-hex tokens.
   # --- Nous "Hermes" LLM MODEL identifiers (NOT the hermes-agent brand) ---
