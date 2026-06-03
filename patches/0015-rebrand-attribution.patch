@@ -1,0 +1,285 @@
+Subject: Rebrand startup/dashboard attribution to NadicodeAI
+
+Replace the upstream "Nous Research" branding on the user-facing startup
+and dashboard surfaces with "An AI agent from NadicodeAI", while crediting
+the upstream project as "Based on Hermes Agent by Nous Research". Surfaces:
+  - ui-tui/src/components/branding.tsx — Ink TUI tagline + model-org line
+  - hermes_cli/banner.py — rich CLI banner org token + credit line (plain
+    text; NOT an OSC-8 link, so the banner's no-tag path stays hyperlink-free
+    per tests/hermes_cli/test_banner.py)
+  - web/src/components/SidebarFooter.tsx + web/src/i18n/*.ts (16 locales) —
+    footer link (nadicode.ai) + org label
+  - hermes_cli/dashboard_auth/login_page.py — login wordmark + credit line
+
+The credit deliberately keeps the literal upstream product name "Hermes";
+a skip_contexts entry in argo-rename.yaml ("Based on Hermes Agent by Nous
+Research") stops the rename engine from rewriting it to "Argo" and lets
+verify_no_leakage treat that "hermes" as allowed. Assertions in
+patches/asserts/0015-rebrand-attribution.txt prove both that the rebrand
+landed and that the literal "Hermes" survived the rename pass.
+
+Subject: Rebrand startup/dashboard attribution to NadicodeAI
+
+Replace the upstream "Nous Research" branding on the user-facing startup
+and dashboard surfaces with "An AI agent from NadicodeAI" (linking
+nadicode.ai), while crediting the upstream project as "Based on Hermes
+Agent by Nous Research". Surfaces touched:
+  - ui-tui/src/components/branding.tsx — Ink TUI tagline + model-org line
+  - hermes_cli/banner.py — rich CLI banner org token (nadicode.ai link) + credit line
+  - web/src/components/SidebarFooter.tsx + web/src/i18n/*.ts (16 locales) — footer link + org label
+  - hermes_cli/dashboard_auth/login_page.py — login wordmark + credit line
+
+The credit deliberately keeps the literal upstream product name "Hermes";
+a skip_contexts entry in argo-rename.yaml ("Based on Hermes Agent by Nous
+Research") stops the rename engine from rewriting it to "Argo" and lets
+verify_no_leakage treat that "hermes" as allowed. Assertions in
+patches/asserts/0015-rebrand-attribution.txt prove both that the rebrand
+landed and that the literal "Hermes" survived the rename pass.
+
+--- a/hermes_cli/banner.py
++++ b/hermes_cli/banner.py
+@@ -542,7 +542,8 @@ def build_welcome_banner(console: "Conso
+     if len(model_short) > 28:
+         model_short = model_short[:25] + "..."
+     ctx_str = f" [dim {dim}]·[/] [dim {dim}]{_format_context_length(context_length)} context[/]" if context_length else ""
+-    left_lines.append(f"[{accent}]{model_short}[/]{ctx_str} [dim {dim}]·[/] [dim {dim}]Nous Research[/]")
++    left_lines.append(f"[{accent}]{model_short}[/]{ctx_str} [dim {dim}]·[/] [dim {dim}]NadicodeAI[/]")
++    left_lines.append(f"[dim {dim}]An AI agent from NadicodeAI (nadicode.ai) · Based on Hermes Agent by Nous Research[/]")
+ 
+     if os.getenv("HERMES_YOLO_MODE"):
+         left_lines.append(f"[bold red]⚠ YOLO mode[/] [dim {dim}]— all approval prompts bypassed[/]")
+--- a/hermes_cli/dashboard_auth/login_page.py
++++ b/hermes_cli/dashboard_auth/login_page.py
+@@ -252,7 +252,8 @@ _LOGIN_HTML_TEMPLATE = """\
+ </head>
+ <body>
+ <main>
+-  <div class="brand">Nous<span class="dot"></span>Research</div>
++  <div class="brand">Nadicode<span class="dot"></span>AI</div>
++  <div style="text-align:center;margin:-1.25rem 0 1.75rem;font-size:0.72rem;letter-spacing:0.05em;color:var(--midground);opacity:0.72;">An AI agent from <a href="https://nadicode.ai" style="color:inherit;">nadicode.ai</a> &middot; Based on Hermes Agent by Nous Research</div>
+   <div class="card">
+     <h1>Sign in</h1>
+     <p class="subtitle">Choose a sign-in method to continue to the Hermes Agent dashboard.</p>
+--- a/ui-tui/src/components/branding.tsx
++++ b/ui-tui/src/components/branding.tsx
+@@ -44,9 +44,9 @@ export function ArtLines({ lines }: { li
+ // Terminals can't scale glyphs, so "responsive" means picking a layout that
+ // fits the available columns. Thresholds are picked so each tier reads
+ // comfortably without forcing wrap or truncation drift on box-drawing edges.
+-const TAG_FULL = 'Nous Research · Messenger of the Digital Gods'
+-const TAG_MID = 'Messenger of the Digital Gods'
+-const TAG_TINY = 'Nous Research'
++const TAG_FULL = 'An AI agent from NadicodeAI · Based on Hermes Agent by Nous Research'
++const TAG_MID = 'An AI agent from NadicodeAI'
++const TAG_TINY = 'NadicodeAI'
+ const HIDE_BELOW = 34
+ const COMPACT_FROM = 58
+ 
+@@ -286,7 +286,7 @@ export function SessionPanel({ info, max
+ 
+           <Text color={t.color.accent}>
+             {info.model.split('/').pop()}
+-            <Text color={t.color.muted}> · Nous Research</Text>
++            <Text color={t.color.muted}> · NadicodeAI</Text>
+           </Text>
+ 
+           <Text color={t.color.muted} wrap="truncate-end">
+@@ -317,7 +317,7 @@ export function SessionPanel({ info, max
+           <Box flexDirection="column" marginBottom={1}>
+             <Text color={t.color.accent} wrap="truncate-end">
+               {info.model.split('/').pop()}
+-              <Text color={t.color.muted}> · Nous Research</Text>
++              <Text color={t.color.muted}> · NadicodeAI</Text>
+             </Text>
+             <Text color={t.color.muted} wrap="truncate-end">
+               {info.cwd || process.cwd()}
+--- a/web/src/components/SidebarFooter.tsx
++++ b/web/src/components/SidebarFooter.tsx
+@@ -21,9 +21,10 @@ export function SidebarFooter({ status }
+       </Typography>
+ 
+       <a
+-        href="https://nousresearch.com"
++        href="https://nadicode.ai"
+         target="_blank"
+         rel="noopener noreferrer"
++        title="An AI agent from NadicodeAI · Based on Hermes Agent by Nous Research"
+         className={cn(
+           "font-mondwest text-display text-xs tracking-[0.12em] text-midground",
+           "transition-opacity hover:opacity-90",
+--- a/web/src/i18n/af.ts
++++ b/web/src/i18n/af.ts
+@@ -55,7 +55,7 @@ export const af: Translations = {
+     closeNavigation: "Maak navigasie toe",
+     closeModelTools: "Maak model en gereedskap toe",
+     footer: {
+-      org: "Nous Research",
++      org: "NadicodeAI",
+     },
+     activeSessionsLabel: "Aktiewe Sessies:",
+     gatewayStatusLabel: "Gateway-status:",
+--- a/web/src/i18n/de.ts
++++ b/web/src/i18n/de.ts
+@@ -55,7 +55,7 @@ export const de: Translations = {
+     closeNavigation: "Navigation schließen",
+     closeModelTools: "Modell und Werkzeuge schließen",
+     footer: {
+-      org: "Nous Research",
++      org: "NadicodeAI",
+     },
+     activeSessionsLabel: "Aktive Sitzungen:",
+     gatewayStatusLabel: "Gateway-Status:",
+--- a/web/src/i18n/en.ts
++++ b/web/src/i18n/en.ts
+@@ -55,7 +55,7 @@ export const en: Translations = {
+     closeNavigation: "Close navigation",
+     closeModelTools: "Close model and tools",
+     footer: {
+-      org: "Nous Research",
++      org: "NadicodeAI",
+     },
+     activeSessionsLabel: "Active Sessions:",
+     gatewayStatusLabel: "Gateway Status:",
+--- a/web/src/i18n/es.ts
++++ b/web/src/i18n/es.ts
+@@ -55,7 +55,7 @@ export const es: Translations = {
+     closeNavigation: "Cerrar navegación",
+     closeModelTools: "Cerrar modelo y herramientas",
+     footer: {
+-      org: "Nous Research",
++      org: "NadicodeAI",
+     },
+     activeSessionsLabel: "Sesiones activas:",
+     gatewayStatusLabel: "Estado del Gateway:",
+--- a/web/src/i18n/fr.ts
++++ b/web/src/i18n/fr.ts
+@@ -55,7 +55,7 @@ export const fr: Translations = {
+     closeNavigation: "Fermer la navigation",
+     closeModelTools: "Fermer modèle et outils",
+     footer: {
+-      org: "Nous Research",
++      org: "NadicodeAI",
+     },
+     activeSessionsLabel: "Sessions actives:",
+     gatewayStatusLabel: "État de la passerelle:",
+--- a/web/src/i18n/ga.ts
++++ b/web/src/i18n/ga.ts
+@@ -55,7 +55,7 @@ export const ga: Translations = {
+     closeNavigation: "Dún an nascleanúint",
+     closeModelTools: "Dún an samhail agus na huirlisí",
+     footer: {
+-      org: "Nous Research",
++      org: "NadicodeAI",
+     },
+     activeSessionsLabel: "Seisiúin gníomhacha:",
+     gatewayStatusLabel: "Stádas an gateway:",
+--- a/web/src/i18n/hu.ts
++++ b/web/src/i18n/hu.ts
+@@ -55,7 +55,7 @@ export const hu: Translations = {
+     closeNavigation: "Navigáció bezárása",
+     closeModelTools: "Modell és eszközök bezárása",
+     footer: {
+-      org: "Nous Research",
++      org: "NadicodeAI",
+     },
+     activeSessionsLabel: "Aktív munkamenetek:",
+     gatewayStatusLabel: "Átjáró állapota:",
+--- a/web/src/i18n/it.ts
++++ b/web/src/i18n/it.ts
+@@ -55,7 +55,7 @@ export const it: Translations = {
+     closeNavigation: "Chiudi navigazione",
+     closeModelTools: "Chiudi modello e strumenti",
+     footer: {
+-      org: "Nous Research",
++      org: "NadicodeAI",
+     },
+     activeSessionsLabel: "Sessioni attive:",
+     gatewayStatusLabel: "Stato gateway:",
+--- a/web/src/i18n/ja.ts
++++ b/web/src/i18n/ja.ts
+@@ -55,7 +55,7 @@ export const ja: Translations = {
+     closeNavigation: "ナビゲーションを閉じる",
+     closeModelTools: "モデルとツールを閉じる",
+     footer: {
+-      org: "Nous Research",
++      org: "NadicodeAI",
+     },
+     activeSessionsLabel: "アクティブなセッション:",
+     gatewayStatusLabel: "ゲートウェイの状態:",
+--- a/web/src/i18n/ko.ts
++++ b/web/src/i18n/ko.ts
+@@ -55,7 +55,7 @@ export const ko: Translations = {
+     closeNavigation: "내비게이션 닫기",
+     closeModelTools: "모델 및 도구 닫기",
+     footer: {
+-      org: "Nous Research",
++      org: "NadicodeAI",
+     },
+     activeSessionsLabel: "활성 세션:",
+     gatewayStatusLabel: "게이트웨이 상태:",
+--- a/web/src/i18n/pt.ts
++++ b/web/src/i18n/pt.ts
+@@ -55,7 +55,7 @@ export const pt: Translations = {
+     closeNavigation: "Fechar navegação",
+     closeModelTools: "Fechar modelo e ferramentas",
+     footer: {
+-      org: "Nous Research",
++      org: "NadicodeAI",
+     },
+     activeSessionsLabel: "Sessões ativas:",
+     gatewayStatusLabel: "Estado do gateway:",
+--- a/web/src/i18n/ru.ts
++++ b/web/src/i18n/ru.ts
+@@ -55,7 +55,7 @@ export const ru: Translations = {
+     closeNavigation: "Закрыть навигацию",
+     closeModelTools: "Закрыть модель и инструменты",
+     footer: {
+-      org: "Nous Research",
++      org: "NadicodeAI",
+     },
+     activeSessionsLabel: "Активные сессии:",
+     gatewayStatusLabel: "Статус шлюза:",
+--- a/web/src/i18n/tr.ts
++++ b/web/src/i18n/tr.ts
+@@ -55,7 +55,7 @@ export const tr: Translations = {
+     closeNavigation: "Gezintiyi kapat",
+     closeModelTools: "Modeli ve araçları kapat",
+     footer: {
+-      org: "Nous Research",
++      org: "NadicodeAI",
+     },
+     activeSessionsLabel: "Aktif Oturumlar:",
+     gatewayStatusLabel: "Ağ Geçidi Durumu:",
+--- a/web/src/i18n/uk.ts
++++ b/web/src/i18n/uk.ts
+@@ -55,7 +55,7 @@ export const uk: Translations = {
+     closeNavigation: "Закрити навігацію",
+     closeModelTools: "Закрити модель та інструменти",
+     footer: {
+-      org: "Nous Research",
++      org: "NadicodeAI",
+     },
+     activeSessionsLabel: "Активні сесії:",
+     gatewayStatusLabel: "Стан шлюзу:",
+--- a/web/src/i18n/zh-hant.ts
++++ b/web/src/i18n/zh-hant.ts
+@@ -55,7 +55,7 @@ export const zhHant: Translations = {
+     closeNavigation: "關閉導覽",
+     closeModelTools: "關閉模型與工具",
+     footer: {
+-      org: "Nous Research",
++      org: "NadicodeAI",
+     },
+     activeSessionsLabel: "使用中工作階段：",
+     gatewayStatusLabel: "閘道狀態：",
+--- a/web/src/i18n/zh.ts
++++ b/web/src/i18n/zh.ts
+@@ -54,7 +54,7 @@ export const zh: Translations = {
+     closeNavigation: "关闭导航",
+     closeModelTools: "关闭模型与工具",
+     footer: {
+-      org: "Nous Research",
++      org: "NadicodeAI",
+     },
+     activeSessionsLabel: "活跃会话：",
+     gatewayStatusLabel: "网关状态：",
