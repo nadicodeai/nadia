@@ -21,12 +21,16 @@ It mirrors upstream's release driver shape but works from the workshop layout:
 
 Companion: ``.github/workflows/release.yml`` (separate M4.2 task) fires on the
 tag push and force-pushes ``dist/argo/`` to ``release`` + uploads assets. Its
-first consumer step (``gh release view <tag>`` under ``set -euo pipefail``)
-REQUIRES the GitHub Release object to already exist when the tag push fires —
-so this script MUST create the release object *before* pushing the tag. The
-workflow then attaches assets via ``gh release upload --clobber`` (idempotent),
-so this script only needs to CREATE the release object (attaching the local
-assets here is a harmless bonus the workflow later clobbers).
+first release-object consumer (``gh release view <tag>`` in the "Apply release
+bump" step) runs only AFTER checkout + setup + ``make build`` + leakage — so it
+does NOT require the release object at tag-push time, only minutes later. We
+therefore push the tag FIRST and create the release object immediately after
+(seconds later, winning the race with wide margin). The reverse order is not
+merely suboptimal — it is INFEASIBLE: ``gh release create <tag>`` rejects a tag
+that exists locally but is not on the remote, so the create must follow the
+push (mirrors upstream/scripts/release.py:1972 push → :2011 create). The
+workflow re-attaches assets via ``gh release upload --clobber`` (idempotent),
+so attaching them here is a harmless bonus the workflow later clobbers.
 
 Pipeline (default invocation, no ``--dry-run``):
 
@@ -52,12 +56,14 @@ Pipeline (default invocation, no ``--dry-run``):
     ``--mtime``/``--sort``/``--owner``/``--group``/``--numeric-owner`` flags.
 12. Compute sha256 sums of the tarball + ``dist/argo/scripts/install.sh``
     (+ ``install.ps1`` if present); write ``sha256sums.txt``.
-13. Run ``gh release create`` with the renamed banner title, the assets above,
+13. ``git push <remote> v<release-date>`` (unless ``--no-push``/``--dry-run``) —
+    fires ``release.yml``. Pushing the tag is a prerequisite for the next step.
+14. Run ``gh release create`` with the renamed banner title, the assets above,
     and notes generated from ``git log <prev-tag>..<new-tag>`` (or the
-    first-release note when ``--first-release`` is passed). This MUST happen
-    *before* the tag push so ``release.yml``'s ``gh release view`` succeeds.
-14. ``git push <remote> v<release-date>`` (unless ``--dry-run``) — fires
-    ``release.yml`` against the now-existing release object.
+    first-release note when ``--first-release`` is passed). This runs AFTER the
+    push because ``gh`` refuses to create a release for an unpushed tag; the
+    release object is created seconds after the push, well before
+    ``release.yml``'s ``gh release view`` step needs it.
 15. Print a summary (tag, version, release date, tarball path, sha256sums
     path, GitHub release URL).
 
@@ -855,10 +861,11 @@ def _build_parser() -> argparse.ArgumentParser:
         "--no-push",
         action="store_true",
         help=(
-            "Create the tag + GitHub Release object but do NOT push the tag, so "
-            "release.yml is not fired. Preview the release object without "
-            "triggering CI. (The release object is ALWAYS created on the normal "
-            "path — release.yml's `gh release view` requires it to exist.)"
+            "Stop before ANY remote mutation: create the local annotated tag "
+            "and build the assets, but do NOT push the tag and do NOT create "
+            "the GitHub Release (gh cannot create a release for an unpushed "
+            "tag). release.yml is not fired. The command prints the manual "
+            "`git push` + `gh release create` line to finish later."
         ),
     )
     p.add_argument(
@@ -925,27 +932,53 @@ def run(args: CliArgs) -> int:
     _run_leakage_static(repo, dry_run=args.dry_run)
     _run_assertions(repo, dry_run=args.dry_run)
 
-    # Create the annotated tag locally, build the assets, then CREATE the
-    # GitHub Release object — all BEFORE pushing the tag. release.yml's first
-    # consumer step (`gh release view <tag>` under `set -euo pipefail`) requires
-    # the release object to already exist when the tag push fires; pushing
-    # first would make that step fail (the historical bug). The workflow
-    # re-uploads assets via `gh release upload --clobber`, so attaching them
-    # here is a harmless convenience.
+    # Create the annotated tag locally and build the assets/notes, THEN push
+    # the tag, THEN create the GitHub Release object — in that order.
+    #
+    # Ordering is load-bearing and mirrors upstream/scripts/release.py, which
+    # pushes the tag (release.py:1972 `git push origin HEAD --tags`) BEFORE
+    # `gh release create` (release.py:2011). `gh release create <tag>` refuses
+    # a tag that exists locally but is absent on the remote ("tag <t> exists
+    # locally but has not been pushed ... please push it before continuing or
+    # specify the `--target` flag") — so the create MUST follow the push. The
+    # earlier "create before push" ordering was infeasible against `gh` and is
+    # the bug this reorder fixes.
+    #
+    # Does this re-introduce the race release.yml worried about? No. release.yml
+    # fires on the tag push, but its first release-object consumer
+    # (`gh release view <tag>` in the "Apply release bump" step) runs only AFTER
+    # checkout + argo-setup + `make build` + `make leakage-static` — minutes of
+    # runway. Creating the release object in the very next local step (seconds
+    # after the push) wins that race with a wide margin. The workflow re-uploads
+    # assets via `gh release upload --clobber`, so attaching them here is a
+    # harmless convenience.
     _create_tag(repo, state, dry_run=args.dry_run)
     assets = _collect_assets(repo, state, dry_run=args.dry_run)
     notes = _release_notes(
         repo, state, first_release=args.first_release, dry_run=args.dry_run
     )
-    release_url = _gh_release_create(
-        repo, state, assets, notes, dry_run=args.dry_run
-    )
 
     pushed = not args.no_push
     if pushed:
         _push_tag(repo, state, remote=args.remote, dry_run=args.dry_run)
+        release_url = _gh_release_create(
+            repo, state, assets, notes, dry_run=args.dry_run
+        )
     else:
-        _log("skipping tag push (--no-push); release.yml NOT fired")
+        # --no-push: stop before ANY remote mutation. A GitHub Release cannot be
+        # created for an unpushed tag (see ordering note above), so we skip the
+        # create too and print the manual finish command (mirrors upstream's
+        # manual-publish fallback at release.py:2018-2023). The local annotated
+        # tag + built assets are left in place for that manual step.
+        release_url = None
+        _log("skipping tag push + release create (--no-push); release.yml NOT fired")
+        _log(
+            f"to finish manually: git push {args.remote} {state.tag_name} && "
+            f"gh release create {state.tag_name} "
+            f"--title 'Argo Agent v{state.new_version} ({state.new_release_date})' "
+            f"--notes-file <notes-file> {assets.tarball} {assets.install_sh} "
+            f"{assets.sha256sums}"
+        )
 
     print(
         _summary(state, assets, release_url=release_url, pushed=pushed and not args.dry_run),
