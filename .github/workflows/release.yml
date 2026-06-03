@@ -65,6 +65,16 @@ concurrency:
 
 permissions:
   contents: write
+  # `workflows: write` is load-bearing. The release tree (dist/argo/) mirrors
+  # upstream's renamed `.github/workflows/` (16+ files). When an upstream sync
+  # ADDS or CHANGES a workflow file (e.g. build-windows-installer.yml, new in
+  # subtree pull 6c9482e8), release_branch_push.py's force-push to `release`
+  # is otherwise rejected by GitHub: "refusing to allow a GitHub App to create
+  # or update workflow `.github/workflows/...` without `workflows` permission".
+  # The default GITHUB_TOKEN can be granted this scope; it stays confined to
+  # this repo. Without it, the FIRST release after any sync that touches a
+  # workflow file fails at the branch-push step.
+  workflows: write
 
 jobs:
   release:
