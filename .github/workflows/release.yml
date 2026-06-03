@@ -65,16 +65,19 @@ concurrency:
 
 permissions:
   contents: write
-  # `workflows: write` is load-bearing. The release tree (dist/argo/) mirrors
-  # upstream's renamed `.github/workflows/` (16+ files). When an upstream sync
-  # ADDS or CHANGES a workflow file (e.g. build-windows-installer.yml, new in
-  # subtree pull 6c9482e8), release_branch_push.py's force-push to `release`
-  # is otherwise rejected by GitHub: "refusing to allow a GitHub App to create
-  # or update workflow `.github/workflows/...` without `workflows` permission".
-  # The default GITHUB_TOKEN can be granted this scope; it stays confined to
-  # this repo. Without it, the FIRST release after any sync that touches a
-  # workflow file fails at the branch-push step.
-  workflows: write
+  # NOTE: do NOT add `workflows: write` here — it is NOT a valid GITHUB_TOKEN
+  # permission key (it fails workflow-file schema validation), and the
+  # underlying `workflow` OAuth scope CANNOT be granted to the Actions
+  # GITHUB_TOKEN at all. GitHub therefore forbids this token from creating or
+  # updating files under `.github/workflows/` on any push. The release tree
+  # used to carry upstream's renamed `.github/workflows/`, so the first release
+  # after a sync that added/changed a workflow file (build-windows-installer.yml,
+  # new in subtree pull 6c9482e8) failed the force-push with: "refusing to allow
+  # a GitHub App to create or update workflow ... without `workflows` permission".
+  # FIX: tools/release_branch_push.py now strips `.github/workflows/` from the
+  # storefront tree entirely (customers don't need our CI, and it avoids those
+  # workflows spuriously running on `release`), so this token never touches a
+  # workflow file. See _strip_release_workflows() there.
 
 jobs:
   release:

@@ -217,6 +217,45 @@ def _prepare_scratch() -> Path:
     return scratch
 
 
+def _strip_release_workflows(scratch: Path) -> None:
+    """Remove ``.github/workflows/`` from the storefront tree before commit.
+
+    The ``release`` branch is a real branch on nadicodeai/argo, and CI pushes
+    it with the Actions ``GITHUB_TOKEN``. GitHub forbids that token from
+    creating or updating any file under ``.github/workflows/``: it lacks the
+    ``workflow`` OAuth scope, and that scope CANNOT be granted to GITHUB_TOKEN
+    (``workflows`` is not even a valid key in a workflow ``permissions:``
+    block). So when an upstream sync added a new workflow file
+    (build-windows-installer.yml, new in subtree pull 6c9482e8), the
+    force-push to ``release`` was rejected: "refusing to allow a GitHub App to
+    create or update workflow ... without `workflows` permission".
+
+    Customers do not need our (renamed-upstream) CI workflows, and leaving them
+    on the storefront branch risks them spuriously triggering on ``release``.
+    So we drop the whole ``.github/workflows/`` dir from the PUSHED tree only.
+    dist/argo/ itself — the native install, the tarball release asset, and the
+    Docker image — is untouched; this exclusion is storefront-branch-specific.
+
+    Idempotent: the first push after this change deletes the workflow files
+    that earlier releases left on the branch; every push thereafter produces a
+    tree with no ``.github/workflows/`` at all, so GITHUB_TOKEN never sees a
+    workflow-file change.
+    """
+    workflows = scratch / ".github" / "workflows"
+    if workflows.exists():
+        _log(
+            "storefront: dropping .github/workflows/ "
+            "(GITHUB_TOKEN cannot push workflow files)"
+        )
+        try:
+            shutil.rmtree(workflows)
+        except OSError as exc:
+            raise ScratchSetupError(
+                f"could not strip .github/workflows from {scratch}: {exc}",
+                step="scratch",
+            ) from exc
+
+
 def _copy_dist_into_scratch(dist_root: Path, scratch: Path) -> None:
     """Copy ``dist_root`` contents into ``scratch`` (mirrors ``cp -a
     <dist>/. <scratch>/``): the renamed tree becomes the scratch repo's
@@ -232,6 +271,9 @@ def _copy_dist_into_scratch(dist_root: Path, scratch: Path) -> None:
             f"could not copy {dist_root} into {scratch}: {exc}",
             step="scratch",
         ) from exc
+    # Storefront branch must not carry CI workflow files — GITHUB_TOKEN cannot
+    # push them. See _strip_release_workflows() for the full rationale.
+    _strip_release_workflows(scratch)
 
 
 # ---------------------------------------------------------------------------
