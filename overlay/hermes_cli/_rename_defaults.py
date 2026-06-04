@@ -17,6 +17,7 @@ GENERATED_FROM: str = 'argo-rename.yaml'
 
 MAPPINGS: tuple[tuple[str, str], ...] = (
     ('NousResearch/hermes-agent/main/scripts/install', 'nadicodeai/argo/release/scripts/install'),
+    ('hermes-agent.nousresearch.com/docs', 'docs.nadicode.ai/argo'),
     ('NousResearch/hermes-agent', 'nadicodeai/argo'),
     ('NousResearch/Hermes-Agent', 'nadicodeai/argo'),
     ('hermes_tools_mcp_server', 'argo_tools_mcp_server'),
@@ -59,7 +60,7 @@ EXCEPTION_PATHS: tuple[str, ...] = (
 )
 
 SKIP_CONTEXTS: tuple[str, ...] = (
-    'https?://(?!(?:(?:raw\\.)?github(?:usercontent)?\\.com/(?i:NousResearch/hermes-agent)\\b|hermes-agent\\.local))[^\\s"\'\\\\]*',
+    'https?://(?!(?:(?:raw\\.)?github(?:usercontent)?\\.com/(?i:NousResearch/hermes-agent)\\b|hermes-agent\\.local|hermes-agent\\.nousresearch\\.com/docs\\b))[^\\s"\'\\\\]*',
     '\\b[0-9a-f]{40}\\b',
     '\\b[0-9a-f]{64}\\b',
     '(?i)\\bnous[- ]hermes[\\w./-]*',
