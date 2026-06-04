@@ -109,6 +109,70 @@ def test_required_to_values_correct(config: RenameConfig) -> None:
         )
 
 
+def test_docs_site_mapping_present(config: RenameConfig) -> None:
+    """The self-referential docs path must map to the live Argo docs site.
+
+    The fork publishes the renamed docs at docs.nadicode.ai/argo/ (built from
+    dist/argo/website/). The mapping rewrites the upstream Docusaurus host +
+    '/docs/' baseUrl together so e.g.
+    ``hermes-agent.nousresearch.com/docs/user-guide/cli`` becomes
+    ``docs.nadicode.ai/argo/user-guide/cli``.
+    """
+    mapping_dict = dict(config.mappings)
+    assert (
+        mapping_dict.get("hermes-agent.nousresearch.com/docs")
+        == "docs.nadicode.ai/argo"
+    ), (
+        "docs-site mapping missing/wrong: "
+        f"got {mapping_dict.get('hermes-agent.nousresearch.com/docs')!r}"
+    )
+
+
+def test_bare_host_and_pypi_not_rewritten(config: RenameConfig) -> None:
+    """The bare upstream host and PyPI package must NOT be rewritten.
+
+    Only the self-referential ``/docs`` path is released from preservation. The
+    bare host ``hermes-agent.nousresearch.com`` (the OpenRouter HTTP-Referer
+    attribution header, /install.sh, /llms.txt) and ``pypi.org/p/hermes-agent``
+    (the real upstream PyPI package) stay on the upstream host as attribution —
+    they must never appear as a mapping ``from`` key.
+    """
+    from_keys = {from_ for from_, _ in config.mappings}
+    assert "hermes-agent.nousresearch.com" not in from_keys, (
+        "bare upstream host must not be a mapping key (attribution surface)"
+    )
+    assert "pypi.org/p/hermes-agent" not in from_keys, (
+        "upstream PyPI package must not be a mapping key (attribution surface)"
+    )
+
+
+def test_docs_path_released_from_url_preservation(config: RenameConfig) -> None:
+    """The URL skip_context must RELEASE the /docs path so the mapping can fire.
+
+    The negative-lookahead URL guard preserves upstream URLs from rewriting. The
+    third lookahead alternative ``hermes-agent\\.nousresearch\\.com/docs\\b``
+    makes the self-referential docs path rewritable while keeping the bare host,
+    /install.sh and /llms.txt preserved.
+    """
+    import re
+
+    url_patterns = [p for p in config.skip_contexts if p.startswith("https?://")]
+    assert url_patterns, "no URL-guard skip_context found"
+    guard = url_patterns[0]
+    rx = re.compile(guard)
+    # A /docs URL must NOT be preserved (no match => rewritable => mapping fires).
+    assert not rx.match(
+        "https://hermes-agent.nousresearch.com/docs/user-guide/cli"
+    ), "docs path is still preserved; mapping cannot fire"
+    # The bare host (HTTP-Referer) and /install.sh MUST stay preserved.
+    assert rx.match("https://hermes-agent.nousresearch.com"), (
+        "bare upstream host must stay preserved (attribution)"
+    )
+    assert rx.match("https://hermes-agent.nousresearch.com/install.sh"), (
+        "/install.sh must stay preserved (attribution)"
+    )
+
+
 def test_exceptions_contains_self_test_protection(config: RenameConfig) -> None:
     """exceptions must protect this test file (it contains hermes-* literals).
 

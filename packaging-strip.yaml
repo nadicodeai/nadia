@@ -160,3 +160,63 @@ content_edits:
       list-comprehension line that materializes _PLATFORMS.
     find: '    platforms = [dict(p) for p in _PLATFORMS]'
     replace: '    platforms = [dict(p) for p in _PLATFORMS if p.get("key") not in {"dingtalk", "feishu", "wecom", "wecom_callback", "weixin", "qqbot", "yuanbao"}]'
+  # ---- Docs-site host/baseUrl + navbar Home (docs.nadicode.ai/argo) ----
+  # The rebrand pass does NOT rewrite url/baseUrl/Home-href (bare-host or a
+  # standalone /docs/ baseUrl token, preserved by argo-rename.yaml's URL guard).
+  # These content_edits flip them. SITE_BASE / the llms.txt headers / prebuild
+  # UNIFIED_INDEX_URL / acp_registry website are NOT handled here — they are
+  # /docs-path URLs flipped by the argo-rename.yaml docs mapping instead.
+  - name: docs-url-env-overridable
+    file: website/docusaurus.config.ts
+    why: >-
+      Make the published docs host/baseUrl injectable at build time so CI can
+      target docs.nadicode.ai + /argo/ while the upstream literal stays the
+      default (preserved by argo-rename.yaml skip_contexts -> leakage-safe). The
+      rebrand pass does NOT rewrite url/baseUrl. Anchor matches the exact
+      upstream pre-rename two-line block (both lines indented 2 spaces).
+    find: "  url: 'https://hermes-agent.nousresearch.com',\n  baseUrl: '/docs/',"
+    replace: "  url: process.env.DOCS_URL ?? 'https://hermes-agent.nousresearch.com',\n  baseUrl: process.env.DOCS_BASE_URL ?? '/docs/',"
+  - name: docs-organization-name-argo
+    file: website/docusaurus.config.ts
+    why: >-
+      organizationName is a gh-pages-deploy-only field the rebrand leaves as
+      'NousResearch' (projectName is already flipped to argo-agent). Build-inert
+      for Vercel, corrected for consistency. Anchor is the exact pre-rename line.
+    find: "organizationName: 'NousResearch',"
+    replace: "organizationName: 'nadicodeai',"
+  - name: docs-navbar-home-link
+    file: website/docusaurus.config.ts
+    why: >-
+      The navbar "Home" href is a BARE host (no /docs path) so the docs mapping
+      in argo-rename.yaml does NOT touch it, and the rebrand preserves it. It is
+      a self-referential brand surface (the docs site's own Home), not MIT
+      attribution, so it points at the Argo docs site. Anchor is the exact
+      pre-rename href line (10 leading spaces); the footer copyright + Nous
+      Research link use a different host (nousresearch.com) and stay upstream.
+    find: "          href: 'https://hermes-agent.nousresearch.com',"
+    replace: "          href: 'https://docs.nadicode.ai/argo',"
+  # ---- Remove the "Chinese platforms" sidebar category (matches china-docs strip) ----
+  - name: sidebars-drop-chinese-platforms
+    file: website/sidebars.ts
+    why: >-
+      The china-docs strip deletes website/docs/user-guide/messaging/
+      {dingtalk,feishu,wecom,wecom-callback,weixin,qqbot,yuanbao}.md, but
+      sidebars.ts still references those 7 doc IDs in a "Chinese platforms"
+      category. Docusaurus validates sidebar doc IDs strictly (NOT governed by
+      onBrokenLinks 'warn'), so `npm run build` fails with "these sidebar
+      document ids do not exist". Remove the whole category block. Verified:
+      removing it makes `npm run build` exit 0 for both en and zh-Hans.
+    find: "        {\n          type: 'category',\n          label: 'Chinese platforms',\n          items: [\n            'user-guide/messaging/dingtalk',\n            'user-guide/messaging/feishu',\n            'user-guide/messaging/wecom',\n            'user-guide/messaging/wecom-callback',\n            'user-guide/messaging/weixin',\n            'user-guide/messaging/qqbot',\n            'user-guide/messaging/yuanbao',\n          ],\n        },\n"
+    replace: ""
+  # ---- ACP registry manifest test: assert the rebranded docs host ----
+  - name: acp-manifest-test-docs-host
+    file: tests/acp/test_registry_manifest.py
+    why: >-
+      The ACP registry manifest's `website` is a /docs URL that argo-rename.yaml
+      flips to docs.nadicode.ai/argo; the test asserts the BARE upstream host
+      (preserved by the URL guard), so manifest and assertion would diverge and
+      dist-test would fail. Flip the assertion in the DIST via content_edit (runs
+      before rebrand on the pristine text) — upstream/ MUST stay byte-pristine
+      (FR-15), so this cannot be a direct edit to upstream/.
+    find: 'assert data["website"].startswith("https://hermes-agent.nousresearch.com/")'
+    replace: 'assert data["website"].startswith("https://docs.nadicode.ai/argo/")'

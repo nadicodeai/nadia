@@ -1,0 +1,149 @@
+# argo — docs-site deploy to docs.nadicode.ai/argo/ (mirrors upstream deploy-site.yml).
+#
+# LIVES ON main (NOT release/storefront): tools/release_branch_push.py
+# ::_strip_release_workflows() deletes .github/workflows/ from the storefront
+# tree because GITHUB_TOKEN lacks the `workflow` scope. A workflow on `release`
+# is silently dropped on the next release push and never runs. (.github/workflows
+# lives at the repo root on main, NOT inside dist/argo/, so the strip never sees
+# this file — verified release_branch_push.py:220-276.)
+#
+# BUILDS FROM dist/argo/website (NOT upstream/website): the Argo-branded docs
+# prose only exists AFTER the hermes->argo rename, under dist/argo/website/,
+# produced by `make build`. dist/argo/ is gitignored on main, so this job MUST
+# run `make build` first, then build Docusaurus from the renamed tree.
+#
+# DEPLOY MODEL: Actions builds the renamed static site and pushes the PREBUILT
+# output INTO the already-provisioned Vercel project via the Vercel CLI
+# (`vercel deploy --prebuilt --prod`). Vercel never builds anything, so it cannot
+# pick up the wrong (un-renamed) source. The provisioned project's git auto-build
+# MUST be disabled (one-time human step — see docs/RELEASE.md / the plan §4).
+
+name: deploy-docs
+
+on:
+  release:
+    types: [published]
+  push:
+    branches: [main]
+    paths:
+      - 'upstream/website/**'
+      - 'upstream/skills/**'
+      - 'upstream/optional-skills/**'
+      - 'upstream/scripts/build_skills_index.py'
+      - 'patches/**'
+      - 'overlay/**'
+      - 'tools/**'
+      - 'argo-rename.yaml'
+      - 'packaging-strip.yaml'
+      - '.github/workflows/deploy-docs.yml'
+      - '.github/actions/argo-setup/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-docs
+  cancel-in-progress: false
+
+jobs:
+  deploy-docs:
+    name: build (renamed) + deploy to Vercel
+    if: github.repository == 'nadicodeai/argo'
+    runs-on: ubuntu-latest
+    env:
+      DOCS_URL: https://docs.nadicode.ai
+      DOCS_BASE_URL: /argo/
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Install fork toolchain (uv + Python + quilt/zstd + pip deps)
+        uses: ./.github/actions/argo-setup
+        with:
+          with-uv: "true"
+          python-version: "3.13"
+          apt-packages: "quilt zstd"
+          pip-packages: "pyyaml httpx"
+
+      # 1) RENAME FIRST — produce dist/argo/ (gitignored on main; absent in a
+      #    fresh checkout). Without this, dist/argo/website is missing.
+      - name: Build renamed dist (make build)
+        run: |
+          . .venv/bin/activate
+          make build
+
+      # 2) SAFETY GATE — same hermes-leak scan release.yml uses. nadicode URLs
+      #    are invisible to it; an un-rebranded `hermes` leak fails the deploy.
+      - name: Leakage gate (static)
+        run: |
+          . .venv/bin/activate
+          make leakage-static
+
+      # 3) Node — AFTER make build so cache-dependency-path resolves to the
+      #    now-generated lockfile. argo-setup installs NO Node (verified).
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: dist/argo/website/package-lock.json
+
+      # 4) SKILLS PIPELINE — same scripts + ordering as upstream deploy-site.yml,
+      #    against the RENAMED dist tree. build_skills_index lives at dist repo
+      #    root (dist/argo/scripts/); extract + generate live under
+      #    dist/argo/website/scripts/. prebuild.mjs re-runs extract + llms.txt but
+      #    NOT generate-skill-docs, so it is invoked explicitly here.
+      - name: Build skills index (non-fatal — falls back to on-disk cache)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/build_skills_index.py || echo "Skills index build failed (non-fatal)"
+        working-directory: dist/argo
+
+      - name: Extract skill metadata for dashboard
+        run: python3 website/scripts/extract-skills.py
+        working-directory: dist/argo
+
+      - name: Regenerate per-skill docs pages + catalogs
+        run: python3 website/scripts/generate-skill-docs.py
+        working-directory: dist/argo
+
+      # 5) DOCUSAURUS BUILD from the renamed tree. `npm run build` runs the
+      #    `prebuild` hook (extract-skills + generate-llms-txt) then docusaurus
+      #    build. url/baseUrl come from DOCS_URL/DOCS_BASE_URL (the env-override
+      #    content_edits in packaging-strip.yaml read them).
+      - name: Install website deps
+        run: npm ci
+        working-directory: dist/argo/website
+
+      - name: Build Docusaurus (renamed)
+        run: npm run build
+        working-directory: dist/argo/website
+
+      # 6) DEPLOY prebuilt static output INTO the provisioned Vercel project,
+      #    wrapped in Build Output API v3 so Vercel performs ZERO build.
+      - name: Install Vercel CLI
+        run: npm i --global vercel@latest
+
+      - name: Deploy prebuilt site to Vercel (production)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          DEPLOY_ROOT="$(mktemp -d)"
+          # Docusaurus baseUrl is /argo/, but `docusaurus build` does NOT nest its
+          # output under /argo — build/index.html sits at build root and references
+          # /argo/* assets. So the static bundle MUST be nested under static/argo/
+          # for docs.nadicode.ai/argo/ to resolve (a flat copy to static/ root 404s
+          # every asset). Verified live on the first manual deploy.
+          mkdir -p "$DEPLOY_ROOT/.vercel/output/static/argo"
+          cp -r dist/argo/website/build/. "$DEPLOY_ROOT/.vercel/output/static/argo/"
+          # Redirect the bare domain root to /argo/ (the docs live under /argo/).
+          printf '%s\n' '{"version":3,"routes":[{"src":"^/$","status":308,"headers":{"Location":"/argo/"}}]}' > "$DEPLOY_ROOT/.vercel/output/config.json"
+          cd "$DEPLOY_ROOT"
+          # `vercel pull` writes .vercel/project.json (NOT .vercel/output/), so it
+          # must run AFTER the output staging above (ordering is load-bearing).
+          vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
+          vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
