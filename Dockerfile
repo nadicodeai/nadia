@@ -120,6 +120,20 @@ RUN pip install --no-cache-dir pyyaml==6.0.3
 WORKDIR /src
 COPY . /src
 
+# Release-date stamp (the ONE value a hermetic build can't discover itself).
+#
+# `make build` regenerates dist/argo/ from PRISTINE upstream/, so
+# argo_cli/__init__.py would carry upstream's __release_date__, not the Argo
+# release date — which is exactly how the v2026.6.5 image shipped reporting
+# 2026.5.29. The date IS the release tag (v2026.6.5 → 2026.6.5), but the docker
+# build is hermetic: .dockerignore excludes .git (237 MB), so the builder can't
+# read the tag. So the single calver value is passed in and build.py stamps it
+# (see _stamp_release_date). Empty on dev builds (PR/main) → upstream's date is
+# kept, honest for an unreleased tree. docker-publish.yml derives this from the
+# release tag automatically — nobody types it.
+ARG ARGO_RELEASE_DATE=""
+ENV ARGO_RELEASE_DATE=${ARGO_RELEASE_DATE}
+
 # Run the renamer build pipeline: copies upstream/, applies patches/,
 # layers overlay/, runs the rename engine, writes dist/argo/.
 # The resulting tree is what the runtime stage ships.
