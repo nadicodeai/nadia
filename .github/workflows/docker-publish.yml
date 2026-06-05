@@ -214,6 +214,32 @@ jobs:
           echo "slim_tags=${SLIM_TAGS}" >> "$GITHUB_OUTPUT"
           echo "full_tags=${FULL_TAGS}" >> "$GITHUB_OUTPUT"
 
+      # The image's __release_date__ must equal the release tag. The native
+      # install gets this for free (release.yml stamps the release-branch tree);
+      # the image rebuilds from pristine upstream/ and would otherwise report
+      # upstream's date (this is why the v2026.6.5 image shipped 2026.5.29). The
+      # date simply IS the tag — v2026.6.5 → 2026.6.5 — but the hermetic builder
+      # can't read it (.dockerignore excludes .git), so derive it here and pass
+      # the one value in via --build-arg. Empty on non-release triggers → the
+      # builder keeps upstream's date (build.py._stamp_release_date no-ops).
+      - name: Resolve release date for image stamp
+        id: stamp
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          RELEASE_DATE=""
+          if [ "${{ github.event_name }}" = "release" ] && [ -n "${RELEASE_TAG}" ]; then
+            RELEASE_DATE="${RELEASE_TAG#v}"
+            case "${RELEASE_DATE}" in
+              [0-9][0-9][0-9][0-9].*[0-9]) echo "image release date: ${RELEASE_DATE}" ;;
+              *) echo "release tag ${RELEASE_TAG} is not a vYYYY.M.D calver tag" >&2; exit 1 ;;
+            esac
+          else
+            echo "non-release trigger — image keeps upstream date"
+          fi
+          echo "date=${RELEASE_DATE}" >> "$GITHUB_OUTPUT"
+
       # ----- slim variant build + push --------------------------------
       #
       # Built first because it's the fastest of the two (~371 MB vs
@@ -227,6 +253,7 @@ jobs:
           [ "${{ github.event_name }}" != "pull_request" ] && PUSH_FLAG="--push"
           docker buildx build \
             --build-arg SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)" \
+            --build-arg ARGO_RELEASE_DATE="${{ steps.stamp.outputs.date }}" \
             --platform "${{ steps.platforms.outputs.platforms }}" \
             --target runtime-slim \
             $PUSH_FLAG \
@@ -247,6 +274,7 @@ jobs:
           [ "${{ github.event_name }}" != "pull_request" ] && PUSH_FLAG="--push"
           docker buildx build \
             --build-arg SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)" \
+            --build-arg ARGO_RELEASE_DATE="${{ steps.stamp.outputs.date }}" \
             --platform "${{ steps.platforms.outputs.platforms }}" \
             --target runtime-full \
             $PUSH_FLAG \
@@ -263,3 +291,33 @@ jobs:
           RELEASE_TAG="${{ steps.tags.outputs.release_tag }}"
           docker buildx imagetools inspect "ghcr.io/nadicodeai/argo:${RELEASE_TAG}"
           docker buildx imagetools inspect "ghcr.io/nadicodeai/argo:${RELEASE_TAG}-slim"
+
+      # Release-date gate: assert the PUBLISHED release image carries the Argo
+      # release date, not upstream's. Reads argo_cli/__init__.py straight out of
+      # the pushed image (via `--entrypoint cat`, so no s6 boot / banner parse)
+      # and checks __release_date__ == the calver the release was cut under. This
+      # is the forcing function that would have caught the v2026.6.5 image
+      # shipping 2026.5.29. Runs only on release.published (where a date exists).
+      - name: Verify image reports the release date (gate)
+        if: github.event_name == 'release' && github.event.action == 'published'
+        env:
+          RELEASE_TAG: ${{ steps.tags.outputs.release_tag }}
+          EXPECTED_DATE: ${{ steps.stamp.outputs.date }}
+        run: |
+          set -euo pipefail
+          if [ -z "${EXPECTED_DATE}" ]; then
+            echo "release date not resolved — the stamp step should have failed first" >&2
+            exit 1
+          fi
+          for VARIANT in "${RELEASE_TAG}-slim" "${RELEASE_TAG}"; do
+            IMG="ghcr.io/nadicodeai/argo:${VARIANT}"
+            echo "checking ${IMG} for __release_date__ = \"${EXPECTED_DATE}\""
+            INIT="$(docker run --rm --entrypoint cat "${IMG}" /opt/argo/argo_cli/__init__.py)"
+            if echo "${INIT}" | grep -qF "__release_date__ = \"${EXPECTED_DATE}\""; then
+              echo "PASS: ${VARIANT} reports the Argo release date (${EXPECTED_DATE})"
+            else
+              echo "FAIL: ${VARIANT} does NOT carry __release_date__ = \"${EXPECTED_DATE}\"" >&2
+              echo "${INIT}" | grep -E '__version__|__release_date__' >&2 || true
+              exit 1
+            fi
+          done

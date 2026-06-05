@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -67,6 +68,14 @@ _CHINA_RESIDUAL_TOKENS = ("feishu", "dingtalk", "wecom", "weixin", "qqbot", "yua
 # not catch. Kept to code trees (china PLATFORM additions land here); docs under
 # website/ are handled by the china-docs denylist group, not this hard scan.
 _RESIDUAL_SCAN_DIRS = ("gateway", "hermes_cli", "tools", "skills")
+
+# Release-date stamp. The banner's "(YYYY.M.D)" comes from __release_date__ in
+# argo_cli/__init__.py; since the build regenerates that file from pristine
+# upstream/, the value arrives as upstream's. A release build overrides it via
+# $ARGO_RELEASE_DATE (see _stamp_release_date). Mirrors the calver shape used by
+# tools/argo_release.py / tools/apply_release_bump.py.
+_RELEASE_DATE_RE = re.compile(r'__release_date__\s*=\s*"[^"]+"')
+_CALVER_RE = re.compile(r"^\d{4}\.\d+\.\d+(?:\.\d+)?$")
 
 
 class BuildError(RuntimeError):
@@ -433,6 +442,46 @@ def _run_rebrand(upstream_sha: str) -> list[str]:
     return sorted(str(f) for f in files)
 
 
+def _stamp_release_date() -> str | None:
+    """Stamp the Argo release date into dist/argo/argo_cli/__init__.py.
+
+    ``make build`` regenerates the tree from pristine ``upstream/``, so the
+    rebuilt ``__release_date__`` is UPSTREAM's value. For a RELEASE build the
+    Argo calver date (the git tag, e.g. ``v2026.6.5``) must replace it, or the
+    image's ``argo --version`` disagrees with the native install — which
+    ``release.yml`` stamps post-build. The date comes from ``$ARGO_RELEASE_DATE``
+    because its natural source, the git tag, is unreachable inside the hermetic
+    docker builder (``.dockerignore`` excludes ``.git``). Unset → no-op: dev
+    builds (PR / main / local) keep upstream's date, honest for an unreleased
+    tree. ``__version__`` is left alone — it tracks upstream verbatim, so the
+    rebuilt value is already correct.
+
+    Runs AFTER rebrand (the file is ``argo_cli/__init__.py`` by then). Returns
+    the stamped date, or ``None`` when no stamp was requested.
+    """
+    date = os.environ.get("ARGO_RELEASE_DATE", "").strip()
+    if not date:
+        _log("release-date: ARGO_RELEASE_DATE unset — keeping upstream value (dev build)")
+        return None
+    if not _CALVER_RE.match(date):
+        raise BuildError(
+            "release-date", f"ARGO_RELEASE_DATE not YYYY.M.D[.N]: {date!r}"
+        )
+    init_path = DIST_DIR / "argo_cli" / "__init__.py"
+    if not init_path.is_file():
+        raise BuildError("release-date", f"version file missing after rebrand: {init_path}")
+    text = init_path.read_text(encoding="utf-8")
+    if not _RELEASE_DATE_RE.search(text):
+        raise BuildError(
+            "release-date", f"__release_date__ assignment not found in {init_path}"
+        )
+    init_path.write_text(
+        _RELEASE_DATE_RE.sub(f'__release_date__ = "{date}"', text), encoding="utf-8"
+    )
+    _log(f"release-date: stamped __release_date__ = {date!r}")
+    return date
+
+
 def _run_assertions(applied_patches: list[str]) -> list[str]:
     """Run tools/run_assertions.py if it exists. Returns list of patches checked.
 
@@ -518,6 +567,7 @@ def build() -> int:
     stripped = _strip_excluded_paths()
     content_edited = _apply_content_edits()
     touched = _run_rebrand(upstream_sha)
+    _stamp_release_date()
     assertions = _run_assertions(applied)
     _write_build_manifest(
         upstream_sha=upstream_sha,
