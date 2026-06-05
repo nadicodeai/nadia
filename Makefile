@@ -80,6 +80,19 @@ clean:
 .PHONY: leakage-static
 leakage-static:
 	python tools/verify_no_leakage.py dist/argo/
+	# Over-rename companion: leakage above catches a stray `hermes` (under-rename);
+	# this catches the OPPOSITE failure leakage is blind to — a Nous wire identifier
+	# (OAuth client_id, Portal tags, catalog User-Agent) clobbered to argo-* by the
+	# rename, which the Nous backend rejects. A clobbered value leaves no `hermes`
+	# to flag, so only this positive gate catches it. Wired here so every caller of
+	# `make leakage-static` (ci/release/deploy-docs/pre-commit/release script) gets it.
+	python tools/check_wire_identifiers.py dist/argo/
+	# China-in-docs companion: the strip removes China platform CODE + leaf doc pages,
+	# but shared docs (landing, messaging hub, env/tool/toolset tables, mermaid, setup
+	# links) used to keep enumerating/dead-linking them. This gate fails the build if a
+	# stripped China messaging platform is still referenced in the shipped docs, so
+	# docs.nadicode.ai/argo can never again ship features the product does not have.
+	python tools/check_no_china_in_docs.py dist/argo/website/
 
 # -----------------------------------------------------------------------------
 # Sync workflow
