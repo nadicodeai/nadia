@@ -18,8 +18,10 @@ GENERATED_FROM: str = 'argo-rename.yaml'
 MAPPINGS: tuple[tuple[str, str], ...] = (
     ('NousResearch/hermes-agent/main/scripts/install', 'nadicodeai/argo/release/scripts/install'),
     ('hermes-agent.nousresearch.com/docs', 'docs.nadicode.ai/argo'),
+    ('ghcr.io/nousresearch/hermes-agent', 'ghcr.io/nadicodeai/argo'),
     ('NousResearch/hermes-agent', 'nadicodeai/argo'),
     ('NousResearch/Hermes-Agent', 'nadicodeai/argo'),
+    ('nousresearch/hermes-agent', 'ghcr.io/nadicodeai/argo'),
     ('hermes_tools_mcp_server', 'argo_tools_mcp_server'),
     ('hermes_bootstrap', 'argo_bootstrap'),
     ('hermes_constants', 'argo_constants'),
@@ -50,23 +52,28 @@ EXCEPTION_PATHS: tuple[str, ...] = (
     '*/_rename_defaults.py',
     'README.md',
     'README.zh-CN.md',
-    'CONTRIBUTING.md',
-    'AGENTS.md',
     'argo-already-has-routines.md',
     '.github/workflows/skills-index.yml',
     '.github/workflows/deploy-site.yml',
-    'website/docs/developer-guide/plugin-llm-access.md',
-    'website/docs/user-guide/features/extending-the-dashboard.md',
 )
 
 SKIP_CONTEXTS: tuple[str, ...] = (
-    'https?://(?!(?:(?:raw\\.)?github(?:usercontent)?\\.com/(?i:NousResearch/hermes-agent)\\b|hermes-agent\\.local|hermes-agent\\.nousresearch\\.com/docs\\b))[^\\s"\'\\\\]*',
+    'https?://(?!(?:(?:raw\\.)?github(?:usercontent)?\\.com/(?i:NousResearch/hermes-agent)\\b|hermes-agent\\.local|hermes-agent\\.nousresearch\\.com/docs\\b))[^\\s"\'\\\\${}]*',
     '\\b[0-9a-f]{40}\\b',
     '\\b[0-9a-f]{64}\\b',
     '(?i)\\bnous[- ]hermes[\\w./-]*',
-    '(?i)\\bhermes(?:[- .]?[234][\\w.:+-]*|_[234][\\w.:+-]+)',
+    '(?i)\\bhermes(?:[- .]?[234](?![>])[\\w.:+-]*|_[234][\\w.:+-]+)',
     'hermes\\[-_ \\]\\?\\[34\\]',
     'Based on Hermes Agent by Nous Research',
+    'hermes-example-plugins',
+    'DEFAULT_NOUS_CLIENT_ID = "hermes-cli"',
+    '"client_id", "hermes-cli"',
+    'default: hermes-cli',
+    'hermes-cli/',
+    'return "hermes-cli"',
+    'hermes-cli UA',
+    'product=hermes-agent',
+    'client=hermes-client-v',
 )
 
 PROBE_TOKEN: str = 'hermes'
