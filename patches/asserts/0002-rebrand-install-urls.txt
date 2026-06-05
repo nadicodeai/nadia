@@ -25,8 +25,8 @@ path:README.zh-CN.md raw.githubusercontent.com/nadicodeai/argo/release/scripts/i
 path:README.zh-CN.md git clone https://github.com/nadicodeai/argo.git
 path:README.zh-CN.md github.com/nadicodeai/argo/issues
 path:README.zh-CN.md github.com/nadicodeai/argo/discussions
-path:CONTRIBUTING.md git clone --recurse-submodules https://github.com/nadicodeai/argo.git
-path:CONTRIBUTING.md Use [GitHub Issues](https://github.com/nadicodeai/argo/issues)
+# CONTRIBUTING.md is pruned from dist/argo (packaging-strip.yaml group: maintainer-docs),
+# so its post-rebrand assertions are dropped — patch 0002 still rebrands it pre-strip.
 path:README.md github.com/NousResearch/hermes-agent/blob/main/LICENSE
 path:README.zh-CN.md github.com/NousResearch/hermes-agent/blob/main/LICENSE
 

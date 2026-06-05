@@ -55,6 +55,17 @@ mappings:
   # bare `Hermes-Agent` -> `Argo-Agent` mapping would mangle it to a nonexistent
   # NousResearch/Argo-Agent; map the whole upstream-repo slug to the fork.
   - {from: "NousResearch/Hermes-Agent", to: "nadicodeai/argo"}
+  # --- Docker/OCI image references (point at the fork's real published image) ---
+  # Upstream's `argo update` message, docker-compose, and browser/tool help tell
+  # users to pull `nousresearch/hermes-agent` (Docker Hub) / `ghcr.io/nousresearch/
+  # hermes-agent`. The blanket rename turned these into `nousresearch/argo-agent`
+  # — an image that DOES NOT EXIST (the fork publishes to ghcr.io/nadicodeai/argo,
+  # per the README). Map both forms to the fork's real image. Longest-first
+  # ordering fires the ghcr-prefixed key before the bare one, so the bare key never
+  # double-prefixes a ghcr path. The Docker Hub *tags* URL is preserved by the URL
+  # guard, so it is flipped to the GHCR package page via a packaging-strip content_edit.
+  - {from: "ghcr.io/nousresearch/hermes-agent", to: "ghcr.io/nadicodeai/argo"}
+  - {from: "nousresearch/hermes-agent",         to: "ghcr.io/nadicodeai/argo"}
   # --- Composite identifiers (longest first) ---
   - {from: "hermes_tools_mcp_server", to: "argo_tools_mcp_server"}
   - {from: "HermesAgent",             to: "ArgoAgent"}
@@ -101,20 +112,25 @@ exceptions:
     why: "Whole-file engine exception. Attribution (fork-notice block, License + Fork-of badges, the NousResearch/hermes-agent repo slug) AND the docs links (hermes-agent.nousresearch.com/docs/...) intentionally reference upstream — MIT license requires attribution and the README is part of that attribution surface. Patch 0014 rebrands ONLY the copy-paste command examples (`hermes`->`argo`) and config paths (~/.hermes->~/.argo); it deliberately leaves the docs URLs upstream (see patch 0014 header + tests/test_readme_commands_rebranded.py). The /docs rename mapping does NOT reach this file (exception short-circuits)."
   - path: "README.zh-CN.md"
     why: "Same fork-notice and attribution requirements as README.md, translated."
-  - path: "CONTRIBUTING.md"
-    why: "Whole-file engine exception. The docs links (hermes-agent.nousresearch.com/docs) and the bare-host 'Documentation site' note stay on the upstream host — the /docs rename mapping does NOT reach this file (exception short-circuits). The upstream clone URL (NousResearch/hermes-agent.git), Issues links, and discord.gg/NousResearch stay upstream per MIT attribution."
-  - path: "AGENTS.md"
-    why: "References upstream's hermes-example-plugins repo for plugin samples; no nadicode fork of that repo exists."
+  # NOTE: CONTRIBUTING.md and AGENTS.md were whole-file rename-excepted here, but
+  # they are upstream MAINTAINER dev-docs (123 + 61 hermes refs) irrelevant to Argo
+  # customers and the biggest source of shipped hermes/argo "mixture". They are now
+  # PRUNED from dist/argo by packaging-strip.yaml (group: maintainer-docs), so they
+  # never reach the rename and need no exception. MIT attribution lives in README +
+  # LICENSE (still shipped).
   - path: "argo-already-has-routines.md"
     why: "Whole-file engine exception. Planning/comparison document referencing the upstream docs URL (hermes-agent.nousresearch.com/docs/guides/automation-templates) for context; the /docs rename mapping does NOT reach this file (exception short-circuits), so the link stays on the upstream host — intentional, not a deploy surface."
   - path: ".github/workflows/skills-index.yml"
     why: "Fork-specific gate comments name hermes-agent.nousresearch.com when explaining why the upstream docs deploy is disabled."
   - path: ".github/workflows/deploy-site.yml"
     why: "Same fork-specific gate comments as skills-index.yml."
-  - path: "website/docs/developer-guide/plugin-llm-access.md"
-    why: "References upstream's hermes-example-plugins repo (sample plugins live in the upstream companion repo; no nadicode fork exists)."
-  - path: "website/docs/user-guide/features/extending-the-dashboard.md"
-    why: "Same as plugin-llm-access.md — references hermes-example-plugins for dashboard reskin examples."
+  # NOTE: website/docs/developer-guide/plugin-llm-access.md and
+  # website/docs/user-guide/features/extending-the-dashboard.md were whole-file
+  # excepted here to preserve their `hermes-example-plugins` repo references — but
+  # that left 52 + 11 *brand* mentions ("Hermes web dashboard", `hermes dashboard`,
+  # `~/.hermes/`) un-rebranded on the LIVE docs site (the hermes/argo "mixture").
+  # Replaced with a precise `hermes-example-plugins` skip_context below so these
+  # pages rebrand normally and only the companion-repo name is preserved.
 
 skip_contexts:
   # Preserve every URL whose host/path is NOT something nadicode controls.
@@ -135,6 +151,15 @@ skip_contexts:
   # source-level `\n` is a backslash + 'n' — neither matches regex `\s`,
   # so without `\\` here the URL match would consume the embedded
   # KEY=value tail and prevent rebrand. See M4 / UCS-AC-3.
+  # `${}` are ALSO excluded so the URL match stops at a SHELL-VARIABLE
+  # interpolation inside a TEMPLATE url (e.g. `http://${HERMES_API_PORT}/v1`,
+  # `https://nodejs.org/dist/latest-v${HERMES_NODE_TARGET_MAJOR}.x/`). Without
+  # this, the greedy URL match swallowed `${HERMES_*}` and PRESERVED it, so the
+  # rebranded script referenced an undefined `HERMES_*` var (its definition had
+  # already rebranded to `ARGO_*`) — setup_open_webui.sh's health check and
+  # node-bootstrap.sh's Node download both broke (empty var → bad URL). Real
+  # external URLs never contain `${`, so this only frees shell-var brand tokens
+  # to rebrand. See tests/test_model_id_preservation.py::test_shell_var_inside_url_rebrands.
   # The repo-slug exclusion is case-insensitive (?i:...) so capitalised upstream
   # URLs (github.com/NousResearch/Hermes-Agent in package.json) are treated as
   # rewritable — NOT preserved — and get rebranded by the mapping above. This
@@ -146,7 +171,7 @@ skip_contexts:
   # mapping above fires). The BARE host (HTTP-Referer), /install.sh, /llms.txt,
   # github.com/NousResearch/hermes-agent and pypi.org/p/hermes-agent do NOT match
   # /docs, so they stay preserved.
-  - 'https?://(?!(?:(?:raw\.)?github(?:usercontent)?\.com/(?i:NousResearch/hermes-agent)\b|hermes-agent\.local|hermes-agent\.nousresearch\.com/docs\b))[^\s"''\\]*'
+  - 'https?://(?!(?:(?:raw\.)?github(?:usercontent)?\.com/(?i:NousResearch/hermes-agent)\b|hermes-agent\.local|hermes-agent\.nousresearch\.com/docs\b))[^\s"''\\${}]*'
   - '\b[0-9a-f]{40}\b'      # Don't rewrite inside git-sha-like 40-hex tokens.
   - '\b[0-9a-f]{64}\b'      # Don't rewrite inside sha256-like 64-hex tokens.
   # --- Nous "Hermes" LLM MODEL identifiers (NOT the hermes-agent brand) ---
@@ -180,7 +205,16 @@ skip_contexts:
   # hyphen/space/dot/no-separator forms still match bare ("Hermes 3", hermes-3)
   # because those never appear as a nick-collision suffix.
   - '(?i)\bnous[- ]hermes[\w./-]*'        # nous-hermes-2-mistral, Nous-Hermes-3, Nous-Hermes-llama-1b-v1 (no version digit)
-  - '(?i)\bhermes(?:[- .]?[234][\w.:+-]*|_[234][\w.:+-]+)'   # Hermes-4-405B, hermes-3-70b, "Hermes 3", hermes3:70b, Hermes-4.3-36B, hermes_4_70b, nousresearch/hermes-4-405b tail; underscore form requires a tail so the hermes_2 IRC nick still rebrands
+  # The `(?![>])` after the version digit stops a SHELL REDIRECT from being
+  # mistaken for a model id: install.sh has `$(which hermes 2>/dev/null)` and
+  # `$(command -v hermes 2>/dev/null)`, where `hermes 2>` looked like "Hermes 2"
+  # and was wrongly PRESERVED — so the rebranded installer probed for a `hermes`
+  # binary that is now named `argo`, logged "hermes not found on PATH after
+  # install", and skipped auto-running `argo setup`. Real model ids never have a
+  # `>` after the version digit; `2>`/`3>`/`4>` are fd redirects, so the guard is
+  # safe (verified: 0 model-id regressions, all 5 redirect false-positives fixed).
+  # See tests/test_model_id_preservation.py::test_shell_redirect_after_hermes_rebrands.
+  - '(?i)\bhermes(?:[- .]?[234](?![>])[\w.:+-]*|_[234][\w.:+-]+)'   # Hermes-4-405B, hermes-3-70b, "Hermes 3", hermes3:70b, Hermes-4.3-36B, hermes_4_70b, nousresearch/hermes-4-405b tail; underscore form requires a tail so the hermes_2 IRC nick still rebrands; (?!>) excludes `hermes 2>/dev/null` shell redirects
   - 'hermes\[-_ \]\?\[34\]'               # the model_switch.py non-agentic detector regex literal: hermes[-_ ]?[34]
   # --- Fork attribution credit (patch 0015) ---
   # The rebranded startup/dashboard surfaces credit the upstream project by
@@ -192,3 +226,53 @@ skip_contexts:
   # ui-tui/.../branding.tsx, hermes_cli/banner.py, web/.../SidebarFooter.tsx,
   # and hermes_cli/dashboard_auth/login_page.py (all via patch 0015).
   - 'Based on Hermes Agent by Nous Research'
+  # --- Upstream companion repo name (no nadicode fork exists) ---
+  # `hermes-example-plugins` is NousResearch's separate sample-plugins repo. The
+  # docs (plugin-llm-access.md, extending-the-dashboard.md, AGENTS.md) point at it
+  # for examples; there is no `argo-example-plugins`, so the bare token must NOT
+  # rebrand. Preserving this one token lets those docs pages drop their too-broad
+  # whole-file rename exceptions and rebrand every OTHER `hermes` to Argo. The full
+  # github.com/NousResearch/hermes-example-plugins URL is already preserved by the
+  # URL guard (it does not match the rewritable `NousResearch/hermes-agent\b`); this
+  # covers the bare/prose form.
+  - 'hermes-example-plugins'
+  # NOTE: the NVIDIA NIM `X-BILLING-INVOKE-ORIGIN: HermesAgent` header is deliberately
+  # NOT preserved. The audit skeptics split 1-1 on whether NVIDIA keys on it; unlike the
+  # Nous client_id (empirically confirmed to break portal join), a billing-ORIGIN tag is
+  # almost certainly attribution/analytics, not a hard whitelist — and "ArgoAgent" is the
+  # accurate origin for Argo's traffic. It rebrands to ArgoAgent in lockstep with its
+  # tests (preserving only the source diverged source vs the renamed test assertions).
+  # --- Nous backend WIRE-PROTOCOL identifiers (NOT brand tokens) ---
+  # These EXACT strings are sent to (or recognised by) Nous's portal / inference /
+  # model-catalog endpoints, which key on them for OAuth client whitelisting,
+  # usage attribution, and WAF User-Agent allow-listing. The blanket hermes->argo
+  # rename rewrote them to argo-* (e.g. DEFAULT_NOUS_CLIENT_ID "hermes-cli" ->
+  # "argo-cli"), which the portal REJECTS — the device-code login then fails in
+  # the field with the exact symptom "cannot join the Nous portal, it says
+  # argo-cli". They are Nous's protocol identity, not our brand, so they MUST stay
+  # upstream — the same class as the Hermes MODEL ids and the OpenRouter
+  # X-Title / HTTP-Referer attribution headers protected above.
+  #
+  # CRITICAL — the literal "hermes-cli" is OVERLOADED. It is BOTH the Nous OAuth
+  # client_id (a WIRE value — preserve) AND the internal default *toolset* key
+  # (toolsets.py registry, config.py default ["hermes-cli"], delegate_tool.py /
+  # tools_config.py comparisons — a BRAND token that MUST rebrand to argo-cli for
+  # a consistent product). So every pattern below is anchored to the WIRE context
+  # only; the bare quoted "hermes-cli" toolset key matches NONE of them and still
+  # rebrands. Verified collision-free against upstream (the toolset never uses the
+  # `hermes-cli/` UA slash-form, `return "hermes-cli"`, `default: hermes-cli`, or
+  # the DEFAULT_NOUS_CLIENT_ID assignment).
+  #
+  # A positive build gate (tools/check_wire_identifiers.py, wired into make
+  # leakage / CI) asserts each of these survives in dist/argo/. If an upstream
+  # refactor drifts an anchor, the rename clobbers the value AND leakage stays
+  # green (no `hermes` left to flag) — only the positive gate catches it, so the
+  # build fails loudly instead of shipping a portal-broken release.
+  - 'DEFAULT_NOUS_CLIENT_ID = "hermes-cli"'   # auth.py — OAuth client_id default (the reported blocker)
+  - '"client_id", "hermes-cli"'               # auth.py — runtime client_id literal fallback
+  - 'default: hermes-cli'                      # main.py — --client-id OAuth help text (x2)
+  - 'hermes-cli/'                              # model_catalog.py / models.py / providers/base.py — Nous-catalog User-Agent
+  - 'return "hermes-cli"'                      # providers/base.py — UA fallback when version import fails
+  - 'hermes-cli UA'                            # providers/base.py — comment naming the UA (keep accurate)
+  - 'product=hermes-agent'                     # portal_tags.py — Nous Portal product-attribution tag
+  - 'client=hermes-client-v'                   # portal_tags.py (+ providers docs) — Nous Portal client-release tag
