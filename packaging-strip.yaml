@@ -42,6 +42,7 @@ groups:
       - gateway/platforms/feishu.py
       - gateway/platforms/feishu_comment.py
       - gateway/platforms/feishu_comment_rules.py
+      - gateway/platforms/feishu_meeting_invite.py
       - gateway/platforms/dingtalk.py
       - gateway/platforms/wecom.py
       - gateway/platforms/wecom_callback.py
@@ -90,6 +91,7 @@ groups:
       - tests/gateway/test_feishu_bot_auth_bypass.py
       - tests/gateway/test_feishu_comment.py
       - tests/gateway/test_feishu_comment_rules.py
+      - tests/gateway/test_feishu_meeting_invite.py
       - tests/gateway/test_feishu_onboard.py
       - tests/gateway/test_setup_feishu.py
       - tests/gateway/test_dingtalk.py
