@@ -98,6 +98,18 @@ extras_exceptions:
   - extra: azure-identity
     why: "FLAGGED: azure-identity not eagerly installed; breaks PyPI-blocked containers."
     issue: "TODO-extras-parity"
+  - extra: hindsight
+    why: >-
+      FLAGGED: upstream (56236b16) eagerly installs --extra hindsight (the
+      hindsight-client memory provider) precisely BECAUSE its runtime
+      lazy-install lands in the immutable image-layer venv and is lost on every
+      container recreate/update (ModuleNotFoundError: hindsight_client, upstream
+      #38128). The fork defers ALL extras to tools/lazy_deps.py (pip install -e .
+      with no extras), so it inherits the SAME gap — recorded here for
+      consistency with the extras posture above, NOT because it is resolved.
+      Same follow-up as the others (rollout step 2: eager-install in runtime-full
+      or prove the offline/recreate path is covered).
+    issue: "TODO-extras-parity"
 
 # Informational record of larger structural divergences the gate does not (yet)
 # enforce facet-by-facet. Documented so the decision is discoverable.
