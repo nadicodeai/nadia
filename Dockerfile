@@ -282,9 +282,15 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/opt/argo/.playwright
 #                           runtime; without ssh that path errors out.
 #   make, gcc, g++,       → Native-compile toolchain. Two consumers:
 #   python3-dev,            (1) `tools/lazy_deps.py` pip-installs platform extras
-#   libffi-dev              (sounddevice, brotlicffi, mautrix[encryption],
-#                           asyncpg, …) on first use; some lack manylinux
+#   libffi-dev,             (sounddevice, brotlicffi, mautrix[encryption],
+#   libolm-dev              asyncpg, …) on first use; some lack manylinux
 #                           wheels for arm64 and fall back to source builds.
+#                           libolm-dev provides the Olm/Megolm C headers that
+#                           mautrix[encryption] (Matrix E2EE) links against;
+#                           upstream apt-added it in the 56236b16 sync, mirrored
+#                           here so the lazy Matrix-encryption build resolves. It
+#                           belongs with the lazy_deps build toolchain, not the
+#                           deferred Python extras (packaging-overrides.yaml).
 #                           (2) node-gyp builds node-pty 1.1.0's C++ binding at
 #                           `npm install` time. node-pty entered the dashboard
 #                           npm tree transitively (@streamdown/math →
@@ -318,7 +324,8 @@ RUN apt-get update && \
         gcc \
         g++ \
         python3-dev \
-        libffi-dev && \
+        libffi-dev \
+        libolm-dev && \
     rm -rf /var/lib/apt/lists/*
 
 # Node 22 LTS: copy the node binary plus the bundled npm + corepack JS trees

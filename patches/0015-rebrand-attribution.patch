@@ -36,9 +36,11 @@ verify_no_leakage treat that "hermes" as allowed. Assertions in
 patches/asserts/0015-rebrand-attribution.txt prove both that the rebrand
 landed and that the literal "Hermes" survived the rename pass.
 
---- a/hermes_cli/banner.py
-+++ b/hermes_cli/banner.py
-@@ -542,7 +542,8 @@ def build_welcome_banner(console: "Conso
+Index: .sync-workdir/hermes_cli/banner.py
+===================================================================
+--- .sync-workdir.orig/hermes_cli/banner.py
++++ .sync-workdir/hermes_cli/banner.py
+@@ -561,7 +561,8 @@ def build_welcome_banner(console: "Conso
      if len(model_short) > 28:
          model_short = model_short[:25] + "..."
      ctx_str = f" [dim {dim}]·[/] [dim {dim}]{_format_context_length(context_length)} context[/]" if context_length else ""
@@ -48,9 +50,11 @@ landed and that the literal "Hermes" survived the rename pass.
  
      if os.getenv("HERMES_YOLO_MODE"):
          left_lines.append(f"[bold red]⚠ YOLO mode[/] [dim {dim}]— all approval prompts bypassed[/]")
---- a/hermes_cli/dashboard_auth/login_page.py
-+++ b/hermes_cli/dashboard_auth/login_page.py
-@@ -252,7 +252,8 @@ _LOGIN_HTML_TEMPLATE = """\
+Index: .sync-workdir/hermes_cli/dashboard_auth/login_page.py
+===================================================================
+--- .sync-workdir.orig/hermes_cli/dashboard_auth/login_page.py
++++ .sync-workdir/hermes_cli/dashboard_auth/login_page.py
+@@ -302,7 +302,8 @@ _LOGIN_HTML_TEMPLATE = """\
  </head>
  <body>
  <main>
@@ -60,8 +64,10 @@ landed and that the literal "Hermes" survived the rename pass.
    <div class="card">
      <h1>Sign in</h1>
      <p class="subtitle">Choose a sign-in method to continue to the Hermes Agent dashboard.</p>
---- a/ui-tui/src/components/branding.tsx
-+++ b/ui-tui/src/components/branding.tsx
+Index: .sync-workdir/ui-tui/src/components/branding.tsx
+===================================================================
+--- .sync-workdir.orig/ui-tui/src/components/branding.tsx
++++ .sync-workdir/ui-tui/src/components/branding.tsx
 @@ -44,9 +44,9 @@ export function ArtLines({ lines }: { li
  // Terminals can't scale glyphs, so "responsive" means picking a layout that
  // fits the available columns. Thresholds are picked so each tier reads
@@ -93,8 +99,10 @@ landed and that the literal "Hermes" survived the rename pass.
              </Text>
              <Text color={t.color.muted} wrap="truncate-end">
                {info.cwd || process.cwd()}
---- a/web/src/components/SidebarFooter.tsx
-+++ b/web/src/components/SidebarFooter.tsx
+Index: .sync-workdir/web/src/components/SidebarFooter.tsx
+===================================================================
+--- .sync-workdir.orig/web/src/components/SidebarFooter.tsx
++++ .sync-workdir/web/src/components/SidebarFooter.tsx
 @@ -21,9 +21,10 @@ export function SidebarFooter({ status }
        </Typography>
  
@@ -107,8 +115,10 @@ landed and that the literal "Hermes" survived the rename pass.
          className={cn(
            "font-mondwest text-display text-xs tracking-[0.12em] text-midground",
            "transition-opacity hover:opacity-90",
---- a/web/src/i18n/af.ts
-+++ b/web/src/i18n/af.ts
+Index: .sync-workdir/web/src/i18n/af.ts
+===================================================================
+--- .sync-workdir.orig/web/src/i18n/af.ts
++++ .sync-workdir/web/src/i18n/af.ts
 @@ -55,7 +55,7 @@ export const af: Translations = {
      closeNavigation: "Maak navigasie toe",
      closeModelTools: "Maak model en gereedskap toe",
@@ -118,8 +128,10 @@ landed and that the literal "Hermes" survived the rename pass.
      },
      activeSessionsLabel: "Aktiewe Sessies:",
      gatewayStatusLabel: "Gateway-status:",
---- a/web/src/i18n/de.ts
-+++ b/web/src/i18n/de.ts
+Index: .sync-workdir/web/src/i18n/de.ts
+===================================================================
+--- .sync-workdir.orig/web/src/i18n/de.ts
++++ .sync-workdir/web/src/i18n/de.ts
 @@ -55,7 +55,7 @@ export const de: Translations = {
      closeNavigation: "Navigation schließen",
      closeModelTools: "Modell und Werkzeuge schließen",
@@ -129,9 +141,11 @@ landed and that the literal "Hermes" survived the rename pass.
      },
      activeSessionsLabel: "Aktive Sitzungen:",
      gatewayStatusLabel: "Gateway-Status:",
---- a/web/src/i18n/en.ts
-+++ b/web/src/i18n/en.ts
-@@ -55,7 +55,7 @@ export const en: Translations = {
+Index: .sync-workdir/web/src/i18n/en.ts
+===================================================================
+--- .sync-workdir.orig/web/src/i18n/en.ts
++++ .sync-workdir/web/src/i18n/en.ts
+@@ -58,7 +58,7 @@ export const en: Translations = {
      closeNavigation: "Close navigation",
      closeModelTools: "Close model and tools",
      footer: {
@@ -140,8 +154,10 @@ landed and that the literal "Hermes" survived the rename pass.
      },
      activeSessionsLabel: "Active Sessions:",
      gatewayStatusLabel: "Gateway Status:",
---- a/web/src/i18n/es.ts
-+++ b/web/src/i18n/es.ts
+Index: .sync-workdir/web/src/i18n/es.ts
+===================================================================
+--- .sync-workdir.orig/web/src/i18n/es.ts
++++ .sync-workdir/web/src/i18n/es.ts
 @@ -55,7 +55,7 @@ export const es: Translations = {
      closeNavigation: "Cerrar navegación",
      closeModelTools: "Cerrar modelo y herramientas",
@@ -151,8 +167,10 @@ landed and that the literal "Hermes" survived the rename pass.
      },
      activeSessionsLabel: "Sesiones activas:",
      gatewayStatusLabel: "Estado del Gateway:",
---- a/web/src/i18n/fr.ts
-+++ b/web/src/i18n/fr.ts
+Index: .sync-workdir/web/src/i18n/fr.ts
+===================================================================
+--- .sync-workdir.orig/web/src/i18n/fr.ts
++++ .sync-workdir/web/src/i18n/fr.ts
 @@ -55,7 +55,7 @@ export const fr: Translations = {
      closeNavigation: "Fermer la navigation",
      closeModelTools: "Fermer modèle et outils",
@@ -162,8 +180,10 @@ landed and that the literal "Hermes" survived the rename pass.
      },
      activeSessionsLabel: "Sessions actives:",
      gatewayStatusLabel: "État de la passerelle:",
---- a/web/src/i18n/ga.ts
-+++ b/web/src/i18n/ga.ts
+Index: .sync-workdir/web/src/i18n/ga.ts
+===================================================================
+--- .sync-workdir.orig/web/src/i18n/ga.ts
++++ .sync-workdir/web/src/i18n/ga.ts
 @@ -55,7 +55,7 @@ export const ga: Translations = {
      closeNavigation: "Dún an nascleanúint",
      closeModelTools: "Dún an samhail agus na huirlisí",
@@ -173,8 +193,10 @@ landed and that the literal "Hermes" survived the rename pass.
      },
      activeSessionsLabel: "Seisiúin gníomhacha:",
      gatewayStatusLabel: "Stádas an gateway:",
---- a/web/src/i18n/hu.ts
-+++ b/web/src/i18n/hu.ts
+Index: .sync-workdir/web/src/i18n/hu.ts
+===================================================================
+--- .sync-workdir.orig/web/src/i18n/hu.ts
++++ .sync-workdir/web/src/i18n/hu.ts
 @@ -55,7 +55,7 @@ export const hu: Translations = {
      closeNavigation: "Navigáció bezárása",
      closeModelTools: "Modell és eszközök bezárása",
@@ -184,8 +206,10 @@ landed and that the literal "Hermes" survived the rename pass.
      },
      activeSessionsLabel: "Aktív munkamenetek:",
      gatewayStatusLabel: "Átjáró állapota:",
---- a/web/src/i18n/it.ts
-+++ b/web/src/i18n/it.ts
+Index: .sync-workdir/web/src/i18n/it.ts
+===================================================================
+--- .sync-workdir.orig/web/src/i18n/it.ts
++++ .sync-workdir/web/src/i18n/it.ts
 @@ -55,7 +55,7 @@ export const it: Translations = {
      closeNavigation: "Chiudi navigazione",
      closeModelTools: "Chiudi modello e strumenti",
@@ -195,8 +219,10 @@ landed and that the literal "Hermes" survived the rename pass.
      },
      activeSessionsLabel: "Sessioni attive:",
      gatewayStatusLabel: "Stato gateway:",
---- a/web/src/i18n/ja.ts
-+++ b/web/src/i18n/ja.ts
+Index: .sync-workdir/web/src/i18n/ja.ts
+===================================================================
+--- .sync-workdir.orig/web/src/i18n/ja.ts
++++ .sync-workdir/web/src/i18n/ja.ts
 @@ -55,7 +55,7 @@ export const ja: Translations = {
      closeNavigation: "ナビゲーションを閉じる",
      closeModelTools: "モデルとツールを閉じる",
@@ -206,8 +232,10 @@ landed and that the literal "Hermes" survived the rename pass.
      },
      activeSessionsLabel: "アクティブなセッション:",
      gatewayStatusLabel: "ゲートウェイの状態:",
---- a/web/src/i18n/ko.ts
-+++ b/web/src/i18n/ko.ts
+Index: .sync-workdir/web/src/i18n/ko.ts
+===================================================================
+--- .sync-workdir.orig/web/src/i18n/ko.ts
++++ .sync-workdir/web/src/i18n/ko.ts
 @@ -55,7 +55,7 @@ export const ko: Translations = {
      closeNavigation: "내비게이션 닫기",
      closeModelTools: "모델 및 도구 닫기",
@@ -217,8 +245,10 @@ landed and that the literal "Hermes" survived the rename pass.
      },
      activeSessionsLabel: "활성 세션:",
      gatewayStatusLabel: "게이트웨이 상태:",
---- a/web/src/i18n/pt.ts
-+++ b/web/src/i18n/pt.ts
+Index: .sync-workdir/web/src/i18n/pt.ts
+===================================================================
+--- .sync-workdir.orig/web/src/i18n/pt.ts
++++ .sync-workdir/web/src/i18n/pt.ts
 @@ -55,7 +55,7 @@ export const pt: Translations = {
      closeNavigation: "Fechar navegação",
      closeModelTools: "Fechar modelo e ferramentas",
@@ -228,8 +258,10 @@ landed and that the literal "Hermes" survived the rename pass.
      },
      activeSessionsLabel: "Sessões ativas:",
      gatewayStatusLabel: "Estado do gateway:",
---- a/web/src/i18n/ru.ts
-+++ b/web/src/i18n/ru.ts
+Index: .sync-workdir/web/src/i18n/ru.ts
+===================================================================
+--- .sync-workdir.orig/web/src/i18n/ru.ts
++++ .sync-workdir/web/src/i18n/ru.ts
 @@ -55,7 +55,7 @@ export const ru: Translations = {
      closeNavigation: "Закрыть навигацию",
      closeModelTools: "Закрыть модель и инструменты",
@@ -239,8 +271,10 @@ landed and that the literal "Hermes" survived the rename pass.
      },
      activeSessionsLabel: "Активные сессии:",
      gatewayStatusLabel: "Статус шлюза:",
---- a/web/src/i18n/tr.ts
-+++ b/web/src/i18n/tr.ts
+Index: .sync-workdir/web/src/i18n/tr.ts
+===================================================================
+--- .sync-workdir.orig/web/src/i18n/tr.ts
++++ .sync-workdir/web/src/i18n/tr.ts
 @@ -55,7 +55,7 @@ export const tr: Translations = {
      closeNavigation: "Gezintiyi kapat",
      closeModelTools: "Modeli ve araçları kapat",
@@ -250,8 +284,10 @@ landed and that the literal "Hermes" survived the rename pass.
      },
      activeSessionsLabel: "Aktif Oturumlar:",
      gatewayStatusLabel: "Ağ Geçidi Durumu:",
---- a/web/src/i18n/uk.ts
-+++ b/web/src/i18n/uk.ts
+Index: .sync-workdir/web/src/i18n/uk.ts
+===================================================================
+--- .sync-workdir.orig/web/src/i18n/uk.ts
++++ .sync-workdir/web/src/i18n/uk.ts
 @@ -55,7 +55,7 @@ export const uk: Translations = {
      closeNavigation: "Закрити навігацію",
      closeModelTools: "Закрити модель та інструменти",
@@ -261,8 +297,10 @@ landed and that the literal "Hermes" survived the rename pass.
      },
      activeSessionsLabel: "Активні сесії:",
      gatewayStatusLabel: "Стан шлюзу:",
---- a/web/src/i18n/zh-hant.ts
-+++ b/web/src/i18n/zh-hant.ts
+Index: .sync-workdir/web/src/i18n/zh-hant.ts
+===================================================================
+--- .sync-workdir.orig/web/src/i18n/zh-hant.ts
++++ .sync-workdir/web/src/i18n/zh-hant.ts
 @@ -55,7 +55,7 @@ export const zhHant: Translations = {
      closeNavigation: "關閉導覽",
      closeModelTools: "關閉模型與工具",
@@ -272,8 +310,10 @@ landed and that the literal "Hermes" survived the rename pass.
      },
      activeSessionsLabel: "使用中工作階段：",
      gatewayStatusLabel: "閘道狀態：",
---- a/web/src/i18n/zh.ts
-+++ b/web/src/i18n/zh.ts
+Index: .sync-workdir/web/src/i18n/zh.ts
+===================================================================
+--- .sync-workdir.orig/web/src/i18n/zh.ts
++++ .sync-workdir/web/src/i18n/zh.ts
 @@ -54,7 +54,7 @@ export const zh: Translations = {
      closeNavigation: "关闭导航",
      closeModelTools: "关闭模型与工具",
