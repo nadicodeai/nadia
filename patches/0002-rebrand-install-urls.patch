@@ -6,8 +6,8 @@ Index: .sync-workdir/CONTRIBUTING.md
  ### Clone and install
  
  ```bash
--git clone --recurse-submodules https://github.com/NousResearch/hermes-agent.git
-+git clone --recurse-submodules https://github.com/nadicodeai/argo.git
+-git clone https://github.com/NousResearch/hermes-agent.git
++git clone https://github.com/nadicodeai/argo.git
  cd hermes-agent
  
  # Create venv with Python 3.11
@@ -28,7 +28,7 @@ Index: .sync-workdir/README.md
  ### Linux, macOS, WSL2, Termux
  
  ```bash
--curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+-curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
 +curl -fsSL https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh | bash
  ```
  
@@ -40,7 +40,7 @@ Index: .sync-workdir/README.md
  Run this in PowerShell:
  
  ```powershell
--iex (irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1)
+-iex (irm https://hermes-agent.nousresearch.com/install.ps1)
 +iex (irm https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1)
  ```
  
@@ -71,7 +71,7 @@ Index: .sync-workdir/README.zh-CN.md
  ## 快速安装
  
  ```bash
--curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+-curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
 +curl -fsSL https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh | bash
  ```
  
