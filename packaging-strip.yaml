@@ -159,6 +159,100 @@ groups:
 # edit can never silently no-op and leave the leftover behind.
 # ---------------------------------------------------------------------------
 content_edits:
+  - name: default-display-skin-argo
+    file: cli.py
+    why: >-
+      Make the shipped Argo distribution start with the generated NadicodeAI
+      `argo` skin by default. This is a fork distribution default, not an
+      upstream source edit; the narrow config literal fails loud if upstream
+      rewrites the default config shape.
+    find: '            "skin": "default",'
+    replace: '            "skin": "argo",'
+  - name: non-default-empty-banner-hero-no-hermes-fallback
+    file: hermes_cli/banner.py
+    why: >-
+      Let the shipped Argo skin intentionally omit custom hero art. Upstream
+      falls back to the Hermes caduceus when banner_hero is empty; that is
+      correct for the default Hermes skin, but wrong for a non-default Argo
+      skin profile adapted from the documented skin system.
+    find: "        _bskin = get_active_skin()\n        _hero = _bskin.banner_hero if hasattr(_bskin, 'banner_hero') and _bskin.banner_hero else HERMES_CADUCEUS"
+    replace: "        _bskin = get_active_skin()\n        _skin_name = getattr(_bskin, \"name\", \"default\")\n        if hasattr(_bskin, 'banner_hero') and _bskin.banner_hero:\n            _hero = _bskin.banner_hero\n        elif _skin_name == \"default\":\n            _hero = HERMES_CADUCEUS\n        else:\n            _hero = \"\""
+  - name: non-default-empty-banner-logo-no-hermes-fallback
+    file: hermes_cli/banner.py
+    why: >-
+      Let the shipped Argo skin intentionally omit custom logo art. Upstream
+      falls back to the Hermes wordmark when banner_logo is empty; the Argo
+      default should not show either Hermes art or invented Argo ASCII art.
+    find: "    if term_width >= 95:\n        _logo = _bskin.banner_logo if _bskin and hasattr(_bskin, 'banner_logo') and _bskin.banner_logo else HERMES_AGENT_LOGO\n        console.print(_logo)\n        console.print()"
+    replace: "    if term_width >= 95:\n        _logo = None\n        if _bskin and hasattr(_bskin, 'banner_logo') and _bskin.banner_logo:\n            _logo = _bskin.banner_logo\n        elif not _bskin or getattr(_bskin, \"name\", \"default\") == \"default\":\n            _logo = HERMES_AGENT_LOGO\n        if _logo:\n            console.print(_logo)\n            console.print()"
+  - name: argo-banner-remove-duplicate-brand-model-suffix
+    file: hermes_cli/banner.py
+    why: >-
+      Keep the explicit Argo/NadicodeAI attribution line, but do not append a
+      second `· NadicodeAI` label to the model line. In the skin preview this
+      duplicates the model placeholder into a stray centered brand caption.
+    find: '    left_lines.append(f"[{accent}]{model_short}[/]{ctx_str} [dim {dim}]·[/] [dim {dim}]NadicodeAI[/]")'
+    replace: '    left_lines.append(f"[{accent}]{model_short}[/]{ctx_str}")'
+  - name: argo-banner-attribution-readable
+    file: hermes_cli/banner.py
+    why: >-
+      Render the Argo attribution line in the active skin body color instead of
+      Rich dim gray. The line is part of the visible startup identity and must
+      stay readable in dark terminal previews and real terminal sessions.
+    find: '    left_lines.append(f"[dim {dim}]An AI agent from NadicodeAI (nadicode.ai) · Based on Hermes Agent by Nous Research[/]")'
+    replace: '    left_lines.append(f"[{text}]An AI agent from NadicodeAI (nadicode.ai) · Based on Hermes Agent by Nous Research[/]")'
+  - name: install-sh-release-shortlinks
+    file: scripts/install.sh
+    why: >-
+      Upstream now documents the short hermes-agent.nousresearch.com install
+      URLs inside the kept installer. The Argo release tree is the only
+      customer-runnable install surface, so shipped installer help must point at
+      raw.githubusercontent.com/nadicodeai/argo/release rather than the upstream
+      host.
+    find: "https://hermes-agent.nousresearch.com/install.sh"
+    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh"
+  - name: install-sh-windows-release-shortlink
+    file: scripts/install.sh
+    why: >-
+      The POSIX installer prints the Windows one-liner when the OS is wrong.
+      Keep that recovery hint on the Argo release branch too.
+    find: "https://hermes-agent.nousresearch.com/install.ps1"
+    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1"
+  - name: install-ps1-release-shortlinks
+    file: scripts/install.ps1
+    why: >-
+      Windows installer comments and recovery output must point at the shipped
+      Argo release-branch script, not the upstream Hermes shortlink.
+    find: "https://hermes-agent.nousresearch.com/install.ps1"
+    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1"
+  - name: install-cmd-release-shortlinks
+    file: scripts/install.cmd
+    why: >-
+      install.cmd is a live Windows bootstrapper; its PowerShell bootstrap URL
+      must fetch the Argo release-branch installer.
+    find: "https://hermes-agent.nousresearch.com/install.ps1"
+    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1"
+  - name: cli-update-reinstall-release-shortlink
+    file: hermes_cli/main.py
+    why: >-
+      The update reinstall hint is a customer-facing recovery path. Point it at
+      the Argo release-branch installer so it can run from the published tree.
+    find: "https://hermes-agent.nousresearch.com/install.sh"
+    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh"
+  - name: uninstall-reinstall-release-shortlinks
+    file: hermes_cli/uninstall.py
+    why: >-
+      The uninstall flow prints reinstall commands after removal. Keep both
+      POSIX and Windows reinstall hints on the Argo release branch.
+    find: "https://hermes-agent.nousresearch.com/install.sh"
+    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh"
+  - name: uninstall-windows-reinstall-release-shortlink
+    file: hermes_cli/uninstall.py
+    why: >-
+      The Windows reinstall hint emitted by uninstall.py must also use the
+      shipped Argo release-branch installer.
+    find: "https://hermes-agent.nousresearch.com/install.ps1"
+    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1"
   - name: send-message-drop-yuanbao-example
     file: tools/send_message_tool.py
     why: >-

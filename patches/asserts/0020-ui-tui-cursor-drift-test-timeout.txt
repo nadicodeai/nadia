@@ -1,0 +1,3 @@
+# Assertions for 0020-ui-tui-cursor-drift-test-timeout.patch
+# Prove only the long prefix-walk regression test gets an explicit timeout.
+path:ui-tui/src/__tests__/cursorDriftRegression.test.ts }, 20_000)

@@ -57,6 +57,7 @@ Sub-loops (same `{spec,plan,progress,standards}.md` shape, scoped to a sibling o
 ```bash
 make help                          # discover all targets
 make build                         # produce dist/argo/ (upstream + patches + overlay + rename)
+make gen-skin                      # regenerate committed Argo skin overlay from the design-system git dependency
 make sync                          # pull upstream, re-apply patches, run verification build
 make sync-resume                   # continue after manual conflict resolution in .sync-workdir/
 make sync-reset                    # wipe .sync-workdir/ and start the next sync clean
@@ -155,6 +156,9 @@ A bare `docker pull ghcr.io/nadicodeai/argo` resolves to `:latest` = full varian
 ## Common tasks
 
 - **Add a fork change.** Decide patch (modifies an upstream file) vs overlay (purely new file). Patches need assertions when load-bearing.
+- **Regenerate the Argo default skin.** Run `make gen-skin`. It installs the private `github:nadicodeai/nadicodeai-design-system` dependency from `tools/skin-gen/package-lock.json`, then rewrites the committed overlay files. Do not edit generated skin hexes by hand.
+- **Bump the design system.** Run `npm --prefix tools/skin-gen update @nadicodeai/design-system`, then `make gen-skin`, then inspect the overlay diff. Do not add `.npmrc`, registry auth, vendored DS files, or a SHA pin in `package.json`; the lockfile is the pin.
+- **Change a distribution default.** Use a documented `content_edits` rule with a `why:` and a stale-anchor failure mode; do not patch a generated `dist/` file or pre-rename tracked source.
 - **Investigate a leakage scan failure.** `make build && python tools/verify_no_leakage.py dist/argo/ --verbose` prints the offending paths. Either fix the source so it doesn't introduce `hermes`, or add an exception to `argo-rename.yaml` with a `why:` comment.
 - **Bump upstream.** `make sync`. If conflicts: resolve in `.sync-workdir/`, `quilt refresh`, `make sync-resume`.
 
@@ -166,3 +170,4 @@ A bare `docker pull ghcr.io/nadicodeai/argo` resolves to `:latest` = full varian
 - `.shepherd/standards.md` § Overlay Authorship — overlay conventions.
 - `.shepherd/standards.md` § Build-Tool Authorship — `tools/` conventions (incl. `sys.path` rule for `rebrand.py`).
 - `.shepherd/progress.md` — what shipped per milestone, with commit SHAs.
+- `docs/argo-design-system.md` — design-system dependency, generator, overlay, and distribution-default process for the Argo skin.
