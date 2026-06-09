@@ -651,7 +651,7 @@ content_edits:
   - name: "index-comparison-table-block1"
     file: "website/docs/user-guide/messaging/index.md"
     why: "Platform Comparison table: remove the five contiguous China rows (DingTalk, Feishu/Lark, WeCom, WeCom Callback, Weixin) with their leading newlines. Header and the kept BlueBubbles row (which follows) stay intact."
-    find: "\n| DingTalk | — | ✅ | ✅ | — | ✅ | — | ✅ |\n| Feishu/Lark | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |\n| WeCom | ✅ | ✅ | ✅ | — | — | ✅ | ✅ |\n| WeCom Callback | — | — | — | — | — | — | — |\n| Weixin | ✅ | ✅ | ✅ | — | — | ✅ | ✅ |"
+    find: "\n| DingTalk | — | ✅ | ✅ | — | ✅ | — | ✅ |\n| Feishu/Lark | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |\n| WeCom | ✅ | ✅ | ✅ | — | — | — | — |\n| WeCom Callback | — | — | — | — | — | — | — |\n| Weixin | ✅ | ✅ | ✅ | — | — | ✅ | ✅ |"
     replace: ""
   - name: "index-comparison-table-block2"
     file: "website/docs/user-guide/messaging/index.md"
