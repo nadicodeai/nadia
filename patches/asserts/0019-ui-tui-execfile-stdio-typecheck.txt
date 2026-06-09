@@ -1,5 +1,0 @@
-# Assertions for 0019-ui-tui-execfile-stdio-typecheck.patch
-# Prove the Ink helper uses a typed ChildProcess and no readonly stdio union.
-path:ui-tui/packages/argo-ink/src/utils/execFileNoThrow.ts import { spawn, type ChildProcess } from 'child_process'
-path:ui-tui/packages/argo-ink/src/utils/execFileNoThrow.ts const child: ChildProcess = options.resolveOnExit
-path:ui-tui/packages/argo-ink/src/utils/execFileNoThrow.ts stdio: ['pipe', 'ignore', 'ignore']

@@ -23,7 +23,7 @@ Index: .sync-workdir/ui-tui/src/theme.ts
  export interface ThemeColors {
    primary: string
    accent: string
-@@ -236,15 +244,7 @@ function normalizeAnsiForeground(color:
+@@ -236,15 +243,7 @@ function normalizeAnsiForeground(color:
  
  // ── Defaults ─────────────────────────────────────────────────────────
  
@@ -40,7 +40,7 @@ Index: .sync-workdir/ui-tui/src/theme.ts
  
  const cleanPromptSymbol = (s: string | undefined, fallback: string) => {
    const cleaned = String(s ?? '')
-@@ -255,98 +255,22 @@ const cleanPromptSymbol = (s: string | u
+@@ -255,98 +254,22 @@ const cleanPromptSymbol = (s: string | u
  }
  
  export const DARK_THEME: Theme = {
@@ -146,7 +146,7 @@ Index: .sync-workdir/ui-tui/src/theme.ts
  }
  
  const TRUE_RE = /^(?:1|true|yes|on)$/
-@@ -535,7 +459,7 @@ export function fromSkin(
+@@ -535,7 +458,7 @@ export function fromSkin(
      (hasSkinColors ? mix(completionBg, bannerAccent, 0.25) : d.color.completionCurrentBg)
  
    const completionMetaBg = c('completion_menu_meta_bg') ?? completionBg
@@ -155,7 +155,7 @@ Index: .sync-workdir/ui-tui/src/theme.ts
  
    return normalizeThemeForAnsiLightTerminal({
      color: {
-@@ -555,8 +479,8 @@ export function fromSkin(
+@@ -555,8 +478,8 @@ export function fromSkin(
        warn: c('ui_warn') ?? d.color.warn,
  
        prompt: c('prompt') ?? c('banner_text') ?? d.color.prompt,
@@ -272,7 +272,7 @@ Index: .sync-workdir/ui-tui/src/__tests__/theme.test.ts
 +    expect(fromSkin({}, {}).brand.icon).toBe('')
    })
  
-  it('normalizes non-banner foregrounds on light Apple Terminal', async () => {
+   it('normalizes non-banner foregrounds on light Apple Terminal', async () => {
 Index: .sync-workdir/ui-tui/src/__tests__/virtualHeights.test.ts
 ===================================================================
 --- .sync-workdir.orig/ui-tui/src/__tests__/virtualHeights.test.ts

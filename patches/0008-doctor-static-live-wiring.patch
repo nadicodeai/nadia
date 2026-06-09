@@ -20,9 +20,11 @@ Surfaces gap exposed by the M6.2a parity runner: `argo doctor --static`
 was unrecognized in the new image because main.py never dispatched the
 flag to the overlay module that already provided run_static / run_live.
 
---- a/hermes_cli/main.py
-+++ b/hermes_cli/main.py
-@@ -6144,7 +6144,50 @@ def cmd_hooks(args):
+Index: .sync-workdir/hermes_cli/main.py
+===================================================================
+--- .sync-workdir.orig/hermes_cli/main.py
++++ .sync-workdir/hermes_cli/main.py
+@@ -4049,7 +4049,50 @@ def cmd_hooks(args):
  
  
  def cmd_doctor(args):
@@ -74,7 +76,11 @@ flag to the overlay module that already provided run_static / run_live.
      from hermes_cli.doctor import run_doctor
  
      run_doctor(args)
-@@ -12150,6 +12193,52 @@ def main():
+Index: .sync-workdir/hermes_cli/subcommands/doctor.py
+===================================================================
+--- .sync-workdir.orig/hermes_cli/subcommands/doctor.py
++++ .sync-workdir/hermes_cli/subcommands/doctor.py
+@@ -32,4 +32,50 @@ def build_doctor_parser(subparsers, *, c
              "doctor` first to see active advisories and their IDs."
          ),
      )
@@ -125,5 +131,3 @@ flag to the overlay module that already provided run_static / run_live.
 +        ),
 +    )
      doctor_parser.set_defaults(func=cmd_doctor)
- 
-     # =========================================================================

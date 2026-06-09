@@ -99,12 +99,14 @@ groups:
       - tests/gateway/test_wecom.py
       - tests/gateway/test_wecom_callback.py
       - tests/gateway/test_weixin.py
+      - tests/gateway/test_weixin_typing.py
       - tests/gateway/platforms/test_yuanbao_recall_db_only.py
       - tests/hermes_cli/test_dingtalk_auth.py
       - tests/test_yuanbao_integration.py
       - tests/test_yuanbao_markdown.py
       - tests/test_yuanbao_pipeline.py
       - tests/test_yuanbao_proto.py
+      - tests/test_yuanbao_shutdown.py
 
   - name: china-docs
     why: >-
@@ -253,6 +255,33 @@ content_edits:
       shipped Argo release-branch installer.
     find: "https://hermes-agent.nousresearch.com/install.ps1"
     replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1"
+  - name: update-command-tests-patch-slash-commands-file
+    file: tests/gateway/test_update_command.py
+    why: >-
+      Upstream moved _handle_update_command into gateway/slash_commands.py.
+      These tests create a fake project root with .git, but still monkeypatch
+      gateway.run.__file__; that only passes in upstream because the checkout
+      root itself has .git. dist/argo is deliberately not a git repo during
+      make dist-test, so patch the module that now owns the handler.
+    find: 'patch("gateway.run.__file__", fake_file)'
+    replace: 'patch("gateway.slash_commands.__file__", fake_file)'
+  - name: update-streaming-test-patch-slash-commands-file
+    file: tests/gateway/test_update_streaming.py
+    why: >-
+      Same extracted-handler drift as test_update_command.py: the test's fake
+      project root must patch gateway.slash_commands.__file__, not the old
+      gateway.run.__file__, when running inside non-git dist/argo.
+    find: 'patch("gateway.run.__file__", fake_file)'
+    replace: 'patch("gateway.slash_commands.__file__", fake_file)'
+  - name: update-autostash-scoped-fetch-release-branch
+    file: tests/hermes_cli/test_update_autostash.py
+    why: >-
+      Argo's customer update branch is origin/release, not upstream main.
+      Keep the upstream regression coverage that fetch is scoped to a branch,
+      but assert the fork's actual branch target after
+      _resolve_update_branch() is patched by 0009.
+    find: 'assert fetch_calls == [["git", "fetch", "origin", "main"]]'
+    replace: 'assert fetch_calls == [["git", "fetch", "origin", "release"]]'
   - name: send-message-drop-yuanbao-example
     file: tools/send_message_tool.py
     why: >-
@@ -651,7 +680,7 @@ content_edits:
   - name: "index-comparison-table-block1"
     file: "website/docs/user-guide/messaging/index.md"
     why: "Platform Comparison table: remove the five contiguous China rows (DingTalk, Feishu/Lark, WeCom, WeCom Callback, Weixin) with their leading newlines. Header and the kept BlueBubbles row (which follows) stay intact."
-    find: "\n| DingTalk | — | ✅ | ✅ | — | ✅ | — | ✅ |\n| Feishu/Lark | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |\n| WeCom | ✅ | ✅ | ✅ | — | — | ✅ | ✅ |\n| WeCom Callback | — | — | — | — | — | — | — |\n| Weixin | ✅ | ✅ | ✅ | — | — | ✅ | ✅ |"
+    find: "\n| DingTalk | — | ✅ | ✅ | — | ✅ | — | ✅ |\n| Feishu/Lark | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |\n| WeCom | ✅ | ✅ | ✅ | — | — | — | — |\n| WeCom Callback | — | — | — | — | — | — | — |\n| Weixin | ✅ | ✅ | ✅ | — | — | ✅ | ✅ |"
     replace: ""
   - name: "index-comparison-table-block2"
     file: "website/docs/user-guide/messaging/index.md"

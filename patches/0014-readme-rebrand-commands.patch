@@ -21,7 +21,7 @@ Index: .sync-workdir/README.md
 ===================================================================
 --- .sync-workdir.orig/README.md
 +++ .sync-workdir/README.md
-@@ -16,7 +16,7 @@
+@@ -19,7 +19,7 @@
  
  **The self-improving AI agent originally built by [Nous Research](https://nousresearch.com), maintained in this fork by Nadicode.** It's the only agent with a built-in learning loop — it creates skills from experience, improves them during use, nudges itself to persist knowledge, searches its own past conversations, and builds a deepening model of who you are across sessions. Run it on a $5 VPS, a GPU cluster, or serverless infrastructure that costs nearly nothing when idle. It's not tied to your laptop — talk to it from Telegram while it works on a cloud VM.
  
@@ -30,7 +30,7 @@ Index: .sync-workdir/README.md
  
  <table>
  <tr><td><b>A real terminal interface</b></td><td>Full TUI with multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output.</td></tr>
-@@ -48,19 +48,19 @@ Run this in PowerShell:
+@@ -51,19 +51,19 @@ Run this in PowerShell:
  iex (irm https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1)
  ```
  
@@ -41,8 +41,8 @@ Index: .sync-workdir/README.md
  
  > **Android / Termux:** The tested manual path is documented in the [Termux guide](https://hermes-agent.nousresearch.com/docs/getting-started/termux). On Termux, Hermes installs a curated `.[termux]` extra because the full `.[all]` extra currently pulls Android-incompatible voice dependencies.
  >
--> **Windows:** Native Windows is fully supported — the PowerShell one-liner above installs everything. If you'd rather use WSL2, the Linux command works there too. Native Windows install lives under `%LOCALAPPDATA%\hermes`; WSL2 installs under `~/.hermes` as on Linux. The only Hermes feature that currently needs WSL2 specifically is the browser-based dashboard chat pane (it uses a POSIX PTY — classic CLI and gateway both run natively).
-+> **Windows:** Native Windows is fully supported — the PowerShell one-liner above installs everything. If you'd rather use WSL2, the Linux command works there too. Native Windows install lives under `%LOCALAPPDATA%\argo`; WSL2 installs under `~/.argo` as on Linux. The only Hermes feature that currently needs WSL2 specifically is the browser-based dashboard chat pane (it uses a POSIX PTY — classic CLI and gateway both run natively).
+-> **Windows:** Native Windows is fully supported — the PowerShell one-liner above installs everything. If you'd rather use WSL2, the Linux command works there too. Native Windows install lives under `%LOCALAPPDATA%\hermes`; WSL2 installs under `~/.hermes` as on Linux.
++> **Windows:** Native Windows is fully supported — the PowerShell one-liner above installs everything. If you'd rather use WSL2, the Linux command works there too. Native Windows install lives under `%LOCALAPPDATA%\argo`; WSL2 installs under `~/.argo` as on Linux.
  
  After installation:
  
@@ -53,7 +53,7 @@ Index: .sync-workdir/README.md
  ```
  
  ---
-@@ -68,15 +68,15 @@ hermes              # start chatting!
+@@ -71,15 +71,15 @@ hermes              # start chatting!
  ## Getting Started
  
  ```bash
@@ -78,7 +78,7 @@ Index: .sync-workdir/README.md
  ```
  
  📖 **[Full documentation →](https://hermes-agent.nousresearch.com/docs/)**
-@@ -93,10 +93,10 @@ Hermes works with whatever provider you
+@@ -96,10 +96,10 @@ Hermes works with whatever provider you
  One command from a fresh install:
  
  ```bash
@@ -91,7 +91,7 @@ Index: .sync-workdir/README.md
  
  You can still bring your own keys per-tool whenever you want — the gateway is per-backend, not all-or-nothing.
  
-@@ -104,11 +104,11 @@ You can still bring your own keys per-to
+@@ -107,11 +107,11 @@ You can still bring your own keys per-to
  
  ## CLI vs Messaging Quick Reference
  
@@ -105,7 +105,7 @@ Index: .sync-workdir/README.md
  | Start fresh conversation       | `/new` or `/reset`                            | `/new` or `/reset`                                                               |
  | Change model                   | `/model [provider:model]`                     | `/model [provider:model]`                                                        |
  | Set a personality              | `/personality [name]`                         | `/personality [name]`                                                            |
-@@ -150,29 +150,29 @@ All documentation lives at **[hermes-age
+@@ -153,29 +153,29 @@ All documentation lives at **[hermes-age
  
  If you're coming from OpenClaw, Hermes can automatically import your settings, memories, skills, and API keys.
  
@@ -142,7 +142,7 @@ Index: .sync-workdir/README.md
  
  ---
  
-@@ -185,8 +185,8 @@ Quick start for contributors — clone a
+@@ -188,8 +188,8 @@ Quick start for contributors — clone a
  ```bash
  git clone https://github.com/nadicodeai/argo.git
  cd hermes-agent
@@ -157,7 +157,7 @@ Index: .sync-workdir/README.zh-CN.md
 ===================================================================
 --- .sync-workdir.orig/README.zh-CN.md
 +++ .sync-workdir/README.zh-CN.md
-@@ -14,7 +14,7 @@
+@@ -15,7 +15,7 @@
  
  **由 [Nous Research](https://nousresearch.com) 构建的自进化 AI 代理。** 它是唯一内置学习闭环的智能代理——从经验中创建技能，在使用中改进技能，主动持久化知识，搜索过往对话，并在跨会话中逐步构建对你的深度理解。可以在 $5 的 VPS 上运行，也可以在 GPU 集群上运行，或者使用几乎零成本的 Serverless 基础设施。它不绑定你的笔记本——你可以在 Telegram 上与它对话，而它在云端 VM 上工作。
  
@@ -166,7 +166,7 @@ Index: .sync-workdir/README.zh-CN.md
  
  <table>
  <tr><td><b>真正的终端界面</b></td><td>完整的 TUI，支持多行编辑、斜杠命令自动补全、对话历史、中断重定向和流式工具输出。</td></tr>
-@@ -44,7 +44,7 @@ curl -fsSL https://raw.githubusercontent
+@@ -45,7 +45,7 @@ 安装后：
  
  ```bash
  source ~/.bashrc    # 重新加载 shell（或: source ~/.zshrc）
@@ -175,7 +175,7 @@ Index: .sync-workdir/README.zh-CN.md
  ```
  
  ---
-@@ -52,15 +52,15 @@ hermes              # 开始对话！
+@@ -53,15 +53,15 @@ hermes              # 开始对话！
  ## 快速入门
  
  ```bash
@@ -200,7 +200,7 @@ Index: .sync-workdir/README.zh-CN.md
  ```
  
  📖 **[完整文档 →](https://hermes-agent.nousresearch.com/docs/)**
-@@ -77,10 +77,10 @@ Hermes 始终允许你使用任意服务
+@@ -78,10 +78,10 @@ Hermes 始终允许你使用任意服务
  全新安装时一条命令即可：
  
  ```bash
@@ -213,7 +213,7 @@ Index: .sync-workdir/README.zh-CN.md
  
  你随时可以按工具单独切回自己的 API Key — Gateway 是按工具粒度生效的，不是一刀切。
  
-@@ -88,11 +88,11 @@ hermes setup --portal
+@@ -89,11 +89,11 @@ 你随时可以按工具单独切回自�
  
  ## CLI 与消息平台 快速对照
  
@@ -227,7 +227,7 @@ Index: .sync-workdir/README.zh-CN.md
  | 开始新对话 | `/new` 或 `/reset` | `/new` 或 `/reset` |
  | 更换模型 | `/model [provider:model]` | `/model [provider:model]` |
  | 设置人格 | `/personality [name]` | `/personality [name]` |
-@@ -134,28 +134,28 @@ Hermes 有两种入口：用 `hermes` �
+@@ -135,28 +135,28 @@ 所有文档位于 **[hermes-agent.nousr
  
  如果你来自 OpenClaw，Hermes 可以自动导入你的设置、记忆、技能和 API 密钥。
  
@@ -263,7 +263,7 @@ Index: .sync-workdir/README.zh-CN.md
  
  ---
  
-@@ -168,8 +168,8 @@ hermes claw migrate --overwrite  # 覆�
+@@ -169,8 +169,8 @@ 贡献者快速开始——克隆并使�
  ```bash
  git clone https://github.com/nadicodeai/argo.git
  cd hermes-agent
