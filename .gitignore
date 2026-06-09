@@ -27,6 +27,9 @@ __pycache__/
 .env
 .env.local
 
+# Generator-only design-system dependency
+tools/skin-gen/node_modules/
+
 # Shepherd skill working directory (plans, progress, specs, smoke-run logs)
 .shepherd/
 .claude/

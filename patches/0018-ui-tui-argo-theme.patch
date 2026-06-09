@@ -1,0 +1,290 @@
+Subject: Wire generated Argo theme into ui-tui
+
+Use the generated Argo theme data as the Ink TUI default so pre-gateway
+
+startup surfaces and theme tests match the shipped CLI skin. Remove the
+
+remaining caduceus/kawaii startup glyphs from Argo-owned TUI status surfaces
+
+without changing the skin-driven fromSkin path.
+
+Index: .sync-workdir/ui-tui/src/theme.ts
+===================================================================
+--- .sync-workdir.orig/ui-tui/src/theme.ts
++++ .sync-workdir/ui-tui/src/theme.ts
+@@ -1,3 +1,10 @@
++import {
++  ARGO_BANNER_HERO,
++  ARGO_BANNER_LOGO,
++  ARGO_BRAND,
++  ARGO_DARK_THEME_COLORS,
++  ARGO_LIGHT_THEME_COLORS
++} from './argoTheme.generated.js'
+ export interface ThemeColors {
+   primary: string
+   accent: string
+@@ -236,15 +244,7 @@ function normalizeAnsiForeground(color:
+ 
+ // ── Defaults ─────────────────────────────────────────────────────────
+ 
+-const BRAND: ThemeBrand = {
+-  name: 'Hermes Agent',
+-  icon: '⚕',
+-  prompt: '❯',
+-  welcome: 'Type your message or /help for commands.',
+-  goodbye: 'Goodbye! ⚕',
+-  tool: '┊',
+-  helpHeader: '(^_^)? Commands'
+-}
++const BRAND: ThemeBrand = ARGO_BRAND
+ 
+ const cleanPromptSymbol = (s: string | undefined, fallback: string) => {
+   const cleaned = String(s ?? '')
+@@ -255,98 +255,22 @@ const cleanPromptSymbol = (s: string | u
+ }
+ 
+ export const DARK_THEME: Theme = {
+-  color: {
+-    primary: '#FFD700',
+-    accent: '#FFBF00',
+-    border: '#CD7F32',
+-    text: '#FFF8DC',
+-    muted: '#CC9B1F',
+-    // Bumped from the old `#B8860B` darkgoldenrod (~53% luminance) which
+-    // read as barely-visible on dark terminals for long body text.  The
+-    // new value sits ~60% luminance — readable without losing the "muted /
+-    // secondary" semantic.  Field labels still use `label` (65%) which
+-    // stays brighter so hierarchy holds.
+-    completionBg: '#1a1a2e',
+-    completionCurrentBg: '#333355',
+-    completionMetaBg: '#1a1a2e',
+-    completionMetaCurrentBg: '#333355',
+-
+-    label: '#DAA520',
+-    ok: '#4caf50',
+-    error: '#ef5350',
+-    warn: '#ffa726',
+-
+-    prompt: '#FFF8DC',
+-    // sessionLabel/sessionBorder intentionally track the `dim` value — they
+-    // are "same role, same colour" by design.  fromSkin's banner_dim fallback
+-    // relies on this pairing (#11300).
+-    sessionLabel: '#CC9B1F',
+-    sessionBorder: '#CC9B1F',
+-
+-    statusBg: '#1a1a2e',
+-    statusFg: '#C0C0C0',
+-    statusGood: '#8FBC8F',
+-    statusWarn: '#FFD700',
+-    statusBad: '#FF8C00',
+-    statusCritical: '#FF6B6B',
+-    selectionBg: '#3a3a55',
+-
+-    diffAdded: 'rgb(220,255,220)',
+-    diffRemoved: 'rgb(255,220,220)',
+-    diffAddedWord: 'rgb(36,138,61)',
+-    diffRemovedWord: 'rgb(207,34,46)',
+-    shellDollar: '#4dabf7'
+-  },
++  color: ARGO_DARK_THEME_COLORS,
+ 
+   brand: BRAND,
+ 
+-  bannerLogo: '',
+-  bannerHero: ''
++  bannerLogo: ARGO_BANNER_LOGO,
++  bannerHero: ARGO_BANNER_HERO
+ }
+ 
+-// Light-terminal palette: darker golds/ambers that stay legible on white
+-// backgrounds. Same shape as DARK_THEME so `fromSkin` still layers on top
+-// cleanly (#11300).
++// Same shape as DARK_THEME so `fromSkin` still layers on top cleanly (#11300).
+ export const LIGHT_THEME: Theme = {
+-  color: {
+-    primary: '#8B6914',
+-    accent: '#A0651C',
+-    border: '#7A4F1F',
+-    text: '#3D2F13',
+-    muted: '#7A5A0F',
+-    completionBg: '#F5F5F5',
+-    completionCurrentBg: mix('#F5F5F5', '#A0651C', 0.25),
+-    completionMetaBg: '#F5F5F5',
+-    completionMetaCurrentBg: mix('#F5F5F5', '#A0651C', 0.25),
+-
+-    label: '#7A5A0F',
+-    ok: '#2E7D32',
+-    error: '#C62828',
+-    warn: '#E65100',
+-
+-    prompt: '#2B2014',
+-    sessionLabel: '#7A5A0F',
+-    sessionBorder: '#7A5A0F',
+-
+-    statusBg: '#F5F5F5',
+-    statusFg: '#333333',
+-    statusGood: '#2E7D32',
+-    statusWarn: '#8B6914',
+-    statusBad: '#D84315',
+-    statusCritical: '#B71C1C',
+-    selectionBg: '#D4E4F7',
+-
+-    diffAdded: 'rgb(200,240,200)',
+-    diffRemoved: 'rgb(240,200,200)',
+-    diffAddedWord: 'rgb(27,94,32)',
+-    diffRemovedWord: 'rgb(183,28,28)',
+-    shellDollar: '#1565C0'
+-  },
++  color: ARGO_LIGHT_THEME_COLORS,
+ 
+   brand: BRAND,
+ 
+-  bannerLogo: '',
+-  bannerHero: ''
++  bannerLogo: ARGO_BANNER_LOGO,
++  bannerHero: ARGO_BANNER_HERO
+ }
+ 
+ const TRUE_RE = /^(?:1|true|yes|on)$/
+@@ -535,7 +459,7 @@ export function fromSkin(
+     (hasSkinColors ? mix(completionBg, bannerAccent, 0.25) : d.color.completionCurrentBg)
+ 
+   const completionMetaBg = c('completion_menu_meta_bg') ?? completionBg
+-  const completionMetaCurrentBg = c('completion_menu_meta_current_bg') ?? completionCurrentBg
++  const completionMetaCurrentBg = c('completion_menu_meta_current_bg') ?? (hasSkinColors ? completionCurrentBg : d.color.completionMetaCurrentBg)
+ 
+   return normalizeThemeForAnsiLightTerminal({
+     color: {
+@@ -555,8 +479,8 @@ export function fromSkin(
+       warn: c('ui_warn') ?? d.color.warn,
+ 
+       prompt: c('prompt') ?? c('banner_text') ?? d.color.prompt,
+-      sessionLabel: c('session_label') ?? muted,
+-      sessionBorder: c('session_border') ?? muted,
++      sessionLabel: c('session_label') ?? (hasSkinColors ? muted : d.color.sessionLabel),
++      sessionBorder: c('session_border') ?? (hasSkinColors ? muted : d.color.sessionBorder),
+ 
+       statusBg: d.color.statusBg,
+       statusFg: d.color.statusFg,
+Index: .sync-workdir/ui-tui/src/app/uiStore.ts
+===================================================================
+--- .sync-workdir.orig/ui-tui/src/app/uiStore.ts
++++ .sync-workdir/ui-tui/src/app/uiStore.ts
+@@ -25,7 +25,7 @@ const buildUiState = (): UiState => ({
+   showCost: false,
+   showReasoning: false,
+   sid: null,
+-  status: 'summoning hermes…',
++  status: 'readying argo…',
+   statusBar: 'top',
+   streaming: true,
+   theme: DEFAULT_THEME,
+Index: .sync-workdir/ui-tui/src/components/appChrome.tsx
+===================================================================
+--- .sync-workdir.orig/ui-tui/src/components/appChrome.tsx
++++ .sync-workdir/ui-tui/src/components/appChrome.tsx
+@@ -27,7 +27,7 @@ export const padVerb = (verb: string) =>
+ 
+ // Compact alternates for the `emoji` and `ascii` indicator styles.
+ // Each entry is a fixed-width (display-width) glyph.
+-const EMOJI_FRAMES = ['⚕ ', '🌀', '🤔', '✨', '🍵', '🔮']
++const EMOJI_FRAMES = ['> ', '◎ ', '◈ ', '⬡ ', '⊕ ', '⊗ ']
+ const ASCII_FRAMES = ['|', '/', '-', '\\']
+ 
+ // Faster tick for spinner-style indicators — they read as motion only
+@@ -51,7 +51,7 @@ const renderIndicator = (style: Indicato
+ 
+   if (style === 'emoji') {
+     return {
+-      frame: EMOJI_FRAMES[tick % EMOJI_FRAMES.length] ?? '⚕ ',
++      frame: EMOJI_FRAMES[tick % EMOJI_FRAMES.length] ?? '> ',
+       intervalMs: SPINNER_TICK_MS * 6,
+       showVerb: true
+     }
+Index: .sync-workdir/ui-tui/src/components/appLayout.tsx
+===================================================================
+--- .sync-workdir.orig/ui-tui/src/components/appLayout.tsx
++++ .sync-workdir/ui-tui/src/components/appLayout.tsx
+@@ -325,7 +325,7 @@ const ComposerPane = memo(function Compo
+         )}
+       </Box>
+ 
+-      {!composer.empty && !ui.sid && <Text color={ui.theme.color.muted}>⚕ {ui.status}</Text>}
++      {!composer.empty && !ui.sid && <Text color={ui.theme.color.muted}>{ui.theme.brand.prompt} {ui.status}</Text>}
+ 
+       <StatusRulePane at="bottom" composer={composer} status={status} />
+     </NoSelect>
+Index: .sync-workdir/ui-tui/src/content/fortunes.ts
+===================================================================
+--- .sync-workdir.orig/ui-tui/src/content/fortunes.ts
++++ .sync-workdir/ui-tui/src/content/fortunes.ts
+@@ -23,7 +23,7 @@ const fromScore = (n: number) => {
+   const rare = n % 20 === 0
+   const bag = rare ? LEGENDARY : FORTUNES
+ 
+-  return `${rare ? '🌟' : '🔮'} ${bag[n % bag.length]}`
++  return `${rare ? '>' : '|'} ${bag[n % bag.length]}`
+ }
+ 
+ export const randomFortune = () => fromScore(Math.floor(Math.random() * 0x7fffffff))
+Index: .sync-workdir/ui-tui/src/__tests__/theme.test.ts
+===================================================================
+--- .sync-workdir.orig/ui-tui/src/__tests__/theme.test.ts
++++ .sync-workdir/ui-tui/src/__tests__/theme.test.ts
+@@ -43,16 +43,18 @@ describe('DEFAULT_THEME', () => {
+   it('has brand defaults', async () => {
+     const { DEFAULT_THEME } = await importThemeWithCleanEnv()
+ 
+-    expect(DEFAULT_THEME.brand.name).toBe('Hermes Agent')
+-    expect(DEFAULT_THEME.brand.prompt).toBe('❯')
+-    expect(DEFAULT_THEME.brand.tool).toBe('┊')
++    expect(DEFAULT_THEME.brand.name).toBe('Argo')
++    expect(DEFAULT_THEME.brand.prompt).toBe('>')
++    expect(DEFAULT_THEME.brand.tool).toBe('|')
++    expect(DEFAULT_THEME.bannerLogo).toBe('')
++    expect(DEFAULT_THEME.bannerHero).toContain('⣿⡈⢳⣄')
+   })
+ 
+   it('has color palette', async () => {
+     const { DEFAULT_THEME } = await importThemeWithCleanEnv()
+ 
+-    expect(DEFAULT_THEME.color.primary).toBe('#FFD700')
+-    expect(DEFAULT_THEME.color.error).toBe('#ef5350')
++    expect(DEFAULT_THEME.color.primary).toBe('#50e3c2')
++    expect(DEFAULT_THEME.color.error).toBe('#b80022')
+   })
+ })
+ 
+@@ -248,7 +250,7 @@ describe('fromSkin', () => {
+   it('normalizes skin prompt symbols to trimmed single-line text', async () => {
+     const { DEFAULT_THEME, fromSkin } = await importThemeWithCleanEnv()
+ 
+-    expect(fromSkin({}, { prompt_symbol: ' ⚔ ❯ \n' }).brand.prompt).toBe('⚔ ❯')
++    expect(fromSkin({}, { prompt_symbol: ' Ψ ❯ \n' }).brand.prompt).toBe('Ψ ❯')
+     expect(fromSkin({}, { prompt_symbol: ' Ψ > \n' }).brand.prompt).toBe('Ψ >')
+     expect(fromSkin({}, { prompt_symbol: '\n\t' }).brand.prompt).toBe(DEFAULT_THEME.brand.prompt)
+   })
+@@ -257,7 +259,7 @@ describe('fromSkin', () => {
+     const { DEFAULT_THEME, fromSkin } = await importThemeWithCleanEnv()
+ 
+     expect(fromSkin({}, {}).color).toEqual(DEFAULT_THEME.color)
+-    expect(fromSkin({}, {}).brand.icon).toBe(DEFAULT_THEME.brand.icon)
++    expect(fromSkin({}, {}).brand.icon).toBe('')
+   })
+ 
+  it('normalizes non-banner foregrounds on light Apple Terminal', async () => {
+Index: .sync-workdir/ui-tui/src/__tests__/virtualHeights.test.ts
+===================================================================
+--- .sync-workdir.orig/ui-tui/src/__tests__/virtualHeights.test.ts
++++ .sync-workdir/ui-tui/src/__tests__/virtualHeights.test.ts
+@@ -20,8 +20,8 @@ describe('virtual height estimates', ()
+   it('uses compound user prompt width when estimating user message wrapping', () => {
+     const msg: Msg = { role: 'user', text: 'x'.repeat(21) }
+ 
+-    expect(estimatedMsgHeight(msg, 26, { compact: false, details: false, userPrompt: '❯' })).toBe(3)
+-    expect(estimatedMsgHeight(msg, 26, { compact: false, details: false, userPrompt: 'Ψ >' })).toBe(4)
++    expect(estimatedMsgHeight(msg, 27, { compact: false, details: false, userPrompt: '❯' })).toBe(3)
++    expect(estimatedMsgHeight(msg, 27, { compact: false, details: false, userPrompt: 'Ψ >' })).toBe(4)
+   })
+ 
+   it('adds one row for a group-boundary lead gap', () => {

@@ -1,0 +1,7 @@
+{
+  "name": "argo-skin-gen",
+  "private": true,
+  "dependencies": {
+    "@nadicodeai/design-system": "github:nadicodeai/nadicodeai-design-system"
+  }
+}

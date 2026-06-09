@@ -1,0 +1,65 @@
+Subject: Register generated Argo skin
+
+Add the generated NadicodeAI-driven argo skin as a built-in skin while
+keeping the volatile token colors and banner art in overlay. The patch
+only wires structure into skin_engine.py and extends the existing skin
+tests so dist/argo proves the generated skin loads and does not inherit
+Hermes caduceus/kawaii/war glyphs.
+
+Index: .sync-workdir/hermes_cli/skin_engine.py
+===================================================================
+--- .sync-workdir.orig/hermes_cli/skin_engine.py
++++ .sync-workdir/hermes_cli/skin_engine.py
+@@ -161,7 +161,15 @@
+ # Built-in skin definitions
+ # =============================================================================
+ 
++try:
++    from hermes_cli._argo_skin import ARGO_SKIN_DATA as _ARGO_SKIN_DATA
++except Exception:  # pragma: no cover - keeps upstream imports usable without overlay
++    _ARGO_SKIN_DATA = {
++        "name": "argo",
++        "description": "NadicodeAI ink - generated skin data unavailable",
++    }
+ _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
++    "argo": _ARGO_SKIN_DATA,
+     "default": {
+         "name": "default",
+         "description": "Classic Hermes — gold and kawaii",
+Index: .sync-workdir/tests/hermes_cli/test_skin_engine.py
+===================================================================
+--- .sync-workdir.orig/tests/hermes_cli/test_skin_engine.py
++++ .sync-workdir/tests/hermes_cli/test_skin_engine.py
+@@ -43,6 +43,24 @@
+ 
+ 
+ class TestBuiltinSkins:
++    def test_argo_skin_loads_with_generated_branding(self):
++        from hermes_cli.skin_engine import load_skin
++        skin = load_skin("argo")
++        assert skin.name == "argo"
++        assert skin.get_branding("agent_name") == "Argo"
++        assert skin.get_color("banner_title") == "#50e3c2"
++        assert skin.get_color("ui_error") == "#cd212a"
++        assert skin.banner_logo == ""
++        assert "⣿⡈⢳⣄" in skin.banner_hero
++        legacy_glyphs = "⚕⚔🐾🔥"
++        rendered = "\n".join([
++            skin.banner_logo,
++            skin.banner_hero,
++            " ".join(skin.spinner.get("thinking_faces", [])),
++            " ".join(skin.spinner.get("thinking_verbs", [])),
++            " ".join(str(value) for value in skin.branding.values()),
++        ])
++        assert not any(glyph in rendered for glyph in legacy_glyphs)
+     def test_ares_skin_loads(self):
+         from hermes_cli.skin_engine import load_skin
+         skin = load_skin("ares")
+@@ -141,6 +162,7 @@
+         skins = list_skins()
+         names = [s["name"] for s in skins]
+         assert "default" in names
++        assert "argo" in names
+         assert "ares" in names
+         assert "mono" in names
+         assert "slate" in names

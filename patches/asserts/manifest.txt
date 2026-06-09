@@ -16,3 +16,8 @@
 0013-install-sh-update-reset-fallback.patch
 0014-readme-rebrand-commands.patch
 0015-rebrand-attribution.patch
+0016-register-argo-skin.patch
+0017-skin-status-symbol.patch
+0018-ui-tui-argo-theme.patch
+0019-ui-tui-execfile-stdio-typecheck.patch
+0020-ui-tui-cursor-drift-test-timeout.patch
