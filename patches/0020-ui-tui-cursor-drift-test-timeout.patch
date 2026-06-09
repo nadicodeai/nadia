@@ -1,0 +1,21 @@
+Subject: ui-tui: give cursor drift prefix-walk test an explicit timeout
+
+The cursor drift regression test walks a long realistic message across seven
+terminal widths and compares every typing prefix against wrap-ansi. It is a
+valid but CPU-heavy regression guard. In the full Vitest suite on this runtime,
+that single case can exceed Vitest's 5s default even though it passes when run
+with a longer timeout. Pin the timeout on the expensive case only.
+
+Index: .sync-workdir/ui-tui/src/__tests__/cursorDriftRegression.test.ts
+===================================================================
+--- .sync-workdir.orig/ui-tui/src/__tests__/cursorDriftRegression.test.ts
++++ .sync-workdir/ui-tui/src/__tests__/cursorDriftRegression.test.ts
+@@ -68,7 +68,7 @@ describe('cursor-drift regression — co
+         ).toEqual(expected)
+       }
+     }
+-  })
++  }, 20_000)
+ 
+   it('keeps cursor on the same row when text exactly fills the terminal width', () => {
+     // wrap-ansi does NOT push exact-fill text onto a phantom next line.

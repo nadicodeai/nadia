@@ -1,0 +1,106 @@
+{
+  "nadicode": {
+    "color": {
+      "body": {
+        "$value": {
+          "hex": "#4d4d4d"
+        }
+      },
+      "cyan": {
+        "$value": {
+          "hex": "#50e3c2"
+        }
+      },
+      "cyan-deep": {
+        "$value": {
+          "hex": "#29bc9b"
+        }
+      },
+      "error": {
+        "$value": {
+          "hex": "#b80022"
+        }
+      },
+      "error-deep": {
+        "$value": {
+          "hex": "#820018"
+        }
+      },
+      "flag-red": {
+        "$value": {
+          "hex": "#cd212a"
+        }
+      },
+      "hairline": {
+        "$value": {
+          "hex": "#ebebeb"
+        }
+      },
+      "link": {
+        "$value": {
+          "hex": "#007a5e"
+        }
+      },
+      "link-deep": {
+        "$value": {
+          "hex": "#005d49"
+        }
+      },
+      "mute": {
+        "$value": {
+          "hex": "#888888"
+        }
+      },
+      "muted": {
+        "$value": {
+          "hex": "#888888"
+        }
+      },
+      "on-primary": {
+        "$value": {
+          "hex": "#ffffff"
+        }
+      },
+      "primary": {
+        "$value": {
+          "hex": "#171717"
+        }
+      },
+      "selection-bg": {
+        "$value": {
+          "hex": "#171717"
+        }
+      },
+      "selection-fg": {
+        "$value": {
+          "hex": "#f2f2f2"
+        }
+      },
+      "state-blocked": {
+        "$value": {
+          "hex": "#b80022"
+        }
+      },
+      "state-review": {
+        "$value": {
+          "hex": "#f5a623"
+        }
+      },
+      "state-running": {
+        "$value": {
+          "hex": "#007a5e"
+        }
+      },
+      "success": {
+        "$value": {
+          "hex": "#008c45"
+        }
+      },
+      "warning": {
+        "$value": {
+          "hex": "#f5a623"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+# Assertions for 0017-skin-status-symbol.patch
+# Prove the built dist reads the compact status glyph from the active skin.
+path:cli.py def _get_status_bar_symbol(self) -> str:
+path:cli.py get_branding("status_symbol", "⚕")
+path:cli.py f" {status_symbol} "
+path:tests/cli/test_cli_status_bar.py test_build_status_bar_text_uses_skin_status_symbol
+path:tests/cli/test_cli_status_bar.py test_status_bar_fragments_use_skin_status_symbol
+path:tests/cli/test_cli_status_bar.py assert ">" in text

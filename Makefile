@@ -22,6 +22,7 @@ help:
 	@echo ""
 	@echo "Build:"
 	@echo "  make build            Produce dist/argo/ from upstream + patches + overlay (M1.8)"
+	@echo "  make gen-skin         Regenerate the committed Argo skin overlay from the design system"
 	@echo "  make clean            Remove dist/ and .sync-workdir/"
 	@echo "  make leakage-static   Static leakage scan over dist/argo/ (M2.2)"
 	@echo ""
@@ -72,6 +73,11 @@ install-hooks:
 .PHONY: build
 build:
 	python tools/build.py
+
+.PHONY: gen-skin
+gen-skin:
+	npm --prefix tools/skin-gen ci --no-audit
+	python tools/gen_argo_skin.py
 
 .PHONY: clean
 clean:
