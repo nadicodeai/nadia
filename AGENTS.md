@@ -171,3 +171,17 @@ A bare `docker pull ghcr.io/nadicodeai/argo` resolves to `:latest` = full varian
 - `.shepherd/standards.md` § Build-Tool Authorship — `tools/` conventions (incl. `sys.path` rule for `rebrand.py`).
 - `.shepherd/progress.md` — what shipped per milestone, with commit SHAs.
 - `docs/argo-design-system.md` — design-system dependency, generator, overlay, and distribution-default process for the Argo skin.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues (`nadicodeai/argo`). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default label vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context layout: one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
