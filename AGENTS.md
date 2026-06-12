@@ -185,3 +185,7 @@ Default label vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `read
 ### Domain docs
 
 Single-context layout: one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+### Planning docs (compound-engineering)
+
+New requirements and plans use the compound-engineering workflow (`ce-brainstorm` → `ce-plan` → `ce-work`). Requirements docs live in `docs/brainstorms/YYYY-MM-DD-<topic>-requirements.md` with `date:`/`topic:` frontmatter; plans `ce-plan` produces reference them via `origin:`. The older plain-markdown docs in `plans/` and `docs/*.md` predate this and are left as-is (completed work); convert only when a doc re-enters active planning. Fork-side requirements stay mechanism-only — commercial context belongs in the private `nadicodeai/nadicodeai` monorepo, never here.
