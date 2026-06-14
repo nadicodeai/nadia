@@ -281,7 +281,7 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/opt/argo/.playwright
 #                           profile bundles from `git@` / `ssh://` URLs at
 #                           runtime; without ssh that path errors out.
 #   make, gcc, g++,       → Native-compile toolchain. Two consumers:
-#   python3-dev,            (1) `tools/lazy_deps.py` pip-installs platform extras
+#   cmake, python3-dev,     (1) `tools/lazy_deps.py` pip-installs platform extras
 #   libffi-dev,             (sounddevice, brotlicffi, mautrix[encryption],
 #   libolm-dev              asyncpg, …) on first use; some lack manylinux
 #                           wheels for arm64 and fall back to source builds.
@@ -291,6 +291,11 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/opt/argo/.playwright
 #                           here so the lazy Matrix-encryption build resolves. It
 #                           belongs with the lazy_deps build toolchain, not the
 #                           deferred Python extras (packaging-overrides.yaml).
+#                           cmake is a build-system generator some native sdists
+#                           invoke during source builds; upstream apt-added it in
+#                           the 4e6d05c6 sync alongside enabling the deferred
+#                           `matrix` extra, mirrored here for the same toolchain
+#                           reason (not eager-installed — see extras_exceptions).
 #                           (2) node-gyp builds node-pty 1.1.0's C++ binding at
 #                           `npm install` time. node-pty entered the dashboard
 #                           npm tree transitively (@streamdown/math →
@@ -323,6 +328,7 @@ RUN apt-get update && \
         make \
         gcc \
         g++ \
+        cmake \
         python3-dev \
         libffi-dev \
         libolm-dev && \

@@ -110,6 +110,18 @@ extras_exceptions:
       Same follow-up as the others (rollout step 2: eager-install in runtime-full
       or prove the offline/recreate path is covered).
     issue: "TODO-extras-parity"
+  - extra: matrix
+    why: >-
+      FLAGGED: upstream (4e6d05c6) added a dedicated `matrix` extra
+      (mautrix[encryption], aiosqlite, asyncpg, aiohttp-socks) and eager-installs
+      it in its image so the Matrix E2EE adapter works without runtime
+      lazy-install. The fork defers ALL extras to tools/lazy_deps.py (pip install
+      -e . with no extras), so the heavy mautrix[encryption]/python-olm build
+      happens at first use — needing runtime PyPI access plus the native
+      toolchain (libolm-dev + cmake) already carried in runtime-full's apt block.
+      Recorded here for consistency with the extras posture above, NOT because it
+      is resolved. Same follow-up as the others (rollout step 2).
+    issue: "TODO-extras-parity"
 
 # Informational record of larger structural divergences the gate does not (yet)
 # enforce facet-by-facet. Documented so the decision is discoverable.
