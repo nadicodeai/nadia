@@ -216,6 +216,17 @@ skip_contexts:
   # See tests/test_model_id_preservation.py::test_shell_redirect_after_hermes_rebrands.
   - '(?i)\bhermes(?:[- .]?[234](?![>])[\w.:+-]*|_[234][\w.:+-]+)'   # Hermes-4-405B, hermes-3-70b, "Hermes 3", hermes3:70b, Hermes-4.3-36B, hermes_4_70b, nousresearch/hermes-4-405b tail; underscore form requires a tail so the hermes_2 IRC nick still rebrands; (?!>) excludes `hermes 2>/dev/null` shell redirects
   - 'hermes\[-_ \]\?\[34\]'               # the model_switch.py non-agentic detector regex literal: hermes[-_ ]?[34]
+  # --- Edit-format steering needle for Nous Hermes models (agent/coding_context.py) ---
+  # _EDIT_FORMAT_GUIDANCE's "replace" family is a tuple of bare lowercase substrings
+  # matched against a model id to steer the coding edit format. "hermes" here is a
+  # MODEL-FAMILY needle (it substring-matches nousresearch/hermes-4-405b and other
+  # Nous Hermes ids), NOT a brand token — renaming it to "argo" silently drops
+  # replace-mode steering for every Hermes-family model the customer might run
+  # (tests/agent/test_coding_context.py::test_family_detection). The bare needle
+  # carries no version digit, so the model-id rules above do not reach it; preserve
+  # it in this exact needle-list context. Narrow literal so no other bare "hermes"
+  # is over-preserved.
+  - '"hermes", "llama", "mistral"'
   # --- Fork attribution credit (patch 0015) ---
   # The rebranded startup/dashboard surfaces credit the upstream project by
   # name: "Based on Hermes Agent by Nous Research". This is the ONE place the

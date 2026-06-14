@@ -64,6 +64,7 @@ SKIP_CONTEXTS: tuple[str, ...] = (
     '(?i)\\bnous[- ]hermes[\\w./-]*',
     '(?i)\\bhermes(?:[- .]?[234](?![>])[\\w.:+-]*|_[234][\\w.:+-]+)',
     'hermes\\[-_ \\]\\?\\[34\\]',
+    '"hermes", "llama", "mistral"',
     'Based on Hermes Agent by Nous Research',
     'hermes-example-plugins',
     'DEFAULT_NOUS_CLIENT_ID = "hermes-cli"',

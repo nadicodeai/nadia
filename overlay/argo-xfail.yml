@@ -183,7 +183,7 @@ xfails:
     category: X
 
   # ---------------------------------------------------------------
-  # Cluster 3 — banner.py compares against origin/release (1 entry)
+  # Cluster 3 — banner.py compares against origin/release (2 entries)
   # Upstream test hardcodes subprocess mocks for `origin/main`. Patch 0010
   # (banner-update-check-release-branch) makes banner.py compare against
   # `origin/release` so the customer-facing "Update available: N commits
@@ -193,6 +193,9 @@ xfails:
   # ---------------------------------------------------------------
   - nodeid: tests/argo_cli/test_banner_git_state.py::test_get_git_banner_state_reads_origin_and_head
     reason: "Patch 0010 redirects banner.py's update check from origin/main to origin/release (matching install.sh + cmd_update target branch per IU-FR-7/IU-FR-8). Upstream test hardcodes subprocess mocks for origin/main and will not match the patched code path. The behavior IS the argo customer's, intentionally divergent — banner now agrees with argo update's branch target."
+    category: X
+  - nodeid: tests/argo_cli/test_update_check.py::test_check_for_updates_official_ssh_origin_uses_https_probe
+    reason: "Patch 0010 redirects banner.py's update check from refs/heads/main to refs/heads/release (matching install.sh + cmd_update target branch per IU-FR-7/IU-FR-8). This NEW upstream test (4e6d05c6 sync) mocks the official-ssh https-probe path expecting `git ls-remote ... refs/heads/main`; the patched _check_via_rev probes refs/heads/release, so the mock raises and the function returns None instead of UPDATE_AVAILABLE_NO_COUNT. Intentionally divergent — same root cause as the sibling Cluster 3 entry; the argo customer tracks the release branch."
     category: X
 
   # ---------------------------------------------------------------
