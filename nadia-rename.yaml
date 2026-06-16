@@ -78,6 +78,7 @@ mappings:
   # must NOT become `nous_nadia_*`: Nadia is the product, not a Nous model
   # family. Neutralize these symbols and the test filename before the broad
   # Hermes→Nadia pass runs.
+  - {from: "NOUS HERMES", to: "NADIA"}
   - {from: "test_matches_real_nous_hermes_chat_models", to: "test_matches_real_nous_model_family_chat_models"}
   - {from: "test_nous_hermes_non_agentic", to: "test_nous_model_family_non_agentic"}
   - {from: "is_nous_hermes_non_agentic", to: "is_nous_model_family_non_agentic"}
@@ -101,6 +102,13 @@ mappings:
   - {from: "HERMES_",                 to: "NADIA_"}
   - {from: "~/.hermes",              to: "~/.nadia"}
   - {from: ".hermes/",               to: ".nadia/"}
+  # --- English possessive product prose ---
+  # Bare `Hermes` -> `Nadia` turns prose like "Hermes' system prompt" into the
+  # ungrammatical "Nadia' system prompt". Match the apostrophe+space form only;
+  # do not touch quoted literals like `'Hermes'` or already-possessive
+  # "Hermes's".
+  - {from: "Hermes' ",                to: "Nadia's "}
+  - {from: "Hermes'?",                to: "Nadia's?"}
   # --- Bare case variants (shortest, last) ---
   - {from: "Hermes",                  to: "Nadia"}
   - {from: "HERMES",                  to: "NADIA"}
@@ -184,13 +192,16 @@ skip_contexts:
   # rewritable — NOT preserved — and get rebranded by the mapping above. This
   # also keeps verify_no_leakage's skip-context coverage check from rubber-
   # stamping a capitalised Hermes-Agent leak (the two cases now agree).
-  # The third lookahead alternative `hermes-agent\.nousresearch\.com/docs\b`
+  # The `hermes-dialog-bridge.invalid` host is an internal browser-supervisor
+  # sentinel, not an external URL. Release it from URL preservation so the
+  # Python constant and injected JS endpoint keep the same renamed host.
+  # The fourth lookahead alternative `hermes-agent\.nousresearch\.com/docs\b`
   # makes the self-referential DOCS path REWRITABLE (inner lookahead matches ->
   # OUTER preservation lookahead FAILS -> the host+/docs -> docs.nadicode.ai/nadia
   # mapping above fires). The BARE host (HTTP-Referer), /install.sh, /llms.txt,
   # github.com/NousResearch/hermes-agent and pypi.org/p/hermes-agent do NOT match
   # /docs, so they stay preserved.
-  - 'https?://(?!(?:(?:raw\.)?github(?:usercontent)?\.com/(?i:NousResearch/hermes-agent)\b|hermes-agent\.local|hermes-agent\.nousresearch\.com/docs\b))[^\s"''\\${}]*'
+  - 'https?://(?!(?:(?:raw\.)?github(?:usercontent)?\.com/(?i:NousResearch/hermes-agent)\b|hermes-agent\.local|hermes-dialog-bridge\.invalid|hermes-agent\.nousresearch\.com/docs\b))[^\s"''\\${}]*'
   - '\b[0-9a-f]{40}\b'      # Don't rewrite inside git-sha-like 40-hex tokens.
   - '\b[0-9a-f]{64}\b'      # Don't rewrite inside sha256-like 64-hex tokens.
   # --- External Hugging Face dataset repository identifiers ---
@@ -233,7 +244,7 @@ skip_contexts:
   # a bare hermes_<digit> with no tail is the nick suffix and rebrands. The
   # hyphen/space/dot/no-separator forms still match bare ("Hermes 3", hermes-3)
   # because those never appear as a nick-collision suffix.
-  - '(?i)\bnous[- ]hermes[\w./-]*'        # nous-hermes-2-mistral, Nous-Hermes-3, Nous-Hermes-llama-1b-v1 (no version digit)
+  - '(?i)\bnous[- ]hermes[\w./-]+'        # nous-hermes-2-mistral, Nous-Hermes-3, Nous-Hermes-llama-1b-v1 (no version digit); require a tail so the product banner "NOUS HERMES" still rebrands
   # The `(?![>])` after the version digit stops a SHELL REDIRECT from being
   # mistaken for a model id: install.sh has `$(which hermes 2>/dev/null)` and
   # `$(command -v hermes 2>/dev/null)`, where `hermes 2>` looked like "Hermes 2"
@@ -243,7 +254,7 @@ skip_contexts:
   # `>` after the version digit; `2>`/`3>`/`4>` are fd redirects, so the guard is
   # safe (verified: 0 model-id regressions, all 5 redirect false-positives fixed).
   # See tests/test_model_id_preservation.py::test_shell_redirect_after_hermes_rebrands.
-  - '(?i)\bhermes(?:[- .]?[234](?![>])[\w.:+-]*|_[234][\w.:+-]+)'   # Hermes-4-405B, hermes-3-70b, "Hermes 3", hermes3:70b, Hermes-4.3-36B, hermes_4_70b, nousresearch/hermes-4-405b tail; underscore form requires a tail so the hermes_2 IRC nick still rebrands; (?!>) excludes `hermes 2>/dev/null` shell redirects
+  - '(?i)\bhermes(?:[- .]?[234](?![>])[\w.:+-]*|_[234]_[\w.:+-]+)'   # Hermes-4-405B, hermes-3-70b, "Hermes 3", hermes3:70b, Hermes-4.3-36B, hermes_4_70b, nousresearch/hermes-4-405b tail; underscore form requires an underscore tail so the hermes_2 IRC nick and hermes_2... prose still rebrand; (?!>) excludes `hermes 2>/dev/null` shell redirects
   - 'hermes\[-_ \]\?\[34\]'               # the model_switch.py non-agentic detector regex literal: hermes[-_ ]?[34]
   # --- Edit-format steering needle for Nous Hermes models (agent/coding_context.py) ---
   # _EDIT_FORMAT_GUIDANCE's "replace" family is a tuple of bare lowercase substrings
@@ -294,6 +305,29 @@ skip_contexts:
   # URL guard (it does not match the rewritable `NousResearch/hermes-agent\b`); this
   # covers the bare/prose form.
   - 'hermes-example-plugins'
+  # --- External community project/package names (no Nadia fork exists) ---
+  # These are real third-party project names in docs or comments, usually paired
+  # with preserved GitHub URLs. A blanket Hermes→Nadia pass invented names like
+  # NadiaClaw, Nadia Mod, nadia-lcm, rtk-nadia, and
+  # sample-nadia-agent-on-aws-with-bedrock even though those projects do not
+  # exist. Preserve only the external project/package token; surrounding product
+  # prose, paths, and env vars still rebrand normally.
+  - '\bHermesClaw\b'
+  - '\bHermes Mod\b'
+  - '(?<![\w-])hermes-mod(?![\w-])'
+  - '(?<![\w-])hermes-lcm(?![\w-])'
+  - '(?<![\w-])rtk-hermes(?![\w-])'
+  - '(?<![\w-])sample-hermes-agent-on-aws-with-bedrock(?![\w-])'
+  - '(?<![\w-])hermes-agent-comfyui-helper(?![\w-])'
+  # vLLM's external tool-call parser is literally named `hermes`; `nadia` is not
+  # a valid parser value. Preserve the exact CLI flag while nearby product prose
+  # still rebrands normally.
+  - '--tool-call-parser hermes'
+  # Upstream test names describe the original default banner fixture. Preserve
+  # the nodeid text so xfail/cache references do not churn while the assertion
+  # body itself rebrands through the exact `NOUS HERMES` mapping above.
+  - 'test_default_compact_banner_keeps_legacy_nous_hermes_branding'
+  - 'test_poseidon_compact_banner_uses_skin_branding_instead_of_nous_hermes'
   # NOTE: the NVIDIA NIM `X-BILLING-INVOKE-ORIGIN: HermesAgent` header is deliberately
   # NOT preserved. The audit skeptics split 1-1 on whether NVIDIA keys on it; unlike the
   # Nous client_id (empirically confirmed to break portal join), a billing-ORIGIN tag is
