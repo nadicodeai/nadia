@@ -8,8 +8,8 @@ Usage (in a test):
 
     with RecordedModelServer() as server:
         env["CUSTOM_BASE_URL"] = server.base_url
-        env["ARGO_MODEL"] = "stub-model"
-        # ... run argo subprocess with those env vars ...
+        env["NADIA_MODEL"] = "stub-model"
+        # ... run nadia subprocess with those env vars ...
 
 The server binds to 127.0.0.1 on an OS-assigned free port, serves a single
 worker thread, and shuts down cleanly when the context manager exits.
@@ -42,7 +42,7 @@ _CANNED: dict[str, str] = {
     "list files": "I can see the files in the current directory.",
     "pwd": "The current working directory is available.",
     "hello": "Hello! How can I assist you today?",
-    "version": "Argo Agent is running correctly.",
+    "version": "Nadia Agent is running correctly.",
     "test": "Test completed successfully.",
     "tool": "I will use the available tools to help you.",
 }
@@ -164,8 +164,8 @@ class RecordedModelServer:
             env = os.environ.copy()
             env["CUSTOM_BASE_URL"] = server.base_url
             env["OPENAI_API_KEY"] = "stub"
-            env["ARGO_MODEL"] = "stub-model"
-            subprocess.run([sys.executable, "-m", "argo_cli.main", "-z", "hello"],
+            env["NADIA_MODEL"] = "stub-model"
+            subprocess.run([sys.executable, "-m", "nadia_cli.main", "-z", "hello"],
                            env=env, capture_output=True)
     """
 

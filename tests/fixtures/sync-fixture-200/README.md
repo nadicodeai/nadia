@@ -38,7 +38,7 @@ deterministically without depending on the live upstream remote.
 5. Running `make sync` to apply `upstream-200-files.patch` as the
    forward delta.
 6. Asserting the resulting tree's `make build && make leakage-static`
-   exits 0 and produces a clean `dist/argo/`.
+   exits 0 and produces a clean `dist/nadia/`.
 
 ## Smoke check (manual)
 

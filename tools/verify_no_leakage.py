@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """tools/verify_no_leakage.py — config-aware static leakage scanner.
 
-Spec FR-12. Scans a target directory (typically `dist/argo/`) for
+Spec FR-12. Scans a target directory (typically `dist/nadia/`) for
 case-insensitive `hermes` occurrences and reports any hit NOT covered by
-`argo-rename.yaml`'s `exceptions:` (path globs) or `skip_contexts:` (regex
+`nadia-rename.yaml`'s `exceptions:` (path globs) or `skip_contexts:` (regex
 patterns).
 
 A naive `grep -i hermes` is insufficient and explicitly forbidden —
-`argo-rename.yaml` itself contains `hermes` literals as FROM keys, and the
+`nadia-rename.yaml` itself contains `hermes` literals as FROM keys, and the
 engine's own pass code legitimately contains `hermes` in skip_contexts'
 URL allowlists.
 
@@ -164,12 +164,12 @@ def main(argv: list[str] | None = None) -> int:
         prog="verify_no_leakage.py",
         description="Scan a target tree for case-insensitive 'hermes' leakage.",
     )
-    parser.add_argument("target", type=Path, help="directory to scan (e.g. dist/argo/)")
+    parser.add_argument("target", type=Path, help="directory to scan (e.g. dist/nadia/)")
     parser.add_argument(
         "--rename-yaml",
         type=Path,
-        default=Path(__file__).resolve().parent.parent / "argo-rename.yaml",
-        help="path to argo-rename.yaml",
+        default=Path(__file__).resolve().parent.parent / "nadia-rename.yaml",
+        help="path to nadia-rename.yaml",
     )
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args(argv)

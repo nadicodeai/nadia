@@ -33,7 +33,7 @@ ARG S6_OVERLAY_VERSION=3.2.3.0
 ARG S6_OVERLAY_NOARCH_SHA256=""" + ("a" * 64) + """
 RUN apt-get install -y --no-install-recommends ca-certificates curl ffmpeg && rm -rf /x
 RUN uv sync --frozen --extra all --extra anthropic
-ENTRYPOINT [ "/init", "/opt/argo/docker/main-wrapper.sh" ]
+ENTRYPOINT [ "/init", "/opt/nadia/docker/main-wrapper.sh" ]
 """
 
 # A shipped Dockerfile that honors the contract: same node digest, same s6 pin,
@@ -45,15 +45,15 @@ ARG S6_OVERLAY_VERSION=3.2.3.0
 ARG S6_OVERLAY_NOARCH_SHA256=""" + ("a" * 64) + """
 RUN apt-get install -y --no-install-recommends ca-certificates curl ffmpeg && rm -rf /x
 RUN pip install -e ".[all,anthropic]"
-ENTRYPOINT [ "/init", "/opt/argo/docker/main-wrapper.sh" ]
+ENTRYPOINT [ "/init", "/opt/nadia/docker/main-wrapper.sh" ]
 """
 
 _EMPTY_MANIFEST = "from_exceptions: []\napt_exceptions: []\nextras_exceptions: []\n"
 
 
 def _make_repo(tmp_path: Path, *, oracle: str, shipped: str, manifest: str) -> Path:
-    (tmp_path / "dist" / "argo").mkdir(parents=True)
-    (tmp_path / "dist" / "argo" / "Dockerfile").write_text(oracle, encoding="utf-8")
+    (tmp_path / "dist" / "nadia").mkdir(parents=True)
+    (tmp_path / "dist" / "nadia" / "Dockerfile").write_text(oracle, encoding="utf-8")
     (tmp_path / "Dockerfile").write_text(shipped, encoding="utf-8")
     (tmp_path / "packaging-overrides.yaml").write_text(manifest, encoding="utf-8")
     return tmp_path
@@ -185,6 +185,6 @@ def test_main_exit_1_on_violation(tmp_path, capsys):
 # ------------------------------------------------ integration: real tree
 
 def test_real_tree_honors_the_contract():
-    if not (_REPO_ROOT / "dist" / "argo" / "Dockerfile").exists():
-        pytest.skip("dist/argo/Dockerfile absent — run `make build` first")
+    if not (_REPO_ROOT / "dist" / "nadia" / "Dockerfile").exists():
+        pytest.skip("dist/nadia/Dockerfile absent — run `make build` first")
     assert check_packaging_contract(_REPO_ROOT) == []

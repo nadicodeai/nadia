@@ -1,4 +1,4 @@
-"""Validation tests for the full argo-rename.yaml configuration (T3.1).
+"""Validation tests for the full nadia-rename.yaml configuration (T3.1).
 
 Asserts structural correctness, required identifier coverage, and ordering
 constraints for the production rename config.
@@ -16,7 +16,7 @@ import pytest
 # ---------------------------------------------------------------------------
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
-_CONFIG_PATH = _REPO_ROOT / "argo-rename.yaml"
+_CONFIG_PATH = _REPO_ROOT / "nadia-rename.yaml"
 
 # overlay/ hosts the pre-rename engine sources (hermes_sync). Repo-root tests
 # import them directly via sys.path injection — same pattern as
@@ -39,7 +39,7 @@ def config() -> RenameConfig:
 
 
 def test_config_loads_without_error(config: RenameConfig) -> None:
-    """argo-rename.yaml must load cleanly."""
+    """nadia-rename.yaml must load cleanly."""
     assert config is not None
 
 
@@ -62,7 +62,7 @@ def test_mappings_sorted_longest_first(config: RenameConfig) -> None:
 def test_required_identifiers_present(config: RenameConfig) -> None:
     """All required 'from' identifiers must be in the mappings.
 
-    The rename config maps hermes-* identifiers to argo-* identifiers.
+    The rename config maps hermes-* identifiers to nadia-* identifiers.
     We verify the hermes-side (from) keys are all present.
     """
     from_keys = {from_ for from_, _ in config.mappings}
@@ -90,18 +90,18 @@ def test_required_identifiers_present(config: RenameConfig) -> None:
 
 
 def test_required_to_values_correct(config: RenameConfig) -> None:
-    """Key mappings must produce the correct 'to' (argo-side) values."""
+    """Key mappings must produce the correct 'to' (nadia-side) values."""
     mapping_dict = dict(config.mappings)
     expected = {
-        "HermesAgent": "ArgoAgent",
-        "hermes-agent": "argo-agent",
-        "hermes_agent": "argo_agent",
-        "hermes_cli": "argo_cli",
-        "HERMES_HOME": "ARGO_HOME",
-        "HERMES_": "ARGO_",
-        "Hermes": "Argo",
-        "HERMES": "ARGO",
-        "hermes": "argo",
+        "HermesAgent": "NadiaAgent",
+        "hermes-agent": "nadia-agent",
+        "hermes_agent": "nadia_agent",
+        "hermes_cli": "nadia_cli",
+        "HERMES_HOME": "NADIA_HOME",
+        "HERMES_": "NADIA_",
+        "Hermes": "Nadia",
+        "HERMES": "NADIA",
+        "hermes": "nadia",
     }
     for from_, to_ in expected.items():
         assert mapping_dict.get(from_) == to_, (
@@ -110,18 +110,18 @@ def test_required_to_values_correct(config: RenameConfig) -> None:
 
 
 def test_docs_site_mapping_present(config: RenameConfig) -> None:
-    """The self-referential docs path must map to the live Argo docs site.
+    """The self-referential docs path must map to the live Nadia docs site.
 
-    The fork publishes the renamed docs at docs.nadicode.ai/argo/ (built from
-    dist/argo/website/). The mapping rewrites the upstream Docusaurus host +
+    The fork publishes the renamed docs at docs.nadicode.ai/nadia/ (built from
+    dist/nadia/website/). The mapping rewrites the upstream Docusaurus host +
     '/docs/' baseUrl together so e.g.
     ``hermes-agent.nousresearch.com/docs/user-guide/cli`` becomes
-    ``docs.nadicode.ai/argo/user-guide/cli``.
+    ``docs.nadicode.ai/nadia/user-guide/cli``.
     """
     mapping_dict = dict(config.mappings)
     assert (
         mapping_dict.get("hermes-agent.nousresearch.com/docs")
-        == "docs.nadicode.ai/argo"
+        == "docs.nadicode.ai/nadia"
     ), (
         "docs-site mapping missing/wrong: "
         f"got {mapping_dict.get('hermes-agent.nousresearch.com/docs')!r}"
@@ -177,9 +177,9 @@ def test_exceptions_contains_self_test_protection(config: RenameConfig) -> None:
     """exceptions must protect this test file (it contains hermes-* literals).
 
     The repo-root rename test file itself contains the hermes-* string
-    literals as fixture data. When the engine runs on ``dist/argo/`` it
+    literals as fixture data. When the engine runs on ``dist/nadia/`` it
     never sees this repo-root file, but the exception entry is kept so
-    runtime ``argo doctor --static`` (which can scan arbitrary trees
+    runtime ``nadia doctor --static`` (which can scan arbitrary trees
     including a checkout-style layout) does not flag it.
     """
     paths = {rule.path for rule in config.exceptions}
@@ -192,8 +192,8 @@ def test_exceptions_contains_rename_defaults(config: RenameConfig) -> None:
     """exceptions must contain the generated ``_rename_defaults.py`` glob.
 
     ``tools/generate_rename_defaults.py`` bakes the rename config into a
-    Python module so ``argo doctor --static`` works in the published image
-    where ``argo-rename.yaml`` is absent (issue #4). That module legitimately
+    Python module so ``nadia doctor --static`` works in the published image
+    where ``nadia-rename.yaml`` is absent (issue #4). That module legitimately
     contains every hermes-* FROM key as a string literal — the engine MUST
     NOT rewrite its contents.
     """
@@ -203,17 +203,17 @@ def test_exceptions_contains_rename_defaults(config: RenameConfig) -> None:
     )
 
 
-def test_exceptions_contains_argo_metadata(config: RenameConfig) -> None:
-    """exceptions must contain the ``.argo/**`` build/sync manifest glob.
+def test_exceptions_contains_nadia_metadata(config: RenameConfig) -> None:
+    """exceptions must contain the ``.nadia/**`` build/sync manifest glob.
 
     The manifests record pre-rename file paths (hermes_cli/foo.py →
-    argo_cli/foo.py) and ship with the artifact for introspection
-    (``argo --version --verbose``). They are intentionally allowed to
+    nadia_cli/foo.py) and ship with the artifact for introspection
+    (``nadia --version --verbose``). They are intentionally allowed to
     contain hermes-* string literals.
     """
     paths = {rule.path for rule in config.exceptions}
-    assert ".argo/**" in paths, (
-        f".argo/** not in exceptions paths: {paths}"
+    assert ".nadia/**" in paths, (
+        f".nadia/** not in exceptions paths: {paths}"
     )
 
 
@@ -227,7 +227,7 @@ def test_skip_contexts_non_empty(config: RenameConfig) -> None:
     assert url_patterns, "No URL-matching skip_context found"
 
 
-def test_longer_argo_agent_before_shorter_argo(config: RenameConfig) -> None:
+def test_longer_nadia_agent_before_shorter_nadia(config: RenameConfig) -> None:
     """'hermes_agent' must appear before 'hermes' in the sorted mapping list.
 
     Longer from-keys must shadow shorter ones; hermes_agent (12 chars)
@@ -241,7 +241,7 @@ def test_longer_argo_agent_before_shorter_argo(config: RenameConfig) -> None:
     )
 
 
-def test_argo_home_before_argo_bare(config: RenameConfig) -> None:
+def test_nadia_home_before_nadia_bare(config: RenameConfig) -> None:
     """'HERMES_HOME' must appear before bare 'HERMES' entry.
 
     HERMES_HOME (10 chars) must shadow HERMES (6 chars) in longest-first order.

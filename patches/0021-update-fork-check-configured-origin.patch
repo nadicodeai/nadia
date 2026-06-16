@@ -1,0 +1,46 @@
+Subject: update: read configured origin before expanded transport URL
+
+`git remote get-url origin` expands url.*.insteadOf rules. That makes an
+official checkout look like a fork when the user's Git config rewrites the
+official URL to a mirror, tokenized transport, or local smoke-test remote.
+
+Read the configured remote.origin.url first, then fall back to remote get-url
+for older or unusual Git configurations.
+
+--- a/hermes_cli/main.py
++++ b/hermes_cli/main.py
+@@ -6238,17 +6238,23 @@ SKIP_UPSTREAM_PROMPT_FILE = ".skip_upstr
+ 
+ def _get_origin_url(git_cmd: list[str], cwd: Path) -> Optional[str]:
+     """Get the URL of the origin remote, or None if not set."""
+-    try:
+-        result = subprocess.run(
+-            git_cmd + ["remote", "get-url", "origin"],
+-            cwd=cwd,
+-            capture_output=True,
+-            text=True,
+-        )
+-        if result.returncode == 0:
+-            return result.stdout.strip()
+-    except Exception:
+-        pass
++    for args in (
++        ["config", "--get", "remote.origin.url"],
++        ["remote", "get-url", "origin"],
++    ):
++        try:
++            result = subprocess.run(
++                git_cmd + args,
++                cwd=cwd,
++                capture_output=True,
++                text=True,
++            )
++            if result.returncode == 0:
++                url = result.stdout.strip()
++                if url:
++                    return url
++        except Exception:
++            pass
+     return None
+ 
+ 

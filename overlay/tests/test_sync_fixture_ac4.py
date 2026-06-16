@@ -35,7 +35,7 @@ from pathlib import Path
 import pytest
 
 # overlay/tests/ is not a Python package (no __init__.py — overlay files
-# ship as a flat copy into dist/argo/tests/), so import the sibling
+# ship as a flat copy into dist/nadia/tests/), so import the sibling
 # helpers module via sys.path. Mirrors test_sync_fixture_ac3.py.
 sys.path.insert(0, str(Path(__file__).parent))
 from _sync_fixture_helpers import (  # noqa: E402
@@ -62,7 +62,7 @@ diff --git a/baseline.py b/baseline.py
 
  def cmd_existing(args):
 -    print("upstream existing behavior")
-+    print("argo fork: existing behavior with --debug flag")
++    print("nadia fork: existing behavior with --debug flag")
      return 0
 
 
@@ -184,7 +184,7 @@ def test_ac4_overlapping_quilt_push_fails_naming_patch_and_line(
     #     assert the abort property: baseline.py is byte-identical to
     #     its post-refactor state (the fork's edit did NOT land).
     after = baseline_py.read_text(encoding="utf-8")
-    assert "argo fork:" not in after, (
+    assert "nadia fork:" not in after, (
         "AC-4 violation: failing patch partially applied; baseline.py "
         "shows fork-only string after quilt push -a aborted"
     )

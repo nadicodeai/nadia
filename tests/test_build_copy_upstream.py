@@ -2,7 +2,7 @@
 
 Running tests against the tracked tree (e.g. `PYTHONPATH=upstream pytest`) or an
 editable install leaves untracked `__pycache__/*.pyc` behind in `upstream/`.
-`_copy_upstream` used to copy those verbatim into `dist/argo/`, where the
+`_copy_upstream` used to copy those verbatim into `dist/nadia/`, where the
 China-strip step then tripped on an orphan compiled artifact whose `*.py`
 source had been pruned (`un-denylisted China path survived prune:
 tools/__pycache__/feishu_doc_tool.cpython-311.pyc`). Bytecode is never source —

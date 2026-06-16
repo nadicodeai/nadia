@@ -4,10 +4,10 @@
 # correctly classified as non-leakage.
 
 mappings:
-  - {from: "hermes", to: "argo"}
+  - {from: "hermes", to: "nadia"}
 
 exceptions:
-  - path: "argo-rename.yaml"
+  - path: "nadia-rename.yaml"
     why: "This config file legitimately contains hermes literals as FROM keys."
 
 skip_contexts:

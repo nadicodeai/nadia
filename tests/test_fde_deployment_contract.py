@@ -13,8 +13,8 @@ def _read(path: str) -> str:
 
 
 def test_fde_python_package_surface_is_shared_across_modalities() -> None:
-    provision = _read("scripts/argo-fde-provision.sh")
-    provision_ps1 = _read("scripts/argo-fde-provision.ps1")
+    provision = _read("scripts/nadia-fde-provision.sh")
+    provision_ps1 = _read("scripts/nadia-fde-provision.ps1")
     dockerfile = _read("Dockerfile")
 
     for package in (
@@ -32,10 +32,10 @@ def test_build_copies_fde_helpers_to_release_scripts_tree() -> None:
     build_py = _read("tools/build.py")
 
     for script in (
-        "argo-fde-provision.sh",
-        "argo-fde-provision.ps1",
-        "argo-customer-init",
-        "argo-customer-init.ps1",
+        "nadia-fde-provision.sh",
+        "nadia-fde-provision.ps1",
+        "nadia-customer-init",
+        "nadia-customer-init.ps1",
     ):
         assert script in build_py
     assert "_copy_fde_scripts()" in build_py
@@ -59,7 +59,7 @@ def test_vm_artifact_target_preserves_qcow2_and_real_qemu_contract() -> None:
     qemu_script = _read("tests/golden_vm/run_qemu.sh")
     qemu_inner = _read("tests/golden_vm/qemu_inner.sh")
 
-    assert "argo-fde-ubuntu-22.04.qcow2" in image_script
+    assert "nadia-fde-ubuntu-22.04.qcow2" in image_script
     assert "--artifact-dir" in qemu_script
     assert "qemu-system-x86_64" in qemu_inner
     assert "create customer clone from golden disk" in qemu_inner
@@ -72,5 +72,5 @@ def test_live_acceptance_requires_real_telegram_and_honcho_credentials() -> None
     assert "FDE_TELEGRAM_BOT_TOKEN" in live
     assert "FDE_TELEGRAM_ALLOWED_USERS" in live
     assert "exit 77" in live
-    assert "argo -p \"${PROFILE}\" honcho status" in live
-    assert "argo -p \"${PROFILE}\" gateway status" in live
+    assert "nadia -p \"${PROFILE}\" honcho status" in live
+    assert "nadia -p \"${PROFILE}\" gateway status" in live

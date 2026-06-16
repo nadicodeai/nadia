@@ -3,12 +3,12 @@
 
 set -euo pipefail
 
-ARGO_HOME="${ARGO_HOME:-${HOME}/.argo}"
-ARGO_INSTALL_DIR="${ARGO_INSTALL_DIR:-}"
-INSTALL_URL="${ARGO_INSTALL_URL:-https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh}"
+NADIA_HOME="${NADIA_HOME:-${HOME}/.nadia}"
+NADIA_INSTALL_DIR="${NADIA_INSTALL_DIR:-}"
+INSTALL_URL="${NADIA_INSTALL_URL:-https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.sh}"
 
 DRY_RUN=0
-SKIP_ARGO_INSTALL=0
+SKIP_NADIA_INSTALL=0
 SKIP_OS_PACKAGES=1
 SKIP_BROWSER=0
 INSTALL_INIT=1
@@ -43,26 +43,26 @@ FDE_APT_PACKAGES=(
 
 usage() {
     cat <<'USAGE'
-Usage: scripts/argo-fde-provision.sh [options]
+Usage: scripts/nadia-fde-provision.sh [options]
 
 Installs the shared customer deployment baseline:
-Argo, Honcho, Telegram, Edge TTS, ddgs, customer templates, argo-customer-init,
+Nadia, Honcho, Telegram, Edge TTS, ddgs, customer templates, nadia-customer-init,
 and security.allow_lazy_installs=false.
 
 Options:
   --dry-run                 Print actions without changing the machine.
   --print-python-packages   Print the Python package surface and exit.
   --with-os-packages        Install Ubuntu/Debian apt package baseline.
-  --skip-argo-install       Do not run the public Argo installer.
+  --skip-nadia-install       Do not run the public Nadia installer.
   --skip-browser            Skip browser/node provisioning in this pass.
-  --skip-init-install       Do not install argo-customer-init onto PATH.
+  --skip-init-install       Do not install nadia-customer-init onto PATH.
   --allow-lazy-installs     Do not force security.allow_lazy_installs=false.
   -h, --help                Show this help.
 
 Environment:
-  ARGO_HOME                 Defaults to ~/.argo.
-  ARGO_INSTALL_DIR          Overrides auto-discovery of the Argo venv location.
-  ARGO_INSTALL_URL          Overrides the public release install.sh URL.
+  NADIA_HOME                 Defaults to ~/.nadia.
+  NADIA_INSTALL_DIR          Overrides auto-discovery of the Nadia venv location.
+  NADIA_INSTALL_URL          Overrides the public release install.sh URL.
 USAGE
 }
 
@@ -71,7 +71,7 @@ log() {
 }
 
 die() {
-    printf 'argo-fde-provision: %s\n' "$*" >&2
+    printf 'nadia-fde-provision: %s\n' "$*" >&2
     exit "${2:-1}"
 }
 
@@ -121,8 +121,8 @@ while [ "$#" -gt 0 ]; do
             SKIP_OS_PACKAGES=0
             shift
             ;;
-        --skip-argo-install)
-            SKIP_ARGO_INSTALL=1
+        --skip-nadia-install)
+            SKIP_NADIA_INSTALL=1
             shift
             ;;
         --skip-browser)
@@ -160,10 +160,10 @@ install_os_packages() {
     run_root apt-get install -y --no-install-recommends "${FDE_APT_PACKAGES[@]}"
 }
 
-install_argo() {
-    [ "${SKIP_ARGO_INSTALL}" -eq 0 ] || return 0
-    local tmp_install="/tmp/argo-install.sh"
-    log "install Argo from ${INSTALL_URL}"
+install_nadia() {
+    [ "${SKIP_NADIA_INSTALL}" -eq 0 ] || return 0
+    local tmp_install="/tmp/nadia-install.sh"
+    log "install Nadia from ${INSTALL_URL}"
     run curl -fsSL "${INSTALL_URL}" -o "${tmp_install}"
     run chmod +x "${tmp_install}"
     local install_args=(--skip-setup)
@@ -174,19 +174,19 @@ install_argo() {
 }
 
 discover_install_dir() {
-    if [ -n "${ARGO_INSTALL_DIR}" ]; then
-        printf '%s\n' "${ARGO_INSTALL_DIR}"
+    if [ -n "${NADIA_INSTALL_DIR}" ]; then
+        printf '%s\n' "${NADIA_INSTALL_DIR}"
         return 0
     fi
-    if [ -d "${ARGO_HOME}/argo-agent" ]; then
-        printf '%s\n' "${ARGO_HOME}/argo-agent"
+    if [ -d "${NADIA_HOME}/nadia-agent" ]; then
+        printf '%s\n' "${NADIA_HOME}/nadia-agent"
         return 0
     fi
-    if [ -d "/usr/local/lib/argo-agent" ]; then
-        printf '%s\n' "/usr/local/lib/argo-agent"
+    if [ -d "/usr/local/lib/nadia-agent" ]; then
+        printf '%s\n' "/usr/local/lib/nadia-agent"
         return 0
     fi
-    printf '%s\n' "${ARGO_HOME}/argo-agent"
+    printf '%s\n' "${NADIA_HOME}/nadia-agent"
 }
 
 python_bin_for_install() {
@@ -199,7 +199,7 @@ python_bin_for_install() {
         printf '%s\n' "${install_dir}/venv/bin/python"
         return 0
     fi
-    die "Argo venv python not found at ${install_dir}/venv/bin/python"
+    die "Nadia venv python not found at ${install_dir}/venv/bin/python"
 }
 
 install_python_packages() {
@@ -227,14 +227,14 @@ install_python_packages() {
 }
 
 write_templates() {
-    log "write customer templates under ${ARGO_HOME}"
+    log "write customer templates under ${NADIA_HOME}"
     if [ "${DRY_RUN}" -eq 1 ]; then
-        log "write ${ARGO_HOME}/SOUL.md.template"
-        log "write ${ARGO_HOME}/honcho.json.template"
+        log "write ${NADIA_HOME}/SOUL.md.template"
+        log "write ${NADIA_HOME}/honcho.json.template"
         return 0
     fi
-    mkdir -p "${ARGO_HOME}"
-    cat >"${ARGO_HOME}/SOUL.md.template" <<'EOF'
+    mkdir -p "${NADIA_HOME}"
+    cat >"${NADIA_HOME}/SOUL.md.template" <<'EOF'
 # Customer Operating Context
 
 Profile: {{PROFILE}}
@@ -244,9 +244,9 @@ Honcho peer: {{HONCHO_PEER}}
 Use this file for customer-specific operating context, preferences, boundaries,
 and escalation notes. Do not put long-lived secrets here.
 EOF
-    cat >"${ARGO_HOME}/honcho.json.template" <<'EOF'
+    cat >"${NADIA_HOME}/honcho.json.template" <<'EOF'
 {
-  "aiPeer": "argo",
+  "aiPeer": "nadia",
   "contextCadence": 1,
   "dialecticCadence": 2,
   "dialecticDepth": 1,
@@ -261,12 +261,12 @@ EOF
 write_lazy_policy() {
     local python_bin="$1"
     [ "${DISABLE_LAZY_INSTALLS}" -eq 1 ] || return 0
-    log "write ${ARGO_HOME}/config.yaml security.allow_lazy_installs=false"
+    log "write ${NADIA_HOME}/config.yaml security.allow_lazy_installs=false"
     if [ "${DRY_RUN}" -eq 1 ]; then
         return 0
     fi
-    mkdir -p "${ARGO_HOME}"
-    "${python_bin}" - "${ARGO_HOME}/config.yaml" <<'PY'
+    mkdir -p "${NADIA_HOME}"
+    "${python_bin}" - "${NADIA_HOME}/config.yaml" <<'PY'
 from __future__ import annotations
 
 import sys
@@ -293,18 +293,18 @@ install_customer_init() {
     [ "${INSTALL_INIT}" -eq 1 ] || return 0
     local script_dir
     script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    local source_script="${script_dir}/argo-customer-init"
+    local source_script="${script_dir}/nadia-customer-init"
     [ -f "${source_script}" ] || die "missing ${source_script}"
     local link_dir="/usr/local/bin"
     if [ "$(id -u)" -ne 0 ] && ! sudo -n true >/dev/null 2>&1; then
         link_dir="${HOME}/.local/bin"
         run mkdir -p "${link_dir}"
-        log "install argo-customer-init command to ${link_dir}"
-        run install -m 0755 "${source_script}" "${link_dir}/argo-customer-init"
+        log "install nadia-customer-init command to ${link_dir}"
+        run install -m 0755 "${source_script}" "${link_dir}/nadia-customer-init"
         return 0
     fi
-    log "install argo-customer-init command to ${link_dir}"
-    run_root install -m 0755 "${source_script}" "${link_dir}/argo-customer-init"
+    log "install nadia-customer-init command to ${link_dir}"
+    run_root install -m 0755 "${source_script}" "${link_dir}/nadia-customer-init"
 }
 
 install_browser_tools() {
@@ -335,7 +335,7 @@ PY
 
 main() {
     install_os_packages
-    install_argo
+    install_nadia
     local install_dir
     install_dir="$(discover_install_dir)"
     local python_bin

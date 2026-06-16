@@ -10,7 +10,7 @@ from __future__ import annotations
 #: passes.  Any directory *or* any descendant of a directory with one of
 #: these names is left untouched.
 SKIP_DIRS: frozenset[str] = frozenset(
-    {".git", ".venv", ".argo", "__pycache__", "node_modules"}
+    {".git", ".venv", ".nadia", "__pycache__", "node_modules"}
 )
 
 

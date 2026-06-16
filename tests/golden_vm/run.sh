@@ -3,7 +3,7 @@
 #
 # This uses an Ubuntu 22.04 container as a disposable VM surrogate. It runs the
 # real release installer through scripts/golden-vm-bake.sh, preinstalls the FDE
-# dependency surface, then creates a customer profile through argo-customer-init.
+# dependency surface, then creates a customer profile through nadia-customer-init.
 
 set -euo pipefail
 
@@ -36,7 +36,7 @@ if command -v uuidgen >/dev/null 2>&1; then
 else
     UUID="$(head -c 8 /dev/urandom | od -An -tx1 | tr -d ' \n')"
 fi
-CONTAINER="argo-golden-vm-smoke-${UUID}"
+CONTAINER="nadia-golden-vm-smoke-${UUID}"
 LOG_FILE="${LOG_DIR}/${UUID}.log"
 
 echo "golden-vm-smoke: container=${CONTAINER}"
@@ -57,16 +57,16 @@ CONTAINER_SCRIPT=$(cat <<'EOS'
 set -euo pipefail
 
 export DEBIAN_FRONTEND=noninteractive
-export ARGO_HOME=/root/.argo
+export NADIA_HOME=/root/.nadia
 
 echo "==> bake golden VM baseline"
 /repo/scripts/golden-vm-bake.sh --skip-browser
 
-echo "==> assert argo command"
-argo --version
+echo "==> assert nadia command"
+nadia --version
 
 echo "==> assert imports"
-/usr/local/lib/argo-agent/venv/bin/python - <<'PY'
+/usr/local/lib/nadia-agent/venv/bin/python - <<'PY'
 import importlib
 for module in ("honcho", "telegram", "edge_tts", "ddgs"):
     importlib.import_module(module)
@@ -74,7 +74,7 @@ print("imports ok")
 PY
 
 echo "==> customer init"
-argo-customer-init \
+nadia-customer-init \
   --profile smokeprod \
   --honcho-workspace smoke-workspace \
   --honcho-peer fde-smoke \
@@ -86,19 +86,19 @@ argo-customer-init \
   --yes
 
 echo "==> assert profile files"
-test -f /root/.argo/profiles/smokeprod/config.yaml
-test -f /root/.argo/profiles/smokeprod/honcho.json
-test -f /root/.argo/profiles/smokeprod/.env
-test -f /root/.argo/profiles/smokeprod/SOUL.md
-grep -q "allow_lazy_installs: false" /root/.argo/profiles/smokeprod/config.yaml
-grep -q "provider: honcho" /root/.argo/profiles/smokeprod/config.yaml
-grep -q "platform: telegram" /root/.argo/profiles/smokeprod/config.yaml
-grep -q "fake-honcho-key" /root/.argo/profiles/smokeprod/honcho.json
-grep -q "TELEGRAM_BOT_TOKEN=123456789:abcdefghijklmnopqrstuvwxyzABCDE" /root/.argo/profiles/smokeprod/.env
-test "$(stat -c '%a' /root/.argo/profiles/smokeprod/.env)" = "600"
+test -f /root/.nadia/profiles/smokeprod/config.yaml
+test -f /root/.nadia/profiles/smokeprod/honcho.json
+test -f /root/.nadia/profiles/smokeprod/.env
+test -f /root/.nadia/profiles/smokeprod/SOUL.md
+grep -q "allow_lazy_installs: false" /root/.nadia/profiles/smokeprod/config.yaml
+grep -q "provider: honcho" /root/.nadia/profiles/smokeprod/config.yaml
+grep -q "platform: telegram" /root/.nadia/profiles/smokeprod/config.yaml
+grep -q "fake-honcho-key" /root/.nadia/profiles/smokeprod/honcho.json
+grep -q "TELEGRAM_BOT_TOKEN=123456789:abcdefghijklmnopqrstuvwxyzABCDE" /root/.nadia/profiles/smokeprod/.env
+test "$(stat -c '%a' /root/.nadia/profiles/smokeprod/.env)" = "600"
 
-echo "==> assert argo can address profile"
-argo -p smokeprod --version
+echo "==> assert nadia can address profile"
+nadia -p smokeprod --version
 
 echo "==> golden VM smoke passed"
 EOS

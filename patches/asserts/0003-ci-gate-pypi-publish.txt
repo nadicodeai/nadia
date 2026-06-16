@@ -4,7 +4,7 @@
 # the built tree. Catches the failure mode where `quilt refresh` after
 # manual conflict resolution silently drops one of the gating lines.
 
-# 1. The workflow file still exists in dist/argo/.
+# 1. The workflow file still exists in dist/nadia/.
 path:.github/workflows/upload_to_pypi.yml
 
 # 2. The Nadicode gating marker comment landed (header text).

@@ -8,33 +8,33 @@ param(
     [Parameter(Mandatory=$true)][string]$TelegramAllowedUsers,
     [string]$TelegramHomeChannel = "",
     [switch]$SkipGateway,
-    [string]$ArgoHome = $(if ($env:ARGO_HOME) { $env:ARGO_HOME } else { Join-Path $env:LOCALAPPDATA "argo" })
+    [string]$NadiaHome = $(if ($env:NADIA_HOME) { $env:NADIA_HOME } else { Join-Path $env:LOCALAPPDATA "nadia" })
 )
 
 $ErrorActionPreference = "Stop"
 
-function Resolve-ArgoPython {
-    $candidate = Join-Path $ArgoHome "argo-agent\venv\Scripts\python.exe"
+function Resolve-NadiaPython {
+    $candidate = Join-Path $NadiaHome "nadia-agent\venv\Scripts\python.exe"
     if (Test-Path $candidate) { return $candidate }
     $cmd = Get-Command python -ErrorAction SilentlyContinue
     if ($cmd) { return $cmd.Source }
     throw "python not found"
 }
 
-function Resolve-ArgoCommand {
-    $cmd = Get-Command argo -ErrorAction SilentlyContinue
+function Resolve-NadiaCommand {
+    $cmd = Get-Command nadia -ErrorAction SilentlyContinue
     if ($cmd) { return $cmd.Source }
-    $candidate = Join-Path $ArgoHome "argo-agent\venv\Scripts\argo.exe"
+    $candidate = Join-Path $NadiaHome "nadia-agent\venv\Scripts\nadia.exe"
     if (Test-Path $candidate) { return $candidate }
-    throw "argo not found on PATH"
+    throw "nadia not found on PATH"
 }
 
-$argo = Resolve-ArgoCommand
-$python = Resolve-ArgoPython
-$profileHome = Join-Path (Join-Path $ArgoHome "profiles") $Profile
+$nadia = Resolve-NadiaCommand
+$python = Resolve-NadiaPython
+$profileHome = Join-Path (Join-Path $NadiaHome "profiles") $Profile
 
 if (-not (Test-Path $profileHome)) {
-    & $argo profile create $Profile --clone
+    & $nadia profile create $Profile --clone
 }
 New-Item -ItemType Directory -Force -Path $profileHome | Out-Null
 
@@ -89,7 +89,7 @@ else:
     data.pop("baseUrl", None)
 out_path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 '@ | & $python - `
-    (Join-Path $ArgoHome "honcho.json.template") `
+    (Join-Path $NadiaHome "honcho.json.template") `
     (Join-Path $profileHome "honcho.json") `
     $HonchoWorkspace `
     $HonchoPeer `
@@ -106,7 +106,7 @@ if ($TelegramHomeChannel) {
 $envPath = Join-Path $profileHome ".env"
 $envLines | Set-Content -Path $envPath -Encoding UTF8
 
-$soulTemplate = Join-Path $ArgoHome "SOUL.md.template"
+$soulTemplate = Join-Path $NadiaHome "SOUL.md.template"
 $soulPath = Join-Path $profileHome "SOUL.md"
 if (Test-Path $soulTemplate) {
     $soul = Get-Content -Raw -Path $soulTemplate
@@ -125,8 +125,8 @@ Honcho peer: $HonchoPeer
 }
 
 if (-not $SkipGateway) {
-    & $argo -p $Profile gateway install
-    & $argo -p $Profile gateway start
+    & $nadia -p $Profile gateway install
+    & $nadia -p $Profile gateway start
 }
 
 Write-Host "configured profile $Profile at $profileHome"

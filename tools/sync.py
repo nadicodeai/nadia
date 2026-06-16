@@ -736,12 +736,12 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument(
         "--upstream-url",
-        default=os.environ.get("ARGO_SYNC_UPSTREAM_URL", DEFAULT_UPSTREAM_URL),
+        default=os.environ.get("NADIA_SYNC_UPSTREAM_URL", DEFAULT_UPSTREAM_URL),
         metavar="URL",
         help=(
             "Upstream repository URL "
             f"(default: {DEFAULT_UPSTREAM_URL}; "
-            "or env ARGO_SYNC_UPSTREAM_URL)."
+            "or env NADIA_SYNC_UPSTREAM_URL)."
         ),
     )
     p.add_argument(

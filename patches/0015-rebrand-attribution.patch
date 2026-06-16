@@ -12,8 +12,8 @@ the upstream project as "Based on Hermes Agent by Nous Research". Surfaces:
   - hermes_cli/dashboard_auth/login_page.py — login wordmark + credit line
 
 The credit deliberately keeps the literal upstream product name "Hermes";
-a skip_contexts entry in argo-rename.yaml ("Based on Hermes Agent by Nous
-Research") stops the rename engine from rewriting it to "Argo" and lets
+a skip_contexts entry in nadia-rename.yaml ("Based on Hermes Agent by Nous
+Research") stops the rename engine from rewriting it to "Nadia" and lets
 verify_no_leakage treat that "hermes" as allowed. Assertions in
 patches/asserts/0015-rebrand-attribution.txt prove both that the rebrand
 landed and that the literal "Hermes" survived the rename pass.
@@ -30,8 +30,8 @@ Agent by Nous Research". Surfaces touched:
   - hermes_cli/dashboard_auth/login_page.py — login wordmark + credit line
 
 The credit deliberately keeps the literal upstream product name "Hermes";
-a skip_contexts entry in argo-rename.yaml ("Based on Hermes Agent by Nous
-Research") stops the rename engine from rewriting it to "Argo" and lets
+a skip_contexts entry in nadia-rename.yaml ("Based on Hermes Agent by Nous
+Research") stops the rename engine from rewriting it to "Nadia" and lets
 verify_no_leakage treat that "hermes" as allowed. Assertions in
 patches/asserts/0015-rebrand-attribution.txt prove both that the rebrand
 landed and that the literal "Hermes" survived the rename pass.

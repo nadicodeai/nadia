@@ -1,0 +1,9 @@
+# Assertions for 0016-register-nadia-skin.patch
+# Prove the built dist registers the generated Nadia skin and carries its
+# NadicodeAI token-driven branding/art surfaces.
+path:nadia_cli/skin_engine.py from nadia_cli._nadia_skin import NADIA_SKIN_DATA as _NADIA_SKIN_DATA
+path:nadia_cli/skin_engine.py "nadia": _NADIA_SKIN_DATA
+path:nadia_cli/_nadia_skin.py "agent_name": "Nadia"
+path:nadia_cli/_nadia_skin.py "banner_title": "#50e3c2"
+path:nadia_cli/_nadia_skin.py "ui_error": "#cd212a"
+path:tests/nadia_cli/test_skin_engine.py test_nadia_skin_loads_with_generated_branding

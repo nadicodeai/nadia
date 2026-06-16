@@ -2,7 +2,7 @@
 
 NousResearch's LLMs are literally named "Hermes 2/3/4". Those model identifiers
 are external (the Nous portal at inference.nousresearch.com, Hugging Face, and
-OpenRouter serve them under those exact names), so the hermes->argo rebrand MUST
+OpenRouter serve them under those exact names), so the hermes->nadia rebrand MUST
 NOT rewrite them — doing so makes every Nous model call 404 and silently breaks
 the model_switch.py non-agentic guardrail (whose detector regex is a "hermes"
 literal). At the same time, BRAND tokens (hermes_cli, hermes-agent, "Hermes
@@ -24,7 +24,7 @@ from pathlib import Path
 import pytest
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
-_CONFIG_PATH = _REPO_ROOT / "argo-rename.yaml"
+_CONFIG_PATH = _REPO_ROOT / "nadia-rename.yaml"
 
 # overlay/ hosts the pre-rename engine sources (hermes_sync). Repo-root tests
 # import them directly via sys.path injection — same pattern as
@@ -73,7 +73,7 @@ _MODEL_IDS_PRESERVED = [
 def test_nous_hermes_model_ids_survive_the_rebrand(rename, model_id: str) -> None:
     assert rename(model_id) == model_id, (
         f"rebrand corrupted the Nous model id {model_id!r} -> {rename(model_id)!r}; "
-        "this breaks Nous-provider model calls (the portal has no 'argo-*' model)"
+        "this breaks Nous-provider model calls (the portal has no 'nadia-*' model)"
     )
 
 
@@ -97,19 +97,19 @@ def test_non_agentic_detector_regex_literal_keeps_hermes(rename) -> None:
 @pytest.mark.parametrize(
     "shell_in, expected_out",
     [
-        # install.sh probes for the installed binary; after rebrand it is `argo`.
+        # install.sh probes for the installed binary; after rebrand it is `nadia`.
         ('HERMES_BIN="$(which hermes 2>/dev/null || echo "")"',
-         'ARGO_BIN="$(which argo 2>/dev/null || echo "")"'),
+         'NADIA_BIN="$(which nadia 2>/dev/null || echo "")"'),
         ('HERMES_CMD="$(command -v hermes 2>/dev/null || echo "")"',
-         'ARGO_CMD="$(command -v argo 2>/dev/null || echo "")"'),
-        ("hermes 2>&1", "argo 2>&1"),
+         'NADIA_CMD="$(command -v nadia 2>/dev/null || echo "")"'),
+        ("hermes 2>&1", "nadia 2>&1"),
     ],
 )
 def test_shell_redirect_after_hermes_rebrands(rename, shell_in: str, expected_out: str) -> None:
     # `hermes 2>/dev/null` is a shell fd-redirect, NOT the model "Hermes 2". The
-    # model-id skip_context's `(?![>])` guard must let these rebrand to `argo`,
+    # model-id skip_context's `(?![>])` guard must let these rebrand to `nadia`,
     # or the rebranded installer probes for a non-existent `hermes` binary and
-    # logs "hermes not found on PATH after install" + skips `argo setup`.
+    # logs "hermes not found on PATH after install" + skips `nadia setup`.
     assert rename(shell_in) == expected_out, (
         f"shell redirect {shell_in!r} should rebrand to {expected_out!r}, got {rename(shell_in)!r} — "
         "the model-id skip_context is over-preserving `hermes 2>` as if it were Hermes 2."
@@ -126,11 +126,11 @@ def test_hermes_2_model_id_still_preserved(rename) -> None:
     "url_in, expected",
     [
         # Template URLs with shell-var interpolation: the ${HERMES_*} var MUST rebrand
-        # (its definition already became ARGO_*), or the script references an undefined var.
+        # (its definition already became NADIA_*), or the script references an undefined var.
         ("http://${HERMES_API_CONNECT_HOST}:${HERMES_API_PORT}/v1",
-         "http://${ARGO_API_CONNECT_HOST}:${ARGO_API_PORT}/v1"),
+         "http://${NADIA_API_CONNECT_HOST}:${NADIA_API_PORT}/v1"),
         ("https://nodejs.org/dist/latest-v${HERMES_NODE_TARGET_MAJOR}.x/",
-         "https://nodejs.org/dist/latest-v${ARGO_NODE_TARGET_MAJOR}.x/"),
+         "https://nodejs.org/dist/latest-v${NADIA_NODE_TARGET_MAJOR}.x/"),
     ],
 )
 def test_shell_var_inside_url_rebrands(rename, url_in: str, expected: str) -> None:
@@ -151,26 +151,26 @@ def test_real_external_url_without_shellvar_still_preserved(rename) -> None:
 @pytest.mark.parametrize(
     "brand_in, expected_out",
     [
-        ("hermes-agent", "argo-agent"),
-        ("hermes_cli", "argo_cli"),
-        ("Hermes Agent", "Argo Agent"),
-        ("hermes_constants", "argo_constants"),
+        ("hermes-agent", "nadia-agent"),
+        ("hermes_cli", "nadia_cli"),
+        ("Hermes Agent", "Nadia Agent"),
+        ("hermes_constants", "nadia_constants"),
         # the upstream REPO url must point at the fork, NOT be mistaken for a model id
         ("https://github.com/NousResearch/hermes-agent.git",
-         "https://github.com/nadicodeai/argo.git"),
-        ("hermes-brain:qwen3-14b-ctx16k", "argo-brain:qwen3-14b-ctx16k"),  # not a Hermes 3/4 id
+         "https://github.com/nadicodeai/nadia.git"),
+        ("hermes-brain:qwen3-14b-ctx16k", "nadia-brain:qwen3-14b-ctx16k"),  # not a Hermes 3/4 id
         # IRC nick-collision retry suffixes (plugins/platforms/irc/adapter.py
         # appends hermes_, hermes_1, hermes_2, hermes_3, hermes_4, …). The bare
         # underscore+digit forms are BRAND nicks, not model ids — an earlier
         # `hermes[-_ .]?[234]` skip_context wrongly preserved hermes_2/3/4
         # (digits collide with the counter), leaving a stale `hermes_2` in the
-        # shipped dist test while the runtime emitted argo_2. The underscore
+        # shipped dist test while the runtime emitted nadia_2. The underscore
         # branch now requires a size/version tail (hermes_4_70b) so these
         # rebrand. See tests/gateway/test_irc_adapter.py::test_nick_collision_retry.
-        ("hermes_2", "argo_2"),
-        ("hermes_3", "argo_3"),
-        ("hermes_4", "argo_4"),
-        ("hermes_, hermes_1, hermes_2", "argo_, argo_1, argo_2"),  # adapter.py:414 comment form
+        ("hermes_2", "nadia_2"),
+        ("hermes_3", "nadia_3"),
+        ("hermes_4", "nadia_4"),
+        ("hermes_, hermes_1, hermes_2", "nadia_, nadia_1, nadia_2"),  # adapter.py:414 comment form
     ],
 )
 def test_brand_tokens_still_rebrand(rename, brand_in: str, expected_out: str) -> None:

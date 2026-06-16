@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# argo pre-commit gate — the EXECUTABLE form of AGENTS.md's rule:
+# nadia pre-commit gate — the EXECUTABLE form of AGENTS.md's rule:
 #   "make build and make leakage-static MUST both exit 0 before any commit
-#    that touches patches/, overlay/, tools/, or argo-rename.yaml."
+#    that touches patches/, overlay/, tools/, or nadia-rename.yaml."
 #
 # Why this exists (2026-05-31): a sync conflict was "resolved" by hand-driving
 # quilt and then committing with `git commit --amend`, which bypassed the
@@ -17,21 +17,21 @@ repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
 # Build-affecting paths. A commit touching any of these must pass the gate.
-gated='^(patches/|overlay/|tools/|argo-rename\.yaml$)'
+gated='^(patches/|overlay/|tools/|nadia-rename\.yaml$)'
 staged="$(git diff --cached --name-only --diff-filter=ACMR || true)"
 
 if ! printf '%s\n' "$staged" | grep -qE "$gated"; then
   exit 0   # nothing build-affecting staged -> commit freely (docs, tests, etc.)
 fi
 
-echo "argo pre-commit: build-affecting files staged -> running gate (make build + leakage-static)..."
+echo "nadia pre-commit: build-affecting files staged -> running gate (make build + leakage-static)..."
 
-if ! make build >/tmp/argo-precommit-build.log 2>&1; then
+if ! make build >/tmp/nadia-precommit-build.log 2>&1; then
   {
     echo "X pre-commit BLOCKED: 'make build' failed."
-    echo "  log: /tmp/argo-precommit-build.log (tail below)"
+    echo "  log: /tmp/nadia-precommit-build.log (tail below)"
     echo "  ----"
-    tail -20 /tmp/argo-precommit-build.log
+    tail -20 /tmp/nadia-precommit-build.log
     echo "  ----"
     echo "  This is the AGENTS.md build gate. Do NOT bypass with --no-verify."
     echo "  If you are mid-sync: resolve in .sync-workdir/ and run 'make sync-resume'."
@@ -40,15 +40,15 @@ if ! make build >/tmp/argo-precommit-build.log 2>&1; then
   exit 1
 fi
 
-if ! make leakage-static >/tmp/argo-precommit-leak.log 2>&1; then
+if ! make leakage-static >/tmp/nadia-precommit-leak.log 2>&1; then
   {
     echo "X pre-commit BLOCKED: 'make leakage-static' failed."
-    echo "  log: /tmp/argo-precommit-leak.log (tail below)"
+    echo "  log: /tmp/nadia-precommit-leak.log (tail below)"
     echo "  ----"
-    tail -20 /tmp/argo-precommit-leak.log
+    tail -20 /tmp/nadia-precommit-leak.log
   } >&2
   exit 1
 fi
 
-echo "argo pre-commit: gate passed."
+echo "nadia pre-commit: gate passed."
 exit 0

@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""tools/apply_release_bump.py — apply the version + release-date bump to dist/argo/.
+"""tools/apply_release_bump.py — apply the version + release-date bump to dist/nadia/.
 
-Companion to ``tools/argo_release.py``. ``argo_release.py`` runs locally on
+Companion to ``tools/nadia_release.py``. ``nadia_release.py`` runs locally on
 the workshop machine, bumps the version + release-date inside the locally
-built ``dist/argo/``, and tags ``main`` HEAD. ``release.yml`` then runs on
-the tag push, re-builds ``dist/argo/`` from scratch on CI, and force-pushes
+built ``dist/nadia/``, and tags ``main`` HEAD. ``release.yml`` then runs on
+the tag push, re-builds ``dist/nadia/`` from scratch on CI, and force-pushes
 that tree to the ``release`` branch. The CI re-build does NOT carry the
 version bump on its own (the source ``upstream/hermes_cli/__init__.py``
 stays at upstream's pristine value); so this script reproduces the bump on
 the CI side from the annotated tag message.
 
-The annotated tag message argo_release.py writes is:
+The annotated tag message nadia_release.py writes is:
 
-    Argo Agent v<VERSION> (<RELEASE_DATE>)
+    Nadia Agent v<VERSION> (<RELEASE_DATE>)
 
 That message is parsed here. Without it, the script falls back to the
 ``--version`` and ``--release-date`` flags.
@@ -38,9 +38,9 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DIST_ROOT_DEFAULT = REPO_ROOT / "dist" / "argo"
+DIST_ROOT_DEFAULT = REPO_ROOT / "dist" / "nadia"
 
-# Mirrors argo_release.py — keep in sync.
+# Mirrors nadia_release.py — keep in sync.
 _VERSION_RE = re.compile(r'__version__\s*=\s*"[^"]+"')
 _RELEASE_DATE_RE = re.compile(r'__release_date__\s*=\s*"[^"]+"')
 _PYPROJECT_VERSION_RE = re.compile(r'^version\s*=\s*"[^"]+"', re.MULTILINE)
@@ -48,9 +48,9 @@ _PYPROJECT_VERSION_RE = re.compile(r'^version\s*=\s*"[^"]+"', re.MULTILINE)
 _SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
 _CALVER_RE = re.compile(r"^\d{4}\.\d+\.\d+(?:\.\d+)?$")
 
-# Tag message format: "Argo Agent v<VERSION> (<RELEASE_DATE>)"
+# Tag message format: "Nadia Agent v<VERSION> (<RELEASE_DATE>)"
 _TAG_MSG_RE = re.compile(
-    r"Argo Agent v(?P<version>\d+\.\d+\.\d+)\s+\((?P<release_date>\d{4}\.\d+\.\d+(?:\.\d+)?)\)"
+    r"Nadia Agent v(?P<version>\d+\.\d+\.\d+)\s+\((?P<release_date>\d{4}\.\d+\.\d+(?:\.\d+)?)\)"
 )
 
 
@@ -75,7 +75,7 @@ def _read_tag_message(tag: str) -> tuple[str, str]:
     m = _TAG_MSG_RE.search(subject)
     if not m:
         raise SystemExit(
-            f"tag {tag!r} subject does not match 'Argo Agent v<X.Y.Z> "
+            f"tag {tag!r} subject does not match 'Nadia Agent v<X.Y.Z> "
             f"(<YYYY.M.D>)': {subject!r}"
         )
     return m.group("version"), m.group("release_date")
@@ -92,7 +92,7 @@ def _rewrite_file(path: Path, pattern: re.Pattern[str], replacement: str) -> Non
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Apply argo_release.py's version+release-date bump to dist/argo/.",
+        description="Apply nadia_release.py's version+release-date bump to dist/nadia/.",
     )
     parser.add_argument(
         "--from-tag",
@@ -106,7 +106,7 @@ def main(argv: list[str] | None = None) -> int:
         "--dist-root",
         type=Path,
         default=DIST_ROOT_DEFAULT,
-        help="Path to the built dist/argo/ tree (default: dist/argo).",
+        help="Path to the built dist/nadia/ tree (default: dist/nadia).",
     )
     args = parser.parse_args(argv)
 
@@ -126,7 +126,7 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit(f"release-date must match YYYY.M.D[.N] (got {release_date!r})")
 
     dist_root = args.dist_root
-    init_path = dist_root / "argo_cli" / "__init__.py"
+    init_path = dist_root / "nadia_cli" / "__init__.py"
     pyproject_path = dist_root / "pyproject.toml"
     if not init_path.is_file():
         raise SystemExit(f"missing {init_path} — run `make build` first")

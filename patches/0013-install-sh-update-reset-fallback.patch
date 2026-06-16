@@ -6,7 +6,7 @@ Re-running the install one-liner over an existing install takes install.sh's
 rebuilt with rewritten history (the pre-fix orphan force-push, or any future
 non-fast-forwardable update), `--ff-only` fails and `set -e` aborts the whole
 installer with `fatal: refusing to merge unrelated histories` — the installer-
-driven update is dead. The CLI `argo update` already recovers from this by
+driven update is dead. The CLI `nadia update` already recovers from this by
 falling back to `git reset --hard origin/<branch>` (hermes_cli/main.py); the
 installer had no equivalent. Add the same fallback. Local changes are already
 auto-stashed immediately above, so the reset is safe. Belt-and-suspenders with

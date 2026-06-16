@@ -1,4 +1,4 @@
-# argo — Docker image publish to ghcr.io/nadicodeai/argo (spec FR-7, M5.2).
+# nadia — Docker image publish to ghcr.io/nadicodeai/nadia (spec FR-7, M5.2).
 #
 # Triggers.
 #   - push to main          -> two variants pushed; moves :latest/:slim      (linux/amd64)
@@ -12,7 +12,7 @@
 #                            dashboard surfaces work — matches legacy v0.14.0.
 #
 # Tag-decision tree.
-#   Full variant (customer default — what `docker pull ghcr.io/nadicodeai/argo`
+#   Full variant (customer default — what `docker pull ghcr.io/nadicodeai/nadia`
 #                                    without a tag resolves to):
 #     :dev                  Local builds only; never pushed by this workflow.
 #     :<git-sha-short>      Every push that runs this workflow.
@@ -30,7 +30,7 @@
 # Auth.
 #   Uses the workflow's GITHUB_TOKEN (packages:write below). No external
 #   secret is required for ghcr push under the repo's own namespace
-#   (nadicodeai/argo). Spec OQ-13's "GHCR_TOKEN PAT" is the LOCAL
+#   (nadicodeai/nadia). Spec OQ-13's "GHCR_TOKEN PAT" is the LOCAL
 #   maintainer path, not the CI path — CI uses GITHUB_TOKEN which is
 #   provisioned per-run with minimal scope.
 #
@@ -83,9 +83,9 @@ on:
       - 'patches/**'
       - 'overlay/**'
       - 'packaging-overrides.yaml'
-      - 'argo-rename.yaml'
+      - 'nadia-rename.yaml'
       - '.github/workflows/docker-publish.yml'
-      - '.github/actions/argo-setup/**'
+      - '.github/actions/nadia-setup/**'
   release:
     types: [published]
   workflow_dispatch:
@@ -120,7 +120,7 @@ jobs:
         # phases (e.g. running `make build` on the runner to seed a cache).
         # Keeping the install here means callers of `make image` always
         # have a viable host even when buildx is unused.
-        uses: ./.github/actions/argo-setup
+        uses: ./.github/actions/nadia-setup
         with:
           with-uv: "false"
           python-version: ""
@@ -171,7 +171,7 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
-          REPO="ghcr.io/nadicodeai/argo"
+          REPO="ghcr.io/nadicodeai/nadia"
           SHA_SHORT="$(git rev-parse --short HEAD)"
           if [ "${{ github.event_name }}" != "release" ]; then
             RELEASE_TAG=""
@@ -194,7 +194,7 @@ jobs:
           fi
 
           # Full variant tags. These are the "default" pointers: a bare
-          # `docker pull ghcr.io/nadicodeai/argo` resolves to :latest =
+          # `docker pull ghcr.io/nadicodeai/nadia` resolves to :latest =
           # full variant. Backward compat with pre-issue-#2 callers that
           # pulled :latest expecting the customer-parity surface.
           # Same tag-decision-tree rule as the slim block: :latest moves ONLY
@@ -253,7 +253,7 @@ jobs:
           [ "${{ github.event_name }}" != "pull_request" ] && PUSH_FLAG="--push"
           docker buildx build \
             --build-arg SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)" \
-            --build-arg ARGO_RELEASE_DATE="${{ steps.stamp.outputs.date }}" \
+            --build-arg NADIA_RELEASE_DATE="${{ steps.stamp.outputs.date }}" \
             --platform "${{ steps.platforms.outputs.platforms }}" \
             --target runtime-slim \
             $PUSH_FLAG \
@@ -274,7 +274,7 @@ jobs:
           [ "${{ github.event_name }}" != "pull_request" ] && PUSH_FLAG="--push"
           docker buildx build \
             --build-arg SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)" \
-            --build-arg ARGO_RELEASE_DATE="${{ steps.stamp.outputs.date }}" \
+            --build-arg NADIA_RELEASE_DATE="${{ steps.stamp.outputs.date }}" \
             --platform "${{ steps.platforms.outputs.platforms }}" \
             --target runtime-full \
             $PUSH_FLAG \
@@ -289,11 +289,11 @@ jobs:
         if: steps.platforms.outputs.multiarch == 'true'
         run: |
           RELEASE_TAG="${{ steps.tags.outputs.release_tag }}"
-          docker buildx imagetools inspect "ghcr.io/nadicodeai/argo:${RELEASE_TAG}"
-          docker buildx imagetools inspect "ghcr.io/nadicodeai/argo:${RELEASE_TAG}-slim"
+          docker buildx imagetools inspect "ghcr.io/nadicodeai/nadia:${RELEASE_TAG}"
+          docker buildx imagetools inspect "ghcr.io/nadicodeai/nadia:${RELEASE_TAG}-slim"
 
-      # Release-date gate: assert the PUBLISHED release image carries the Argo
-      # release date, not upstream's. Reads argo_cli/__init__.py straight out of
+      # Release-date gate: assert the PUBLISHED release image carries the Nadia
+      # release date, not upstream's. Reads nadia_cli/__init__.py straight out of
       # the pushed image (via `--entrypoint cat`, so no s6 boot / banner parse)
       # and checks __release_date__ == the calver the release was cut under. This
       # is the forcing function that would have caught the v2026.6.5 image
@@ -310,11 +310,11 @@ jobs:
             exit 1
           fi
           for VARIANT in "${RELEASE_TAG}-slim" "${RELEASE_TAG}"; do
-            IMG="ghcr.io/nadicodeai/argo:${VARIANT}"
+            IMG="ghcr.io/nadicodeai/nadia:${VARIANT}"
             echo "checking ${IMG} for __release_date__ = \"${EXPECTED_DATE}\""
-            INIT="$(docker run --rm --entrypoint cat "${IMG}" /opt/argo/argo_cli/__init__.py)"
+            INIT="$(docker run --rm --entrypoint cat "${IMG}" /opt/nadia/nadia_cli/__init__.py)"
             if echo "${INIT}" | grep -qF "__release_date__ = \"${EXPECTED_DATE}\""; then
-              echo "PASS: ${VARIANT} reports the Argo release date (${EXPECTED_DATE})"
+              echo "PASS: ${VARIANT} reports the Nadia release date (${EXPECTED_DATE})"
             else
               echo "FAIL: ${VARIANT} does NOT carry __release_date__ = \"${EXPECTED_DATE}\"" >&2
               echo "${INIT}" | grep -E '__version__|__release_date__' >&2 || true

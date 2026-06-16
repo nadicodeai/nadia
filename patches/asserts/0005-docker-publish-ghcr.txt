@@ -1,6 +1,6 @@
 # Assertions for patch 0005-docker-publish-ghcr.
 #
-# Each non-comment line is a pattern that MUST appear in dist/argo/
+# Each non-comment line is a pattern that MUST appear in dist/nadia/
 # after the build. These catch the legacy failure mode where `quilt
 # refresh` after manual conflict resolution silently drops fork lines
 # (spec FR-14).
@@ -12,8 +12,8 @@
 # The patch must edit the docker-publish workflow.
 path:.github/workflows/docker-publish.yml
 
-# IMAGE_NAME / inline shell vars now point at ghcr.io/nadicodeai/argo.
-ghcr.io/nadicodeai/argo
+# IMAGE_NAME / inline shell vars now point at ghcr.io/nadicodeai/nadia.
+ghcr.io/nadicodeai/nadia
 
 # docker/login-action targets ghcr.io.
 registry: ghcr.io

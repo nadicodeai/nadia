@@ -1,12 +1,12 @@
 # Assertions for 0008-doctor-static-live-wiring.patch
 #
 # After `make build` (quilt push -a → overlay copy → rebrand), the
-# doctor parser in dist/argo/argo_cli/main.py must carry the new
+# doctor parser in dist/nadia/nadia_cli/main.py must carry the new
 # --static / --live wiring and the dispatch must import the (renamed)
 # doctor_leakage module. Catches the legacy failure mode where
 # `quilt refresh` after a conflict silently dropped fork lines.
 
-path:argo_cli/main.py
+path:nadia_cli/main.py
 regex:--static\b
 regex:leakage_static
-regex:from\s+argo_cli\.doctor_leakage
+regex:from\s+nadia_cli\.doctor_leakage

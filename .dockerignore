@@ -14,11 +14,11 @@
 #   - Python / editor / OS noise.
 #
 # We INTENTIONALLY keep:
-#   - upstream/, patches/, overlay/, tools/, scripts/, argo-rename.yaml,
+#   - upstream/, patches/, overlay/, tools/, scripts/, nadia-rename.yaml,
 #     Makefile: required by the builder stage's `make build`.
 #   - .shepherd/spec.md, plan.md, standards.md, progress.md: tiny;
 #     harmless if they end up in the builder context. Stripped from the
-#     runtime stage by the FR-7 "copy ONLY dist/argo/" rule.
+#     runtime stage by the FR-7 "copy ONLY dist/nadia/" rule.
 #   - README.md, AGENTS.md, .gitattributes, .gitignore: tiny; same as
 #     above.
 

@@ -125,8 +125,8 @@ ssh_pwauth: false
 package_update: false
 EOF
 cat >"${META_DATA}" <<'EOF'
-instance-id: argo-golden-vm-smoke
-local-hostname: argo-golden-vm
+instance-id: nadia-golden-vm-smoke
+local-hostname: nadia-golden-vm
 EOF
 cloud-localds "${SEED_ISO}" "${USER_DATA}" "${META_DATA}"
 
@@ -149,21 +149,21 @@ set -euo pipefail
 export PATH="$HOME/.local/bin:$PATH"
 
 curl -fsSL http://10.0.2.2:8000/scripts/golden-vm-bake.sh -o /tmp/golden-vm-bake.sh
-curl -fsSL http://10.0.2.2:8000/scripts/argo-fde-provision.sh -o /tmp/argo-fde-provision.sh
-curl -fsSL http://10.0.2.2:8000/scripts/argo-customer-init -o /tmp/argo-customer-init
-chmod +x /tmp/golden-vm-bake.sh /tmp/argo-fde-provision.sh /tmp/argo-customer-init
+curl -fsSL http://10.0.2.2:8000/scripts/nadia-fde-provision.sh -o /tmp/nadia-fde-provision.sh
+curl -fsSL http://10.0.2.2:8000/scripts/nadia-customer-init -o /tmp/nadia-customer-init
+chmod +x /tmp/golden-vm-bake.sh /tmp/nadia-fde-provision.sh /tmp/nadia-customer-init
 
 /tmp/golden-vm-bake.sh --skip-browser
 
-argo --version
-"$HOME/.argo/argo-agent/venv/bin/python" - <<'PY'
+nadia --version
+"$HOME/.nadia/nadia-agent/venv/bin/python" - <<'PY'
 import importlib
 for module in ("honcho", "telegram", "edge_tts", "ddgs"):
     importlib.import_module(module)
 print("imports ok")
 PY
-grep -q "allow_lazy_installs: false" "$HOME/.argo/config.yaml"
-test ! -d "$HOME/.argo/profiles"
+grep -q "allow_lazy_installs: false" "$HOME/.nadia/config.yaml"
+test ! -d "$HOME/.nadia/profiles"
 EOS
 
 log "shut down baked golden VM"
@@ -179,8 +179,8 @@ ssh_script "${CUSTOMER_PORT}" <<'EOS'
 set -euo pipefail
 export PATH="$HOME/.local/bin:$PATH"
 
-argo --version
-argo-customer-init \
+nadia --version
+nadia-customer-init \
   --profile smokeprod \
   --honcho-workspace smoke-workspace \
   --honcho-peer fde-smoke \
@@ -191,7 +191,7 @@ argo-customer-init \
   --skip-gateway \
   --yes
 
-PROFILE_HOME="$HOME/.argo/profiles/smokeprod"
+PROFILE_HOME="$HOME/.nadia/profiles/smokeprod"
 test -f "${PROFILE_HOME}/config.yaml"
 test -f "${PROFILE_HOME}/honcho.json"
 test -f "${PROFILE_HOME}/.env"
@@ -203,7 +203,7 @@ grep -q "fake-honcho-key" "${PROFILE_HOME}/honcho.json"
 grep -q "TELEGRAM_BOT_TOKEN=123456789:abcdefghijklmnopqrstuvwxyzABCDE" "${PROFILE_HOME}/.env"
 test "$(stat -c '%a' "${PROFILE_HOME}/.env")" = "600"
 
-argo -p smokeprod --version
+nadia -p smokeprod --version
 systemctl --version >/dev/null
 EOS
 

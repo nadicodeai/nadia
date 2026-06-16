@@ -1,15 +1,15 @@
 Subject: Make the Windows ZIP-fallback update accept the release channel
 
-`_update_via_zip` is the `argo update` fallback on Windows when git file I/O is
+`_update_via_zip` is the `nadia update` fallback on Windows when git file I/O is
 broken (antivirus/NTFS filter drivers) or there is no .git directory. It guards
 `if branch != "main": sys.exit(1)` — upstream's way of refusing to silently
 update from a non-default channel. After patch 0009 the resolved default branch
-is "release", so the DEFAULT `argo update` on this path now always trips the
+is "release", so the DEFAULT `nadia update` on this path now always trips the
 guard and aborts: Windows customers (exactly the population this fallback exists
 to rescue) can never complete an update. Flip the guarded/advised channel from
 "main" to "release" so the default is accepted; the ZIP URL then resolves to
 `archive/refs/heads/release.zip` (the runnable rebranded tree), and the
-extracted-dir scan already tolerates the `argo-release/` folder name. Passing a
+extracted-dir scan already tolerates the `nadia-release/` folder name. Passing a
 non-release `--branch` is still (correctly) refused.
 
 Mirrors 0006 (install.sh BRANCH), 0009 (cmd_update branch), 0011 (install.ps1

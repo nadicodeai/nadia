@@ -1,28 +1,28 @@
 #!/usr/bin/env python3
 """lift_engine.py — one-shot textual rewrite of the legacy rename engine.
 
-The legacy `argo_sync/` engine uses its own package name (`argo_sync`) in
+The legacy `nadia_sync/` engine uses its own package name (`nadia_sync`) in
 absolute imports, docstrings, and exception qualifiers. When we lift it into
-`overlay/hermes_sync/`, those references would still say `argo_sync` and the
+`overlay/hermes_sync/`, those references would still say `nadia_sync` and the
 package would not be importable from the new path.
 
-Worse, the engine's purpose is to rewrite `hermes_*` → `argo_*` at build
-time. If overlay/hermes_sync/ retains `argo_sync` literals, the engine's own
-pass would not touch them, and the built dist/argo/ would have a confused
-mix of `argo_sync` and `argo_sync` (no change). We want the engine in
+Worse, the engine's purpose is to rewrite `hermes_*` → `nadia_*` at build
+time. If overlay/hermes_sync/ retains `nadia_sync` literals, the engine's own
+pass would not touch them, and the built dist/nadia/ would have a confused
+mix of `nadia_sync` and `nadia_sync` (no change). We want the engine in
 *overlay* to read as `hermes_sync` so the build-time rename pass produces
-`argo_sync` in dist/.
+`nadia_sync` in dist/.
 
-Solution: at lift time, rewrite every `argo_sync` token in the engine's
+Solution: at lift time, rewrite every `nadia_sync` token in the engine's
 source to `hermes_sync`. The engine is then importable from
-`overlay/hermes_sync/` and renames itself back to `argo_sync` at build.
+`overlay/hermes_sync/` and renames itself back to `nadia_sync` at build.
 
 Usage
 -----
 
     # Forward direction (legacy → overlay):
     python tools/scripts/lift_engine.py \\
-        --source ~/Code/argo-agent/argo_sync \\
+        --source ~/Code/nadia-agent/nadia_sync \\
         --target overlay/hermes_sync
 
     # Reverse direction (round-trip verification):
@@ -44,16 +44,16 @@ TEXT_SUFFIXES = {".py", ".yaml", ".yml", ".toml", ".md", ".txt", ".cfg", ".json"
 
 
 def _rewrite_text(text: str, *, reverse: bool) -> str:
-    """Rewrite argo_sync ↔ hermes_sync tokens.
+    """Rewrite nadia_sync ↔ hermes_sync tokens.
 
-    Conservative substitution: only the literal substring `argo_sync` (or
+    Conservative substitution: only the literal substring `nadia_sync` (or
     `hermes_sync` in reverse mode) is replaced. We do not match adjacent
-    chars; the engine's own source never uses `argo_sync_x` or similar,
+    chars; the engine's own source never uses `nadia_sync_x` or similar,
     so simple `str.replace` is safe and traceable.
     """
     if reverse:
-        return text.replace("hermes_sync", "argo_sync")
-    return text.replace("argo_sync", "hermes_sync")
+        return text.replace("hermes_sync", "nadia_sync")
+    return text.replace("nadia_sync", "hermes_sync")
 
 
 def _copy_with_rewrite(src: Path, dst: Path, *, reverse: bool) -> int:
@@ -91,14 +91,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--reverse",
         action="store_true",
-        help="reverse the rewrite (hermes_sync → argo_sync, for round-trip verification)",
+        help="reverse the rewrite (hermes_sync → nadia_sync, for round-trip verification)",
     )
     args = parser.parse_args(argv)
     if not args.source.is_dir():
         print(f"error: source not a directory: {args.source}", file=sys.stderr)
         return 1
     touched = _copy_with_rewrite(args.source, args.target, reverse=args.reverse)
-    direction = "hermes_sync → argo_sync" if args.reverse else "argo_sync → hermes_sync"
+    direction = "hermes_sync → nadia_sync" if args.reverse else "nadia_sync → hermes_sync"
     print(f"lift_engine: {direction} ({touched} files rewritten) → {args.target}")
     return 0
 

@@ -3,7 +3,7 @@
 
 Each load-bearing patch in `patches/series` may declare a file at
 `patches/asserts/<patch-basename>.txt` containing grep patterns that
-MUST be satisfied in the built `dist/argo/` tree. If any pattern fails,
+MUST be satisfied in the built `dist/nadia/` tree. If any pattern fails,
 the build fails — catching the legacy failure mode where `quilt refresh`
 after manual conflict resolution silently dropped fork-feature lines.
 
@@ -14,18 +14,18 @@ Assertion file format
 # Comments start with '#'. Blank lines ignored.
 
 # Fixed-string pattern (default): the literal string must appear
-# somewhere under dist/argo/.
-ghcr.io/nadicodeai/argo
+# somewhere under dist/nadia/.
+ghcr.io/nadicodeai/nadia
 
 # Path-restricted: the pattern must appear in files matching the glob.
-path:argo_cli/main.py
+path:nadia_cli/main.py
 path:.github/workflows/* if: false
 
 # Regex (slower but flexible): the regex must match somewhere.
-regex:^def cmd_argo_update
+regex:^def cmd_nadia_update
 
 # Path + regex combined: the regex must match in files matching the glob.
-path:argo_cli/main.py regex:cmd_argo_update
+path:nadia_cli/main.py regex:cmd_nadia_update
 ```
 
 Exit codes
@@ -242,12 +242,12 @@ def main(argv: list[str] | None = None) -> int:
         prog="run_assertions.py",
         description="Enforce per-patch grep assertions over the built tree.",
     )
-    parser.add_argument("target", type=Path, help="built tree (typically dist/argo/)")
+    parser.add_argument("target", type=Path, help="built tree (typically dist/nadia/)")
     parser.add_argument(
         "--repo-root",
         type=Path,
         default=_default_repo_root(),
-        help="argo repo root (default: derived from script location).",
+        help="nadia repo root (default: derived from script location).",
     )
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args(argv)

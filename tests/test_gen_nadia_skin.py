@@ -1,4 +1,4 @@
-"""Tests for the NadicodeAI token to Argo skin generator."""
+"""Tests for the NadicodeAI token to Nadia skin generator."""
 
 from __future__ import annotations
 
@@ -10,8 +10,8 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-MODULE_PATH = REPO_ROOT / "tools" / "gen_argo_skin.py"
-MODULE_NAME = "gen_argo_skin_under_test"
+MODULE_PATH = REPO_ROOT / "tools" / "gen_nadia_skin.py"
+MODULE_NAME = "gen_nadia_skin_under_test"
 FIXTURE = REPO_ROOT / "tests" / "fixtures" / "nadicode.dtcg.sample.json"
 
 
@@ -27,8 +27,8 @@ def _load_module():
 def test_generator_emits_complete_python_and_tui_key_sets(tmp_path: Path) -> None:
     """A valid DTCG file produces both shipped artifacts with every mapped key."""
     generator = _load_module()
-    python_output = tmp_path / "_argo_skin.py"
-    typescript_output = tmp_path / "argoTheme.generated.ts"
+    python_output = tmp_path / "_nadia_skin.py"
+    typescript_output = tmp_path / "nadiaTheme.generated.ts"
 
     generator.generate(FIXTURE, python_output, typescript_output)
 

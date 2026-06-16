@@ -1,4 +1,4 @@
-# Ruff config for argo.
+# Ruff config for nadia.
 #
 # Pre-existing F401 / F541 errors were inherited from agent worktrees under
 # .claude/worktrees/ (FleetView's per-agent isolated copies) where each
@@ -7,7 +7,7 @@
 # the worktree copies are excluded so they don't multiply the count.
 #
 # .ruff_cache/ and upstream/ are also excluded — upstream is pristine code
-# (not argo's responsibility per AGENTS.md "upstream/ is pristine"), and
+# (not nadia's responsibility per AGENTS.md "upstream/ is pristine"), and
 # .ruff_cache/ is a build artifact.
 
 extend-exclude = [

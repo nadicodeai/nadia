@@ -29,7 +29,7 @@ from pathlib import Path
 import pytest
 
 # overlay/tests/ is not a Python package (no __init__.py — overlay files
-# ship as a flat copy into dist/argo/tests/), so import the sibling
+# ship as a flat copy into dist/nadia/tests/), so import the sibling
 # helpers module via sys.path.
 sys.path.insert(0, str(Path(__file__).parent))
 from _sync_fixture_helpers import (  # noqa: E402
@@ -124,7 +124,7 @@ def _build_local_upstream_replica(workdir: Path, env: dict[str, str]) -> Path:
 
 
 def _clone_repo_under_test(workdir: Path, env: dict[str, str]) -> Path:
-    """Clone the current argo-agent repo into a fresh tmpdir.
+    """Clone the current nadia-agent repo into a fresh tmpdir.
 
     We need a real ``.git`` directory because ``git subtree pull`` mutates
     refs/commits. The clone shares no state with the source.
@@ -135,7 +135,7 @@ def _clone_repo_under_test(workdir: Path, env: dict[str, str]) -> Path:
     files via ``git ls-files -co --exclude-standard`` so the test sees
     the same files the developer is exercising.
     """
-    clone = workdir / "argo-clone"
+    clone = workdir / "nadia-clone"
     _run(
         ["git", "clone", "--quiet", "--no-local", str(REPO_ROOT), str(clone)],
         cwd=workdir,
@@ -236,7 +236,7 @@ def _rewind_upstream_to_baseline(
     reason=f"fixture missing: {BASELINE_TARBALL}",
 )
 def test_sync_against_fixture_200_advances_pin_and_builds_clean(tmp_path: Path) -> None:
-    """AC-2: zero-conflict pristine sync produces a clean dist/argo/."""
+    """AC-2: zero-conflict pristine sync produces a clean dist/nadia/."""
 
     if not _have_fixture():
         pytest.skip("sync-fixture-200 incomplete")

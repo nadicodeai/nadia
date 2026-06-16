@@ -2,7 +2,7 @@
 
 A deterministic, in-process HTTP server that speaks the OpenAI chat-completions
 protocol. Used by `tests/test_deployment_smoke.py` so the smoke run exercises
-argo end-to-end without a real API key or network access.
+nadia end-to-end without a real API key or network access.
 
 ## How it works
 
@@ -21,11 +21,11 @@ from tests.fixtures.recorded_model.server import RecordedModelServer
 
 with RecordedModelServer() as server:
     env = os.environ.copy()
-    env["CUSTOM_BASE_URL"] = server.base_url   # routes argo → stub
+    env["CUSTOM_BASE_URL"] = server.base_url   # routes nadia → stub
     env["OPENAI_API_KEY"] = "stub"             # satisfies key presence check
-    env["ARGO_MODEL"] = "stub-model"
+    env["NADIA_MODEL"] = "stub-model"
     result = subprocess.run(
-        [sys.executable, "-m", "argo_cli.main", "-z", "hello"],
+        [sys.executable, "-m", "nadia_cli.main", "-z", "hello"],
         env=env, capture_output=True, text=True, timeout=60,
     )
 ```
@@ -59,5 +59,5 @@ phrases before general ones.
 | Context | What runs |
 |---|---|
 | CI (no API key) | `RecordedModelServer` stub — deterministic, offline. |
-| Developer with `ARGO_TEST_MODEL` set | Real model via that key — full live path. |
-| `argo doctor --live` | `--help` / `--version` fallback — no model involved. |
+| Developer with `NADIA_TEST_MODEL` set | Real model via that key — full live path. |
+| `nadia doctor --live` | `--help` / `--version` fallback — no model involved. |

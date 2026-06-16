@@ -1,12 +1,12 @@
 """Spec AC-8 verification gate (formal).
 
 Two builds at the same git SHA with the same SOURCE_DATE_EPOCH MUST
-produce byte-identical dist/argo/ trees. This test is the formal version
+produce byte-identical dist/nadia/ trees. This test is the formal version
 of the M5.3 acceptance check; the M5.1 inline note in AGENTS.md is the
 maintainer-facing reminder.
 
 The test is `@pytest.mark.integration` because each `make build` runs the
-full pipeline (rm dist/argo, copy upstream, quilt push -a, copy overlay,
+full pipeline (rm dist/nadia, copy upstream, quilt push -a, copy overlay,
 rebrand, assertions, manifest write). Two consecutive runs typically
 take 30-90s on a developer laptop and could exceed 2 min on a slow CI
 runner; not appropriate for the default `pytest -m 'not integration'`
@@ -31,7 +31,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DIST_DIR = REPO_ROOT / "dist"
-DIST_ARGO = DIST_DIR / "argo"
+DIST_NADIA = DIST_DIR / "nadia"
 
 # Spec AC-8: "SOURCE_DATE_EPOCH=<commit-timestamp>". The value itself is
 # arbitrary as long as both builds use the same one. Picked a stable
@@ -49,7 +49,7 @@ def _hash_tree(root: Path) -> str:
     """Hash a directory tree as `sha256( sorted "<sha256>  <relpath>\\n" lines )`.
 
     File-content-only — does not include mtime, owner, or mode bits.
-    Spec AC-8 defines determinism as "the dist/argo/ directory tree is
+    Spec AC-8 defines determinism as "the dist/nadia/ directory tree is
     bit-identical", which we operationalize as identical file contents
     at identical relative paths. Mode preservation is a SEPARATE gate
     (M2.3); we do not entangle it here.
@@ -111,7 +111,7 @@ def _run_build(epoch: str | None) -> None:
 def preserved_dist(tmp_path: Path):
     """Snapshot dist/ before the test; restore it after.
 
-    AC-8's two builds clobber dist/argo/. Without this fixture, running
+    AC-8's two builds clobber dist/nadia/. Without this fixture, running
     the test would silently destroy whatever the developer had in dist/
     from a prior `make build`. With it, we move dist/ aside, run the
     test, then move it back. If dist/ doesn't exist (clean workspace),
@@ -133,11 +133,11 @@ def preserved_dist(tmp_path: Path):
 
 @pytest.mark.integration
 @pytest.mark.timeout(180)  # two full builds, ~30 s each; default 30 s timeout would kill us
-def test_dist_argo_bit_identical_across_two_builds_with_sde(preserved_dist):
+def test_dist_nadia_bit_identical_across_two_builds_with_sde(preserved_dist):
     """Spec AC-8 verification gate.
 
     Two builds at the same git SHA with the same SOURCE_DATE_EPOCH MUST
-    produce byte-identical dist/argo/ trees.
+    produce byte-identical dist/nadia/ trees.
     """
     # Skip gracefully if the build pipeline's host requirements aren't
     # met — the test is moot on a runner that can't build at all.
@@ -148,16 +148,16 @@ def test_dist_argo_bit_identical_across_two_builds_with_sde(preserved_dist):
 
     # Build #1 — record tree hash.
     _run_build(epoch=DETERMINISM_EPOCH)
-    assert DIST_ARGO.exists(), "first make build did not produce dist/argo/"
-    h1 = _hash_tree(DIST_ARGO)
+    assert DIST_NADIA.exists(), "first make build did not produce dist/nadia/"
+    h1 = _hash_tree(DIST_NADIA)
 
     # Build #2 — same epoch, same SHA. Hash MUST match.
     _run_build(epoch=DETERMINISM_EPOCH)
-    assert DIST_ARGO.exists(), "second make build did not produce dist/argo/"
-    h2 = _hash_tree(DIST_ARGO)
+    assert DIST_NADIA.exists(), "second make build did not produce dist/nadia/"
+    h2 = _hash_tree(DIST_NADIA)
 
     assert h1 == h2, (
-        f"AC-8 violated: dist/argo/ differs across two builds at the same SHA "
+        f"AC-8 violated: dist/nadia/ differs across two builds at the same SHA "
         f"with SOURCE_DATE_EPOCH={DETERMINISM_EPOCH}.\n"
         f"  build1 tree-hash: {h1}\n"
         f"  build2 tree-hash: {h2}\n"
@@ -175,13 +175,13 @@ def test_dist_argo_bit_identical_across_two_builds_with_sde(preserved_dist):
     # we surface a soft-warning via the pytest log if it differs, which
     # is the documented "best-effort" behavior in the task spec.
     _run_build(epoch=None)
-    h3 = _hash_tree(DIST_ARGO)
+    h3 = _hash_tree(DIST_NADIA)
     if h3 != h1:
         # Soft signal: print to capture-stdout for visibility in -v runs.
         # This is informational; build-manifest.json's `ran_at` field is
         # known to vary without SOURCE_DATE_EPOCH.
         print(
-            f"\n[AC-8 soft-note] dist/argo/ tree-hash without SOURCE_DATE_EPOCH "
+            f"\n[AC-8 soft-note] dist/nadia/ tree-hash without SOURCE_DATE_EPOCH "
             f"({h3}) differs from epoch-locked hash ({h1}). Expected — "
             f"manifest's ran_at is wall-clock when SDE is unset."
         )

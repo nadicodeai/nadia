@@ -14,7 +14,7 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BAKE_SCRIPT = REPO_ROOT / "scripts" / "golden-vm-bake.sh"
-INIT_SCRIPT = REPO_ROOT / "scripts" / "argo-customer-init"
+INIT_SCRIPT = REPO_ROOT / "scripts" / "nadia-customer-init"
 
 
 def _run_script(script: Path, *args: str, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
@@ -47,57 +47,57 @@ def test_bake_script_declares_fde_dependency_surface() -> None:
 
 
 def test_bake_dry_run_disables_runtime_lazy_installs(tmp_path: Path) -> None:
-    argo_home = tmp_path / "argo-home"
-    install_dir = tmp_path / "argo-install"
+    nadia_home = tmp_path / "nadia-home"
+    install_dir = tmp_path / "nadia-install"
     result = _run_script(
         BAKE_SCRIPT,
         "--dry-run",
-        "--skip-argo-install",
+        "--skip-nadia-install",
         "--skip-os-packages",
         "--skip-browser",
         env={
-            "ARGO_HOME": str(argo_home),
-            "ARGO_INSTALL_DIR": str(install_dir),
+            "NADIA_HOME": str(nadia_home),
+            "NADIA_INSTALL_DIR": str(install_dir),
         },
     )
 
     assert result.returncode == 0, result.stderr
-    assert f"write {argo_home}/config.yaml security.allow_lazy_installs=false" in result.stdout
+    assert f"write {nadia_home}/config.yaml security.allow_lazy_installs=false" in result.stdout
     assert "honcho-ai==2.0.1" in result.stdout
     assert "python-telegram-bot[webhooks]==22.6" in result.stdout
 
 
 def test_customer_init_writes_profile_local_files(tmp_path: Path) -> None:
-    argo_home = tmp_path / "argo-home"
-    profile_home = argo_home / "profiles" / "acme-prod"
+    nadia_home = tmp_path / "nadia-home"
+    profile_home = nadia_home / "profiles" / "acme-prod"
     bin_dir = tmp_path / "bin"
-    log_path = tmp_path / "argo.log"
+    log_path = tmp_path / "nadia.log"
     bin_dir.mkdir()
-    argo_home.mkdir()
-    (argo_home / "SOUL.md.template").write_text(
+    nadia_home.mkdir()
+    (nadia_home / "SOUL.md.template").write_text(
         "Customer: {{PROFILE}}\nWorkspace: {{HONCHO_WORKSPACE}}\n",
         encoding="utf-8",
     )
-    (argo_home / "honcho.json.template").write_text(
+    (nadia_home / "honcho.json.template").write_text(
         json.dumps({"environment": "customer"}),
         encoding="utf-8",
     )
-    fake_argo = bin_dir / "argo"
-    fake_argo.write_text(
+    fake_nadia = bin_dir / "nadia"
+    fake_nadia.write_text(
         textwrap.dedent(
             """\
             #!/usr/bin/env bash
             set -euo pipefail
-            printf '%s\n' "$*" >> "${ARGO_FAKE_LOG}"
+            printf '%s\n' "$*" >> "${NADIA_FAKE_LOG}"
             if [ "${1:-}" = "profile" ] && [ "${2:-}" = "create" ]; then
-                mkdir -p "${ARGO_HOME}/profiles/${3}"
+                mkdir -p "${NADIA_HOME}/profiles/${3}"
             fi
             exit 0
             """
         ),
         encoding="utf-8",
     )
-    fake_argo.chmod(fake_argo.stat().st_mode | stat.S_IXUSR)
+    fake_nadia.chmod(fake_nadia.stat().st_mode | stat.S_IXUSR)
 
     result = _run_script(
         INIT_SCRIPT,
@@ -118,8 +118,8 @@ def test_customer_init_writes_profile_local_files(tmp_path: Path) -> None:
         "--skip-gateway",
         "--yes",
         env={
-            "ARGO_HOME": str(argo_home),
-            "ARGO_FAKE_LOG": str(log_path),
+            "NADIA_HOME": str(nadia_home),
+            "NADIA_FAKE_LOG": str(log_path),
             "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}",
         },
     )
@@ -156,7 +156,7 @@ def test_customer_init_rejects_missing_required_values(tmp_path: Path) -> None:
         "missing-secrets",
         "--yes",
         "--skip-gateway",
-        env={"ARGO_HOME": str(tmp_path / "argo-home")},
+        env={"NADIA_HOME": str(tmp_path / "nadia-home")},
     )
 
     assert result.returncode == 2

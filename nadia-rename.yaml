@@ -1,4 +1,4 @@
-# argo-rename.yaml — declarative rename + exception config for argo-sync.
+# nadia-rename.yaml — declarative rename + exception config for nadia-sync.
 #
 # Mappings are applied longest-from-first so that longer tokens shadow
 # shorter overlapping ones (e.g. "hermes_agent" is handled before "hermes").
@@ -7,11 +7,11 @@
 mappings:
   # --- URL-form mapping (longest first; must precede bare hermes-agent) ---
   # GitHub URLs for the upstream Hermes repo map to this fork's GitHub repo
-  # (nadicodeai/argo). nadicode does not own nousresearch.com, so the upstream
+  # (nadicodeai/nadia). nadicode does not own nousresearch.com, so the upstream
   # PyPI package (pypi.org/p/hermes-agent) and the bare upstream host are NOT
   # rewritten. The ONE nousresearch.com exception is the self-referential DOCS
   # path (hermes-agent.nousresearch.com/docs/...), which the fork now mirrors at
-  # its own live site docs.nadicode.ai/argo/ — see the docs mapping below and the
+  # its own live site docs.nadicode.ai/nadia/ — see the docs mapping below and the
   # amended skip_contexts URL guard. Whole-file-excepted markdown keeps its
   # upstream /docs links (the exception short-circuits the mapping).
   #
@@ -19,18 +19,18 @@ mappings:
   # flipped main -> release: on the fork the runnable rebranded tree and the
   # install scripts live ONLY on the `release` branch, so the upstream
   # `/main/scripts/install.*` one-liners 404 (the install.cmd live bootstrap,
-  # the `argo update` reinstall hint in main.py/uninstall.py, and ~30 docs-site
+  # the `nadia update` reinstall hint in main.py/uninstall.py, and ~30 docs-site
   # pages). This longer key is applied before the bare org mapping below
   # (engine sorts longest-first), rewriting org + branch + path in one pass.
   # README*/CONTRIBUTING are engine-excepted, so their one-liners are handled by
   # patch 0002 instead. See tests/test_install_url_release_branch.py.
-  - {from: "NousResearch/hermes-agent/main/scripts/install", to: "nadicodeai/argo/release/scripts/install"}
-  # --- Self-referential Argo docs site (host + /docs baseUrl swap) ---
+  - {from: "NousResearch/hermes-agent/main/scripts/install", to: "nadicodeai/nadia/release/scripts/install"}
+  # --- Self-referential Nadia docs site (host + /docs baseUrl swap) ---
   # Upstream Docusaurus is host `hermes-agent.nousresearch.com` + baseUrl
-  # '/docs/'. The Argo fork now publishes the RENAMED docs (built from
-  # dist/argo/website/) at host `docs.nadicode.ai` + baseUrl '/argo/'. Rewrite
+  # '/docs/'. The Nadia fork now publishes the RENAMED docs (built from
+  # dist/nadia/website/) at host `docs.nadicode.ai` + baseUrl '/nadia/'. Rewrite
   # the host AND the /docs prefix together so e.g.
-  #   .../docs/user-guide/cli -> docs.nadicode.ai/argo/user-guide/cli
+  #   .../docs/user-guide/cli -> docs.nadicode.ai/nadia/user-guide/cli
   # (a naive host-only swap would wrongly yield docs.nadicode.ai/docs/...). The
   # engine sorts longest-from-first, so this key fires before the bare org slug
   # and bare hermes-agent keys. The skip_contexts URL guard below was amended
@@ -40,85 +40,85 @@ mappings:
   # preserved (not /docs paths / different host). Docusaurus url/baseUrl are NOT
   # rewritten here (not /docs URLs) — they are flipped via env-override in
   # packaging-strip.yaml content_edits. Whole-file-excepted markdown (README*.md,
-  # CONTRIBUTING.md, argo-already-has-routines.md) is NOT reached by this mapping
+  # CONTRIBUTING.md, nadia-already-has-routines.md) is NOT reached by this mapping
   # (the exception short-circuits before skip_contexts), so its /docs links stay
   # on the upstream host as MIT attribution.
-  - {from: "hermes-agent.nousresearch.com/docs", to: "docs.nadicode.ai/argo"}
+  - {from: "hermes-agent.nousresearch.com/docs", to: "docs.nadicode.ai/nadia"}
   # The Windows-native docs invoke install.ps1 with `-Branch main`, which would
   # install the (non-runnable) workshop branch. install.ps1 now defaults to
   # release (patch 0011); flip the documented flag to match. Only appears in the
   # windows-native install guides, so a substring map is safe.
   - {from: "-Branch main", to: "-Branch release"}
-  - {from: "NousResearch/hermes-agent", to: "nadicodeai/argo"}
+  - {from: "NousResearch/hermes-agent", to: "nadicodeai/nadia"}
   # Capitalised repo slug used in package.json repository/bugs/homepage URLs
   # (git+https://github.com/NousResearch/Hermes-Agent.git). Without this the
-  # bare `Hermes-Agent` -> `Argo-Agent` mapping would mangle it to a nonexistent
-  # NousResearch/Argo-Agent; map the whole upstream-repo slug to the fork.
-  - {from: "NousResearch/Hermes-Agent", to: "nadicodeai/argo"}
+  # bare `Hermes-Agent` -> `Nadia-Agent` mapping would mangle it to a nonexistent
+  # NousResearch/Nadia-Agent; map the whole upstream-repo slug to the fork.
+  - {from: "NousResearch/Hermes-Agent", to: "nadicodeai/nadia"}
   # --- Docker/OCI image references (point at the fork's real published image) ---
-  # Upstream's `argo update` message, docker-compose, and browser/tool help tell
+  # Upstream's `nadia update` message, docker-compose, and browser/tool help tell
   # users to pull `nousresearch/hermes-agent` (Docker Hub) / `ghcr.io/nousresearch/
-  # hermes-agent`. The blanket rename turned these into `nousresearch/argo-agent`
-  # — an image that DOES NOT EXIST (the fork publishes to ghcr.io/nadicodeai/argo,
+  # hermes-agent`. The blanket rename turned these into `nousresearch/nadia-agent`
+  # — an image that DOES NOT EXIST (the fork publishes to ghcr.io/nadicodeai/nadia,
   # per the README). Map both forms to the fork's real image. Longest-first
   # ordering fires the ghcr-prefixed key before the bare one, so the bare key never
   # double-prefixes a ghcr path. The Docker Hub *tags* URL is preserved by the URL
   # guard, so it is flipped to the GHCR package page via a packaging-strip content_edit.
-  - {from: "ghcr.io/nousresearch/hermes-agent", to: "ghcr.io/nadicodeai/argo"}
-  - {from: "nousresearch/hermes-agent",         to: "ghcr.io/nadicodeai/argo"}
+  - {from: "ghcr.io/nousresearch/hermes-agent", to: "ghcr.io/nadicodeai/nadia"}
+  - {from: "nousresearch/hermes-agent",         to: "ghcr.io/nadicodeai/nadia"}
   # --- Composite identifiers (longest first) ---
-  - {from: "hermes_tools_mcp_server", to: "argo_tools_mcp_server"}
-  - {from: "HermesAgent",             to: "ArgoAgent"}
-  - {from: "Hermes-Agent",            to: "Argo-Agent"}
-  - {from: "hermes-agent",            to: "argo-agent"}
-  - {from: "hermes_agent",            to: "argo_agent"}
-  - {from: "hermes_bootstrap",        to: "argo_bootstrap"}
-  - {from: "hermes_constants",        to: "argo_constants"}
-  - {from: "hermes_logging",          to: "argo_logging"}
-  - {from: "hermes_state",            to: "argo_state"}
-  - {from: "hermes_time",             to: "argo_time"}
-  - {from: "hermes_cli",              to: "argo_cli"}
-  - {from: "HERMES_HOME",             to: "ARGO_HOME"}
-  - {from: "HERMES_",                 to: "ARGO_"}
-  - {from: "~/.hermes",              to: "~/.argo"}
-  - {from: ".hermes/",               to: ".argo/"}
+  - {from: "hermes_tools_mcp_server", to: "nadia_tools_mcp_server"}
+  - {from: "HermesAgent",             to: "NadiaAgent"}
+  - {from: "Hermes-Agent",            to: "Nadia-Agent"}
+  - {from: "hermes-agent",            to: "nadia-agent"}
+  - {from: "hermes_agent",            to: "nadia_agent"}
+  - {from: "hermes_bootstrap",        to: "nadia_bootstrap"}
+  - {from: "hermes_constants",        to: "nadia_constants"}
+  - {from: "hermes_logging",          to: "nadia_logging"}
+  - {from: "hermes_state",            to: "nadia_state"}
+  - {from: "hermes_time",             to: "nadia_time"}
+  - {from: "hermes_cli",              to: "nadia_cli"}
+  - {from: "HERMES_HOME",             to: "NADIA_HOME"}
+  - {from: "HERMES_",                 to: "NADIA_"}
+  - {from: "~/.hermes",              to: "~/.nadia"}
+  - {from: ".hermes/",               to: ".nadia/"}
   # --- Bare case variants (shortest, last) ---
-  - {from: "Hermes",                  to: "Argo"}
-  - {from: "HERMES",                  to: "ARGO"}
-  - {from: "hermes",                  to: "argo"}
+  - {from: "Hermes",                  to: "Nadia"}
+  - {from: "HERMES",                  to: "NADIA"}
+  - {from: "hermes",                  to: "nadia"}
 
 exceptions:
-  # Dropped in M2.1 audit (legacy-repo paths absent from new-repo dist/argo/ layout):
-  # - .shepherd/** (lives at repo root; engine never sees it — it only runs on dist/argo/)
-  # - argo-rename.yaml (lives at repo root; same reason)
-  # - bin/argo-bootstrap.py (no bootstrap script in the dist artifact)
+  # Dropped in M2.1 audit (legacy-repo paths absent from new-repo dist/nadia/ layout):
+  # - .shepherd/** (lives at repo root; engine never sees it — it only runs on dist/nadia/)
+  # - nadia-rename.yaml (lives at repo root; same reason)
+  # - bin/nadia-bootstrap.py (no bootstrap script in the dist artifact)
   # - .gitleaks.toml (absent from upstream; will be re-added via a patch + re-listed if needed)
   # Re-added in #4 follow-up (the rename engine doesn't see them, but the
-  # runtime `argo doctor --static` does because they exist inside the published image):
+  # runtime `nadia doctor --static` does because they exist inside the published image):
   # - *.egg-info/** (generated by `pip install -e .` inside the Docker runtime stage)
-  - path: ".argo/**"
-    why: "Build/sync manifests record the pre-rename file paths (hermes_cli/foo.py → argo_cli/foo.py). They are intentionally metadata about the rename and ship with the artifact for introspection (argo --version --verbose surfaces them)."
+  - path: ".nadia/**"
+    why: "Build/sync manifests record the pre-rename file paths (hermes_cli/foo.py → nadia_cli/foo.py). They are intentionally metadata about the rename and ship with the artifact for introspection (nadia --version --verbose surfaces them)."
   - path: "*.egg-info/**"
-    why: "setuptools-generated metadata produced by `pip install -e .` inside the runtime Docker stage (issue #4 surfaced this). PKG-INFO embeds README.md / README.zh-CN.md verbatim, which are themselves whole-file engine-excepted (fork-notice block, attribution badges, and the upstream docs links — README docs links intentionally stay on hermes-agent.nousresearch.com/docs as MIT attribution; patch 0014 rebrands only command examples + config paths, NOT URLs). The egg-info is regenerated on every install and is never tracked in source. Excluding it here keeps `argo doctor --static` exit-zero clean for runtime users."
+    why: "setuptools-generated metadata produced by `pip install -e .` inside the runtime Docker stage (issue #4 surfaced this). PKG-INFO embeds README.md / README.zh-CN.md verbatim, which are themselves whole-file engine-excepted (fork-notice block, attribution badges, and the upstream docs links — README docs links intentionally stay on hermes-agent.nousresearch.com/docs as MIT attribution; patch 0014 rebrands only command examples + config paths, NOT URLs). The egg-info is regenerated on every install and is never tracked in source. Excluding it here keeps `nadia doctor --static` exit-zero clean for runtime users."
   - path: ".gitleaks.toml"
     why: "Fork-owned overlay file. Allowlist regex deliberately matches historical hermes_cli/* paths (pre-rename) so gitleaks ignores files present in git history that no longer exist in HEAD. Naming those paths is required for the allowlist to work — the rename engine MUST NOT collapse `hermes_cli` here."
   - path: "tests/test_full_rename_config.py"
     why: "This test validates the rename config by checking that hermes-* FROM keys are present in mappings. It must contain hermes-* string literals and cannot be renamed by the engine itself."
-  - path: "argo-xfail.yml"
-    why: "XFAIL manifest of exact pytest nodeids. Some nodeids contain runtime-COMPUTED legacy-brand strings the engine must not touch — e.g. test_gateway_restart_loop's parametrize id [hermes gateway restart] comes from \"Hermez\".replace('z','s') at runtime and stays 'hermes', so the manifest entry must keep the literal 'hermes' to match. Rewriting it to 'argo' (as the engine did) makes the entry never match and the xfail silently no-ops."
+  - path: "nadia-xfail.yml"
+    why: "XFAIL manifest of exact pytest nodeids. Some nodeids contain runtime-COMPUTED legacy-brand strings the engine must not touch — e.g. test_gateway_restart_loop's parametrize id [hermes gateway restart] comes from \"Hermez\".replace('z','s') at runtime and stays 'hermes', so the manifest entry must keep the literal 'hermes' to match. Rewriting it to 'nadia' (as the engine did) makes the entry never match and the xfail silently no-ops."
   - path: "*/_rename_defaults.py"
-    why: "Build-time generated constants module (tools/generate_rename_defaults.py) baking argo-rename.yaml's mappings + exceptions + skip_contexts into a Python module so `argo doctor --static` works in the published image where the yaml is absent (issue #4). The file legitimately contains every hermes-* FROM key as a string literal — it is the rename config in Python form — so the engine MUST NOT rewrite its contents. The single-level `*/_rename_defaults.py` glob matches both the pre-rename overlay path (hermes_cli/_rename_defaults.py) and the post-rename dist path (argo_cli/_rename_defaults.py)."
+    why: "Build-time generated constants module (tools/generate_rename_defaults.py) baking nadia-rename.yaml's mappings + exceptions + skip_contexts into a Python module so `nadia doctor --static` works in the published image where the yaml is absent (issue #4). The file legitimately contains every hermes-* FROM key as a string literal — it is the rename config in Python form — so the engine MUST NOT rewrite its contents. The single-level `*/_rename_defaults.py` glob matches both the pre-rename overlay path (hermes_cli/_rename_defaults.py) and the post-rename dist path (nadia_cli/_rename_defaults.py)."
   - path: "README.md"
-    why: "Whole-file engine exception. Attribution (fork-notice block, License + Fork-of badges, the NousResearch/hermes-agent repo slug) AND the docs links (hermes-agent.nousresearch.com/docs/...) intentionally reference upstream — MIT license requires attribution and the README is part of that attribution surface. Patch 0014 rebrands ONLY the copy-paste command examples (`hermes`->`argo`) and config paths (~/.hermes->~/.argo); it deliberately leaves the docs URLs upstream (see patch 0014 header + tests/test_readme_commands_rebranded.py). The /docs rename mapping does NOT reach this file (exception short-circuits)."
+    why: "Whole-file engine exception. Attribution (fork-notice block, License + Fork-of badges, the NousResearch/hermes-agent repo slug) AND the docs links (hermes-agent.nousresearch.com/docs/...) intentionally reference upstream — MIT license requires attribution and the README is part of that attribution surface. Patch 0014 rebrands ONLY the copy-paste command examples (`hermes`->`nadia`) and config paths (~/.hermes->~/.nadia); it deliberately leaves the docs URLs upstream (see patch 0014 header + tests/test_readme_commands_rebranded.py). The /docs rename mapping does NOT reach this file (exception short-circuits)."
   - path: "README.zh-CN.md"
     why: "Same fork-notice and attribution requirements as README.md, translated."
   # NOTE: CONTRIBUTING.md and AGENTS.md were whole-file rename-excepted here, but
-  # they are upstream MAINTAINER dev-docs (123 + 61 hermes refs) irrelevant to Argo
-  # customers and the biggest source of shipped hermes/argo "mixture". They are now
-  # PRUNED from dist/argo by packaging-strip.yaml (group: maintainer-docs), so they
+  # they are upstream MAINTAINER dev-docs (123 + 61 hermes refs) irrelevant to Nadia
+  # customers and the biggest source of shipped hermes/nadia "mixture". They are now
+  # PRUNED from dist/nadia by packaging-strip.yaml (group: maintainer-docs), so they
   # never reach the rename and need no exception. MIT attribution lives in README +
   # LICENSE (still shipped).
-  - path: "argo-already-has-routines.md"
+  - path: "nadia-already-has-routines.md"
     why: "Whole-file engine exception. Planning/comparison document referencing the upstream docs URL (hermes-agent.nousresearch.com/docs/guides/automation-templates) for context; the /docs rename mapping does NOT reach this file (exception short-circuits), so the link stays on the upstream host — intentional, not a deploy surface."
   - path: ".github/workflows/skills-index.yml"
     why: "Fork-specific gate comments name hermes-agent.nousresearch.com when explaining why the upstream docs deploy is disabled."
@@ -128,16 +128,16 @@ exceptions:
   # website/docs/user-guide/features/extending-the-dashboard.md were whole-file
   # excepted here to preserve their `hermes-example-plugins` repo references — but
   # that left 52 + 11 *brand* mentions ("Hermes web dashboard", `hermes dashboard`,
-  # `~/.hermes/`) un-rebranded on the LIVE docs site (the hermes/argo "mixture").
+  # `~/.hermes/`) un-rebranded on the LIVE docs site (the hermes/nadia "mixture").
   # Replaced with a precise `hermes-example-plugins` skip_context below so these
   # pages rebrand normally and only the companion-repo name is preserved.
 
 skip_contexts:
   # Preserve every URL whose host/path is NOT something nadicode controls.
   # We only rewrite GitHub URLs for the upstream hermes-agent repo (handled by
-  # the NousResearch/hermes-agent → nadicodeai/argo mapping above), the
+  # the NousResearch/hermes-agent → nadicodeai/nadia mapping above), the
   # hermes-agent.local devhost, AND the self-referential DOCS path
-  # hermes-agent.nousresearch.com/docs (rewritten to docs.nadicode.ai/argo by the
+  # hermes-agent.nousresearch.com/docs (rewritten to docs.nadicode.ai/nadia by the
   # docs mapping above — the fork now hosts its own docs site, so that path is
   # RELEASED from preservation via the third lookahead alternative below).
   # Everything else is preserved as-is: the BARE host
@@ -156,7 +156,7 @@ skip_contexts:
   # `https://nodejs.org/dist/latest-v${HERMES_NODE_TARGET_MAJOR}.x/`). Without
   # this, the greedy URL match swallowed `${HERMES_*}` and PRESERVED it, so the
   # rebranded script referenced an undefined `HERMES_*` var (its definition had
-  # already rebranded to `ARGO_*`) — setup_open_webui.sh's health check and
+  # already rebranded to `NADIA_*`) — setup_open_webui.sh's health check and
   # node-bootstrap.sh's Node download both broke (empty var → bad URL). Real
   # external URLs never contain `${`, so this only frees shell-var brand tokens
   # to rebrand. See tests/test_model_id_preservation.py::test_shell_var_inside_url_rebrands.
@@ -167,7 +167,7 @@ skip_contexts:
   # stamping a capitalised Hermes-Agent leak (the two cases now agree).
   # The third lookahead alternative `hermes-agent\.nousresearch\.com/docs\b`
   # makes the self-referential DOCS path REWRITABLE (inner lookahead matches ->
-  # OUTER preservation lookahead FAILS -> the host+/docs -> docs.nadicode.ai/argo
+  # OUTER preservation lookahead FAILS -> the host+/docs -> docs.nadicode.ai/nadia
   # mapping above fires). The BARE host (HTTP-Referer), /install.sh, /llms.txt,
   # github.com/NousResearch/hermes-agent and pypi.org/p/hermes-agent do NOT match
   # /docs, so they stay preserved.
@@ -178,7 +178,7 @@ skip_contexts:
   # NousResearch's models are literally named "Hermes 2/3/4". These are external
   # API / Hugging Face / OpenRouter model ids that the fork CANNOT rename: the
   # Nous portal (https://inference.nousresearch.com/v1) serves them under these
-  # exact names, so rewriting "hermes-3-405b" -> "argo-3-405b" makes every Nous
+  # exact names, so rewriting "hermes-3-405b" -> "nadia-3-405b" makes every Nous
   # model call 404 and silently breaks the model_switch.py non-agentic guardrail.
   # Protect only the MODEL-ID token families — "hermes" immediately followed by a
   # version digit, or under a nous*/ namespace. Brand tokens (hermes_cli,
@@ -188,17 +188,17 @@ skip_contexts:
   # AND verify_no_leakage (which compiles skip_contexts without re.IGNORECASE).
   # NOTE: do NOT add a bare 'nousresearch/hermes.*' rule — it would also match
   # the upstream REPO url github.com/NousResearch/hermes-agent, which MUST
-  # rebrand to nadicodeai/argo. The version-digit rule below already protects
+  # rebrand to nadicodeai/nadia. The version-digit rule below already protects
   # the model-id tail (e.g. nousresearch/hermes-4-405b) via the \b after '/'.
   #
   # Underscore is split out from the other separators on purpose. The IRC
   # adapter's nick-collision retry appends an underscore + counter to the bot's
   # brand nick — hermes_, hermes_1, hermes_2, hermes_3… (see
   # plugins/platforms/irc/adapter.py and tests/gateway/test_irc_adapter.py).
-  # Those are BRAND tokens that MUST rebrand to argo_2 etc. A naive
+  # Those are BRAND tokens that MUST rebrand to nadia_2 etc. A naive
   # `hermes[-_ .]?[234]` preserved hermes_2/hermes_3/hermes_4 as if they were
   # model ids (digits 2-4 collide with the counter), leaving a stale `hermes_2`
-  # assertion in the shipped dist test while the renamed runtime emits argo_2 —
+  # assertion in the shipped dist test while the renamed runtime emits nadia_2 —
   # an over-preserve bug. So: an UNDERSCORE separator only marks a model id when
   # a size/version tail follows the digit (hermes_4_70b → the `_70b` tail);
   # a bare hermes_<digit> with no tail is the nick suffix and rebrands. The
@@ -209,8 +209,8 @@ skip_contexts:
   # mistaken for a model id: install.sh has `$(which hermes 2>/dev/null)` and
   # `$(command -v hermes 2>/dev/null)`, where `hermes 2>` looked like "Hermes 2"
   # and was wrongly PRESERVED — so the rebranded installer probed for a `hermes`
-  # binary that is now named `argo`, logged "hermes not found on PATH after
-  # install", and skipped auto-running `argo setup`. Real model ids never have a
+  # binary that is now named `nadia`, logged "hermes not found on PATH after
+  # install", and skipped auto-running `nadia setup`. Real model ids never have a
   # `>` after the version digit; `2>`/`3>`/`4>` are fd redirects, so the guard is
   # safe (verified: 0 model-id regressions, all 5 redirect false-positives fixed).
   # See tests/test_model_id_preservation.py::test_shell_redirect_after_hermes_rebrands.
@@ -220,7 +220,7 @@ skip_contexts:
   # _EDIT_FORMAT_GUIDANCE's "replace" family is a tuple of bare lowercase substrings
   # matched against a model id to steer the coding edit format. "hermes" here is a
   # MODEL-FAMILY needle (it substring-matches nousresearch/hermes-4-405b and other
-  # Nous Hermes ids), NOT a brand token — renaming it to "argo" silently drops
+  # Nous Hermes ids), NOT a brand token — renaming it to "nadia" silently drops
   # replace-mode steering for every Hermes-family model the customer might run
   # (tests/agent/test_coding_context.py::test_family_detection). The bare needle
   # carries no version digit, so the model-id rules above do not reach it; preserve
@@ -232,7 +232,7 @@ skip_contexts:
   # name: "Based on Hermes Agent by Nous Research". This is the ONE place the
   # fork deliberately keeps the literal upstream product name "Hermes" — it is
   # attribution, not a brand token to rebrand. Protect the exact phrase so the
-  # rename engine does not rewrite it to "...Argo Agent..." and so
+  # rename engine does not rewrite it to "...Nadia Agent..." and so
   # verify_no_leakage treats this "hermes" as allowed. Appears in
   # ui-tui/.../branding.tsx, hermes_cli/banner.py, web/.../SidebarFooter.tsx,
   # and hermes_cli/dashboard_auth/login_page.py (all via patch 0015).
@@ -240,9 +240,9 @@ skip_contexts:
   # --- Upstream companion repo name (no nadicode fork exists) ---
   # `hermes-example-plugins` is NousResearch's separate sample-plugins repo. The
   # docs (plugin-llm-access.md, extending-the-dashboard.md, AGENTS.md) point at it
-  # for examples; there is no `argo-example-plugins`, so the bare token must NOT
+  # for examples; there is no `nadia-example-plugins`, so the bare token must NOT
   # rebrand. Preserving this one token lets those docs pages drop their too-broad
-  # whole-file rename exceptions and rebrand every OTHER `hermes` to Argo. The full
+  # whole-file rename exceptions and rebrand every OTHER `hermes` to Nadia. The full
   # github.com/NousResearch/hermes-example-plugins URL is already preserved by the
   # URL guard (it does not match the rewritable `NousResearch/hermes-agent\b`); this
   # covers the bare/prose form.
@@ -250,24 +250,24 @@ skip_contexts:
   # NOTE: the NVIDIA NIM `X-BILLING-INVOKE-ORIGIN: HermesAgent` header is deliberately
   # NOT preserved. The audit skeptics split 1-1 on whether NVIDIA keys on it; unlike the
   # Nous client_id (empirically confirmed to break portal join), a billing-ORIGIN tag is
-  # almost certainly attribution/analytics, not a hard whitelist — and "ArgoAgent" is the
-  # accurate origin for Argo's traffic. It rebrands to ArgoAgent in lockstep with its
+  # almost certainly attribution/analytics, not a hard whitelist — and "NadiaAgent" is the
+  # accurate origin for Nadia's traffic. It rebrands to NadiaAgent in lockstep with its
   # tests (preserving only the source diverged source vs the renamed test assertions).
   # --- Nous backend WIRE-PROTOCOL identifiers (NOT brand tokens) ---
   # These EXACT strings are sent to (or recognised by) Nous's portal / inference /
   # model-catalog endpoints, which key on them for OAuth client whitelisting,
-  # usage attribution, and WAF User-Agent allow-listing. The blanket hermes->argo
-  # rename rewrote them to argo-* (e.g. DEFAULT_NOUS_CLIENT_ID "hermes-cli" ->
-  # "argo-cli"), which the portal REJECTS — the device-code login then fails in
+  # usage attribution, and WAF User-Agent allow-listing. The blanket hermes->nadia
+  # rename rewrote them to nadia-* (e.g. DEFAULT_NOUS_CLIENT_ID "hermes-cli" ->
+  # "nadia-cli"), which the portal REJECTS — the device-code login then fails in
   # the field with the exact symptom "cannot join the Nous portal, it says
-  # argo-cli". They are Nous's protocol identity, not our brand, so they MUST stay
+  # nadia-cli". They are Nous's protocol identity, not our brand, so they MUST stay
   # upstream — the same class as the Hermes MODEL ids and the OpenRouter
   # X-Title / HTTP-Referer attribution headers protected above.
   #
   # CRITICAL — the literal "hermes-cli" is OVERLOADED. It is BOTH the Nous OAuth
   # client_id (a WIRE value — preserve) AND the internal default *toolset* key
   # (toolsets.py registry, config.py default ["hermes-cli"], delegate_tool.py /
-  # tools_config.py comparisons — a BRAND token that MUST rebrand to argo-cli for
+  # tools_config.py comparisons — a BRAND token that MUST rebrand to nadia-cli for
   # a consistent product). So every pattern below is anchored to the WIRE context
   # only; the bare quoted "hermes-cli" toolset key matches NONE of them and still
   # rebrands. Verified collision-free against upstream (the toolset never uses the
@@ -275,7 +275,7 @@ skip_contexts:
   # the DEFAULT_NOUS_CLIENT_ID assignment).
   #
   # A positive build gate (tools/check_wire_identifiers.py, wired into make
-  # leakage / CI) asserts each of these survives in dist/argo/. If an upstream
+  # leakage / CI) asserts each of these survives in dist/nadia/. If an upstream
   # refactor drifts an anchor, the rename clobbers the value AND leakage stays
   # green (no `hermes` left to flag) — only the positive gate catches it, so the
   # build fails loudly instead of shipping a portal-broken release.

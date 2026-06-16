@@ -1,13 +1,13 @@
-# packaging-strip.yaml — fork-owned denylist of paths removed from dist/argo/.
+# packaging-strip.yaml — fork-owned denylist of paths removed from dist/nadia/.
 #
 # Applied by tools/build.py (`_strip_excluded_paths`) AFTER patches+overlay and
-# BEFORE the hermes→argo rename. Paths are repo-relative and HERMES-named
+# BEFORE the hermes→nadia rename. Paths are repo-relative and HERMES-named
 # (pre-rename), matching the assembled tree at prune time.
 #
 # Why a build-time prune instead of quilt patches
 # -----------------------------------------------
-# These removals must reach BOTH the native dist/argo/ install (the `release`
-# tree) AND the Docker image (which COPYs dist/argo/), and MUST NOT create
+# These removals must reach BOTH the native dist/nadia/ install (the `release`
+# tree) AND the Docker image (which COPYs dist/nadia/), and MUST NOT create
 # upstream-merge conflicts. A denylist over the assembled tree never conflicts
 # on `make sync`: it is not a patch against upstream content. Drift is surfaced
 # loudly instead of silently —
@@ -27,7 +27,7 @@
 # Tests: China-only test files import their adapter at module top (no
 # importorskip), so they must be pruned here (a pruned module would otherwise
 # break collection). The handful of GENERAL gateway tests that import a China
-# adapter inside a China-specific test CLASS are handled in overlay/argo-xfail.yml
+# adapter inside a China-specific test CLASS are handled in overlay/nadia-xfail.yml
 # instead (function-local import → collection still succeeds → xfail the class),
 # which preserves their non-China coverage (Telegram/Discord/Matrix).
 
@@ -80,7 +80,7 @@ groups:
       China adapter at module top (no importorskip), so once the module is gone
       they would error at collection — prune them with the modules they cover.
       (General gateway tests that touch a China adapter inside a China-only test
-      class are xfailed in overlay/argo-xfail.yml instead, to keep their
+      class are xfailed in overlay/nadia-xfail.yml instead, to keep their
       Telegram/Discord/Matrix coverage.)
     paths:
       - tests/tools/test_feishu_tools.py
@@ -111,7 +111,7 @@ groups:
   - name: china-docs
     why: >-
       English user-guide documentation pages for the stripped China platforms
-      (and the Yuanbao skill). These ship under dist/argo/website (→ native
+      (and the Yuanbao skill). These ship under dist/nadia/website (→ native
       install and image), so prune them — the product must not document
       features it does not have. (The zh-Hans translations of these pages are
       removed wholesale by the zh-hans-locale group below.)
@@ -139,10 +139,10 @@ groups:
   - name: maintainer-docs
     why: >-
       AGENTS.md (123 hermes refs) and CONTRIBUTING.md (61) are UPSTREAM maintainer
-      dev-docs describing Hermes's direct-development workflow — irrelevant to Argo
-      customers and the single biggest source of shipped hermes/argo "mixture" in the
+      dev-docs describing Hermes's direct-development workflow — irrelevant to Nadia
+      customers and the single biggest source of shipped hermes/nadia "mixture" in the
       artifact. The fork's OWN maintainer guide lives in the repo root (on main), not
-      in dist/argo. README (the customer doc) + LICENSE carry the MIT attribution, so
+      in dist/nadia. README (the customer doc) + LICENSE carry the MIT attribution, so
       pruning these does not weaken attribution. The README's "Workspace instructions
       — AGENTS.md" line documents the --workspace-target FEATURE (it reads a user's
       own AGENTS.md), not this repo file, so it does not dangle after the prune.
@@ -161,44 +161,44 @@ groups:
 # edit can never silently no-op and leave the leftover behind.
 # ---------------------------------------------------------------------------
 content_edits:
-  - name: default-display-skin-argo
+  - name: default-display-skin-nadia
     file: cli.py
     why: >-
-      Make the shipped Argo distribution start with the generated NadicodeAI
-      `argo` skin by default. This is a fork distribution default, not an
+      Make the shipped Nadia distribution start with the generated NadicodeAI
+      `nadia` skin by default. This is a fork distribution default, not an
       upstream source edit; the narrow config literal fails loud if upstream
       rewrites the default config shape.
     find: '            "skin": "default",'
-    replace: '            "skin": "argo",'
+    replace: '            "skin": "nadia",'
   - name: non-default-empty-banner-hero-no-hermes-fallback
     file: hermes_cli/banner.py
     why: >-
-      Let the shipped Argo skin intentionally omit custom hero art. Upstream
+      Let the shipped Nadia skin intentionally omit custom hero art. Upstream
       falls back to the Hermes caduceus when banner_hero is empty; that is
-      correct for the default Hermes skin, but wrong for a non-default Argo
+      correct for the default Hermes skin, but wrong for a non-default Nadia
       skin profile adapted from the documented skin system.
     find: "        _bskin = get_active_skin()\n        _hero = _bskin.banner_hero if hasattr(_bskin, 'banner_hero') and _bskin.banner_hero else HERMES_CADUCEUS"
     replace: "        _bskin = get_active_skin()\n        _skin_name = getattr(_bskin, \"name\", \"default\")\n        if hasattr(_bskin, 'banner_hero') and _bskin.banner_hero:\n            _hero = _bskin.banner_hero\n        elif _skin_name == \"default\":\n            _hero = HERMES_CADUCEUS\n        else:\n            _hero = \"\""
   - name: non-default-empty-banner-logo-no-hermes-fallback
     file: hermes_cli/banner.py
     why: >-
-      Let the shipped Argo skin intentionally omit custom logo art. Upstream
-      falls back to the Hermes wordmark when banner_logo is empty; the Argo
-      default should not show either Hermes art or invented Argo ASCII art.
+      Let the shipped Nadia skin intentionally omit custom logo art. Upstream
+      falls back to the Hermes wordmark when banner_logo is empty; the Nadia
+      default should not show either Hermes art or invented Nadia ASCII art.
     find: "    if term_width >= 95:\n        _logo = _bskin.banner_logo if _bskin and hasattr(_bskin, 'banner_logo') and _bskin.banner_logo else HERMES_AGENT_LOGO\n        console.print(_logo)\n        console.print()"
     replace: "    if term_width >= 95:\n        _logo = None\n        if _bskin and hasattr(_bskin, 'banner_logo') and _bskin.banner_logo:\n            _logo = _bskin.banner_logo\n        elif not _bskin or getattr(_bskin, \"name\", \"default\") == \"default\":\n            _logo = HERMES_AGENT_LOGO\n        if _logo:\n            console.print(_logo)\n            console.print()"
-  - name: argo-banner-remove-duplicate-brand-model-suffix
+  - name: nadia-banner-remove-duplicate-brand-model-suffix
     file: hermes_cli/banner.py
     why: >-
-      Keep the explicit Argo/NadicodeAI attribution line, but do not append a
+      Keep the explicit Nadia/NadicodeAI attribution line, but do not append a
       second `· NadicodeAI` label to the model line. In the skin preview this
       duplicates the model placeholder into a stray centered brand caption.
     find: '    left_lines.append(f"[{accent}]{model_short}[/]{ctx_str} [dim {dim}]·[/] [dim {dim}]NadicodeAI[/]")'
     replace: '    left_lines.append(f"[{accent}]{model_short}[/]{ctx_str}")'
-  - name: argo-banner-attribution-readable
+  - name: nadia-banner-attribution-readable
     file: hermes_cli/banner.py
     why: >-
-      Render the Argo attribution line in the active skin body color instead of
+      Render the Nadia attribution line in the active skin body color instead of
       Rich dim gray. The line is part of the visible startup identity and must
       stay readable in dark terminal previews and real terminal sessions.
     find: '    left_lines.append(f"[dim {dim}]An AI agent from NadicodeAI (nadicode.ai) · Based on Hermes Agent by Nous Research[/]")'
@@ -207,61 +207,61 @@ content_edits:
     file: scripts/install.sh
     why: >-
       Upstream now documents the short hermes-agent.nousresearch.com install
-      URLs inside the kept installer. The Argo release tree is the only
+      URLs inside the kept installer. The Nadia release tree is the only
       customer-runnable install surface, so shipped installer help must point at
-      raw.githubusercontent.com/nadicodeai/argo/release rather than the upstream
+      raw.githubusercontent.com/nadicodeai/nadia/release rather than the upstream
       host.
     find: "https://hermes-agent.nousresearch.com/install.sh"
-    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh"
+    replace: "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.sh"
   - name: install-sh-windows-release-shortlink
     file: scripts/install.sh
     why: >-
       The POSIX installer prints the Windows one-liner when the OS is wrong.
-      Keep that recovery hint on the Argo release branch too.
+      Keep that recovery hint on the Nadia release branch too.
     find: "https://hermes-agent.nousresearch.com/install.ps1"
-    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1"
+    replace: "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.ps1"
   - name: install-ps1-release-shortlinks
     file: scripts/install.ps1
     why: >-
       Windows installer comments and recovery output must point at the shipped
-      Argo release-branch script, not the upstream Hermes shortlink.
+      Nadia release-branch script, not the upstream Hermes shortlink.
     find: "https://hermes-agent.nousresearch.com/install.ps1"
-    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1"
+    replace: "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.ps1"
   - name: install-cmd-release-shortlinks
     file: scripts/install.cmd
     why: >-
       install.cmd is a live Windows bootstrapper; its PowerShell bootstrap URL
-      must fetch the Argo release-branch installer.
+      must fetch the Nadia release-branch installer.
     find: "https://hermes-agent.nousresearch.com/install.ps1"
-    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1"
+    replace: "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.ps1"
   - name: cli-update-reinstall-release-shortlink
     file: hermes_cli/main.py
     why: >-
       The update reinstall hint is a customer-facing recovery path. Point it at
-      the Argo release-branch installer so it can run from the published tree.
+      the Nadia release-branch installer so it can run from the published tree.
     find: "https://hermes-agent.nousresearch.com/install.sh"
-    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh"
+    replace: "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.sh"
   - name: uninstall-reinstall-release-shortlinks
     file: hermes_cli/uninstall.py
     why: >-
       The uninstall flow prints reinstall commands after removal. Keep both
-      POSIX and Windows reinstall hints on the Argo release branch.
+      POSIX and Windows reinstall hints on the Nadia release branch.
     find: "https://hermes-agent.nousresearch.com/install.sh"
-    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh"
+    replace: "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.sh"
   - name: uninstall-windows-reinstall-release-shortlink
     file: hermes_cli/uninstall.py
     why: >-
       The Windows reinstall hint emitted by uninstall.py must also use the
-      shipped Argo release-branch installer.
+      shipped Nadia release-branch installer.
     find: "https://hermes-agent.nousresearch.com/install.ps1"
-    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1"
+    replace: "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.ps1"
   - name: update-command-tests-patch-slash-commands-file
     file: tests/gateway/test_update_command.py
     why: >-
       Upstream moved _handle_update_command into gateway/slash_commands.py.
       These tests create a fake project root with .git, but still monkeypatch
       gateway.run.__file__; that only passes in upstream because the checkout
-      root itself has .git. dist/argo is deliberately not a git repo during
+      root itself has .git. dist/nadia is deliberately not a git repo during
       make dist-test, so patch the module that now owns the handler.
     find: 'patch("gateway.run.__file__", fake_file)'
     replace: 'patch("gateway.slash_commands.__file__", fake_file)'
@@ -270,13 +270,13 @@ content_edits:
     why: >-
       Same extracted-handler drift as test_update_command.py: the test's fake
       project root must patch gateway.slash_commands.__file__, not the old
-      gateway.run.__file__, when running inside non-git dist/argo.
+      gateway.run.__file__, when running inside non-git dist/nadia.
     find: 'patch("gateway.run.__file__", fake_file)'
     replace: 'patch("gateway.slash_commands.__file__", fake_file)'
   - name: update-autostash-scoped-fetch-release-branch
     file: tests/hermes_cli/test_update_autostash.py
     why: >-
-      Argo's customer update branch is origin/release, not upstream main.
+      Nadia's customer update branch is origin/release, not upstream main.
       Keep the upstream regression coverage that fetch is scoped to a branch,
       but assert the fork's actual branch target after
       _resolve_update_branch() is patched by 0009.
@@ -294,32 +294,32 @@ content_edits:
     file: hermes_cli/gateway.py
     why: >-
       Filter the China platforms out of the gateway setup-menu builder
-      (_all_platforms) so `argo setup` never presents
+      (_all_platforms) so `nadia setup` never presents
       feishu/dingtalk/wecom/weixin/qqbot/yuanbao. Anchor: the single stable
       list-comprehension line that materializes _PLATFORMS.
     find: '    platforms = [dict(p) for p in _PLATFORMS]'
     replace: '    platforms = [dict(p) for p in _PLATFORMS if p.get("key") not in {"dingtalk", "feishu", "wecom", "wecom_callback", "weixin", "qqbot", "yuanbao"}]'
-  # ---- Docs-site host/baseUrl + navbar Home (docs.nadicode.ai/argo) ----
+  # ---- Docs-site host/baseUrl + navbar Home (docs.nadicode.ai/nadia) ----
   # The rebrand pass does NOT rewrite url/baseUrl/Home-href (bare-host or a
-  # standalone /docs/ baseUrl token, preserved by argo-rename.yaml's URL guard).
+  # standalone /docs/ baseUrl token, preserved by nadia-rename.yaml's URL guard).
   # These content_edits flip them. SITE_BASE / the llms.txt headers / prebuild
   # UNIFIED_INDEX_URL / acp_registry website are NOT handled here — they are
-  # /docs-path URLs flipped by the argo-rename.yaml docs mapping instead.
+  # /docs-path URLs flipped by the nadia-rename.yaml docs mapping instead.
   - name: docs-url-env-overridable
     file: website/docusaurus.config.ts
     why: >-
       Make the published docs host/baseUrl injectable at build time so CI can
-      target docs.nadicode.ai + /argo/ while the upstream literal stays the
-      default (preserved by argo-rename.yaml skip_contexts -> leakage-safe). The
+      target docs.nadicode.ai + /nadia/ while the upstream literal stays the
+      default (preserved by nadia-rename.yaml skip_contexts -> leakage-safe). The
       rebrand pass does NOT rewrite url/baseUrl. Anchor matches the exact
       upstream pre-rename two-line block (both lines indented 2 spaces).
     find: "  url: 'https://hermes-agent.nousresearch.com',\n  baseUrl: '/docs/',"
     replace: "  url: process.env.DOCS_URL ?? 'https://hermes-agent.nousresearch.com',\n  baseUrl: process.env.DOCS_BASE_URL ?? '/docs/',"
-  - name: docs-organization-name-argo
+  - name: docs-organization-name-nadia
     file: website/docusaurus.config.ts
     why: >-
       organizationName is a gh-pages-deploy-only field the rebrand leaves as
-      'NousResearch' (projectName is already flipped to argo-agent). Build-inert
+      'NousResearch' (projectName is already flipped to nadia-agent). Build-inert
       for Vercel, corrected for consistency. Anchor is the exact pre-rename line.
     find: "organizationName: 'NousResearch',"
     replace: "organizationName: 'nadicodeai',"
@@ -327,13 +327,13 @@ content_edits:
     file: website/docusaurus.config.ts
     why: >-
       The navbar "Home" href is a BARE host (no /docs path) so the docs mapping
-      in argo-rename.yaml does NOT touch it, and the rebrand preserves it. It is
+      in nadia-rename.yaml does NOT touch it, and the rebrand preserves it. It is
       a self-referential brand surface (the docs site's own Home), not MIT
-      attribution, so it points at the Argo docs site. Anchor is the exact
+      attribution, so it points at the Nadia docs site. Anchor is the exact
       pre-rename href line (10 leading spaces); the footer copyright + Nous
       Research link use a different host (nousresearch.com) and stay upstream.
     find: "          href: 'https://hermes-agent.nousresearch.com',"
-    replace: "          href: 'https://docs.nadicode.ai/argo',"
+    replace: "          href: 'https://docs.nadicode.ai/nadia',"
   # ---- Remove the "Chinese platforms" sidebar category (matches china-docs strip) ----
   - name: sidebars-drop-chinese-platforms
     file: website/sidebars.ts
@@ -352,7 +352,7 @@ content_edits:
   # but several SHARED pages still enumerate/link those platforms. These two are
   # the worst: the docs LANDING page (advertises platforms the product lacks) and
   # the integrations index (its inline link list points at the now-deleted leaf
-  # pages -> live 404s on docs.nadicode.ai/argo). tools/check_no_china_in_docs.py
+  # pages -> live 404s on docs.nadicode.ai/nadia). tools/check_no_china_in_docs.py
   # is the zero-tolerance gate that proves the full set is scrubbed; these edits
   # clear the two pages a customer hits first. Anchored to upstream pre-rebrand
   # text (china platform names are brand-neutral, identical pre/post rebrand).
@@ -385,29 +385,29 @@ content_edits:
     why: >-
       _DOCKER_UPDATE_MESSAGE points docker users at upstream's Docker Hub tags page;
       the fork publishes to GHCR. The URL guard preserves this whole URL (so the
-      nousresearch/hermes-agent -> ghcr.io/nadicodeai/argo rename mappings do NOT
+      nousresearch/hermes-agent -> ghcr.io/nadicodeai/nadia rename mappings do NOT
       reach inside it), leaving it pointed upstream. Flip it to the GHCR package
       versions page here (runs pre-rebrand on the exact upstream URL).
     find: "https://hub.docker.com/r/nousresearch/hermes-agent/tags"
-    replace: "https://github.com/nadicodeai/argo/pkgs/container/argo"
+    replace: "https://github.com/nadicodeai/nadia/pkgs/container/nadia"
   # ---- ACP registry manifest test: assert the rebranded docs host ----
   - name: acp-manifest-test-docs-host
     file: tests/acp/test_registry_manifest.py
     why: >-
-      The ACP registry manifest's `website` is a /docs URL that argo-rename.yaml
-      flips to docs.nadicode.ai/argo; the test asserts the BARE upstream host
+      The ACP registry manifest's `website` is a /docs URL that nadia-rename.yaml
+      flips to docs.nadicode.ai/nadia; the test asserts the BARE upstream host
       (preserved by the URL guard), so manifest and assertion would diverge and
       dist-test would fail. Flip the assertion in the DIST via content_edit (runs
       before rebrand on the pristine text) — upstream/ MUST stay byte-pristine
       (FR-15), so this cannot be a direct edit to upstream/.
     find: 'assert data["website"].startswith("https://hermes-agent.nousresearch.com/")'
-    replace: 'assert data["website"].startswith("https://docs.nadicode.ai/argo/")'
+    replace: 'assert data["website"].startswith("https://docs.nadicode.ai/nadia/")'
   # ========================================================================
   # China-platform docs scrub (workflow-authored, one agent per static doc file).
   # Removes every reference to the stripped China messaging platforms (Feishu/Lark,
   # DingTalk, WeCom, Weixin/WeChat, QQ Bot, Yuanbao) from the SHIPPED docs — prose
   # lists, capability/env/toolset tables, mermaid nodes, setup links — so
-  # docs.nadicode.ai/argo stops advertising / dead-linking features the product
+  # docs.nadicode.ai/nadia stops advertising / dead-linking features the product
   # does not have. tools/check_no_china_in_docs.py is the zero-tolerance gate that
   # proves this set is complete and stays complete on future syncs. Each find is an
   # exact upstream substring; a drifted anchor FAILS the build loudly.

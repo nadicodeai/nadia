@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""tools/argo_release.py — workshop-side release driver (IU-FR-5, IU-AC-4, IU-AC-13).
+"""tools/nadia_release.py — workshop-side release driver (IU-FR-5, IU-AC-4, IU-AC-13).
 
 Workshop layout means ``__version__`` and ``__release_date__`` live ONLY inside
-the built ``dist/argo/argo_cli/__init__.py`` (gitignored on ``main``) — never as
+the built ``dist/nadia/nadia_cli/__init__.py`` (gitignored on ``main``) — never as
 a commit on ``main``. This script bumps those values in-place inside the built
-``dist/argo/``, tags ``main`` HEAD with the CalVer tag, builds a deterministic
+``dist/nadia/``, tags ``main`` HEAD with the CalVer tag, builds a deterministic
 tarball, creates the GitHub Release object (via ``gh release create``) **before**
 pushing the tag, then pushes the tag (firing ``.github/workflows/release.yml``).
 
@@ -20,7 +20,7 @@ It mirrors upstream's release driver shape but works from the workshop layout:
   shape. Mirrored at :func:`_gh_release_create`.
 
 Companion: ``.github/workflows/release.yml`` (separate M4.2 task) fires on the
-tag push and force-pushes ``dist/argo/`` to ``release`` + uploads assets. Its
+tag push and force-pushes ``dist/nadia/`` to ``release`` + uploads assets. Its
 first release-object consumer (``gh release view <tag>`` in the "Apply release
 bump" step) runs only AFTER checkout + setup + ``make build`` + leakage — so it
 does NOT require the release object at tag-push time, only minutes later. We
@@ -38,23 +38,23 @@ Pipeline (default invocation, no ``--dry-run``):
    not inside a git repo.
 2. Refuse a dirty worktree (``git status --porcelain`` must be empty).
 3. Resolve current ``__version__`` / ``__release_date__`` from
-   ``dist/argo/argo_cli/__init__.py`` if it exists; otherwise from
+   ``dist/nadia/nadia_cli/__init__.py`` if it exists; otherwise from
    ``upstream/hermes_cli/__init__.py`` (workshop fallback before first build).
 4. Compute new values: bump per ``--bump`` (default ``patch``) unless
    ``--version`` is supplied; release-date defaults to today as ``YYYY.M.D``
    (no zero-padding) unless ``--release-date`` is supplied.
-5. ``make build`` unless ``--skip-build`` (verifies ``dist/argo/`` exists).
-6. Regex-rewrite ``dist/argo/argo_cli/__init__.py`` (the two version strings)
-   and ``dist/argo/pyproject.toml`` (the top-level ``version`` line).
+5. ``make build`` unless ``--skip-build`` (verifies ``dist/nadia/`` exists).
+6. Regex-rewrite ``dist/nadia/nadia_cli/__init__.py`` (the two version strings)
+   and ``dist/nadia/pyproject.toml`` (the top-level ``version`` line).
 7. Verify the rewrites by reading the files back and re-grepping.
 8. Run ``make leakage-static``; abort on failure.
-9. Run ``python tools/run_assertions.py dist/argo``; abort on failure.
+9. Run ``python tools/run_assertions.py dist/nadia``; abort on failure.
 10. ``git tag -a v<release-date>`` pointing at workshop ``main`` HEAD.
 11. Build the deterministic tarball under
-    ``.sync-workdir/release-artifacts/argo-v<release-date>.tar.gz`` using
+    ``.sync-workdir/release-artifacts/nadia-v<release-date>.tar.gz`` using
     ``SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)`` and tar's
     ``--mtime``/``--sort``/``--owner``/``--group``/``--numeric-owner`` flags.
-12. Compute sha256 sums of the tarball + ``dist/argo/scripts/install.sh``
+12. Compute sha256 sums of the tarball + ``dist/nadia/scripts/install.sh``
     (+ ``install.ps1`` if present); write ``sha256sums.txt``.
 13. ``git push <remote> v<release-date>`` (unless ``--no-push``/``--dry-run``) —
     fires ``release.yml``. Pushing the tag is a prerequisite for the next step.
@@ -104,10 +104,10 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 
 REPO_ROOT_DEFAULT = Path(__file__).resolve().parent.parent
-DIST_DIR_REL = Path("dist") / "argo"
+DIST_DIR_REL = Path("dist") / "nadia"
 ARTIFACTS_DIR_REL = Path(".sync-workdir") / "release-artifacts"
 
-VERSION_FILE_REL = DIST_DIR_REL / "argo_cli" / "__init__.py"
+VERSION_FILE_REL = DIST_DIR_REL / "nadia_cli" / "__init__.py"
 PYPROJECT_FILE_REL = DIST_DIR_REL / "pyproject.toml"
 UPSTREAM_VERSION_FILE_REL = Path("upstream") / "hermes_cli" / "__init__.py"
 
@@ -354,7 +354,7 @@ def _read_text(path: Path) -> str:
 def _parse_current_versions(repo: Path) -> tuple[str, str, Path]:
     """Return ``(version, release_date, source_path)`` from the workshop tree.
 
-    Prefer ``dist/argo/argo_cli/__init__.py`` (post-build state) and fall back
+    Prefer ``dist/nadia/nadia_cli/__init__.py`` (post-build state) and fall back
     to ``upstream/hermes_cli/__init__.py`` when the build hasn't run yet.
     """
     candidates: list[Path] = [
@@ -489,7 +489,7 @@ def _apply_rewrites(repo: Path, state: VersionState, *, dry_run: bool) -> None:
     """Rewrite the two files; verify both rewrites by reading them back.
 
     In ``--dry-run`` mode, log the *planned* before→after lines but do not
-    write to disk; the dist/argo/ tree may not even exist yet, so the
+    write to disk; the dist/nadia/ tree may not even exist yet, so the
     file-existence preconditions are also dry-run-suppressed.
     """
     init_path = repo / VERSION_FILE_REL
@@ -590,7 +590,7 @@ def _run_leakage_static(repo: Path, *, dry_run: bool) -> None:
 
 
 def _run_assertions(repo: Path, *, dry_run: bool) -> None:
-    _log("python tools/run_assertions.py dist/argo")
+    _log("python tools/run_assertions.py dist/nadia")
     _run(
         [sys.executable, str(repo / "tools" / "run_assertions.py"), str(repo / DIST_DIR_REL)],
         cwd=repo,
@@ -607,7 +607,7 @@ def _run_assertions(repo: Path, *, dry_run: bool) -> None:
 
 def _create_tag(repo: Path, state: VersionState, *, dry_run: bool) -> None:
     head = "HEAD" if dry_run else _git_head_sha(repo)
-    title = f"Argo Agent v{state.new_version} ({state.new_release_date})"
+    title = f"Nadia Agent v{state.new_version} ({state.new_release_date})"
     _log(f"git tag -a {state.tag_name} -m {title!r} {head}")
     _run(
         ["git", "tag", "-a", state.tag_name, "-m", title, head],
@@ -650,7 +650,7 @@ def _build_tarball(repo: Path, state: VersionState, *, dry_run: bool) -> Path:
     ``--numeric-owner``) to satisfy IU-AC-12 (byte-identical tarballs).
     """
     artifacts_dir = repo / ARTIFACTS_DIR_REL
-    tarball = artifacts_dir / f"argo-{state.tag_name}.tar.gz"
+    tarball = artifacts_dir / f"nadia-{state.tag_name}.tar.gz"
     dist_dir = repo / DIST_DIR_REL
     if not dry_run:
         artifacts_dir.mkdir(parents=True, exist_ok=True)
@@ -745,7 +745,7 @@ def _release_notes(
     (the previous code hardcoded "First CalVer release" on EVERY release).
     """
     changelog_url = (
-        f"https://github.com/nadicodeai/argo/commits/{state.tag_name}"
+        f"https://github.com/nadicodeai/nadia/commits/{state.tag_name}"
     )
     if first_release:
         _log("--first-release: emitting static first-release note")
@@ -782,7 +782,7 @@ def _gh_release_create(
     (printed by ``gh``) or ``None`` in ``--dry-run`` mode. *notes* is supplied
     by :func:`_release_notes` (per-release changelog, not a hardcoded string).
     """
-    title = f"Argo Agent v{state.new_version} ({state.new_release_date})"
+    title = f"Nadia Agent v{state.new_version} ({state.new_release_date})"
     cmd: list[str] = [
         "gh", "release", "create", state.tag_name,
         "--title", title,
@@ -821,10 +821,10 @@ class CliArgs:
 
 def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        prog="argo_release.py",
+        prog="nadia_release.py",
         description=(
             "Workshop-side release driver: bump version + release-date in "
-            "dist/argo/, tag main HEAD, build deterministic tarball, create the "
+            "dist/nadia/, tag main HEAD, build deterministic tarball, create the "
             "GitHub Release object, then push the tag (firing release.yml)."
         ),
     )
@@ -871,7 +871,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--skip-build",
         action="store_true",
-        help="Skip `make build` (assumes dist/argo/ already exists). Useful for re-runs.",
+        help="Skip `make build` (assumes dist/nadia/ already exists). Useful for re-runs.",
     )
     p.add_argument(
         "--dry-run",
@@ -947,7 +947,7 @@ def run(args: CliArgs) -> int:
     # Does this re-introduce the race release.yml worried about? No. release.yml
     # fires on the tag push, but its first release-object consumer
     # (`gh release view <tag>` in the "Apply release bump" step) runs only AFTER
-    # checkout + argo-setup + `make build` + `make leakage-static` — minutes of
+    # checkout + nadia-setup + `make build` + `make leakage-static` — minutes of
     # runway. Creating the release object in the very next local step (seconds
     # after the push) wins that race with a wide margin. The workflow re-uploads
     # assets via `gh release upload --clobber`, so attaching them here is a
@@ -975,7 +975,7 @@ def run(args: CliArgs) -> int:
         _log(
             f"to finish manually: git push {args.remote} {state.tag_name} && "
             f"gh release create {state.tag_name} "
-            f"--title 'Argo Agent v{state.new_version} ({state.new_release_date})' "
+            f"--title 'Nadia Agent v{state.new_version} ({state.new_release_date})' "
             f"--notes-file <notes-file> {assets.tarball} {assets.install_sh} "
             f"{assets.sha256sums}"
         )

@@ -21,7 +21,7 @@ Layout note
 
 This file lives at repo-root ``tests/`` because it exercises the
 build-time ``tools/sync.py`` directly; it must not ship to customers
-under ``dist/argo/tests/``. Run with::
+under ``dist/nadia/tests/``. Run with::
 
     pytest tests/test_sync_resume.py -v
 """

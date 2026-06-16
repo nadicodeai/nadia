@@ -1,18 +1,18 @@
 """hermes_sync error hierarchy.
 
-All domain errors inherit from :class:`ArgoSyncError`.  Never raise the
+All domain errors inherit from :class:`NadiaSyncError`.  Never raise the
 bare base; use the specific subclass that carries the right context fields.
 """
 
 from __future__ import annotations
 
 
-class ArgoSyncError(RuntimeError):
+class NadiaSyncError(RuntimeError):
     """Base class for all hermes_sync domain errors."""
 
 
-class ConfigError(ArgoSyncError):
-    """Raised when argo-rename.yaml cannot be loaded or fails validation.
+class ConfigError(NadiaSyncError):
+    """Raised when nadia-rename.yaml cannot be loaded or fails validation.
 
     Attributes
     ----------
@@ -26,7 +26,7 @@ class ConfigError(ArgoSyncError):
         self.path = path
 
 
-class RenameConflictError(ArgoSyncError):
+class RenameConflictError(NadiaSyncError):
     """Raised when a rename target path already exists and would be clobbered.
 
     Attributes
@@ -45,7 +45,7 @@ class RenameConflictError(ArgoSyncError):
         self.target = target
 
 
-class BootstrapError(ArgoSyncError):
+class BootstrapError(NadiaSyncError):
     """Raised when a precondition for the initial bootstrap fails or when the
     bootstrap process cannot complete safely.
 
@@ -61,10 +61,10 @@ class BootstrapError(ArgoSyncError):
         self.step = step
 
 
-class UpstreamMergeConflict(ArgoSyncError):
+class UpstreamMergeConflict(NadiaSyncError):
     """Raised when a git merge conflict is encountered during upstream sync.
 
-    Used in M4 (argo update / git_ops layer).  The engine itself does not
+    Used in M4 (nadia update / git_ops layer).  The engine itself does not
     raise this; the git_ops layer does after detecting unresolved conflict
     markers left by ``git merge``.
 

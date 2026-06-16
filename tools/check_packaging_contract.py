@@ -1,6 +1,6 @@
 """tools/check_packaging_contract.py — fork-vs-upstream packaging-drift gate.
 
-Promotes ``dist/argo/Dockerfile`` — the rename of ``upstream/Dockerfile`` that
+Promotes ``dist/nadia/Dockerfile`` — the rename of ``upstream/Dockerfile`` that
 ``make build`` already produces — to the authoritative packaging ORACLE, and
 checks that the shipped ``./Dockerfile`` has not silently diverged from upstream's
 toolchain decisions.
@@ -190,7 +190,7 @@ def _check_stale_exceptions(oracle: Facets, manifest: dict, violations: list[str
 
 def check_packaging_contract(repo_root: Path) -> list[str]:
     """Run all checks; return violation strings. Raise on structural errors."""
-    oracle_path = repo_root / "dist" / "argo" / "Dockerfile"
+    oracle_path = repo_root / "dist" / "nadia" / "Dockerfile"
     shipped_path = repo_root / "Dockerfile"
     manifest_path = repo_root / "packaging-overrides.yaml"
 
@@ -214,7 +214,7 @@ def check_packaging_contract(repo_root: Path) -> list[str]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Verify the shipped Dockerfile has not silently diverged from "
-        "upstream's packaging (the renamed-upstream oracle dist/argo/Dockerfile)."
+        "upstream's packaging (the renamed-upstream oracle dist/nadia/Dockerfile)."
     )
     parser.add_argument(
         "--repo-root",

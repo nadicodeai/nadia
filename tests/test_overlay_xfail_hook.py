@@ -23,7 +23,7 @@ plugins facility) to materialize a temp directory that contains:
 
 - A copy of `overlay/conftest.py` at the temp rootdir (so pytester's
   inner pytest invocation auto-discovers it as its rootdir conftest).
-- A fixture `argo-xfail.yml` next to that conftest with the manifest
+- A fixture `nadia-xfail.yml` next to that conftest with the manifest
   content under test.
 - A `tests/` subdir with one or more synthetic test files.
 
@@ -61,8 +61,8 @@ def _stage_conftest(pytester: pytest.Pytester) -> None:
 
 
 def _write_manifest(pytester: pytest.Pytester, content: str) -> None:
-    """Write argo-xfail.yml at pytester's rootdir (next to conftest)."""
-    (pytester.path / "argo-xfail.yml").write_text(content, encoding="utf-8")
+    """Write nadia-xfail.yml at pytester's rootdir (next to conftest)."""
+    (pytester.path / "nadia-xfail.yml").write_text(content, encoding="utf-8")
 
 
 def _write_failing_test(pytester: pytest.Pytester) -> str:
@@ -100,7 +100,7 @@ def test_empty_manifest_is_noop(pytester: pytest.Pytester) -> None:
 
 
 def test_missing_manifest_is_noop(pytester: pytest.Pytester) -> None:
-    """A missing argo-xfail.yml must not crash collection or mark items."""
+    """A missing nadia-xfail.yml must not crash collection or mark items."""
     _stage_conftest(pytester)
     # Deliberately do NOT write a manifest.
     _write_failing_test(pytester)

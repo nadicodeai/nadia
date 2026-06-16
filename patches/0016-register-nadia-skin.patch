@@ -1,9 +1,9 @@
-Subject: Register generated Argo skin
+Subject: Register generated Nadia skin
 
-Add the generated NadicodeAI-driven argo skin as a built-in skin while
+Add the generated NadicodeAI-driven nadia skin as a built-in skin while
 keeping the volatile token colors and banner art in overlay. The patch
 only wires structure into skin_engine.py and extends the existing skin
-tests so dist/argo proves the generated skin loads and does not inherit
+tests so dist/nadia proves the generated skin loads and does not inherit
 Hermes caduceus/kawaii/war glyphs.
 
 Index: .sync-workdir/hermes_cli/skin_engine.py
@@ -15,14 +15,14 @@ Index: .sync-workdir/hermes_cli/skin_engine.py
  # =============================================================================
  
 +try:
-+    from hermes_cli._argo_skin import ARGO_SKIN_DATA as _ARGO_SKIN_DATA
++    from hermes_cli._nadia_skin import NADIA_SKIN_DATA as _NADIA_SKIN_DATA
 +except Exception:  # pragma: no cover - keeps upstream imports usable without overlay
-+    _ARGO_SKIN_DATA = {
-+        "name": "argo",
++    _NADIA_SKIN_DATA = {
++        "name": "nadia",
 +        "description": "NadicodeAI ink - generated skin data unavailable",
 +    }
  _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
-+    "argo": _ARGO_SKIN_DATA,
++    "nadia": _NADIA_SKIN_DATA,
      "default": {
          "name": "default",
          "description": "Classic Hermes — gold and kawaii",
@@ -34,11 +34,11 @@ Index: .sync-workdir/tests/hermes_cli/test_skin_engine.py
  
  
  class TestBuiltinSkins:
-+    def test_argo_skin_loads_with_generated_branding(self):
++    def test_nadia_skin_loads_with_generated_branding(self):
 +        from hermes_cli.skin_engine import load_skin
-+        skin = load_skin("argo")
-+        assert skin.name == "argo"
-+        assert skin.get_branding("agent_name") == "Argo"
++        skin = load_skin("nadia")
++        assert skin.name == "nadia"
++        assert skin.get_branding("agent_name") == "Nadia"
 +        assert skin.get_color("banner_title") == "#50e3c2"
 +        assert skin.get_color("ui_error") == "#cd212a"
 +        assert skin.banner_logo == ""
@@ -59,7 +59,7 @@ Index: .sync-workdir/tests/hermes_cli/test_skin_engine.py
          skins = list_skins()
          names = [s["name"] for s in skins]
          assert "default" in names
-+        assert "argo" in names
++        assert "nadia" in names
          assert "ares" in names
          assert "mono" in names
          assert "slate" in names

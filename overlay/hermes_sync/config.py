@@ -1,4 +1,4 @@
-"""RenameConfig — loads and validates argo-rename.yaml.
+"""RenameConfig — loads and validates nadia-rename.yaml.
 
 The YAML schema is::
 
@@ -52,7 +52,7 @@ class ExceptionRule:
 
 @dataclass(frozen=True)
 class RenameConfig:
-    """Immutable, validated snapshot of argo-rename.yaml.
+    """Immutable, validated snapshot of nadia-rename.yaml.
 
     Attributes
     ----------
@@ -61,7 +61,7 @@ class RenameConfig:
         more-specific tokens shadow shorter overlapping ones.
     exceptions:
         Glob paths whose file contents are left untouched by the rename
-        engine and skipped by ``argo doctor --static``.
+        engine and skipped by ``nadia doctor --static``.
     skip_contexts:
         Per-file-content regex patterns: matches inside these patterns are
         NOT rewritten (e.g. URLs, commit hashes).

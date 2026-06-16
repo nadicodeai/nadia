@@ -112,7 +112,7 @@ def test_non_gated_commit_skips_gate(sandbox: Path) -> None:
     assert _head(sandbox) != before
 
 
-@pytest.mark.parametrize("path", ["overlay/x.py", "tools/x.py", "argo-rename.yaml"])
+@pytest.mark.parametrize("path", ["overlay/x.py", "tools/x.py", "nadia-rename.yaml"])
 def test_all_gated_paths_trigger(sandbox: Path, path: str) -> None:
     """Every build-affecting path triggers the gate, not just patches/."""
     (sandbox / "FAIL_BUILD").write_text("", encoding="utf-8")

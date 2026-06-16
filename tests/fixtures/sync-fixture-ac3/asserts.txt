@@ -10,7 +10,7 @@ def cmd_existing(args, *, verbose=False)
 
 # From the fork patch (tail of file).
 def cmd_new_flag
-argo fork: --new-flag invoked
+nadia fork: --new-flag invoked
 
 # Unchanged context that must still be present.
 def main(argv=None)

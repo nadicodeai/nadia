@@ -1,4 +1,4 @@
-Subject: Default _resolve_update_branch() to "release" for argo customers
+Subject: Default _resolve_update_branch() to "release" for nadia customers
 
 Upstream's hermes_cli/main.py:8369 declares:
 
@@ -8,7 +8,7 @@ centralizing the `--branch` argument parsing for cmd_update's check
 path, git-update path, and ZIP-fallback path. The default is "main"
 because upstream's installable tree lives on `main`.
 
-argo's customer-facing tree lives on the long-lived `release` branch
+nadia's customer-facing tree lives on the long-lived `release` branch
 (spec line 28, IU-FR-3, IU-FR-4): `install.sh` is patched by
 0006-install-default-branch-release.patch to clone `release`, and the
 spec states "Both `install.sh` (curl URL) and `cmd_update`
@@ -19,13 +19,13 @@ branch via `git pull` with no explicit branch. In practice
 _cmd_update_impl resolves the target branch through
 _resolve_update_branch(args) at hermes_cli/main.py:6985, 8738, 8905
 and the result is passed to `git rev-list HEAD..origin/<branch>` and
-`git pull origin <branch>`. With the upstream default "main", an argo
+`git pull origin <branch>`. With the upstream default "main", an nadia
 customer who installed via the patched install.sh ends up:
 
   1. Cloned `release` (correct).
-  2. `argo update --check` reports
+  2. `nadia update --check` reports
      "Update available: N commits behind origin/main".
-  3. `argo update` switches local checkout to `main` (workshop —
+  3. `nadia update` switches local checkout to `main` (workshop —
      contains upstream/, patches/, .shepherd/, NOT runnable) and
      git-pulls — wrecking the install.
 
@@ -34,10 +34,10 @@ verification on a fresh Ubuntu 22.04 container — see progress.md for
 the captured "⚕ Update available: 82 commits behind origin/main"
 output.
 
-Flipping both literals on this single line to "release" makes argo's
+Flipping both literals on this single line to "release" makes nadia's
 cmd_update target the same branch install.sh cloned, satisfying
 spec IU-FR-7 and IU-AC-9 end-to-end. The --branch arg-parsing escape
-hatch is intact: developers can still pass `argo update --branch main`
+hatch is intact: developers can still pass `nadia update --branch main`
 explicitly to update against the workshop layout if they want to.
 
 The patch surgically touches only the default literal; the function

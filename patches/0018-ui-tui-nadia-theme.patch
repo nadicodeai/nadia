@@ -1,10 +1,10 @@
-Subject: Wire generated Argo theme into ui-tui
+Subject: Wire generated Nadia theme into ui-tui
 
-Use the generated Argo theme data as the Ink TUI default so pre-gateway
+Use the generated Nadia theme data as the Ink TUI default so pre-gateway
 
 startup surfaces and theme tests match the shipped CLI skin. Remove the
 
-remaining caduceus/kawaii startup glyphs from Argo-owned TUI status surfaces
+remaining caduceus/kawaii startup glyphs from Nadia-owned TUI status surfaces
 
 without changing the skin-driven fromSkin path.
 
@@ -14,12 +14,12 @@ Index: .sync-workdir/ui-tui/src/theme.ts
 +++ .sync-workdir/ui-tui/src/theme.ts
 @@ -1,3 +1,10 @@
 +import {
-+  ARGO_BANNER_HERO,
-+  ARGO_BANNER_LOGO,
-+  ARGO_BRAND,
-+  ARGO_DARK_THEME_COLORS,
-+  ARGO_LIGHT_THEME_COLORS
-+} from './argoTheme.generated.js'
++  NADIA_BANNER_HERO,
++  NADIA_BANNER_LOGO,
++  NADIA_BRAND,
++  NADIA_DARK_THEME_COLORS,
++  NADIA_LIGHT_THEME_COLORS
++} from './nadiaTheme.generated.js'
  export interface ThemeColors {
    primary: string
    accent: string
@@ -36,7 +36,7 @@ Index: .sync-workdir/ui-tui/src/theme.ts
 -  tool: '┊',
 -  helpHeader: '(^_^)? Commands'
 -}
-+const BRAND: ThemeBrand = ARGO_BRAND
++const BRAND: ThemeBrand = NADIA_BRAND
  
  const cleanPromptSymbol = (s: string | undefined, fallback: string) => {
    const cleaned = String(s ?? '')
@@ -86,14 +86,14 @@ Index: .sync-workdir/ui-tui/src/theme.ts
 -    diffRemovedWord: 'rgb(207,34,46)',
 -    shellDollar: '#4dabf7'
 -  },
-+  color: ARGO_DARK_THEME_COLORS,
++  color: NADIA_DARK_THEME_COLORS,
  
    brand: BRAND,
  
 -  bannerLogo: '',
 -  bannerHero: ''
-+  bannerLogo: ARGO_BANNER_LOGO,
-+  bannerHero: ARGO_BANNER_HERO
++  bannerLogo: NADIA_BANNER_LOGO,
++  bannerHero: NADIA_BANNER_HERO
  }
  
 -// Light-terminal palette: darker golds/ambers that stay legible on white
@@ -135,14 +135,14 @@ Index: .sync-workdir/ui-tui/src/theme.ts
 -    diffRemovedWord: 'rgb(183,28,28)',
 -    shellDollar: '#1565C0'
 -  },
-+  color: ARGO_LIGHT_THEME_COLORS,
++  color: NADIA_LIGHT_THEME_COLORS,
  
    brand: BRAND,
  
 -  bannerLogo: '',
 -  bannerHero: ''
-+  bannerLogo: ARGO_BANNER_LOGO,
-+  bannerHero: ARGO_BANNER_HERO
++  bannerLogo: NADIA_BANNER_LOGO,
++  bannerHero: NADIA_BANNER_HERO
  }
  
  const TRUE_RE = /^(?:1|true|yes|on)$/
@@ -175,7 +175,7 @@ Index: .sync-workdir/ui-tui/src/app/uiStore.ts
    showReasoning: false,
    sid: null,
 -  status: 'summoning hermes…',
-+  status: 'readying argo…',
++  status: 'readying nadia…',
    statusBar: 'top',
    streaming: true,
    theme: DEFAULT_THEME,
@@ -238,7 +238,7 @@ Index: .sync-workdir/ui-tui/src/__tests__/theme.test.ts
 -    expect(DEFAULT_THEME.brand.name).toBe('Hermes Agent')
 -    expect(DEFAULT_THEME.brand.prompt).toBe('❯')
 -    expect(DEFAULT_THEME.brand.tool).toBe('┊')
-+    expect(DEFAULT_THEME.brand.name).toBe('Argo')
++    expect(DEFAULT_THEME.brand.name).toBe('Nadia')
 +    expect(DEFAULT_THEME.brand.prompt).toBe('>')
 +    expect(DEFAULT_THEME.brand.tool).toBe('|')
 +    expect(DEFAULT_THEME.bannerLogo).toBe('')

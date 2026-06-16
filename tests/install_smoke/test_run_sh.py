@@ -31,7 +31,7 @@ RUN_SH = REPO_ROOT / "tests" / "install_smoke" / "run.sh"
 @pytest.mark.slow
 @pytest.mark.timeout(900)  # default pytest.ini timeout is 30s; this harness is Docker-heavy
 def test_install_smoke_run_sh_exits_zero() -> None:
-    """`bash tests/install_smoke/run.sh` exits 0 on the live release URL."""
+    """`bash tests/install_smoke/run.sh` exits 0 on a local release dry run."""
     if os.environ.get("SKIP_DOCKER_SMOKE") == "1":
         pytest.skip("SKIP_DOCKER_SMOKE=1 set; skipping Docker-driven smoke test")
     if shutil.which("docker") is None:

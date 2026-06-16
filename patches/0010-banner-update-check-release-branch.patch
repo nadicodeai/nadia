@@ -13,11 +13,11 @@ The check hardcodes `origin/main` at three call sites:
 
 This is a separate code path from `_cmd_update_*` (fixed by
 0009-update-default-branch-release.patch). The banner runs unconditionally
-on startup; cmd_update runs only when the user types `argo update`.
+on startup; cmd_update runs only when the user types `nadia update`.
 
-For an argo customer who installed via the patched install.sh (which
+For an nadia customer who installed via the patched install.sh (which
 clones `release` per 0006-install-default-branch-release.patch) and whose
-`argo update` resolves to `release` per patch 0009, the banner's
+`nadia update` resolves to `release` per patch 0009, the banner's
 `origin/main` reference points at the workshop branch — a completely
 different history that contains M-series shepherd loops, build-tool
 patches, refactors, etc. that never propagate to `release` until a tag
@@ -26,25 +26,25 @@ fires `.github/workflows/release.yml`.
 The customer-facing symptom (observed on v2026.5.29 fresh install in
 ubuntu:22.04, 2026-05-29):
 
-  $ argo --version
-  Argo Agent v0.14.1 (2026.5.29)
-  Update available: 108 commits behind — run 'argo update'
+  $ nadia --version
+  Nadia Agent v0.14.1 (2026.5.29)
+  Update available: 108 commits behind — run 'nadia update'
 
-  $ argo update --check
+  $ nadia update --check
   → Fetching from origin...
   ✓ Already up to date.
 
-Customer sees "108 commits behind", runs `argo update`, gets "Already
+Customer sees "108 commits behind", runs `nadia update`, gets "Already
 up to date" — confusing contradiction that undermines trust in the
 update mechanism. The bug is in the banner, not in cmd_update.
 
 Same fix as patch 0009: literal swap `main` → `release` at the three
-call sites. argo's customer surface lives on `release`; the banner
+call sites. nadia's customer surface lives on `release`; the banner
 should compare against the branch the customer's install actually tracks.
 
 Developers who install via `curl ... | bash -s -- --branch main` still
 see incorrect banner counts; they can ignore them (the cmd_update
-override `argo update --branch main` is the dev workflow).
+override `nadia update --branch main` is the dev workflow).
 
 A future patch may switch banner.py to detect the current branch
 dynamically via `git symbolic-ref --short HEAD`, removing the

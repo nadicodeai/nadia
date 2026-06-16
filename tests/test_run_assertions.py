@@ -83,10 +83,10 @@ def test_failed_literal_assertion(tmp_path: Path) -> None:
 
 def test_satisfied_regex_assertion(tmp_path: Path) -> None:
     repo = _make_fake_repo(tmp_path)
-    _add_patch(repo, "0001-test.patch", ["regex:def\\s+cmd_argo_\\w+"])
+    _add_patch(repo, "0001-test.patch", ["regex:def\\s+cmd_nadia_\\w+"])
     target = tmp_path / "target"
     target.mkdir()
-    (target / "f.py").write_text("def cmd_argo_update(args): pass\n", encoding="utf-8")
+    (target / "f.py").write_text("def cmd_nadia_update(args): pass\n", encoding="utf-8")
     result = _run_in(repo, target)
     assert result.returncode == 0, result.stderr
 

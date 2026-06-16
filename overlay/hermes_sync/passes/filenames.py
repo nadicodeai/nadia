@@ -36,7 +36,7 @@ unconditionally skipped, regardless of the exception globs:
 
 * ``.git``
 * ``.venv``
-* ``.argo``
+* ``.nadia``
 * ``__pycache__``
 * ``node_modules``
 
