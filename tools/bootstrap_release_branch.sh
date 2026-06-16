@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # tools/bootstrap_release_branch.sh
 #
-# One-shot helper: seed the long-lived `release` branch on `nadicodeai/nadia`
+# One-shot helper: seed the long-lived `release` branch on `nadicodeai/argo`
 # with the renamed `dist/nadia/` tree. Closes M2.2 (IU-FR-3, IU-AC-2, IU-AC-3).
 #
 # Architecture (see .shepherd/install-update/standards.md):

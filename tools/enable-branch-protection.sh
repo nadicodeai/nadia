@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Apply main-branch protection to nadicodeai/nadia (issue #5).
+# Apply main-branch protection to nadicodeai/argo (issue #5).
 #
 # Prerequisite: the repository must be PUBLIC, on a GitHub Pro plan, or on
 # a Team / Enterprise plan. GitHub Free does NOT expose branch-protection
@@ -14,7 +14,7 @@
 
 set -euo pipefail
 
-REPO="${REPO:-nadicodeai/nadia}"
+REPO="${REPO:-nadicodeai/argo}"
 BRANCH="${BRANCH:-main}"
 
 REQUIRED_CHECKS=(

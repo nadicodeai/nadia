@@ -5,7 +5,7 @@ set -euo pipefail
 
 NADIA_HOME="${NADIA_HOME:-${HOME}/.nadia}"
 NADIA_INSTALL_DIR="${NADIA_INSTALL_DIR:-}"
-INSTALL_URL="${NADIA_INSTALL_URL:-https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.sh}"
+INSTALL_URL="${NADIA_INSTALL_URL:-https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh}"
 
 DRY_RUN=0
 PRINT_PACKAGES=0

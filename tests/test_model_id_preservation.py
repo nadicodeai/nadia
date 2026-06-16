@@ -157,7 +157,7 @@ def test_real_external_url_without_shellvar_still_preserved(rename) -> None:
         ("hermes_constants", "nadia_constants"),
         # the upstream REPO url must point at the fork, NOT be mistaken for a model id
         ("https://github.com/NousResearch/hermes-agent.git",
-         "https://github.com/nadicodeai/nadia.git"),
+         "https://github.com/nadicodeai/argo.git"),
         ("hermes-brain:qwen3-14b-ctx16k", "nadia-brain:qwen3-14b-ctx16k"),  # not a Hermes 3/4 id
         # IRC nick-collision retry suffixes (plugins/platforms/irc/adapter.py
         # appends hermes_, hermes_1, hermes_2, hermes_3, hermes_4, …). The bare

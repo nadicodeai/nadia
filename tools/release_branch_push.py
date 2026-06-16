@@ -4,7 +4,7 @@
 Invoked by ``.github/workflows/release.yml`` after a successful
 ``make build`` + ``make leakage-static`` gate. Closes the IU-FR-3 /
 IU-AC-3 storefront-branch contract: the long-lived ``release`` branch on
-``nadicodeai/nadia`` carries the renamed ``dist/nadia/`` tree only — no
+``nadicodeai/argo`` carries the renamed ``dist/nadia/`` tree only — no
 patches/, no .shepherd/, no rename engine source.
 
 Architecture (.shepherd/install-update/standards.md § Architecture):
@@ -36,7 +36,7 @@ Usage::
 
     python tools/release_branch_push.py \\
         --dist-root dist/nadia \\
-        --remote-url https://github.com/nadicodeai/nadia.git \\
+        --remote-url https://github.com/nadicodeai/argo.git \\
         --branch release \\
         --source-sha "$(git rev-parse HEAD)" \\
         [--dry-run]
@@ -220,7 +220,7 @@ def _prepare_scratch() -> Path:
 def _strip_release_workflows(scratch: Path) -> None:
     """Remove ``.github/workflows/`` from the storefront tree before commit.
 
-    The ``release`` branch is a real branch on nadicodeai/nadia, and CI pushes
+    The ``release`` branch is a real branch on nadicodeai/argo, and CI pushes
     it with the Actions ``GITHUB_TOKEN``. GitHub forbids that token from
     creating or updating any file under ``.github/workflows/``: it lacks the
     ``workflow`` OAuth scope, and that scope CANNOT be granted to GITHUB_TOKEN
@@ -559,7 +559,7 @@ def _build_parser() -> argparse.ArgumentParser:
         metavar="URL",
         help=(
             "Git remote URL to push to "
-            "(e.g. https://x-access-token:TOKEN@github.com/nadicodeai/nadia.git)."
+            "(e.g. https://x-access-token:TOKEN@github.com/nadicodeai/argo.git)."
         ),
     )
     p.add_argument(

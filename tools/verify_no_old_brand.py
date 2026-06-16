@@ -4,6 +4,10 @@
 This is the Nadia migration companion to verify_no_leakage.py. The existing
 leakage scanner catches upstream `hermes` under-renames. This scanner catches
 the old fork brand, `argo`, after the fork brand has moved to Nadia.
+
+The live GitHub repository still uses the historical `nadicodeai/argo` slug.
+That repository identifier is allowed; product names, commands, paths, and env
+vars must still be Nadia.
 """
 
 from __future__ import annotations
@@ -32,6 +36,15 @@ OLD_BRAND_RE = re.compile(
     r"ARGO[A-Z0-9_]*\b|"
     r"Argo(?:[A-Z][A-Za-z0-9_]*|[-_][A-Za-z0-9_-]*|\b)|"
     r"argo(?:[A-Z][A-Za-z0-9_]*|[-_][A-Za-z0-9_-]*|\b)"
+    r")"
+)
+
+ALLOWED_REPO_SLUG_RE = re.compile(
+    r"(?:"
+    r"https://github\.com/nadicodeai/argo(?:\.git)?(?:/[^\s\"'<>)]*)?(?=$|[\s\"'<>),.;])|"
+    r"git@github\.com:nadicodeai/argo(?:\.git)?(?=$|[\s\"'<>),.;])|"
+    r"raw\.githubusercontent\.com/nadicodeai/argo(?:/[^\s\"'<>)]*)?(?=$|[\s\"'<>),.;])|"
+    r"\bnadicodeai/argo(?=$|[^A-Za-z0-9_-])"
     r")"
 )
 
@@ -67,7 +80,8 @@ def scan_file(path: Path, report: OldBrandReport) -> None:
         return
 
     for lineno, line in enumerate(text.splitlines(), start=1):
-        if OLD_BRAND_RE.search(line):
+        searchable_line = ALLOWED_REPO_SLUG_RE.sub("", line)
+        if OLD_BRAND_RE.search(searchable_line):
             report.add_line(path, lineno, line)
 
 

@@ -209,52 +209,52 @@ content_edits:
       Upstream now documents the short hermes-agent.nousresearch.com install
       URLs inside the kept installer. The Nadia release tree is the only
       customer-runnable install surface, so shipped installer help must point at
-      raw.githubusercontent.com/nadicodeai/nadia/release rather than the upstream
+      raw.githubusercontent.com/nadicodeai/argo/release rather than the upstream
       host.
     find: "https://hermes-agent.nousresearch.com/install.sh"
-    replace: "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.sh"
+    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh"
   - name: install-sh-windows-release-shortlink
     file: scripts/install.sh
     why: >-
       The POSIX installer prints the Windows one-liner when the OS is wrong.
       Keep that recovery hint on the Nadia release branch too.
     find: "https://hermes-agent.nousresearch.com/install.ps1"
-    replace: "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.ps1"
+    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1"
   - name: install-ps1-release-shortlinks
     file: scripts/install.ps1
     why: >-
       Windows installer comments and recovery output must point at the shipped
       Nadia release-branch script, not the upstream Hermes shortlink.
     find: "https://hermes-agent.nousresearch.com/install.ps1"
-    replace: "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.ps1"
+    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1"
   - name: install-cmd-release-shortlinks
     file: scripts/install.cmd
     why: >-
       install.cmd is a live Windows bootstrapper; its PowerShell bootstrap URL
       must fetch the Nadia release-branch installer.
     find: "https://hermes-agent.nousresearch.com/install.ps1"
-    replace: "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.ps1"
+    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1"
   - name: cli-update-reinstall-release-shortlink
     file: hermes_cli/main.py
     why: >-
       The update reinstall hint is a customer-facing recovery path. Point it at
       the Nadia release-branch installer so it can run from the published tree.
     find: "https://hermes-agent.nousresearch.com/install.sh"
-    replace: "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.sh"
+    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh"
   - name: uninstall-reinstall-release-shortlinks
     file: hermes_cli/uninstall.py
     why: >-
       The uninstall flow prints reinstall commands after removal. Keep both
       POSIX and Windows reinstall hints on the Nadia release branch.
     find: "https://hermes-agent.nousresearch.com/install.sh"
-    replace: "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.sh"
+    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh"
   - name: uninstall-windows-reinstall-release-shortlink
     file: hermes_cli/uninstall.py
     why: >-
       The Windows reinstall hint emitted by uninstall.py must also use the
       shipped Nadia release-branch installer.
     find: "https://hermes-agent.nousresearch.com/install.ps1"
-    replace: "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.ps1"
+    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1"
   - name: update-command-tests-patch-slash-commands-file
     file: tests/gateway/test_update_command.py
     why: >-
@@ -389,7 +389,7 @@ content_edits:
       reach inside it), leaving it pointed upstream. Flip it to the GHCR package
       versions page here (runs pre-rebrand on the exact upstream URL).
     find: "https://hub.docker.com/r/nousresearch/hermes-agent/tags"
-    replace: "https://github.com/nadicodeai/nadia/pkgs/container/nadia"
+    replace: "https://github.com/nadicodeai/argo/pkgs/container/nadia"
   # ---- ACP registry manifest test: assert the rebranded docs host ----
   - name: acp-manifest-test-docs-host
     file: tests/acp/test_registry_manifest.py

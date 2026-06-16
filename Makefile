@@ -225,7 +225,7 @@ check-packaging-contract:
 # M5.2: Docker-driven install.sh smoke harness.
 #
 # Pulls the renamed install.sh from a local release-branch dry run by default
-# (use tests/install_smoke/run.sh --live after the public repo rename),
+# (use tests/install_smoke/run.sh --live after the public release branch updates),
 # runs it in a clean ubuntu:22.04 container, and asserts five invariants
 # (.install_method=git, nadia --version exits 0, banner matches hermes regex,
 # no "Updating from fork" warning, no ~/.hermes/ leakage). Closes IU-AC-4,

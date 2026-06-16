@@ -16,11 +16,13 @@ from __future__ import annotations
 GENERATED_FROM: str = 'nadia-rename.yaml'
 
 MAPPINGS: tuple[tuple[str, str], ...] = (
-    ('NousResearch/hermes-agent/main/scripts/install', 'nadicodeai/nadia/release/scripts/install'),
+    ('NousResearch/hermes-agent/main/scripts/install', 'nadicodeai/argo/release/scripts/install'),
+    ('git@github.com:nousresearch/hermes-agent', 'git@github.com:nadicodeai/argo'),
+    ('github.com/nousresearch/hermes-agent', 'github.com/nadicodeai/argo'),
     ('hermes-agent.nousresearch.com/docs', 'docs.nadicode.ai/nadia'),
     ('ghcr.io/nousresearch/hermes-agent', 'ghcr.io/nadicodeai/nadia'),
-    ('NousResearch/hermes-agent', 'nadicodeai/nadia'),
-    ('NousResearch/Hermes-Agent', 'nadicodeai/nadia'),
+    ('NousResearch/hermes-agent', 'nadicodeai/argo'),
+    ('NousResearch/Hermes-Agent', 'nadicodeai/argo'),
     ('nousresearch/hermes-agent', 'ghcr.io/nadicodeai/nadia'),
     ('hermes_tools_mcp_server', 'nadia_tools_mcp_server'),
     ('hermes_bootstrap', 'nadia_bootstrap'),
@@ -61,6 +63,7 @@ SKIP_CONTEXTS: tuple[str, ...] = (
     'https?://(?!(?:(?:raw\\.)?github(?:usercontent)?\\.com/(?i:NousResearch/hermes-agent)\\b|hermes-agent\\.local|hermes-agent\\.nousresearch\\.com/docs\\b))[^\\s"\'\\\\${}]*',
     '\\b[0-9a-f]{40}\\b',
     '\\b[0-9a-f]{64}\\b',
+    '(?i)\\bNousResearch/(?:[A-Za-z0-9_.-]+-hermes-agent|hermes-agent-[A-Za-z0-9_.-]+)\\b',
     '(?i)\\bnous[- ]hermes[\\w./-]*',
     '(?i)\\bhermes(?:[- .]?[234](?![>])[\\w.:+-]*|_[234][\\w.:+-]+)',
     'hermes\\[-_ \\]\\?\\[34\\]',

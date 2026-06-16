@@ -42,7 +42,7 @@ set -euo pipefail
 
 readonly CONTAINER_NAME="nadia-update-smoke-$$"
 readonly IMAGE="ubuntu:22.04"
-readonly LIVE_INSTALL_URL="https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.sh"
+readonly LIVE_INSTALL_URL="https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 LOG_DIR="${REPO_ROOT}/.sync-workdir/update-smoke"
@@ -166,8 +166,8 @@ if [ -n "$LOCAL_TRANSPORT_URL" ]; then
             set -euo pipefail
             git config --global --add safe.directory /tmp/nadia-release 2>/dev/null || true
             git config --global --add safe.directory /tmp/nadia-release/.git 2>/dev/null || true
-            git config --global "url.${NADIA_LOCAL_REPO_URL}.insteadOf" "https://github.com/nadicodeai/nadia.git"
-            git config --global --add "url.${NADIA_LOCAL_REPO_URL}.insteadOf" "git@github.com:nadicodeai/nadia.git"
+            git config --global "url.${NADIA_LOCAL_REPO_URL}.insteadOf" "https://github.com/nadicodeai/argo.git"
+            git config --global --add "url.${NADIA_LOCAL_REPO_URL}.insteadOf" "git@github.com:nadicodeai/argo.git"
         '
 fi
 
@@ -185,7 +185,7 @@ if [ -n "$LOCAL_TRANSPORT_URL" ]; then
         set -euo pipefail
         for repo in /usr/local/lib/nadia-agent "$HOME/.nadia/nadia-agent"; do
             if [ -d "$repo/.git" ]; then
-                git -C "$repo" config remote.origin.url https://github.com/nadicodeai/nadia.git
+                git -C "$repo" config remote.origin.url https://github.com/nadicodeai/argo.git
             fi
         done
     '

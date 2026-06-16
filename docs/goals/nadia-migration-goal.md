@@ -12,6 +12,7 @@ Migrate this repository's fork brand from Argo to Nadia so every fork-owned and 
 - Patches and overlay source remain authored against upstream `hermes` names.
 - The build-time rename engine remains the mechanism that turns upstream `hermes` surfaces into the fork's customer-visible Nadia surfaces.
 - The shipped agent is called `nadia`, not `argo`.
+- Important caveat: the live GitHub repository remains `nadicodeai/argo` unless Vadim explicitly approves a repo rename. GitHub clone URLs, raw install URLs, issue links, release links, and GitHub API targets must keep that repo slug while the product, command, package, image, paths, and runtime branding become Nadia.
 
 ## Baseline
 
@@ -54,6 +55,7 @@ Change all Argo fork-brand surfaces to Nadia, including at minimum:
 - User-facing docs, README, AGENTS references, Shepherd loop docs that remain active, and goal/plan docs that future agents will read.
 - Generated skin and preview surfaces currently carrying Argo names.
 - File names that include `argo`, where they are fork-owned rather than upstream historical references.
+- GitHub repository transport and issue-tracker surfaces stay on `nadicodeai/argo` until the separate public repo-rename gate is approved. Treat this as an allowed historical slug, not a product brand.
 
 Historical references may remain only when they are intentionally about old Argo history, attribution, prior releases, or migration context. Every retained Argo occurrence must be justified in a documented allowlist or in an inline comment near the verifier.
 
@@ -65,6 +67,7 @@ Historical references may remain only when they are intentionally about old Argo
 - Do not publish to PyPI unless Vadim explicitly reverses the existing no-PyPI decision.
 - Do not redesign install or update behavior. Preserve current behavior, renamed to Nadia.
 - Do not rename the public GitHub repo, force-push `release`, publish GHCR images, change DNS/docs hosting, or cut a release without explicit approval.
+- Do not point GitHub clone/raw/issue/release URLs at `nadicodeai/nadia` while the public repository remains `nadicodeai/argo`.
 
 ## Approval Gates
 
@@ -103,7 +106,7 @@ The final verified state must prove:
 - `nadia --version` exits 0 and prints `Nadia Agent v... (...)`.
 - A fresh install writes `~/.nadia/.install_method` containing `git`.
 - The update path runs as Nadia and does not print the fork warning.
-- No unapproved `argo`, `Argo`, or `ARGO` remains in the built customer tree.
+- No unapproved `argo`, `Argo`, or `ARGO` remains in the built customer tree. `nadicodeai/argo` is approved only as the live GitHub repository slug.
 - No unapproved Argo filenames remain in fork-owned source.
 - Existing protected Hermes external identifiers remain protected. Do not break Nous model IDs, OAuth client IDs, attribution strings, or other wire-protocol identifiers that must stay Hermes.
 - The renamed upstream test suite still runs against the built tree.
@@ -116,6 +119,7 @@ Add or update focused checks as needed:
 - A config-aware Argo-leakage scanner, analogous to the current Hermes leakage scanner, with positive and negative fixtures.
 - Tests proving rename mappings now produce Nadia outputs from Hermes inputs.
 - Tests proving install URLs point at the correct Nadia release branch surface.
+- Tests proving install URLs point at the correct `nadicodeai/argo` release branch surface while installing Nadia.
 - Tests proving smoke harnesses assert `nadia`, `~/.nadia`, and `NADIA_*`.
 - Tests proving release title parsing accepts `Nadia Agent v... (...)`.
 - File-name inventory checks for old Argo paths.

@@ -7,7 +7,7 @@ Index: .sync-workdir/CONTRIBUTING.md
  
  ```bash
 -git clone https://github.com/NousResearch/hermes-agent.git
-+git clone https://github.com/nadicodeai/nadia.git
++git clone https://github.com/nadicodeai/argo.git
  cd hermes-agent
  
  # Create venv with Python 3.11
@@ -16,7 +16,7 @@ Index: .sync-workdir/CONTRIBUTING.md
  ## Reporting Issues
  
 -- Use [GitHub Issues](https://github.com/NousResearch/hermes-agent/issues)
-+- Use [GitHub Issues](https://github.com/nadicodeai/nadia/issues)
++- Use [GitHub Issues](https://github.com/nadicodeai/argo/issues)
  - Include: OS, Python version, Hermes version (`hermes version`), full error traceback
  - Include steps to reproduce
  - Check existing issues before creating duplicates
@@ -29,19 +29,19 @@ Index: .sync-workdir/README.md
  
  ```bash
 -curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
-+curl -fsSL https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.sh | bash
++curl -fsSL https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh | bash
  ```
  
  ### Windows (native, PowerShell)
  
 -> **Heads up:** Native Windows runs Hermes without WSL — CLI, gateway, TUI, and tools all work natively. If you'd rather use WSL2, the Linux/macOS one-liner above works there too. Found a bug? Please [file issues](https://github.com/NousResearch/hermes-agent/issues).
-+> **Heads up:** Native Windows runs Hermes without WSL — CLI, gateway, TUI, and tools all work natively. If you'd rather use WSL2, the Linux/macOS one-liner above works there too. Found a bug? Please [file issues](https://github.com/nadicodeai/nadia/issues).
++> **Heads up:** Native Windows runs Hermes without WSL — CLI, gateway, TUI, and tools all work natively. If you'd rather use WSL2, the Linux/macOS one-liner above works there too. Found a bug? Please [file issues](https://github.com/nadicodeai/argo/issues).
  
  Run this in PowerShell:
  
  ```powershell
 -iex (irm https://hermes-agent.nousresearch.com/install.ps1)
-+iex (irm https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.ps1)
++iex (irm https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1)
  ```
  
  The installer handles everything: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **and a portable Git Bash** (MinGit, unpacked to `%LOCALAPPDATA%\hermes\git` — no admin required, completely isolated from any system Git install). Hermes uses this bundled Git Bash to run shell commands.
@@ -50,7 +50,7 @@ Index: .sync-workdir/README.md
  
  ```bash
 -git clone https://github.com/NousResearch/hermes-agent.git
-+git clone https://github.com/nadicodeai/nadia.git
++git clone https://github.com/nadicodeai/argo.git
  cd hermes-agent
  ./setup-hermes.sh     # installs uv, creates venv, installs .[all], symlinks ~/.local/bin/hermes
  ./hermes              # auto-detects the venv, no need to `source` first
@@ -59,7 +59,7 @@ Index: .sync-workdir/README.md
  - 💬 [Discord](https://discord.gg/NousResearch)
  - 📚 [Skills Hub](https://agentskills.io)
 -- 🐛 [Issues](https://github.com/NousResearch/hermes-agent/issues)
-+- 🐛 [Issues](https://github.com/nadicodeai/nadia/issues)
++- 🐛 [Issues](https://github.com/nadicodeai/argo/issues)
  - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — Linux desktop-control MCP server for Hermes and other MCP hosts, with AT-SPI accessibility trees, Wayland/X11 input, screenshots, and compositor window targeting.
  - 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Community WeChat bridge: Run Hermes Agent and OpenClaw on the same WeChat account.
  
@@ -72,7 +72,7 @@ Index: .sync-workdir/README.zh-CN.md
  
  ```bash
 -curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
-+curl -fsSL https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.sh | bash
++curl -fsSL https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh | bash
  ```
  
  支持 Linux、macOS、WSL2 和 Android (Termux)。安装程序会自动处理平台特定的配置。
@@ -81,7 +81,7 @@ Index: .sync-workdir/README.zh-CN.md
  
  ```bash
 -git clone https://github.com/NousResearch/hermes-agent.git
-+git clone https://github.com/nadicodeai/nadia.git
++git clone https://github.com/nadicodeai/argo.git
  cd hermes-agent
  ./setup-hermes.sh     # 安装 uv、创建 venv、安装 .[all]、创建符号链接 ~/.local/bin/hermes
  ./hermes              # 自动检测 venv，无需先 source
@@ -91,8 +91,8 @@ Index: .sync-workdir/README.zh-CN.md
  - 📚 [技能中心](https://agentskills.io)
 -- 🐛 [问题反馈](https://github.com/NousResearch/hermes-agent/issues)
 -- 💡 [讨论区](https://github.com/NousResearch/hermes-agent/discussions)
-+- 🐛 [问题反馈](https://github.com/nadicodeai/nadia/issues)
-+- 💡 [讨论区](https://github.com/nadicodeai/nadia/discussions)
++- 🐛 [问题反馈](https://github.com/nadicodeai/argo/issues)
++- 💡 [讨论区](https://github.com/nadicodeai/argo/discussions)
  - 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — 社区微信桥接：在同一微信账号上运行 Hermes Agent 和 OpenClaw。
  
  ---

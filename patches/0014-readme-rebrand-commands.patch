@@ -31,7 +31,7 @@ Index: .sync-workdir/README.md
  <table>
  <tr><td><b>A real terminal interface</b></td><td>Full TUI with multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output.</td></tr>
 @@ -51,19 +51,19 @@ Run this in PowerShell:
- iex (irm https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.ps1)
+ iex (irm https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1)
  ```
  
 -The installer handles everything: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **and a portable Git Bash** (MinGit, unpacked to `%LOCALAPPDATA%\hermes\git` — no admin required, completely isolated from any system Git install). Hermes uses this bundled Git Bash to run shell commands.
@@ -144,7 +144,7 @@ Index: .sync-workdir/README.md
  
 @@ -188,8 +188,8 @@ Quick start for contributors — clone a
  ```bash
- git clone https://github.com/nadicodeai/nadia.git
+ git clone https://github.com/nadicodeai/argo.git
  cd hermes-agent
 -./setup-hermes.sh     # installs uv, creates venv, installs .[all], symlinks ~/.local/bin/hermes
 -./hermes              # auto-detects the venv, no need to `source` first
@@ -265,7 +265,7 @@ Index: .sync-workdir/README.zh-CN.md
  
 @@ -169,8 +169,8 @@ 贡献者快速开始——克隆并使�
  ```bash
- git clone https://github.com/nadicodeai/nadia.git
+ git clone https://github.com/nadicodeai/argo.git
  cd hermes-agent
 -./setup-hermes.sh     # 安装 uv、创建 venv、安装 .[all]、创建符号链接 ~/.local/bin/hermes
 -./hermes              # 自动检测 venv，无需先 source

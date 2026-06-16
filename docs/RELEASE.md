@@ -120,7 +120,7 @@ older release left them), the first push that removes them must come from a
 ```bash
 make build && python tools/apply_release_bump.py --version <ver> --release-date <date>
 python tools/release_branch_push.py --dist-root dist/nadia \
-  --remote-url git@github.com:nadicodeai/nadia.git --branch release \
+  --remote-url git@github.com:nadicodeai/argo.git --branch release \
   --source-sha "$(git rev-parse HEAD)"
 ```
 

@@ -48,7 +48,7 @@ def test_get_origin_url_ignores_insteadof_transport_rewrite(tmp_path: Path) -> N
     repo = tmp_path / "repo"
     repo.mkdir()
     assert _git(repo, "init", "-q").returncode == 0
-    official = "https://github.com/nadicodeai/nadia.git"
+    official = "https://github.com/nadicodeai/argo.git"
     local_transport = "file:///tmp/nadia-release"
     assert _git(repo, "remote", "add", "origin", official).returncode == 0
     assert (
