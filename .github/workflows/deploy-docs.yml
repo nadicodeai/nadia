@@ -49,7 +49,7 @@ concurrency:
 jobs:
   deploy-docs:
     name: build (renamed) + deploy to Vercel
-    if: github.repository == 'nadicodeai/nadia'
+    if: github.repository == 'nadicodeai/argo'
     runs-on: ubuntu-latest
     env:
       DOCS_URL: https://docs.nadicode.ai

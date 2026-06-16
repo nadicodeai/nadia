@@ -150,6 +150,17 @@ groups:
       - AGENTS.md
       - CONTRIBUTING.md
 
+  - name: stale-python-metadata
+    why: >-
+      Upstream carries a checked-in hermes_agent.egg-info directory generated
+      for the upstream package. After filename rebrand it becomes
+      nadia_agent.egg-info, but its contents still name hermes-agent entry
+      points, modules, and requirements. The dist tree must let installers
+      generate fresh Nadia metadata from pyproject.toml instead of shipping
+      stale upstream metadata.
+    paths:
+      - hermes_agent.egg-info
+
 # ---------------------------------------------------------------------------
 # Inline content edits — for China references INSIDE a kept upstream file,
 # where a path-prune cannot help and the fork carries no quilt patch. Applied
@@ -170,6 +181,22 @@ content_edits:
       rewrites the default config shape.
     find: '            "skin": "default",'
     replace: '            "skin": "nadia",'
+  - name: default-config-skin-nadia
+    file: hermes_cli/config.py
+    why: >-
+      config.py owns the default config used by setup/runtime. Keep the shipped
+      Nadia distribution on the generated Nadia skin by default; cli.py's copy
+      is patched separately by default-display-skin-nadia.
+    find: '        "skin": "default",'
+    replace: '        "skin": "nadia",'
+  - name: default-example-skin-nadia
+    file: cli-config.yaml.example
+    why: >-
+      Keep the checked example config aligned with the runtime default so a
+      fresh Nadia install does not document the upstream Hermes default skin as
+      the product default.
+    find: "  skin: default"
+    replace: "  skin: nadia"
   - name: non-default-empty-banner-hero-no-hermes-fallback
     file: hermes_cli/banner.py
     why: >-
@@ -241,6 +268,23 @@ content_edits:
       the Nadia release-branch installer so it can run from the published tree.
     find: "https://hermes-agent.nousresearch.com/install.sh"
     replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh"
+  - name: readme-ur-pk-install-sh-release-shortlink
+    file: README.ur-pk.md
+    why: >-
+      README.ur-pk.md is not whole-file excepted like README.md/README.zh-CN.md,
+      so product prose and commands rebrand normally, but the URL guard keeps
+      upstream install shortlinks intact. Point its customer install command at
+      the Nadia release-branch installer.
+    find: "https://hermes-agent.nousresearch.com/install.sh"
+    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh"
+  - name: readme-ur-pk-install-ps1-release-shortlink
+    file: README.ur-pk.md
+    why: >-
+      Same as the POSIX Urdu README install command: the PowerShell bootstrap
+      URL must fetch Nadia's release-branch installer, not the upstream Hermes
+      shortlink preserved by the URL guard.
+    find: "https://hermes-agent.nousresearch.com/install.ps1"
+    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1"
   - name: uninstall-reinstall-release-shortlinks
     file: hermes_cli/uninstall.py
     why: >-
@@ -273,6 +317,55 @@ content_edits:
       gateway.run.__file__, when running inside non-git dist/nadia.
     find: 'patch("gateway.run.__file__", fake_file)'
     replace: 'patch("gateway.slash_commands.__file__", fake_file)'
+  - name: godmode-model-family-constant
+    file: optional-skills/security/godmode/scripts/auto_jailbreak.py
+    why: >-
+      This optional skill uses "hermes" as a Nous model-family strategy key,
+      not as the product brand. Put the external family key behind a variable
+      so the rename engine can still rebrand unrelated `"hermes": {...}`
+      metadata/config keys elsewhere.
+    find: "MODEL_STRATEGIES = {"
+    replace: "NOUS_MODEL_FAMILY = \"hermes\"\n\nMODEL_STRATEGIES = {"
+  - name: godmode-model-family-strategy-key
+    file: optional-skills/security/godmode/scripts/auto_jailbreak.py
+    why: >-
+      Use the preserved Nous model-family constant for the godmode strategy
+      table key; broad preservation of every `"hermes": {` dictionary key
+      over-preserves ACP/session metadata and skill metadata.
+    find: "    \"hermes\": {\n        \"order\": [\"prefill_only\"],"
+    replace: "    NOUS_MODEL_FAMILY: {\n        \"order\": [\"prefill_only\"],"
+  - name: godmode-model-family-return
+    file: optional-skills/security/godmode/scripts/auto_jailbreak.py
+    why: >-
+      Return the same preserved Nous model-family constant used as the strategy
+      key, instead of carrying another bare `"hermes"` literal that would need a
+      broad skip_context.
+    find: "        return \"hermes\""
+    replace: "        return NOUS_MODEL_FAMILY"
+  - name: nous-model-family-code-comment-neutral
+    file: hermes_cli/model_switch.py
+    why: >-
+      This detector is about the external Nous Hermes model family, not a Nadia
+      model family. Neutralize the historical bare-substring comment before the
+      broad product rebrand runs so dist does not claim an old Nadia substring
+      check existed.
+    find: "# The previous substring check (`\"hermes\" in name.lower()`) false-positived on\n# unrelated local Modelfiles like ``hermes-brain:qwen3-14b-ctx16k`` that just\n# happen to carry \"hermes\" in their tag but are fully tool-capable."
+    replace: "# The previous bare-family substring check false-positived on\n# unrelated local model tags that were not Nous Hermes 3/4 chat models."
+  - name: nous-model-family-test-docstring-neutral
+    file: tests/hermes_cli/test_nous_hermes_non_agentic.py
+    why: >-
+      Keep the existing generated dist test accurate after Nadia rebrand: the
+      detector still targets the Nous Hermes 3/4 model family, not any Nadia
+      model family.
+    find: "Prior to this check, the warning fired on any model whose name contained\n``\"hermes\"`` anywhere (case-insensitive). That false-positived on unrelated\nlocal Modelfiles such as ``hermes-brain:qwen3-14b-ctx16k`` — a tool-capable\nQwen3 wrapper that happens to live under the \"hermes\" tag namespace."
+    replace: "Prior to this check, the warning used a bare family substring and\nfalse-positived on unrelated local model tags that were not Nous Hermes 3/4\nchat models."
+  - name: nous-model-family-test-comment-neutral
+    file: tests/hermes_cli/test_nous_hermes_non_agentic.py
+    why: >-
+      Avoid generating "Non-chat Nadia models" in a test that is explicitly
+      about external Nous Hermes model-family semantics.
+    find: "# Non-chat Hermes models we don't warn about"
+    replace: "# Non-chat model-family examples we don't warn about"
   - name: update-autostash-scoped-fetch-release-branch
     file: tests/hermes_cli/test_update_autostash.py
     why: >-
@@ -282,6 +375,62 @@ content_edits:
       _resolve_update_branch() is patched by 0009.
     find: 'assert fetch_calls == [["git", "fetch", "origin", "main"]]'
     replace: 'assert fetch_calls == [["git", "fetch", "origin", "release"]]'
+  - name: update-subcommand-branch-help-release
+    file: hermes_cli/subcommands/update.py
+    why: >-
+      Patch 0009 changes the Nadia update default branch to release, but the
+      split subcommand help still says default main. Keep user-facing help
+      aligned with the actual update target.
+    find: "default (main)"
+    replace: "default (release)"
+  - name: dashboard-update-log-range-release
+    file: hermes_cli/web_server.py
+    why: >-
+      The dashboard update API lists commits behind origin/main while the banner
+      and CLI update path compare against origin/release. Replace this file's
+      update range references so the dashboard count/changelog agrees with the
+      Nadia customer channel.
+    find: "origin/main"
+    replace: "origin/release"
+  - name: banner-update-fallback-comment-release
+    file: hermes_cli/banner.py
+    why: >-
+      Patch 0010 switches the banner git-state comparison to origin/release.
+      Keep the fallback comment aligned so update-channel scans only report the
+      separate fork-upstream sync helper that still intentionally compares main.
+    find: "shallow clone without origin/main"
+    replace: "shallow clone without origin/release"
+  - name: model-catalog-raw-fallback-release
+    file: hermes_cli/model_catalog.py
+    why: >-
+      The renamed release tree publishes website/static/api/model-catalog.json
+      at repository root on the release branch. The workshop main branch keeps
+      the website under upstream/ and does not serve this raw path.
+    find: "https://raw.githubusercontent.com/NousResearch/hermes-agent/main/website/static/api/model-catalog.json"
+    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/website/static/api/model-catalog.json"
+  - name: model-catalog-test-fallback-release
+    file: tests/hermes_cli/test_model_catalog.py
+    why: >-
+      Keep the existing upstream fallback-chain tests aligned with the Nadia
+      runtime fallback above. This is a test expectation transform for the
+      generated dist tree, not a new regression test.
+    find: "\"https://raw.githubusercontent.com/NousResearch/hermes-agent\"\n        \"/main/website/static/api/model-catalog.json\""
+    replace: "\"https://raw.githubusercontent.com/nadicodeai/argo\"\n        \"/release/website/static/api/model-catalog.json\""
+  - name: desktop-update-default-branch-release
+    file: apps/desktop/electron/main.cjs
+    why: >-
+      Desktop self-update shells into the same git checkout as the backend.
+      Nadia customer installs track the release branch, so the desktop default
+      must not pull the workshop main branch.
+    find: "const DEFAULT_UPDATE_BRANCH = 'main'"
+    replace: "const DEFAULT_UPDATE_BRANCH = 'release'"
+  - name: desktop-update-default-branch-comment-release
+    file: apps/desktop/electron/main.cjs
+    why: >-
+      Keep the desktop update comment aligned with the release-branch default
+      above; the hermesDesktop API name is rebranded by the later rename pass.
+    find: "// Branch we track for self-update. The GUI work has merged to main, so this\n// tracks main. User can also override at runtime via\n// hermesDesktop.updates.setBranch()."
+    replace: "// Branch we track for self-update. Nadia customer installs track release;\n// users can override at runtime via hermesDesktop.updates.setBranch()."
   - name: send-message-drop-yuanbao-example
     file: tools/send_message_tool.py
     why: >-

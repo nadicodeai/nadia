@@ -1,4 +1,4 @@
-# Cutting an Nadia release
+# Cutting a Nadia release
 
 The single, reproducible procedure for shipping a release to customers. If you
 follow the **TL;DR** you do not need to make any release-engineering decisions —

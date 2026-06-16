@@ -72,6 +72,19 @@ mappings:
   # guard, so it is flipped to the GHCR package page via a packaging-strip content_edit.
   - {from: "ghcr.io/nousresearch/hermes-agent", to: "ghcr.io/nadicodeai/nadia"}
   - {from: "nousresearch/hermes-agent",         to: "ghcr.io/nadicodeai/nadia"}
+  # --- Nous Hermes model-family detector (semantic, not product branding) ---
+  # Upstream names the non-agentic model-family guard `nous_hermes_*` because
+  # the affected external models are literally Nous Hermes 3/4. In Nadia that
+  # must NOT become `nous_nadia_*`: Nadia is the product, not a Nous model
+  # family. Neutralize these symbols and the test filename before the broad
+  # Hermes→Nadia pass runs.
+  - {from: "test_matches_real_nous_hermes_chat_models", to: "test_matches_real_nous_model_family_chat_models"}
+  - {from: "test_nous_hermes_non_agentic", to: "test_nous_model_family_non_agentic"}
+  - {from: "is_nous_hermes_non_agentic", to: "is_nous_model_family_non_agentic"}
+  - {from: "_check_hermes_model_warning", to: "_check_nous_model_family_warning"}
+  - {from: "_NOUS_HERMES_NON_AGENTIC_RE", to: "_NOUS_MODEL_FAMILY_NON_AGENTIC_RE"}
+  - {from: "_HERMES_MODEL_WARNING", to: "_NOUS_MODEL_FAMILY_WARNING"}
+  - {from: "hermes_warn", to: "model_family_warn"}
   # --- Composite identifiers (longest first) ---
   - {from: "hermes_tools_mcp_server", to: "nadia_tools_mcp_server"}
   - {from: "HermesAgent",             to: "NadiaAgent"}
@@ -243,6 +256,24 @@ skip_contexts:
   # it in this exact needle-list context. Narrow literal so no other bare "hermes"
   # is over-preserved.
   - '"hermes", "llama", "mistral"'
+  # --- Bare Hermes model-family code/prose (NOT the product brand) ---
+  # Some upstream call sites use the bare word "hermes" as the Nous model-family
+  # discriminator rather than a concrete `hermes-3` / `hermes-4` model id. The
+  # versioned model-id rules above do not cover those needles, but renaming them
+  # to "nadia" breaks model filtering and optional jailbreak routing because the
+  # external models remain named Hermes. Keep these anchors narrow: a broad
+  # quoted-"hermes" exception would incorrectly preserve rebrandable host/config
+  # keys such as Honcho `hosts: {"hermes": ...}`.
+  - '# Skip Hermes models'
+  - 'if "hermes" in mid\.lower\(\):'
+  - 'Nous/Hermes models'
+  - 'NOUS_MODEL_FAMILY = "hermes"'
+  - 'if "hermes" in model_lower or "nous" in model_lower:'
+  - 'Hermes model family'
+  - 'Hermes models are already uncensored'
+  - 'Hermes models and Grok'
+  - 'Hermes models don''t need jailbreaking'
+  - 'Hermes, Nomos, and Psyche'
   # --- Fork attribution credit (patch 0015) ---
   # The rebranded startup/dashboard surfaces credit the upstream project by
   # name: "Based on Hermes Agent by Nous Research". This is the ONE place the
