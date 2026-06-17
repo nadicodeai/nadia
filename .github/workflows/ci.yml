@@ -270,13 +270,14 @@ jobs:
   #    asserts the three update-related ACs that don't require a live
   #    Telegram. Public artefacts only — no GHCR secrets needed.
   #
-  #    NOT a required check (visible only). 15-minute timeout caps the
-  #    job; the actual harness budget is < 5 minutes per spec IU-AC-15.
+  #    NOT a required check (visible only). 30-minute timeout caps the
+  #    job; the actual harness budget is < 5 minutes per spec IU-AC-15,
+  #    but runner setup can take several minutes before the smoke starts.
   # ---------------------------------------------------------------------------
   update-smoke:
     name: update-smoke (M5.3 Part A — IU-AC-9/10/11)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/nadia-setup
