@@ -1,0 +1,12 @@
+# Assertions for 0023-desktop-nadia-icon-paths.patch
+#
+# The binary icon files are additive overlay assets. These checks prove the
+# desktop app points at those Nadia-specific assets after build/rebrand. The
+# product-surface pytest checks dimensions and hashes.
+
+path:apps/desktop/package.json assets/nadia-icon
+path:apps/desktop/package.json assets/nadia-icon.ico
+path:apps/desktop/scripts/set-exe-identity.cjs nadia-icon.ico
+path:apps/desktop/electron/main.cjs nadia-apple-touch-icon.png
+path:apps/desktop/index.html nadia-apple-touch-icon.png
+path:apps/desktop/src/components/desktop-onboarding-overlay.tsx nadia-apple-touch-icon.png

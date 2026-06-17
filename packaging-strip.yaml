@@ -214,11 +214,11 @@ content_edits:
   - name: nadia-banner-attribution-readable
     file: hermes_cli/banner.py
     why: >-
-      Render the Nadia attribution line in the active skin body color instead of
+      Render the Nadia product line in the active skin body color instead of
       Rich dim gray. The line is part of the visible startup identity and must
       stay readable in dark terminal previews and real terminal sessions.
-    find: '    left_lines.append(f"[dim {dim}]An AI agent from NadicodeAI (nadicode.ai) · Based on Hermes Agent by Nous Research[/]")'
-    replace: '    left_lines.append(f"[{text}]An AI agent from NadicodeAI (nadicode.ai) · Based on Hermes Agent by Nous Research[/]")'
+    find: '    left_lines.append(f"[dim {dim}]Nadia Agent by NadicodeAI (nadicode.ai)[/]")'
+    replace: '    left_lines.append(f"[{text}]Nadia Agent by NadicodeAI (nadicode.ai)[/]")'
   - name: install-sh-release-shortlinks
     file: scripts/install.sh
     why: >-

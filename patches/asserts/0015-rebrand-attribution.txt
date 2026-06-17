@@ -1,32 +1,28 @@
 # Assertions for 0015-rebrand-attribution.patch
 #
-# After `make build`, the user-facing startup/dashboard attribution must
-# read "An AI agent from NadicodeAI" (linking nadicode.ai) and credit the
-# upstream project as "Based on Hermes Agent by Nous Research".
-#
-# The "Based on Hermes Agent by Nous Research" assertions are load-bearing
-# in two ways: they prove (a) the rebrand string landed, and (b) the
-# `nadia-rename.yaml` skip_contexts entry preserved the literal "Hermes" —
-# if the rename engine had rewritten it, the phrase would read
-# "...Nadia Agent..." and these greps would fail. Paths are post-rename
-# (hermes_cli/ -> nadia_cli/; ui-tui/ and web/ keep their names).
+# After `make build`, the user-facing startup/dashboard attribution must read
+# as Nadia/NadicodeAI product ownership. Upstream provenance can stay in README
+# fork notices, but it must not appear in live CLI or desktop product chrome.
+# Paths are post-rename (hermes_cli/ -> nadia_cli/; ui-tui/ and web/ keep their
+# names).
 
 # --- rich CLI banner (nadia_cli/banner.py) ---
 # Plain text, NOT an OSC-8 [link=...]: the banner's no-release-tag path asserts
 # it emits no terminal hyperlink (tests/nadia_cli/test_banner.py). The clickable
 # link lives on the HTML surfaces (footer + login) instead.
 path:nadia_cli/banner.py nadicode.ai
-path:nadia_cli/banner.py An AI agent from NadicodeAI (nadicode.ai) · Based on Hermes Agent by Nous Research
+path:nadia_cli/banner.py Nadia Agent by NadicodeAI (nadicode.ai)
 
 # --- Ink TUI banner tagline (ui-tui/src/components/branding.tsx) ---
-path:ui-tui/src/components/branding.tsx An AI agent from NadicodeAI · Based on Hermes Agent by Nous Research
+path:ui-tui/src/components/branding.tsx Nadia Agent by NadicodeAI
 path:ui-tui/src/components/branding.tsx · NadicodeAI
 
 # --- web dashboard footer (link + org label across locales) ---
 path:web/src/components/SidebarFooter.tsx https://nadicode.ai
+path:web/src/components/SidebarFooter.tsx Nadia Agent by NadicodeAI
 path:web/src/i18n/en.ts org: "NadicodeAI"
 path:web/src/i18n/zh.ts org: "NadicodeAI"
 
-# --- dashboard login page wordmark + credit ---
+# --- dashboard login page wordmark + product line ---
 path:nadia_cli/dashboard_auth/login_page.py nadicode.ai
-path:nadia_cli/dashboard_auth/login_page.py Based on Hermes Agent by Nous Research
+path:nadia_cli/dashboard_auth/login_page.py Nadia Agent by

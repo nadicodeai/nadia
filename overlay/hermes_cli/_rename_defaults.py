@@ -91,7 +91,6 @@ SKIP_CONTEXTS: tuple[str, ...] = (
     'Hermes models and Grok',
     "Hermes models don't need jailbreaking",
     'Hermes, Nomos, and Psyche',
-    'Based on Hermes Agent by Nous Research',
     'hermes-example-plugins',
     '\\bHermesClaw\\b',
     '\\bHermes Mod\\b',

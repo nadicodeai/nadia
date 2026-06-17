@@ -286,16 +286,6 @@ skip_contexts:
   - 'Hermes models and Grok'
   - 'Hermes models don''t need jailbreaking'
   - 'Hermes, Nomos, and Psyche'
-  # --- Fork attribution credit (patch 0015) ---
-  # The rebranded startup/dashboard surfaces credit the upstream project by
-  # name: "Based on Hermes Agent by Nous Research". This is the ONE place the
-  # fork deliberately keeps the literal upstream product name "Hermes" — it is
-  # attribution, not a brand token to rebrand. Protect the exact phrase so the
-  # rename engine does not rewrite it to "...Nadia Agent..." and so
-  # verify_no_leakage treats this "hermes" as allowed. Appears in
-  # ui-tui/.../branding.tsx, hermes_cli/banner.py, web/.../SidebarFooter.tsx,
-  # and hermes_cli/dashboard_auth/login_page.py (all via patch 0015).
-  - 'Based on Hermes Agent by Nous Research'
   # --- Upstream companion repo name (no nadicode fork exists) ---
   # `hermes-example-plugins` is NousResearch's separate sample-plugins repo. The
   # docs (plugin-llm-access.md, extending-the-dashboard.md, AGENTS.md) point at it

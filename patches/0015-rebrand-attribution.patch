@@ -1,40 +1,26 @@
 Subject: Rebrand startup/dashboard attribution to NadicodeAI
 
 Replace the upstream "Nous Research" branding on the user-facing startup
-and dashboard surfaces with "An AI agent from NadicodeAI", while crediting
-the upstream project as "Based on Hermes Agent by Nous Research". Surfaces:
+and dashboard surfaces with Nadia/NadicodeAI product ownership. Upstream
+provenance belongs in README/fork notices, not in the live CLI or desktop
+product chrome. Surfaces:
   - ui-tui/src/components/branding.tsx — Ink TUI tagline + model-org line
   - hermes_cli/banner.py — rich CLI banner org token + credit line (plain
     text; NOT an OSC-8 link, so the banner's no-tag path stays hyperlink-free
     per tests/hermes_cli/test_banner.py)
   - web/src/components/SidebarFooter.tsx + web/src/i18n/*.ts (16 locales) —
     footer link (nadicode.ai) + org label
-  - hermes_cli/dashboard_auth/login_page.py — login wordmark + credit line
-
-The credit deliberately keeps the literal upstream product name "Hermes";
-a skip_contexts entry in nadia-rename.yaml ("Based on Hermes Agent by Nous
-Research") stops the rename engine from rewriting it to "Nadia" and lets
-verify_no_leakage treat that "hermes" as allowed. Assertions in
-patches/asserts/0015-rebrand-attribution.txt prove both that the rebrand
-landed and that the literal "Hermes" survived the rename pass.
+  - hermes_cli/dashboard_auth/login_page.py — login wordmark + product line
 
 Subject: Rebrand startup/dashboard attribution to NadicodeAI
 
 Replace the upstream "Nous Research" branding on the user-facing startup
-and dashboard surfaces with "An AI agent from NadicodeAI" (linking
-nadicode.ai), while crediting the upstream project as "Based on Hermes
-Agent by Nous Research". Surfaces touched:
+and dashboard surfaces with Nadia/NadicodeAI product ownership (linking
+nadicode.ai where appropriate). Surfaces touched:
   - ui-tui/src/components/branding.tsx — Ink TUI tagline + model-org line
   - hermes_cli/banner.py — rich CLI banner org token (nadicode.ai link) + credit line
   - web/src/components/SidebarFooter.tsx + web/src/i18n/*.ts (16 locales) — footer link + org label
-  - hermes_cli/dashboard_auth/login_page.py — login wordmark + credit line
-
-The credit deliberately keeps the literal upstream product name "Hermes";
-a skip_contexts entry in nadia-rename.yaml ("Based on Hermes Agent by Nous
-Research") stops the rename engine from rewriting it to "Nadia" and lets
-verify_no_leakage treat that "hermes" as allowed. Assertions in
-patches/asserts/0015-rebrand-attribution.txt prove both that the rebrand
-landed and that the literal "Hermes" survived the rename pass.
+  - hermes_cli/dashboard_auth/login_page.py — login wordmark + product line
 
 Index: .sync-workdir/hermes_cli/banner.py
 ===================================================================
@@ -46,7 +32,7 @@ Index: .sync-workdir/hermes_cli/banner.py
      ctx_str = f" [dim {dim}]·[/] [dim {dim}]{_format_context_length(context_length)} context[/]" if context_length else ""
 -    left_lines.append(f"[{accent}]{model_short}[/]{ctx_str} [dim {dim}]·[/] [dim {dim}]Nous Research[/]")
 +    left_lines.append(f"[{accent}]{model_short}[/]{ctx_str} [dim {dim}]·[/] [dim {dim}]NadicodeAI[/]")
-+    left_lines.append(f"[dim {dim}]An AI agent from NadicodeAI (nadicode.ai) · Based on Hermes Agent by Nous Research[/]")
++    left_lines.append(f"[dim {dim}]Nadia Agent by NadicodeAI (nadicode.ai)[/]")
  
      if os.getenv("HERMES_YOLO_MODE"):
          left_lines.append(f"[bold red]⚠ YOLO mode[/] [dim {dim}]— all approval prompts bypassed[/]")
@@ -60,7 +46,7 @@ Index: .sync-workdir/hermes_cli/dashboard_auth/login_page.py
  <main>
 -  <div class="brand">Nous<span class="dot"></span>Research</div>
 +  <div class="brand">Nadicode<span class="dot"></span>AI</div>
-+  <div style="text-align:center;margin:-1.25rem 0 1.75rem;font-size:0.72rem;letter-spacing:0.05em;color:var(--midground);opacity:0.72;">An AI agent from <a href="https://nadicode.ai" style="color:inherit;">nadicode.ai</a> &middot; Based on Hermes Agent by Nous Research</div>
++  <div style="text-align:center;margin:-1.25rem 0 1.75rem;font-size:0.72rem;letter-spacing:0.05em;color:var(--midground);opacity:0.72;">Nadia Agent by <a href="https://nadicode.ai" style="color:inherit;">NadicodeAI</a></div>
    <div class="card">
      <h1>Sign in</h1>
      <p class="subtitle">Choose a sign-in method to continue to the Hermes Agent dashboard.</p>
@@ -75,9 +61,9 @@ Index: .sync-workdir/ui-tui/src/components/branding.tsx
 -const TAG_FULL = 'Nous Research · Messenger of the Digital Gods'
 -const TAG_MID = 'Messenger of the Digital Gods'
 -const TAG_TINY = 'Nous Research'
-+const TAG_FULL = 'An AI agent from NadicodeAI · Based on Hermes Agent by Nous Research'
-+const TAG_MID = 'An AI agent from NadicodeAI'
-+const TAG_TINY = 'NadicodeAI'
++const TAG_FULL = 'Nadia Agent by NadicodeAI'
++const TAG_MID = 'Nadia Agent'
++const TAG_TINY = 'Nadia'
  const HIDE_BELOW = 34
  const COMPACT_FROM = 58
  
@@ -111,7 +97,7 @@ Index: .sync-workdir/web/src/components/SidebarFooter.tsx
 +        href="https://nadicode.ai"
          target="_blank"
          rel="noopener noreferrer"
-+        title="An AI agent from NadicodeAI · Based on Hermes Agent by Nous Research"
++        title="Nadia Agent by NadicodeAI"
          className={cn(
            "font-mondwest text-display text-xs tracking-[0.12em] text-midground",
            "transition-opacity hover:opacity-90",

@@ -23,3 +23,4 @@
 0020-ui-tui-cursor-drift-test-timeout.patch
 0021-update-fork-check-configured-origin.patch
 0022-desktop-bootstrap-release-install.patch
+0023-desktop-nadia-icon-paths.patch

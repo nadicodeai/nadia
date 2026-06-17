@@ -1,0 +1,96 @@
+Subject: Wire desktop app icons to Nadia face assets
+
+Use additive Nadia-specific icon assets supplied by overlay/ instead of
+replacing upstream binary files. The icon source is the canonical Nadia face
+portrait from the NadicodeAI repository, cropped and exported for the macOS
+and Windows app bundle surfaces:
+  - electron-builder bundle icon: assets/nadia-icon.{png,ico,icns}
+  - Windows rcedit identity stamp: assets/nadia-icon.ico
+  - runtime notification/window image lookup: public/nadia-apple-touch-icon.png
+  - renderer favicon/onboarding logo: public/nadia-apple-touch-icon.png
+
+Index: .sync-workdir/apps/desktop/package.json
+===================================================================
+--- .sync-workdir.orig/apps/desktop/package.json
++++ .sync-workdir/apps/desktop/package.json
+@@ -145,7 +145,7 @@
+       }
+     ],
+     "artifactName": "Hermes-${version}-${os}-${arch}.${ext}",
+-    "icon": "assets/icon",
++    "icon": "assets/nadia-icon",
+     "directories": {
+       "output": "release"
+     },
+@@ -170,7 +170,7 @@
+         "to": "native-deps"
+       },
+       {
+-        "from": "assets/icon.ico",
++        "from": "assets/nadia-icon.ico",
+         "to": "icon.ico"
+       }
+     ],
+Index: .sync-workdir/apps/desktop/scripts/set-exe-identity.cjs
+===================================================================
+--- .sync-workdir.orig/apps/desktop/scripts/set-exe-identity.cjs
++++ .sync-workdir/apps/desktop/scripts/set-exe-identity.cjs
+@@ -46,8 +46,8 @@ async function stampExeIdentity(exe, des
+     throw new Error(`target exe not found: ${exe}`)
+   }
+ 
+-  // Icon lives at apps/desktop/assets/icon.ico
+-  const icon = path.join(desktopRoot, 'assets', 'icon.ico')
++  // Icon lives at apps/desktop/assets/nadia-icon.ico
++  const icon = path.join(desktopRoot, 'assets', 'nadia-icon.ico')
+   if (!fs.existsSync(icon)) {
+     throw new Error(`icon not found: ${icon}`)
+   }
+Index: .sync-workdir/apps/desktop/electron/main.cjs
+===================================================================
+--- .sync-workdir.orig/apps/desktop/electron/main.cjs
++++ .sync-workdir/apps/desktop/electron/main.cjs
+@@ -337,9 +337,9 @@ const WINDOW_BUTTON_POSITION = {
+ // position via getWindowButtonPosition(), so this width is non-zero only on
+ // non-macOS platforms.
+ const NATIVE_OVERLAY_BUTTON_WIDTH = 144
+ const APP_ICON_PATHS = [
+-  path.join(APP_ROOT, 'public', 'apple-touch-icon.png'),
+-  path.join(APP_ROOT, 'dist', 'apple-touch-icon.png'),
+-  path.join(unpackedPathFor(APP_ROOT), 'dist', 'apple-touch-icon.png')
++  path.join(APP_ROOT, 'public', 'nadia-apple-touch-icon.png'),
++  path.join(APP_ROOT, 'dist', 'nadia-apple-touch-icon.png'),
++  path.join(unpackedPathFor(APP_ROOT), 'dist', 'nadia-apple-touch-icon.png')
+ ]
+ 
+ let rendererTitleBarTheme = null
+Index: .sync-workdir/apps/desktop/index.html
+===================================================================
+--- .sync-workdir.orig/apps/desktop/index.html
++++ .sync-workdir/apps/desktop/index.html
+@@ -5,9 +5,9 @@
+     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+     <meta name="color-scheme" content="light dark" />
+     <meta name="theme-color" content="#0a0a0a" />
+-    <link rel="icon" type="image/png" sizes="180x180" href="/apple-touch-icon.png" />
+-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+-    <link rel="shortcut icon" href="/apple-touch-icon.png" />
++    <link rel="icon" type="image/png" sizes="180x180" href="/nadia-apple-touch-icon.png" />
++    <link rel="apple-touch-icon" sizes="180x180" href="/nadia-apple-touch-icon.png" />
++    <link rel="shortcut icon" href="/nadia-apple-touch-icon.png" />
+     <title>Hermes</title>
+     <script>
+       // Pre-paint the themed background before the app bundle loads. Without
+Index: .sync-workdir/apps/desktop/src/components/desktop-onboarding-overlay.tsx
+===================================================================
+--- .sync-workdir.orig/apps/desktop/src/components/desktop-onboarding-overlay.tsx
++++ .sync-workdir/apps/desktop/src/components/desktop-onboarding-overlay.tsx
+@@ -553,7 +553,7 @@ function ProviderRow({ provider, loggedI
+       <span aria-hidden className="arc-border arc-reverse arc-nous" />
+       <div className="min-w-0">
+         <div className="flex items-center gap-2">
+-          <img alt="" className="size-5 shrink-0 rounded" src={assetPath('apple-touch-icon.png')} />
++          <img alt="" className="size-5 shrink-0 rounded" src={assetPath('nadia-apple-touch-icon.png')} />
+           <span className="text-[length:var(--conversation-text-font-size)] font-semibold">
+             {providerTitle(provider)}
+           </span>

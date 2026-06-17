@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import hashlib
+import struct
 import tomllib
 from pathlib import Path
 
@@ -14,6 +16,16 @@ DIST = REPO_ROOT / "dist" / "nadia"
 
 def _read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _png_size(path: Path) -> tuple[int, int]:
+    data = path.read_bytes()[:24]
+    assert data[:8] == b"\x89PNG\r\n\x1a\n"
+    return struct.unpack(">II", data[16:24])
 
 
 @pytest.mark.skipif(not DIST.is_dir(), reason="dist/nadia not built (run `make build`)")
@@ -28,6 +40,7 @@ def test_desktop_bundle_metadata_identifies_nadia_agent() -> None:
     assert build["executableName"] == "Nadia Agent"
     assert build["protocols"][0]["name"] == "Nadia Agent Protocol"
     assert build["artifactName"] == "Nadia-Agent-${version}-${os}-${arch}.${ext}"
+    assert build["icon"] == "assets/nadia-icon"
     assert build["mac"]["extendInfo"]["CFBundleDisplayName"] == "Nadia Agent"
     assert build["mac"]["extendInfo"]["CFBundleName"] == "Nadia Agent"
     assert build["dmg"]["title"] == "Install Nadia Agent"
@@ -133,6 +146,44 @@ def test_desktop_packaging_paths_follow_nadia_agent_name() -> None:
     )
     assert "args.push('--commit', installStamp.commit)" not in bootstrap_runner
     assert "args.push('-Commit', installStamp.commit)" not in bootstrap_runner
+
+
+@pytest.mark.skipif(not DIST.is_dir(), reason="dist/nadia not built (run `make build`)")
+def test_live_product_chrome_identifies_nadicodeai_not_nous() -> None:
+    rels = [
+        "nadia_cli/banner.py",
+        "ui-tui/src/components/branding.tsx",
+        "nadia_cli/dashboard_auth/login_page.py",
+        "web/src/components/SidebarFooter.tsx",
+    ]
+    combined = "\n".join((DIST / rel).read_text(encoding="utf-8") for rel in rels)
+
+    assert "Nadia Agent by NadicodeAI" in combined
+    assert "NadicodeAI" in combined
+    assert "Based on Hermes Agent by Nous Research" not in combined
+    assert "Nadia Agent by Nous Research" not in combined
+    assert "An AI agent from NadicodeAI" not in combined
+
+
+@pytest.mark.skipif(not DIST.is_dir(), reason="dist/nadia not built (run `make build`)")
+def test_desktop_app_icons_use_canonical_nadia_face() -> None:
+    expected_hashes = {
+        "apps/desktop/assets/nadia-icon.png": "3458cb7c0fd80634390b6bd413eaffab7607bdd0f2794460c2c5417444001301",
+        "apps/desktop/assets/nadia-icon.ico": "6cbe729ad7bf502f26bc23aaec63032d43569e4c25fc6dc95d56d15518f27523",
+        "apps/desktop/assets/nadia-icon.icns": "19e648e6c6253eaefcb81299a96f3be9835514fdfd99ec83d2e822affdfde710",
+        "apps/desktop/public/nadia-apple-touch-icon.png": "e8a56daa5e8a94dec15770dfacfbd591034fcf768c49e5fb64c0e1a20d828bd8",
+    }
+
+    for rel, digest in expected_hashes.items():
+        assert _sha256(DIST / rel) == digest
+
+    assert _png_size(DIST / "apps" / "desktop" / "assets" / "nadia-icon.png") == (
+        1024,
+        1024,
+    )
+    assert _png_size(
+        DIST / "apps" / "desktop" / "public" / "nadia-apple-touch-icon.png"
+    ) == (180, 180)
 
 
 @pytest.mark.skipif(not DIST.is_dir(), reason="dist/nadia not built (run `make build`)")
