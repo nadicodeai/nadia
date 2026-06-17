@@ -1,20 +1,26 @@
 # nadia
 
-nadia is a self-improving AI agent distributed as a Docker image. It is maintained by [nadicodeai](https://github.com/nadicodeai) as a rebranded fork of NousResearch's [hermes-agent](https://github.com/NousResearch/hermes-agent); the agent's behavior tracks upstream weekly with a small set of fork-only patches applied on top.
+Nadia is the NadicodeAI-branded self-improving AI agent. Customers can install it as a CLI, use the native macOS or Windows desktop app, run the profile builder, or deploy the Docker image. It is maintained by [nadicodeai](https://github.com/nadicodeai) as a rebranded fork of NousResearch's [hermes-agent](https://github.com/NousResearch/hermes-agent); the agent's behavior tracks upstream weekly with a small set of fork-only patches applied on top.
 
-## Quickstart for customers
+## Install the CLI
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.sh | bash
 ```
 
-nadia runs your Telegram-fronted agent. Install on a Linux box, pair a Telegram bot via the interactive setup wizard, then send `/update` over Telegram to upgrade in place. Tested on Ubuntu 22.04+; the install script also supports macOS and Termux per the upstream `install.sh`.
+The installer provisions Nadia, creates the `nadia` command, and starts the setup wizard. Tested on Ubuntu 22.04+; the install script also supports macOS, WSL2, and Termux.
 
 Two optional flags: pass `--skip-setup` to skip the interactive Telegram wizard (`curl ... | bash -s -- --skip-setup`), or `--skip-browser` to skip Node/browser-tool provisioning on headless servers that lack `xz-utils`.
 
-Releases live at <https://github.com/nadicodeai/nadia/releases> (CalVer).
+## Download the desktop app
 
-## Quickstart
+macOS and Windows desktop installers are published as GitHub Release assets:
+
+<https://github.com/nadicodeai/nadia/releases/latest>
+
+Release asset names use the `Nadia-Agent-*` prefix and include `.dmg` for macOS and `.exe` for Windows when the release workflow completes successfully.
+
+## Run with Docker
 
 ```bash
 docker pull ghcr.io/nadicodeai/nadia:latest
@@ -41,7 +47,7 @@ nadia ships in two flavours so you pick the one that matches your deployment sha
 
 ## Fork notice
 
-nadia is a fork of NousResearch's [hermes-agent](https://github.com/NousResearch/hermes-agent). All credit for the agent's design and core implementation belongs to NousResearch. nadicodeai maintains this fork to ship a rebranded image (`nadia`) for our customer deployments; we track upstream's `main` branch on a weekly cron, re-apply a small fork-patch series, and publish to GHCR.
+nadia is a fork of NousResearch's [hermes-agent](https://github.com/NousResearch/hermes-agent). All credit for the agent's design and core implementation belongs to NousResearch. nadicodeai maintains this fork to ship the Nadia-branded customer product; we track upstream's `main` branch on a weekly cron, re-apply a small fork-patch series, and publish the release tree, desktop installers, and GHCR image.
 
 - Upstream project: <https://github.com/NousResearch/hermes-agent>
 - Upstream docs: <https://hermes-agent.nousresearch.com/docs/>

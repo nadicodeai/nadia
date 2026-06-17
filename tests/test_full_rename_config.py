@@ -128,14 +128,28 @@ def test_docs_site_mapping_present(config: RenameConfig) -> None:
     )
 
 
+def test_product_url_mappings_present(config: RenameConfig) -> None:
+    """Customer install, docs, and desktop URLs must point at Nadia surfaces."""
+    mapping_dict = dict(config.mappings)
+    expected = {
+        "hermes-agent.nousresearch.com/docs": "docs.nadicode.ai/nadia",
+        "hermes-agent.nousresearch.com/install.sh": "raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.sh",
+        "hermes-agent.nousresearch.com/install.ps1": "raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.ps1",
+        "hermes-agent.nousresearch.com/desktop": "github.com/nadicodeai/nadia/releases/latest",
+    }
+    for from_, to_ in expected.items():
+        assert mapping_dict.get(from_) == to_, (
+            f"Mapping {from_!r} -> expected {to_!r}, got {mapping_dict.get(from_)!r}"
+        )
+
+
 def test_bare_host_and_pypi_not_rewritten(config: RenameConfig) -> None:
     """The bare upstream host and PyPI package must NOT be rewritten.
 
-    Only the self-referential ``/docs`` path is released from preservation. The
-    bare host ``hermes-agent.nousresearch.com`` (the OpenRouter HTTP-Referer
-    attribution header, /install.sh, /llms.txt) and ``pypi.org/p/hermes-agent``
-    (the real upstream PyPI package) stay on the upstream host as attribution —
-    they must never appear as a mapping ``from`` key.
+    Product paths under ``hermes-agent.nousresearch.com`` are mapped above. The
+    bare host itself (the OpenRouter HTTP-Referer attribution header) and
+    ``pypi.org/p/hermes-agent`` (the real upstream PyPI package) stay on the
+    upstream host as attribution and must never appear as mapping keys.
     """
     from_keys = {from_ for from_, _ in config.mappings}
     assert "hermes-agent.nousresearch.com" not in from_keys, (
@@ -146,13 +160,12 @@ def test_bare_host_and_pypi_not_rewritten(config: RenameConfig) -> None:
     )
 
 
-def test_docs_path_released_from_url_preservation(config: RenameConfig) -> None:
-    """The URL skip_context must RELEASE the /docs path so the mapping can fire.
+def test_product_paths_released_from_url_preservation(config: RenameConfig) -> None:
+    """The URL skip_context must release product paths so mappings can fire.
 
     The negative-lookahead URL guard preserves upstream URLs from rewriting. The
-    third lookahead alternative ``hermes-agent\\.nousresearch\\.com/docs\\b``
-    makes the self-referential docs path rewritable while keeping the bare host,
-    /install.sh and /llms.txt preserved.
+    product-path lookahead makes docs, install scripts, and desktop download
+    paths rewritable while keeping the bare host and /llms.txt preserved.
     """
     import re
 
@@ -160,16 +173,20 @@ def test_docs_path_released_from_url_preservation(config: RenameConfig) -> None:
     assert url_patterns, "no URL-guard skip_context found"
     guard = url_patterns[0]
     rx = re.compile(guard)
-    # A /docs URL must NOT be preserved (no match => rewritable => mapping fires).
-    assert not rx.match(
-        "https://hermes-agent.nousresearch.com/docs/user-guide/cli"
-    ), "docs path is still preserved; mapping cannot fire"
-    # The bare host (HTTP-Referer) and /install.sh MUST stay preserved.
+    for url in (
+        "https://hermes-agent.nousresearch.com/docs/user-guide/cli",
+        "https://hermes-agent.nousresearch.com/install.sh",
+        "https://hermes-agent.nousresearch.com/install.ps1",
+        "https://hermes-agent.nousresearch.com/desktop",
+    ):
+        assert not rx.match(url), f"{url} is still preserved; mapping cannot fire"
+
+    # The bare host (HTTP-Referer) and unrelated upstream paths stay preserved.
     assert rx.match("https://hermes-agent.nousresearch.com"), (
         "bare upstream host must stay preserved (attribution)"
     )
-    assert rx.match("https://hermes-agent.nousresearch.com/install.sh"), (
-        "/install.sh must stay preserved (attribution)"
+    assert rx.match("https://hermes-agent.nousresearch.com/llms.txt"), (
+        "/llms.txt must stay preserved (upstream static endpoint)"
     )
 
 

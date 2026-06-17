@@ -5,8 +5,8 @@ Workshop layout means ``__version__`` and ``__release_date__`` live ONLY inside
 the built ``dist/nadia/nadia_cli/__init__.py`` (gitignored on ``main``) — never as
 a commit on ``main``. This script bumps those values in-place inside the built
 ``dist/nadia/``, tags ``main`` HEAD with the CalVer tag, builds a deterministic
-tarball, creates the GitHub Release object (via ``gh release create``) **before**
-pushing the tag, then pushes the tag (firing ``.github/workflows/release.yml``).
+tarball, pushes the tag (firing ``.github/workflows/release.yml``), then creates
+the GitHub Release object via ``gh release create`` seconds later.
 
 It mirrors upstream's release driver shape but works from the workshop layout:
 

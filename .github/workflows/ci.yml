@@ -242,7 +242,7 @@ jobs:
   #    it in a clean ubuntu:22.04 container, asserting five invariants:
   #      1. ~/.nadia/.install_method == "git"                    (IU-AC-5)
   #      2. `nadia --version` exits 0                            (IU-AC-4 exit)
-  #      3. banner matches hermes regex                         (IU-AC-4 banner)
+  #      3. banner matches nadia regex                          (IU-AC-4 banner)
   #      4. `nadia update --check` does NOT print fork warning   (IU-AC-9 static)
   #      5. ~/.hermes/.install_method does not exist            (leakage)
   #
@@ -256,6 +256,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/nadia-setup
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          pip-packages: pyyaml
       - name: bash tests/install_smoke/run.sh
         run: bash tests/install_smoke/run.sh
 
@@ -275,6 +279,10 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/nadia-setup
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          pip-packages: pyyaml
       - name: make update-smoke
         run: make update-smoke
 
@@ -445,4 +453,3 @@ jobs:
         with:
           path: test_durations.json
           key: nadia-test-durations
-

@@ -17,8 +17,11 @@ GENERATED_FROM: str = 'nadia-rename.yaml'
 
 MAPPINGS: tuple[tuple[str, str], ...] = (
     ('NousResearch/hermes-agent/main/scripts/install', 'nadicodeai/nadia/release/scripts/install'),
+    ('hermes-agent.nousresearch.com/install.ps1', 'raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.ps1'),
     ('test_matches_real_nous_hermes_chat_models', 'test_matches_real_nous_model_family_chat_models'),
+    ('hermes-agent.nousresearch.com/install.sh', 'raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.sh'),
     ('git@github.com:nousresearch/hermes-agent', 'git@github.com:nadicodeai/nadia'),
+    ('hermes-agent.nousresearch.com/desktop', 'github.com/nadicodeai/nadia/releases/latest'),
     ('github.com/nousresearch/hermes-agent', 'github.com/nadicodeai/nadia'),
     ('hermes-agent.nousresearch.com/docs', 'docs.nadicode.ai/nadia'),
     ('ghcr.io/nousresearch/hermes-agent', 'ghcr.io/nadicodeai/nadia'),
@@ -70,7 +73,7 @@ EXCEPTION_PATHS: tuple[str, ...] = (
 )
 
 SKIP_CONTEXTS: tuple[str, ...] = (
-    'https?://(?!(?:(?:raw\\.)?github(?:usercontent)?\\.com/(?i:NousResearch/hermes-agent)\\b|hermes-agent\\.local|hermes-dialog-bridge\\.invalid|hermes-agent\\.nousresearch\\.com/docs\\b))[^\\s"\'\\\\${}]*',
+    'https?://(?!(?:(?:raw\\.)?github(?:usercontent)?\\.com/(?i:NousResearch/hermes-agent)\\b|hermes-agent\\.local|hermes-dialog-bridge\\.invalid|hermes-agent\\.nousresearch\\.com/(?:docs\\b|install\\.(?:sh|ps1)\\b|desktop\\b)))[^\\s"\'\\\\${}]*',
     '\\b[0-9a-f]{40}\\b',
     '\\b[0-9a-f]{64}\\b',
     '(?i)\\bNousResearch/(?:[A-Za-z0-9_.-]+-hermes-agent|hermes-agent-[A-Za-z0-9_.-]+)\\b',

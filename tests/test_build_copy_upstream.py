@@ -1,4 +1,4 @@
-"""Regression test for build.py's upstream→dist copy excluding bytecode caches.
+"""Regression test for build.py's upstream→dist copy excluding local artifacts.
 
 Running tests against the tracked tree (e.g. `PYTHONPATH=upstream pytest`) or an
 editable install leaves untracked `__pycache__/*.pyc` behind in `upstream/`.
@@ -6,8 +6,8 @@ editable install leaves untracked `__pycache__/*.pyc` behind in `upstream/`.
 China-strip step then tripped on an orphan compiled artifact whose `*.py`
 source had been pruned (`un-denylisted China path survived prune:
 tools/__pycache__/feishu_doc_tool.cpython-311.pyc`). Bytecode is never source —
-the copy MUST skip it so the build is deterministic regardless of working-tree
-pollution.
+and neither is editable-install `*.egg-info` metadata. The copy MUST skip them so
+the build is deterministic regardless of working-tree pollution.
 """
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ sys.path.insert(0, str(REPO_ROOT / "tools"))
 import build  # noqa: E402
 
 
-def test_copy_upstream_excludes_pycache_and_pyc(
+def test_copy_upstream_excludes_local_python_artifacts(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     upstream = tmp_path / "upstream"
@@ -34,6 +34,15 @@ def test_copy_upstream_excludes_pycache_and_pyc(
     # Top-level bytecode pollution — must be skipped.
     (upstream / "__pycache__").mkdir()
     (upstream / "__pycache__" / "x.cpython-311.pyc").write_bytes(b"\x00")
+    # Editable-install metadata pollution — must be skipped.
+    (upstream / "hermes_agent.egg-info").mkdir()
+    (upstream / "hermes_agent.egg-info" / "PKG-INFO").write_text(
+        "Name: hermes-agent\n", encoding="utf-8"
+    )
+    (upstream / "tools" / "nested.egg-info").mkdir()
+    (upstream / "tools" / "nested.egg-info" / "PKG-INFO").write_text(
+        "Name: nested\n", encoding="utf-8"
+    )
     # Tracking file — excluded by existing behaviour.
     (upstream / ".commit").write_text("sha\n", encoding="utf-8")
 
@@ -49,5 +58,6 @@ def test_copy_upstream_excludes_pycache_and_pyc(
     # No bytecode caches anywhere in the build output.
     assert list(dist.rglob("__pycache__")) == []
     assert list(dist.rglob("*.pyc")) == []
+    assert list(dist.rglob("*.egg-info")) == []
     # The tracking file is still excluded.
     assert not (dist / ".commit").exists()

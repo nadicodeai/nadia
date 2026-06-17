@@ -8,8 +8,8 @@ commands + paths while preserving attribution. This guards the END STATE:
 
   * the quickstart commands are rebranded (`nadia model`, `nadia setup`, ...),
   * no `hermes <subcommand>` invocations or ~/.hermes paths remain, AND
-  * attribution is preserved (the upstream repo + docs URLs survive — the
-    rebrand must NOT have over-reached into hermes-agent links).
+  * attribution is preserved (the upstream repo provenance survives), while
+    customer-facing docs URLs point at the Nadia docs site.
 
 Requires `make build` to have produced dist/nadia/.
 """
@@ -48,8 +48,9 @@ def test_quickstart_commands_are_rebranded(rel: str) -> None:
 
 @pytest.mark.skipif(not _DIST.is_dir(), reason="dist/nadia not built (run `make build`)")
 @pytest.mark.parametrize("rel", _READMES)
-def test_attribution_preserved(rel: str) -> None:
+def test_upstream_attribution_preserved_without_upstream_docs_links(rel: str) -> None:
     text = _read(rel)
-    # The rebrand must NOT have eaten the upstream attribution URLs.
+    # The rebrand must NOT have eaten the upstream repo provenance.
     assert "NousResearch/hermes-agent" in text, f"{rel}: upstream repo attribution URL was clobbered"
-    assert "hermes-agent.nousresearch.com" in text, f"{rel}: upstream docs URL was clobbered"
+    assert "https://docs.nadicode.ai/nadia" in text, f"{rel}: Nadia docs URL missing"
+    assert "hermes-agent.nousresearch.com/docs" not in text, f"{rel}: stale upstream docs URL"

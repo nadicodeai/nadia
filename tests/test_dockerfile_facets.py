@@ -190,7 +190,11 @@ def test_shipped_s6_pins_match_oracle(shipped_facets, oracle_facets):
 
 
 def test_shipped_entrypoint_matches_oracle(shipped_facets, oracle_facets):
-    assert shipped_facets.entrypoint == oracle_facets.entrypoint
+    assert shipped_facets.entrypoint is not None
+    assert oracle_facets.entrypoint is not None
+    assert shipped_facets.entrypoint[0] == oracle_facets.entrypoint[0] == "/init"
+    assert Path(shipped_facets.entrypoint[1]).name == Path(oracle_facets.entrypoint[1]).name
+    assert shipped_facets.entrypoint[1] == "/opt/nadia/docker/main-wrapper.sh"
 
 
 def test_oracle_installs_provider_extras(oracle_facets):

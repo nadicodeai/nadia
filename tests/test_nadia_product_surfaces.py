@@ -99,6 +99,38 @@ def test_desktop_packaging_paths_follow_nadia_agent_name() -> None:
 
 
 @pytest.mark.skipif(not DIST.is_dir(), reason="dist/nadia not built (run `make build`)")
+def test_customer_install_and_download_links_are_nadia_owned() -> None:
+    rels = [
+        "README.md",
+        "README.zh-CN.md",
+        "README.ur-pk.md",
+        "apps/desktop/README.md",
+        "website/docusaurus.config.ts",
+        "website/docs/index.mdx",
+        "website/docs/getting-started/installation.md",
+        "website/docs/getting-started/quickstart.md",
+        "website/docs/reference/faq.md",
+        "website/docs/guides/run-nemotron-3-ultra-free.md",
+        "skills/autonomous-ai-agents/nadia-agent/SKILL.md",
+        "scripts/install.sh",
+        "scripts/install.ps1",
+        "scripts/install.cmd",
+    ]
+    combined = "\n".join((DIST / rel).read_text(encoding="utf-8") for rel in rels)
+
+    assert "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.sh" in combined
+    assert "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.ps1" in combined
+    assert "https://github.com/nadicodeai/nadia/releases/latest" in combined
+    assert "https://docs.nadicode.ai/nadia" in combined
+
+    assert "hermes-agent.nousresearch.com/install.sh" not in combined
+    assert "hermes-agent.nousresearch.com/install.ps1" not in combined
+    assert "hermes-agent.nousresearch.com/desktop" not in combined
+    assert "hermes-agent.nousresearch.com/docs" not in combined
+    assert "NousResearch/nadia-agent" not in combined
+
+
+@pytest.mark.skipif(not DIST.is_dir(), reason="dist/nadia not built (run `make build`)")
 def test_bootstrap_installer_metadata_identifies_nadia_agent_setup() -> None:
     package = _read_json(DIST / "apps" / "bootstrap-installer" / "package.json")
     conf = _read_json(

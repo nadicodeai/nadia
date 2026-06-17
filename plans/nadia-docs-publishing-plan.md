@@ -97,7 +97,7 @@ gh pr create
 **Edit C-1 — insert the docs mapping after line 22** (after the `.../main/scripts/install` mapping, before the bare-host keys, so the engine's longest-first sort consumes the whole `/docs` URL cleanly):
 
 ```diff
-   - {from: "NousResearch/hermes-agent/main/scripts/install", to: "nadicodeai/argo/release/scripts/install"}
+   - {from: "NousResearch/hermes-agent/main/scripts/install", to: "nadicodeai/nadia/release/scripts/install"}
 +  # --- Self-referential Nadia docs site (host + baseUrl swap) ---
 +  # Upstream Docusaurus is host `hermes-agent.nousresearch.com` + baseUrl
 +  # '/docs/'. The Nadia fork publishes the RENAMED docs (built from
@@ -139,9 +139,9 @@ gh pr create
 Mapping-block header comment (lines 9-11):
 ```diff
    # GitHub URLs for the upstream Hermes repo map to this fork's GitHub repo
--  # (nadicodeai/argo). nadicode does not own nousresearch.com, so no
+-  # (nadicodeai/nadia). nadicode does not own nousresearch.com, so no
 -  # docs/pypi domains are rewritten.
-+  # (nadicodeai/argo). nadicode does not own nousresearch.com, so the upstream
++  # (nadicodeai/nadia). nadicode does not own nousresearch.com, so the upstream
 +  # PyPI package (pypi.org/p/hermes-agent) and the bare upstream host are NOT
 +  # rewritten. The ONE nousresearch.com exception is the self-referential DOCS
 +  # path (hermes-agent.nousresearch.com/docs/...), which the fork now mirrors at
@@ -179,13 +179,13 @@ Mapping-block header comment (lines 9-11):
  skip_contexts:
    # Preserve every URL whose host/path is NOT something nadicode controls.
    # We only rewrite GitHub URLs for the upstream hermes-agent repo (handled by
--  # the NousResearch/hermes-agent → nadicodeai/argo mapping above) and
+-  # the NousResearch/hermes-agent → nadicodeai/nadia mapping above) and
 -  # the hermes-agent.local devhost. Everything else — hermes-agent.nousresearch.com
 -  # (real upstream docs site, owned by NousResearch), pypi.org/p/hermes-agent
 -  # (real upstream PyPI package), img.shields.io/badge/Docs-hermes (badge label
 -  # that should mirror upstream), and NousResearch/hermes-example-plugins
 -  # (no nadicode fork exists) — is preserved as-is.
-+  # the NousResearch/hermes-agent → nadicodeai/argo mapping above), the
++  # the NousResearch/hermes-agent → nadicodeai/nadia mapping above), the
 +  # hermes-agent.local devhost, AND the self-referential DOCS path
 +  # hermes-agent.nousresearch.com/docs (rewritten to docs.nadicode.ai/nadia by the
 +  # docs mapping above — the fork now hosts its own docs site, so that path is
@@ -277,7 +277,7 @@ Append four `content_edits` at the end of the `content_edits:` list (after `setu
 
 **Optional cleanup (warn-level, non-blocking):** `dist/nadia/website/docs/user-guide/messaging/index.md:566-573` still link to the stripped pages (`[DingTalk Setup](dingtalk.md)` … `[Yuanbao Setup](yuanbao.md)`). With `onBrokenLinks: 'warn'` these ship as dead links but do NOT fail the build. RECOMMENDED follow-up `content_edit` to drop those 7 list lines (or accept the warnings). Not a blocker; see OD-4.
 
-**Not edited (already correct in dist, verified):** `editUrl` (`:76` → `nadicodeai/argo` via mapping), `themeConfig.image` (→ `img/nadia-agent-banner.png`, asset present after a clean `make build`), `projectName` (`:14` → `nadia-agent`). `trailingSlash` stays absent (Docusaurus default is correct for Vercel static hosting). Footer copyright + "Nous Research" link (`:167,:171`) and Discord (`:136,:157`) stay upstream (attribution / different host). `locales: ['en','zh-Hans']` (`:25-27`) — see OD-5.
+**Not edited (already correct in dist, verified):** `editUrl` (`:76` → `nadicodeai/nadia` via mapping), `themeConfig.image` (→ `img/nadia-agent-banner.png`, asset present after a clean `make build`), `projectName` (`:14` → `nadia-agent`). `trailingSlash` stays absent (Docusaurus default is correct for Vercel static hosting). Footer copyright + "Nous Research" link (`:167,:171`) and Discord (`:136,:157`) stay upstream (attribution / different host). `locales: ['en','zh-Hans']` (`:25-27`) — see OD-5.
 
 ### 2.3 `.github/workflows/deploy-docs.yml` (Component B — new file on `main`)
 
@@ -333,7 +333,7 @@ concurrency:
 jobs:
   deploy-docs:
     name: build (renamed) + deploy to Vercel
-    if: github.repository == 'nadicodeai/argo'
+    if: github.repository == 'nadicodeai/nadia'
     runs-on: ubuntu-latest
     env:
       DOCS_URL: https://docs.nadicode.ai
@@ -512,7 +512,7 @@ git commit ...          # hook re-runs make build + make leakage-static
 
 ## 4. Required secrets + manual Vercel-dashboard steps
 
-**Repo secrets** (GitHub → Settings → Secrets → Actions, or `gh secret set <NAME> --repo nadicodeai/argo`). Verified `gh secret list --repo nadicodeai/argo` is **empty** — all three Vercel secrets MUST be added before the first deploy.
+**Repo secrets** (GitHub → Settings → Secrets → Actions, or `gh secret set <NAME> --repo nadicodeai/nadia`). Verified `gh secret list --repo nadicodeai/nadia` is **empty** — all three Vercel secrets MUST be added before the first deploy.
 
 | Secret | Required | Source | Used by |
 |---|---|---|---|

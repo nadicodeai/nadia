@@ -3,18 +3,17 @@
 # Trigger.
 #   Push of a CalVer tag matching `v20*` (e.g. `v2026.5.28`,
 #   `v2026.5.28.2`). Tags are cut by the workshop-side wrapper
-#   `tools/nadia_release.py` (M4.3a), which ALSO creates the GitHub
-#   Release object via `gh release create <tag>` BEFORE pushing the tag.
-#   That ordering is load-bearing for the upload step below.
+#   `tools/nadia_release.py` (M4.3a), which pushes the tag and then creates
+#   the GitHub Release object via `gh release create <tag>` seconds later.
+#   The release object must exist before this workflow reaches the upload step.
 #
 # Coordination with `tools/nadia_release.py` (per plan.md § M4.2).
-#   The release object already exists by the time this workflow fires
-#   (the workshop wrapper called `gh release create` before pushing the
-#   tag). Calling `gh release create` again here would 422 with
-#   "release already exists". This workflow therefore ONLY uploads
-#   assets via `gh release upload --clobber`. If you ever change
-#   `tools/nadia_release.py` to defer release creation to CI, flip the
-#   final step to `gh release create` and remove this note.
+#   The release object is created by the workshop wrapper immediately after
+#   the tag push. Calling `gh release create` again here would 422 with
+#   "release already exists". This workflow therefore ONLY uploads assets via
+#   `gh release upload --clobber`. If you ever change `tools/nadia_release.py`
+#   to defer release creation to CI, flip the final step to `gh release create`
+#   and remove this note.
 #
 # Pipeline.
 #   1. prepare-release-tree: checkout, setup, make build,
@@ -366,8 +365,8 @@ jobs:
           cat release-assets/sha256sums.txt
 
       - name: Upload assets to the existing release (M4.3a coordination)
-        # tools/nadia_release.py (M4.3a) already created the release
-        # object via `gh release create` BEFORE pushing the tag that
+        # tools/nadia_release.py (M4.3a) creates the release object via
+        # `gh release create` immediately after pushing the tag that
         # triggered this workflow. Calling `gh release create` here
         # would 422. `gh release upload --clobber` is idempotent:
         # safe to re-run, overwrites previously uploaded assets with

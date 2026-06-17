@@ -150,17 +150,6 @@ groups:
       - AGENTS.md
       - CONTRIBUTING.md
 
-  - name: stale-python-metadata
-    why: >-
-      Upstream carries a checked-in hermes_agent.egg-info directory generated
-      for the upstream package. After filename rebrand it becomes
-      nadia_agent.egg-info, but its contents still name hermes-agent entry
-      points, modules, and requirements. The dist tree must let installers
-      generate fresh Nadia metadata from pyproject.toml instead of shipping
-      stale upstream metadata.
-    paths:
-      - hermes_agent.egg-info
-
 # ---------------------------------------------------------------------------
 # Inline content edits — for China references INSIDE a kept upstream file,
 # where a path-prune cannot help and the fork carries no quilt patch. Applied
@@ -261,6 +250,19 @@ content_edits:
       must fetch the Nadia release-branch installer.
     find: "https://hermes-agent.nousresearch.com/install.ps1"
     replace: "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.ps1"
+  - name: install-ps1-desktop-exe-name-nadia-agent
+    file: scripts/install.ps1
+    why: >-
+      Stage-Desktop builds and launches the Electron desktop app, whose
+      executable is Nadia Agent.exe. The CLI backend remains the separate
+      lower-case nadia.exe entry point.
+    find: "Hermes.exe"
+    replace: "Nadia Agent.exe"
+  - name: install-ps1-desktop-build-log-nadia
+    file: scripts/install.ps1
+    why: "Keep the desktop build log filename aligned with the Nadia product name."
+    find: "hermes-desktop-build-"
+    replace: "nadia-desktop-build-"
   - name: cli-update-reinstall-release-shortlink
     file: hermes_cli/main.py
     why: >-
@@ -285,6 +287,145 @@ content_edits:
       shortlink preserved by the URL guard.
     find: "https://hermes-agent.nousresearch.com/install.ps1"
     replace: "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.ps1"
+  - name: readme-docs-host-nadia
+    file: README.md
+    why: >-
+      README.md is whole-file rename-excepted for upstream attribution, but
+      product documentation links must point to the Nadia docs site.
+    find: "https://hermes-agent.nousresearch.com/docs"
+    replace: "https://docs.nadicode.ai/nadia"
+  - name: readme-zh-docs-host-nadia
+    file: README.zh-CN.md
+    why: "Same product-docs correction as README.md, translated README."
+    find: "https://hermes-agent.nousresearch.com/docs"
+    replace: "https://docs.nadicode.ai/nadia"
+  - name: readme-ur-pk-docs-host-nadia
+    file: README.ur-pk.md
+    why: "Same product-docs correction as README.md, Urdu README."
+    find: "https://hermes-agent.nousresearch.com/docs"
+    replace: "https://docs.nadicode.ai/nadia"
+  - name: readme-docs-badge-nadia
+    file: README.md
+    why: "Badge label should describe the Nadia docs host, not the upstream Hermes docs host."
+    find: "Docs-hermes--agent.nousresearch.com"
+    replace: "Docs-docs.nadicode.ai%2Fnadia"
+  - name: readme-zh-docs-badge-nadia
+    file: README.zh-CN.md
+    why: "Same docs badge correction as README.md, translated README."
+    find: "Docs-hermes--agent.nousresearch.com"
+    replace: "Docs-docs.nadicode.ai%2Fnadia"
+  - name: readme-ur-pk-docs-badge-nadia
+    file: README.ur-pk.md
+    why: "Same docs badge correction as README.md, Urdu README."
+    find: "Docs-hermes--agent.nousresearch.com"
+    replace: "Docs-docs.nadicode.ai%2Fnadia"
+  - name: readme-docs-label-nadia
+    file: README.md
+    why: "Visible docs-host text should match the Nadia docs link target."
+    find: "hermes-agent.nousresearch.com/docs"
+    replace: "docs.nadicode.ai/nadia"
+  - name: readme-zh-docs-label-nadia
+    file: README.zh-CN.md
+    why: "Visible docs-host text should match the Nadia docs link target."
+    find: "hermes-agent.nousresearch.com/docs"
+    replace: "docs.nadicode.ai/nadia"
+  - name: readme-ur-pk-docs-label-nadia
+    file: README.ur-pk.md
+    why: "Visible docs-host text should match the Nadia docs link target."
+    find: "hermes-agent.nousresearch.com/docs"
+    replace: "docs.nadicode.ai/nadia"
+  - name: readme-fork-notice-product-surface
+    file: README.md
+    why: >-
+      The fork notice must preserve upstream provenance without claiming Nadia
+      is Docker-only or that customer docs live on the upstream Hermes site.
+    find: "> **Fork notice.** Nadia is [Nadicode](https://github.com/nadicodeai)'s rebranded fork of [Hermes Agent](https://github.com/NousResearch/hermes-agent) by [Nous Research](https://nousresearch.com). The rebrand is name-level only — upstream behavior, configuration, and documentation all apply directly. Documentation links throughout this README point at the upstream Hermes docs site (which Nadicode does not host). For fork-specific issues, use the [nadicodeai/nadia issue tracker](https://github.com/nadicodeai/nadia/issues). The fork is distributed exclusively as the Docker image `ghcr.io/nadicodeai/nadia`; sync from upstream is performed by maintainers via `make sync` in the [nadicodeai/nadia](https://github.com/nadicodeai/nadia) repository."
+    replace: "> **Fork notice.** Nadia is [Nadicode](https://github.com/nadicodeai)'s rebranded fork of [Hermes Agent](https://github.com/NousResearch/hermes-agent) by [Nous Research](https://nousresearch.com). Upstream provenance is preserved, while customer install, desktop, docs, profile-builder, release, and container surfaces are Nadia-branded. For fork-specific issues, use the [nadicodeai/nadia issue tracker](https://github.com/nadicodeai/nadia/issues)."
+  - name: readme-header-nadia-agent
+    file: README.md
+    why: "The shipped customer README must identify the product as Nadia Agent."
+    find: "# Hermes Agent ☤"
+    replace: "# Nadia Agent"
+  - name: readme-banner-alt-nadia-agent
+    file: README.md
+    why: "The shipped customer README banner alt text must identify Nadia Agent."
+    find: 'alt="Hermes Agent"'
+    replace: 'alt="Nadia Agent"'
+  - name: readme-product-links-nadia
+    file: README.md
+    why: "The header product links are customer navigation, not upstream attribution."
+    find: '<a href="https://hermes-agent.nousresearch.com/">Hermes Agent</a> | <a href="https://hermes-agent.nousresearch.com/">Hermes Desktop</a>'
+    replace: '<a href="https://docs.nadicode.ai/nadia/">Nadia Agent</a> | <a href="https://github.com/nadicodeai/nadia/releases/latest">Nadia Desktop</a>'
+  - name: readme-zh-header-nadia-agent
+    file: README.zh-CN.md
+    why: "The shipped translated README must identify the product as Nadia Agent."
+    find: "# Hermes Agent ☤"
+    replace: "# Nadia Agent"
+  - name: readme-zh-banner-alt-nadia-agent
+    file: README.zh-CN.md
+    why: "The shipped translated README banner alt text must identify Nadia Agent."
+    find: 'alt="Hermes Agent"'
+    replace: 'alt="Nadia Agent"'
+  - name: readme-windows-headsup-nadia
+    file: README.md
+    why: "Windows quick-install prose is a customer support surface."
+    find: "Native Windows runs Hermes without WSL"
+    replace: "Native Windows runs Nadia without WSL"
+  - name: readme-git-bash-prose-nadia
+    file: README.md
+    why: "Installer prose should name Nadia, not Hermes."
+    find: "Hermes uses this bundled Git Bash"
+    replace: "Nadia uses this bundled Git Bash"
+  - name: readme-termux-prose-nadia
+    file: README.md
+    why: "Termux install prose should name Nadia, not Hermes."
+    find: "On Termux, Hermes installs"
+    replace: "On Termux, Nadia installs"
+  - name: readme-provider-prose-nadia
+    file: README.md
+    why: "Provider setup prose should name Nadia, not Hermes."
+    find: "Hermes works with whatever provider you want"
+    replace: "Nadia works with whatever provider you want"
+  - name: readme-entrypoints-prose-nadia
+    file: README.md
+    why: "CLI vs messaging prose should name Nadia, not Hermes."
+    find: "Hermes has two entry points"
+    replace: "Nadia has two entry points"
+  - name: readme-openclaw-prose-nadia
+    file: README.md
+    why: "Migration prose should name Nadia, not Hermes."
+    find: "If you're coming from OpenClaw, Hermes can automatically import"
+    replace: "If you're coming from OpenClaw, Nadia can automatically import"
+  - name: readme-contributor-setup-script-nadia
+    file: README.md
+    why: "Contributor quickstart in the shipped README must use the generated Nadia setup script."
+    find: "setup-hermes.sh"
+    replace: "setup-nadia.sh"
+  - name: readme-contributor-cd-nadia
+    file: README.md
+    why: "Contributor quickstart should cd into the fork repo name."
+    find: "cd hermes-agent"
+    replace: "cd nadia"
+  - name: readme-zh-contributor-setup-script-nadia
+    file: README.zh-CN.md
+    why: "Translated contributor quickstart must use the generated Nadia setup script."
+    find: "setup-hermes.sh"
+    replace: "setup-nadia.sh"
+  - name: readme-zh-contributor-cd-nadia
+    file: README.zh-CN.md
+    why: "Translated contributor quickstart should cd into the fork repo name."
+    find: "cd hermes-agent"
+    replace: "cd nadia"
+  - name: readme-ur-pk-contributor-setup-script-nadia
+    file: README.ur-pk.md
+    why: "Translated contributor quickstart must use the generated Nadia setup script."
+    find: "setup-hermes.sh"
+    replace: "setup-nadia.sh"
+  - name: readme-ur-pk-contributor-cd-nadia
+    file: README.ur-pk.md
+    why: "Translated contributor quickstart should cd into the fork repo name."
+    find: "cd hermes-agent"
+    replace: "cd nadia"
   - name: uninstall-reinstall-release-shortlinks
     file: hermes_cli/uninstall.py
     why: >-
@@ -635,6 +776,23 @@ content_edits:
       product while preserving upstream provenance.
     find: "**The native desktop app for [Hermes Agent](../../README.md) — the self-improving AI agent from [Nous Research](https://nousresearch.com).** Same agent, same skills, same memory as the CLI and gateway, in a polished native window — chat with streaming tool output, side-by-side previews, a file browser, voice, and settings, no terminal required. Available for **macOS, Windows, and Linux**."
     replace: "**The native desktop app for [Nadia Agent](../../README.md), the NadicodeAI-maintained agent based on Nous Research's Hermes Agent.** Same agent, same skills, same memory as the CLI and gateway, in a polished native window: chat with streaming tool output, side-by-side previews, a file browser, voice, and settings, no terminal required. Available for **macOS, Windows, and Linux**."
+  - name: desktop-readme-download-release-page
+    file: apps/desktop/README.md
+    why: >-
+      The desktop README's prebuilt installer link must point to Nadia release
+      assets, not the upstream Hermes desktop website.
+    find: "Prebuilt installers are built and distributed via [the Hermes Desktop website.](https://hermes-agent.nousresearch.com/desktop)."
+    replace: "Prebuilt installers are built and distributed via [Nadia GitHub Releases.](https://github.com/nadicodeai/nadia/releases/latest)."
+  - name: desktop-readme-docs-host-nadia
+    file: apps/desktop/README.md
+    why: "Desktop README product docs link should point at Nadia docs."
+    find: "https://hermes-agent.nousresearch.com/docs/"
+    replace: "https://docs.nadicode.ai/nadia/"
+  - name: desktop-readme-docs-badge-nadia
+    file: apps/desktop/README.md
+    why: "Desktop README badge label should describe the Nadia docs host."
+    find: "Docs-hermes--agent.nousresearch.com"
+    replace: "Docs-docs.nadicode.ai%2Fnadia"
   - name: desktop-readme-tcc-bundle-id-nadicodeai
     file: apps/desktop/README.md
     why: >-
@@ -808,13 +966,12 @@ content_edits:
   - name: docs-url-env-overridable
     file: website/docusaurus.config.ts
     why: >-
-      Make the published docs host/baseUrl injectable at build time so CI can
-      target docs.nadicode.ai + /nadia/ while the upstream literal stays the
-      default (preserved by nadia-rename.yaml skip_contexts -> leakage-safe). The
-      rebrand pass does NOT rewrite url/baseUrl. Anchor matches the exact
-      upstream pre-rename two-line block (both lines indented 2 spaces).
+      Make the published docs host/baseUrl default to the Nadia docs site while
+      keeping CI/deploy overrides injectable. The rebrand pass does NOT rewrite
+      url/baseUrl because the upstream host is a bare URL, so this content edit
+      owns the product docs default.
     find: "  url: 'https://hermes-agent.nousresearch.com',\n  baseUrl: '/docs/',"
-    replace: "  url: process.env.DOCS_URL ?? 'https://hermes-agent.nousresearch.com',\n  baseUrl: process.env.DOCS_BASE_URL ?? '/docs/',"
+    replace: "  url: process.env.DOCS_URL ?? 'https://docs.nadicode.ai',\n  baseUrl: process.env.DOCS_BASE_URL ?? '/nadia/',"
   - name: docs-organization-name-nadia
     file: website/docusaurus.config.ts
     why: >-

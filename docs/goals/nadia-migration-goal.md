@@ -31,8 +31,8 @@ The repository has already moved many runtime surfaces from Argo to Nadia, and c
 - The branch is `feature/nadia-migration`.
 - `dist/nadia` is the built customer tree.
 - The current repo path is still `/home/vadim/Code/argo`; local path names are not themselves customer proof.
-- Previous goal text incorrectly allowed `nadicodeai/argo` as the permanent public repo coordinate. That is no longer valid.
-- Current scans still find `nadicodeai/argo`, `ghcr.io/nadicodeai/argo`, `hermes-agent.nousresearch.com`, `setup.hermes-agent.nousresearch.com`, old README policy, release tooling comments, and docs/install surfaces that must be re-evaluated under the new decision.
+- The public GitHub repository coordinate is `nadicodeai/nadia`; `nadicodeai/argo` is no longer the canonical repository.
+- Current scans must continue to check for stale `nadicodeai/argo`, `ghcr.io/nadicodeai/argo`, `docs.nadicode.ai/argo`, old README policy, release tooling comments, and install/download surfaces that must be Nadia-branded. `hermes-agent.nousresearch.com` may remain only when it is upstream provenance, upstream docs attribution, or a protected external Hermes reference.
 - There are unrelated untracked PNG files in the worktree: `create-controls.png`, `create-started.png`, `create.png`, `home.png`. Do not stage or delete them unless separately instructed.
 
 ## Required Architectural Understanding
@@ -76,13 +76,13 @@ Historical Argo references may remain only when they are explicitly about old mi
 - Do not publish to PyPI unless Vadim explicitly approves it.
 - Do not implement a legacy `argo` compatibility alias, `~/.argo` migration, or `ARGO_*` compatibility layer unless Vadim explicitly approves it.
 - Do not choose or invent a public artifact domain. Implement the code and docs in terms of the settled canonical coordinates or a clearly named configurable artifact base until Vadim chooses the public host.
-- Do not perform public repo renames, DNS changes, release publication, image publication, or paid infrastructure setup without explicit approval.
+- Do not perform DNS changes, release publication, image publication, privacy changes, or paid infrastructure setup without explicit approval. The public GitHub repository rename to `nadicodeai/nadia` was explicitly approved and performed during this migration.
 
 ## Approval Gates
 
 Ask Vadim before any irreversible, public, shared, or costly action:
 
-- Renaming the GitHub repository in GitHub settings.
+- Renaming the GitHub repository in GitHub settings. This was completed for `nadicodeai/argo` -> `nadicodeai/nadia`; any further repository rename still requires approval.
 - Making the source repository private.
 - Creating a new public release repository.
 - Choosing or changing DNS or a public artifact host.
