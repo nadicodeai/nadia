@@ -1,0 +1,4 @@
+# Assertions for 0021-update-fork-check-configured-origin.patch
+# Prove update fork detection reads the configured origin before expanded transports.
+path:nadia_cli/main.py ["config", "--get", "remote.origin.url"]
+path:nadia_cli/main.py ["remote", "get-url", "origin"]

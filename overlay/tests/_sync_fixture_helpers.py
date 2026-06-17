@@ -5,9 +5,9 @@ sync-fixture integration tests (``test_sync_fixture.py`` and
 These helpers are deliberately small and self-contained: they wrap
 ``subprocess.run`` with text/utf-8 wiring, build a signing-free git
 environment, and unpack the zstd-compressed baseline tarballs that the
-fixtures ship. They reference no hermes-/argo-specific identifiers, so
+fixtures ship. They reference no hermes-/nadia-specific identifiers, so
 they survive the rename engine unchanged when the overlay ships into
-``dist/argo/tests/``.
+``dist/nadia/tests/``.
 """
 
 from __future__ import annotations
@@ -60,10 +60,10 @@ def git_env_no_signing() -> dict[str, str]:
     env = os.environ.copy()
     env.update(
         {
-            "GIT_AUTHOR_NAME": "argo-test",
-            "GIT_AUTHOR_EMAIL": "argo-test@example.invalid",
-            "GIT_COMMITTER_NAME": "argo-test",
-            "GIT_COMMITTER_EMAIL": "argo-test@example.invalid",
+            "GIT_AUTHOR_NAME": "nadia-test",
+            "GIT_AUTHOR_EMAIL": "nadia-test@example.invalid",
+            "GIT_COMMITTER_NAME": "nadia-test",
+            "GIT_COMMITTER_EMAIL": "nadia-test@example.invalid",
             "GIT_CONFIG_GLOBAL": "/dev/null",
             "GIT_CONFIG_SYSTEM": "/dev/null",
         }

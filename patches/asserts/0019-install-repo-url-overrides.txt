@@ -1,0 +1,4 @@
+# Assertions for 0019-install-repo-url-overrides.patch
+# Prove the shipped installer preserves overridable repo URLs for local smoke.
+path:scripts/install.sh NADIA_REPO_URL_SSH
+path:scripts/install.sh NADIA_REPO_URL_HTTPS

@@ -3,18 +3,18 @@
 The customer-runnable rebranded tree and the install scripts live ONLY on the
 `release` branch (main is the workshop: upstream/ + patches/ + overlay/, not a
 runnable install). Upstream hardcodes `/main/scripts/install.*` in the README,
-the install scripts (incl. install.cmd's live bootstrap), the `argo update` /
+the install scripts (incl. install.cmd's live bootstrap), the `nadia update` /
 uninstall reinstall hints, and ~30 docs pages. Left unfixed, every one of those
 one-liners 404s for customers.
 
 The fix is split: README*/CONTRIBUTING are engine-excepted (so patch 0002 hard-
-codes /release/), and every other file is corrected by the argo-rename.yaml
+codes /release/), and every other file is corrected by the nadia-rename.yaml
 mapping `NousResearch/hermes-agent/main/scripts/install ->
-nadicodeai/argo/release/scripts/install`. This test asserts the END STATE on the
+nadicodeai/nadia/release/scripts/install`. This test asserts the END STATE on the
 built tree: NO `/main/scripts/install` survives anywhere a customer can see it,
 and the key entry points carry the /release/ form.
 
-Requires `make build` to have produced dist/argo/ (CI builds before tests).
+Requires `make build` to have produced dist/nadia/ (CI builds before tests).
 """
 
 from __future__ import annotations
@@ -24,17 +24,17 @@ from pathlib import Path
 import pytest
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
-_DIST = _REPO_ROOT / "dist" / "argo"
+_DIST = _REPO_ROOT / "dist" / "nadia"
 
-# The 404-ing form (post-rename: org is already nadicodeai/argo) that must not
+# The 404-ing form (post-rename: org is already nadicodeai/nadia) that must not
 # appear anywhere in the shipped tree.
-_BAD = "nadicodeai/argo/main/scripts/install"
+_BAD = "nadicodeai/nadia/main/scripts/install"
 
 # Build cruft / VCS dirs that are NOT part of the customer-facing surface.
 # .pc/ is quilt's per-patch backup state (pre-patch snapshots); it is not a live
 # file a customer ever executes or reads. (Its presence in dist is a separate
 # hygiene item.)
-_SKIP_DIRS = {".pc", ".git", "__pycache__", "node_modules", ".argo"}
+_SKIP_DIRS = {".pc", ".git", "__pycache__", "node_modules", ".nadia"}
 
 
 def _iter_text_files(root: Path):
@@ -49,7 +49,7 @@ def _iter_text_files(root: Path):
             continue
 
 
-@pytest.mark.skipif(not _DIST.is_dir(), reason="dist/argo not built (run `make build`)")
+@pytest.mark.skipif(not _DIST.is_dir(), reason="dist/nadia not built (run `make build`)")
 def test_no_main_branch_install_url_anywhere_in_dist() -> None:
     offenders = [
         str(p.relative_to(_DIST))
@@ -62,22 +62,22 @@ def test_no_main_branch_install_url_anywhere_in_dist() -> None:
     )
 
 
-@pytest.mark.skipif(not _DIST.is_dir(), reason="dist/argo not built (run `make build`)")
+@pytest.mark.skipif(not _DIST.is_dir(), reason="dist/nadia not built (run `make build`)")
 @pytest.mark.parametrize(
     "rel_path, needle",
     [
-        ("README.md", "nadicodeai/argo/release/scripts/install.sh"),
-        ("README.zh-CN.md", "nadicodeai/argo/release/scripts/install.sh"),
-        ("scripts/install.sh", "nadicodeai/argo/release/scripts/install"),
-        ("scripts/install.ps1", "nadicodeai/argo/release/scripts/install.ps1"),
-        ("scripts/install.cmd", "nadicodeai/argo/release/scripts/install.ps1"),  # live bootstrap
-        ("argo_cli/main.py", "nadicodeai/argo/release/scripts/install.sh"),       # update reinstall hint
-        ("argo_cli/uninstall.py", "nadicodeai/argo/release/scripts/install.sh"),  # uninstall reinstall hint
+        ("README.md", "nadicodeai/nadia/release/scripts/install.sh"),
+        ("README.zh-CN.md", "nadicodeai/nadia/release/scripts/install.sh"),
+        ("scripts/install.sh", "nadicodeai/nadia/release/scripts/install"),
+        ("scripts/install.ps1", "nadicodeai/nadia/release/scripts/install.ps1"),
+        ("scripts/install.cmd", "nadicodeai/nadia/release/scripts/install.ps1"),  # live bootstrap
+        ("nadia_cli/main.py", "nadicodeai/nadia/release/scripts/install.sh"),       # update reinstall hint
+        ("nadia_cli/uninstall.py", "nadicodeai/nadia/release/scripts/install.sh"),  # uninstall reinstall hint
     ],
 )
 def test_key_entrypoints_use_release_branch(rel_path: str, needle: str) -> None:
     f = _DIST / rel_path
-    assert f.is_file(), f"expected shipped file {rel_path} missing from dist/argo"
+    assert f.is_file(), f"expected shipped file {rel_path} missing from dist/nadia"
     assert needle in f.read_text(encoding="utf-8"), (
         f"{rel_path} should reference the release-branch install URL ({needle!r})"
     )

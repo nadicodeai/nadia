@@ -1,6 +1,6 @@
 """Fake Telegram Bot API server for the update smoke harness (M5.1).
 
-Implements the minimum surface argo's gateway exercises during the update
+Implements the minimum surface nadia's gateway exercises during the update
 flow: ``getMe``, ``getUpdates``, ``sendMessage``. Binds to 127.0.0.1 on an
 OS-assigned free port; never contacts api.telegram.org.
 
@@ -9,10 +9,10 @@ Strategy ("end-to-end Telegram via a fake bot (no real Telegram API in
 CI)"). Standards: ``.shepherd/install-update/standards.md`` § "Telegram
 smoke tests use fake bots. Never the real Telegram API."
 
-How the M5.3 smoke harness will wire argo to this fake
+How the M5.3 smoke harness will wire nadia to this fake
 -------------------------------------------------------
 
-Argo's gateway is python-telegram-bot (PTB) based. The Telegram platform
+Nadia's gateway is python-telegram-bot (PTB) based. The Telegram platform
 plugin honours ``config.extra.base_url`` and, when present, builds the
 PTB ``Application`` with ``builder.base_url(custom_base_url)`` (see
 ``upstream/gateway/platforms/telegram.py`` around line 1481). PTB then
@@ -23,7 +23,7 @@ under test via the platform's ``extra.base_url`` config (and
 
     platforms:
       telegram:
-        token: "FAKE:fake_argo_bot"
+        token: "FAKE:fake_nadia_bot"
         extra:
           base_url: "http://127.0.0.1:<port>/bot"
 
@@ -38,7 +38,7 @@ on direct HTTPS requests against the real host. Once ``extra.base_url``
 points at the fake's plain-HTTP URL, the fallback transport is bypassed
 (see PTB's own ``HTTPXRequest`` selection logic) and traffic goes
 straight to 127.0.0.1. No env-var override is needed and none has been
-patched into argo by this task — that decision belongs to M5.3.
+patched into nadia by this task — that decision belongs to M5.3.
 
 The fixture is stdlib-only (``http.server`` + ``threading``) so it adds
 no runtime deps, in line with IU-NFR-7.
@@ -82,7 +82,7 @@ class FakeTelegramServer:
         server.start()
         try:
             server.inject_message("/update")
-            # ... point argo's gateway at server.base_url ...
+            # ... point nadia's gateway at server.base_url ...
         finally:
             server.stop()
 
@@ -95,9 +95,9 @@ class FakeTelegramServer:
     def __init__(
         self,
         *,
-        bot_username: str = "fake_argo_bot",
+        bot_username: str = "fake_nadia_bot",
         bot_id: int = 42,
-        bot_first_name: str = "Fake Argo",
+        bot_first_name: str = "Fake Nadia",
         host: str = "127.0.0.1",
         port: Optional[int] = None,
     ) -> None:

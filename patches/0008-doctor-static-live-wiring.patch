@@ -1,22 +1,22 @@
 Subject: Wire --static and --live into hermes doctor
 
 Wire two fork-owned leakage-scan modes into `hermes doctor` so the
-post-rename `argo doctor --static / --live` subcommands are reachable
+post-rename `nadia doctor --static / --live` subcommands are reachable
 from upstream's main argparse tree.
 
 The scan logic itself ships as an additive overlay file
 (overlay/hermes_cli/doctor_leakage.py — renamed to
-argo_cli/doctor_leakage.py at build time). This patch is the wiring
+nadia_cli/doctor_leakage.py at build time). This patch is the wiring
 glue: argparse flags (--static, --live, --rename-yaml, --repo-root,
 --live-cmd) on the existing `doctor` subparser, and a dispatch branch
 in cmd_doctor that calls run_static / run_live before the upstream
 health checks. Flagless `hermes doctor` keeps upstream behavior.
 
-Mirrors legacy argo-agent commit c51d68e1b (the in-tree rename branch),
+Mirrors legacy nadia-agent commit c51d68e1b (the in-tree rename branch),
 adapted for the pristine-fork architecture where this lives as a
 quilt patch against upstream/ rather than an edit in tracked source.
 
-Surfaces gap exposed by the M6.2a parity runner: `argo doctor --static`
+Surfaces gap exposed by the M6.2a parity runner: `nadia doctor --static`
 was unrecognized in the new image because main.py never dispatched the
 flag to the overlay module that already provided run_static / run_live.
 
@@ -45,7 +45,7 @@ Index: .sync-workdir/hermes_cli/main.py
 +
 +        # Resolve rename_yaml and repo_root from args or defaults.
 +        # When --rename-yaml is not explicitly passed AND no yaml is at the
-+        # default repo-root path (the published-image case — argo-rename.yaml
++        # default repo-root path (the published-image case — nadia-rename.yaml
 +        # is build-time config, not shipped with the runtime per spec FR-7),
 +        # fall back to None so run_static / run_live load the build-time-baked
 +        # constants from hermes_cli._rename_defaults (issue #4).
@@ -55,7 +55,7 @@ Index: .sync-workdir/hermes_cli/main.py
 +        if rename_yaml_arg:
 +            rename_yaml = _Path(rename_yaml_arg)
 +        else:
-+            _default_yaml = _here / "argo-rename.yaml"
++            _default_yaml = _here / "nadia-rename.yaml"
 +            rename_yaml = _default_yaml if _default_yaml.is_file() else None
 +        repo_root = _Path(repo_root_arg) if repo_root_arg else _here
 +
@@ -91,7 +91,7 @@ Index: .sync-workdir/hermes_cli/subcommands/doctor.py
 +        dest="leakage_static",
 +        help=(
 +            "Scan the repo tree for upstream-identifier leakage using "
-+            "argo-rename.yaml mappings, exceptions, and skip_contexts. "
++            "nadia-rename.yaml mappings, exceptions, and skip_contexts. "
 +            "Exit 0 on zero hits; non-zero otherwise."
 +        ),
 +    )
@@ -111,7 +111,7 @@ Index: .sync-workdir/hermes_cli/subcommands/doctor.py
 +        metavar="PATH",
 +        default=None,
 +        dest="rename_yaml",
-+        help="Path to argo-rename.yaml (default: <repo-root>/argo-rename.yaml).",
++        help="Path to nadia-rename.yaml (default: <repo-root>/nadia-rename.yaml).",
 +    )
 +    doctor_parser.add_argument(
 +        "--repo-root",

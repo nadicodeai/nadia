@@ -4,7 +4,7 @@
 set -euo pipefail
 
 PROFILE="${FDE_PROFILE:-fde-live-smoke}"
-HONCHO_WORKSPACE="${FDE_HONCHO_WORKSPACE:-argo-fde-live}"
+HONCHO_WORKSPACE="${FDE_HONCHO_WORKSPACE:-nadia-fde-live}"
 HONCHO_PEER="${FDE_HONCHO_PEER:-fde-smoke}"
 HONCHO_API_KEY="${FDE_HONCHO_API_KEY:-}"
 HONCHO_BASE_URL="${FDE_HONCHO_BASE_URL:-}"
@@ -33,10 +33,10 @@ args=(
 [ -z "${HONCHO_BASE_URL}" ] || args+=(--honcho-base-url "${HONCHO_BASE_URL}")
 [ -z "${TELEGRAM_HOME_CHANNEL}" ] || args+=(--telegram-home-channel "${TELEGRAM_HOME_CHANNEL}")
 
-argo-customer-init "${args[@]}"
+nadia-customer-init "${args[@]}"
 
-argo -p "${PROFILE}" --version
-argo -p "${PROFILE}" honcho status
-argo -p "${PROFILE}" gateway status
+nadia -p "${PROFILE}" --version
+nadia -p "${PROFILE}" honcho status
+nadia -p "${PROFILE}" gateway status
 
 printf 'fde-live: PASSED profile=%s\n' "${PROFILE}"

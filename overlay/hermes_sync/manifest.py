@@ -1,4 +1,4 @@
-"""hermes_sync.manifest — writes the per-sync manifest at .argo/sync-manifest.json.
+"""hermes_sync.manifest — writes the per-sync manifest at .nadia/sync-manifest.json.
 
 Determinism guarantee
 ---------------------
@@ -47,22 +47,22 @@ class SyncManifest:
 
 
 class ManifestWriter:
-    """Writes :class:`SyncManifest` instances to ``<repo_root>/.argo/sync-manifest.json``.
+    """Writes :class:`SyncManifest` instances to ``<repo_root>/.nadia/sync-manifest.json``.
 
     Parameters
     ----------
     repo_root:
-        Absolute path to the repository root.  The ``.argo/`` sub-directory
+        Absolute path to the repository root.  The ``.nadia/`` sub-directory
         is created automatically if it does not yet exist.
     """
 
-    _MANIFEST_RELPATH = Path(".argo") / "sync-manifest.json"
+    _MANIFEST_RELPATH = Path(".nadia") / "sync-manifest.json"
 
     def __init__(self, repo_root: Path) -> None:
         self._repo_root = repo_root
 
     def write(self, manifest: SyncManifest, *, now: str | None = None) -> Path:
-        """Serialise *manifest* and write it to ``.argo/sync-manifest.json``.
+        """Serialise *manifest* and write it to ``.nadia/sync-manifest.json``.
 
         Parameters
         ----------

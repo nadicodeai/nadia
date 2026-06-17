@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Bake a forward-deployed Argo golden VM baseline.
+# Bake a forward-deployed Nadia golden VM baseline.
 
 set -euo pipefail
 
-ARGO_HOME="${ARGO_HOME:-${HOME}/.argo}"
-ARGO_INSTALL_DIR="${ARGO_INSTALL_DIR:-}"
-INSTALL_URL="${ARGO_INSTALL_URL:-https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh}"
+NADIA_HOME="${NADIA_HOME:-${HOME}/.nadia}"
+NADIA_INSTALL_DIR="${NADIA_INSTALL_DIR:-}"
+INSTALL_URL="${NADIA_INSTALL_URL:-https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.sh}"
 
 DRY_RUN=0
 PRINT_PACKAGES=0
@@ -17,24 +17,24 @@ usage() {
     cat <<'USAGE'
 Usage: scripts/golden-vm-bake.sh [options]
 
-Installs the VM baseline for forward-deployed Argo engineers by running
-scripts/argo-fde-provision.sh with Ubuntu/Debian OS packages enabled, then
+Installs the VM baseline for forward-deployed Nadia engineers by running
+scripts/nadia-fde-provision.sh with Ubuntu/Debian OS packages enabled, then
 cleaning customer-specific state before snapshot.
 
 Options:
   --dry-run                 Print actions without changing the machine.
   --print-python-packages   Print the Python package surface and exit.
-  --skip-argo-install       Do not run the public Argo installer.
+  --skip-nadia-install       Do not run the public Nadia installer.
   --skip-os-packages        Do not install apt packages.
   --skip-browser            Skip browser/node provisioning in this bake pass.
-  --no-clean                Leave mutable Argo runtime state in place.
+  --no-clean                Leave mutable Nadia runtime state in place.
   --allow-lazy-installs     Do not force security.allow_lazy_installs=false.
   -h, --help                Show this help.
 
 Environment:
-  ARGO_HOME                 Defaults to ~/.argo.
-  ARGO_INSTALL_DIR          Overrides auto-discovery of the Argo venv location.
-  ARGO_INSTALL_URL          Overrides the public release install.sh URL.
+  NADIA_HOME                 Defaults to ~/.nadia.
+  NADIA_INSTALL_DIR          Overrides auto-discovery of the Nadia venv location.
+  NADIA_INSTALL_URL          Overrides the public release install.sh URL.
 USAGE
 }
 
@@ -91,7 +91,7 @@ while [ "$#" -gt 0 ]; do
             PROVISION_ARGS+=("$1")
             shift
             ;;
-        --skip-argo-install|--skip-browser|--allow-lazy-installs)
+        --skip-nadia-install|--skip-browser|--allow-lazy-installs)
             PROVISION_ARGS+=("$1")
             shift
             ;;
@@ -116,37 +116,37 @@ done
 install_customer_init() {
     local script_dir
     script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    local source_script="${script_dir}/argo-customer-init"
+    local source_script="${script_dir}/nadia-customer-init"
     [ -f "${source_script}" ] || die "missing ${source_script}"
-    log "install argo-customer-init command"
-    run_root install -m 0755 "${source_script}" /usr/local/bin/argo-customer-init
+    log "install nadia-customer-init command"
+    run_root install -m 0755 "${source_script}" /usr/local/bin/nadia-customer-init
 }
 
 clean_state() {
     [ "${CLEAN_STATE}" -eq 1 ] || return 0
     log "clean mutable customer state before snapshot"
     run rm -rf \
-        "${ARGO_HOME}/sessions" \
-        "${ARGO_HOME}/logs" \
-        "${ARGO_HOME}/gateway" \
-        "${ARGO_HOME}/profiles"
+        "${NADIA_HOME}/sessions" \
+        "${NADIA_HOME}/logs" \
+        "${NADIA_HOME}/gateway" \
+        "${NADIA_HOME}/profiles"
     run rm -f \
-        "${ARGO_HOME}/.env" \
-        "${ARGO_HOME}/honcho.json" \
-        "${ARGO_HOME}/auth.json"
+        "${NADIA_HOME}/.env" \
+        "${NADIA_HOME}/honcho.json" \
+        "${NADIA_HOME}/auth.json"
 }
 
 main() {
     local script_dir
     script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     if [ "${PRINT_PACKAGES}" -eq 1 ]; then
-        "${script_dir}/argo-fde-provision.sh" "${PROVISION_ARGS[@]}"
+        "${script_dir}/nadia-fde-provision.sh" "${PROVISION_ARGS[@]}"
         return 0
     fi
     if [ "${SKIP_OS_PACKAGES}" -eq 0 ]; then
         PROVISION_ARGS+=(--with-os-packages)
     fi
-    "${script_dir}/argo-fde-provision.sh" "${PROVISION_ARGS[@]}"
+    "${script_dir}/nadia-fde-provision.sh" "${PROVISION_ARGS[@]}"
     clean_state
     log "golden VM bake completed"
 }

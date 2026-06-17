@@ -3,7 +3,7 @@
 This is the parsing half of the packaging-contract gate (see
 ``tools/check_packaging_contract.py``). It turns Dockerfile text into a small,
 comparable ``Facets`` record so the gate can diff what our shipped
-``./Dockerfile`` pins against the renamed-upstream oracle (``dist/argo/Dockerfile``,
+``./Dockerfile`` pins against the renamed-upstream oracle (``dist/nadia/Dockerfile``,
 produced verbatim from ``upstream/Dockerfile`` by ``make build``).
 
 Why a real parser and not a regex grab-bag: the things that silently drift away

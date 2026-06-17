@@ -1,11 +1,11 @@
-# Assertions for 0018-ui-tui-argo-theme.patch
-# Prove the generated Argo theme is the default Ink TUI skin surface.
-path:ui-tui/src/theme.ts ARGO_DARK_THEME_COLORS
-path:ui-tui/src/theme.ts bannerHero: ARGO_BANNER_HERO
-path:ui-tui/src/app/uiStore.ts readying argo…
+# Assertions for 0018-ui-tui-nadia-theme.patch
+# Prove the generated Nadia theme is the default Ink TUI skin surface.
+path:ui-tui/src/theme.ts NADIA_DARK_THEME_COLORS
+path:ui-tui/src/theme.ts bannerHero: NADIA_BANNER_HERO
+path:ui-tui/src/app/uiStore.ts readying nadia…
 path:ui-tui/src/components/appChrome.tsx EMOJI_FRAMES = ['> ',
 path:ui-tui/src/components/appLayout.tsx ui.theme.brand.prompt
 path:ui-tui/src/content/fortunes.ts return `${rare ? '>' : '|'} ${bag[n % bag.length]}`
-path:ui-tui/src/__tests__/theme.test.ts expect(DEFAULT_THEME.brand.name).toBe('Argo')
+path:ui-tui/src/__tests__/theme.test.ts expect(DEFAULT_THEME.brand.name).toBe('Nadia')
 path:ui-tui/src/__tests__/theme.test.ts expect(DEFAULT_THEME.bannerHero).toContain('⣿⡈⢳⣄')
 path:ui-tui/src/__tests__/virtualHeights.test.ts estimatedMsgHeight(msg, 27

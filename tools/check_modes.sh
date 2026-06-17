@@ -2,7 +2,7 @@
 # tools/check_modes.sh — verify file-mode preservation across the build.
 #
 # For every executable file in upstream/, check that the corresponding
-# file in dist/argo/ (after rename) has the same permission bits. This
+# file in dist/nadia/ (after rename) has the same permission bits. This
 # catches regressions in tools/build.py's shutil.copytree behavior or in
 # the rename engine's file-rename pass.
 #
@@ -13,10 +13,10 @@ set -o pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 UPSTREAM="$REPO_ROOT/upstream"
-DIST="$REPO_ROOT/dist/argo"
+DIST="$REPO_ROOT/dist/nadia"
 
 if [ ! -d "$DIST" ]; then
-    echo "error: dist/argo/ not present — run 'make build' first" >&2
+    echo "error: dist/nadia/ not present — run 'make build' first" >&2
     exit 2
 fi
 
@@ -25,9 +25,9 @@ checked=0
 
 while IFS= read -r src; do
     rel="${src#$UPSTREAM/}"
-    # Apply the simple hermes→argo path rename. Mirrors what the rename
+    # Apply the simple hermes→nadia path rename. Mirrors what the rename
     # engine's filenames pass would do for our case.
-    new_rel="$(echo "$rel" | sed 's/hermes/argo/g')"
+    new_rel="$(echo "$rel" | sed 's/hermes/nadia/g')"
     dst="$DIST/$new_rel"
     if [ ! -f "$dst" ]; then
         echo "  MISSING $dst (orig=$rel)" >&2

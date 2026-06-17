@@ -155,7 +155,7 @@ class ContentPass:
 
         For each regular file reachable from *root*:
 
-        - Directories named ``.git``, ``.venv``, ``.argo``, ``__pycache__``,
+        - Directories named ``.git``, ``.venv``, ``.nadia``, ``__pycache__``,
           or ``node_modules`` are skipped entirely (not descended into).
         - Files matched by any ``config.exceptions`` glob are skipped.
         - Files that appear binary (contain a NUL byte in the first 8 KB)

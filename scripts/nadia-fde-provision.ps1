@@ -1,13 +1,13 @@
 param(
     [switch]$DryRun,
     [switch]$PrintPythonPackages,
-    [switch]$SkipArgoInstall,
+    [switch]$SkipNadiaInstall,
     [switch]$SkipBrowser,
     [switch]$SkipInitInstall,
     [switch]$AllowLazyInstalls,
-    [string]$ArgoHome = $(if ($env:ARGO_HOME) { $env:ARGO_HOME } else { Join-Path $env:LOCALAPPDATA "argo" }),
-    [string]$ArgoInstallDir = $(if ($env:ARGO_INSTALL_DIR) { $env:ARGO_INSTALL_DIR } else { "" }),
-    [string]$InstallUrl = $(if ($env:ARGO_INSTALL_URL) { $env:ARGO_INSTALL_URL } else { "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1" })
+    [string]$NadiaHome = $(if ($env:NADIA_HOME) { $env:NADIA_HOME } else { Join-Path $env:LOCALAPPDATA "nadia" }),
+    [string]$NadiaInstallDir = $(if ($env:NADIA_INSTALL_DIR) { $env:NADIA_INSTALL_DIR } else { "" }),
+    [string]$InstallUrl = $(if ($env:NADIA_INSTALL_URL) { $env:NADIA_INSTALL_URL } else { "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.ps1" })
 )
 
 $ErrorActionPreference = "Stop"
@@ -28,18 +28,18 @@ function Invoke-Fde {
     }
 }
 
-function Resolve-ArgoInstallDir {
-    if ($ArgoInstallDir) { return $ArgoInstallDir }
-    $candidate = Join-Path $ArgoHome "argo-agent"
+function Resolve-NadiaInstallDir {
+    if ($NadiaInstallDir) { return $NadiaInstallDir }
+    $candidate = Join-Path $NadiaHome "nadia-agent"
     if (Test-Path $candidate) { return $candidate }
     return $candidate
 }
 
-function Resolve-ArgoPython {
-    $installDir = Resolve-ArgoInstallDir
+function Resolve-NadiaPython {
+    $installDir = Resolve-NadiaInstallDir
     $candidate = Join-Path $installDir "venv\Scripts\python.exe"
     if ((Test-Path $candidate) -or $DryRun) { return $candidate }
-    throw "Argo venv python not found at $candidate"
+    throw "Nadia venv python not found at $candidate"
 }
 
 function Resolve-Uv {
@@ -54,10 +54,10 @@ function Resolve-Uv {
     return ""
 }
 
-function Install-Argo {
-    if ($SkipArgoInstall) { return }
-    $installer = Join-Path $env:TEMP "argo-install.ps1"
-    Write-Host "install Argo from $InstallUrl"
+function Install-Nadia {
+    if ($SkipNadiaInstall) { return }
+    $installer = Join-Path $env:TEMP "nadia-install.ps1"
+    Write-Host "install Nadia from $InstallUrl"
     Invoke-Fde { Invoke-WebRequest -Uri $InstallUrl -OutFile $installer -UseBasicParsing } "download $InstallUrl"
     $args = @("-SkipSetup", "-NonInteractive")
     if ($SkipBrowser) {
@@ -67,7 +67,7 @@ function Install-Argo {
 }
 
 function Install-FdePythonPackages {
-    $python = Resolve-ArgoPython
+    $python = Resolve-NadiaPython
     Write-Host "preinstall FDE Python packages"
     foreach ($package in $FdePythonPackages) {
         Write-Host "python package $package"
@@ -91,13 +91,13 @@ function Install-FdePythonPackages {
 }
 
 function Write-FdeTemplates {
-    Write-Host "write customer templates under $ArgoHome"
+    Write-Host "write customer templates under $NadiaHome"
     if ($DryRun) {
-        Write-Host "write $ArgoHome\SOUL.md.template"
-        Write-Host "write $ArgoHome\honcho.json.template"
+        Write-Host "write $NadiaHome\SOUL.md.template"
+        Write-Host "write $NadiaHome\honcho.json.template"
         return
     }
-    New-Item -ItemType Directory -Force -Path $ArgoHome | Out-Null
+    New-Item -ItemType Directory -Force -Path $NadiaHome | Out-Null
     @"
 # Customer Operating Context
 
@@ -107,10 +107,10 @@ Honcho peer: {{HONCHO_PEER}}
 
 Use this file for customer-specific operating context, preferences, boundaries,
 and escalation notes. Do not put long-lived secrets here.
-"@ | Set-Content -Path (Join-Path $ArgoHome "SOUL.md.template") -Encoding UTF8
+"@ | Set-Content -Path (Join-Path $NadiaHome "SOUL.md.template") -Encoding UTF8
     @"
 {
-  "aiPeer": "argo",
+  "aiPeer": "nadia",
   "contextCadence": 1,
   "dialecticCadence": 2,
   "dialecticDepth": 1,
@@ -119,16 +119,16 @@ and escalation notes. Do not put long-lived secrets here.
   "recallMode": "hybrid",
   "writeFrequency": "async"
 }
-"@ | Set-Content -Path (Join-Path $ArgoHome "honcho.json.template") -Encoding UTF8
+"@ | Set-Content -Path (Join-Path $NadiaHome "honcho.json.template") -Encoding UTF8
 }
 
 function Write-LazyPolicy {
     if ($AllowLazyInstalls) { return }
-    $config = Join-Path $ArgoHome "config.yaml"
+    $config = Join-Path $NadiaHome "config.yaml"
     Write-Host "write $config security.allow_lazy_installs=false"
     if ($DryRun) { return }
-    New-Item -ItemType Directory -Force -Path $ArgoHome | Out-Null
-    $python = Resolve-ArgoPython
+    New-Item -ItemType Directory -Force -Path $NadiaHome | Out-Null
+    $python = Resolve-NadiaPython
     @'
 from __future__ import annotations
 
@@ -154,17 +154,17 @@ path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
 
 function Install-CustomerInit {
     if ($SkipInitInstall) { return }
-    $source = Join-Path $PSScriptRoot "argo-customer-init.ps1"
+    $source = Join-Path $PSScriptRoot "nadia-customer-init.ps1"
     if (-not (Test-Path $source)) { throw "missing $source" }
-    $binDir = Join-Path $ArgoHome "bin"
-    Write-Host "install argo-customer-init.ps1 to $binDir"
+    $binDir = Join-Path $NadiaHome "bin"
+    Write-Host "install nadia-customer-init.ps1 to $binDir"
     if ($DryRun) { return }
     New-Item -ItemType Directory -Force -Path $binDir | Out-Null
-    Copy-Item -Force $source (Join-Path $binDir "argo-customer-init.ps1")
+    Copy-Item -Force $source (Join-Path $binDir "nadia-customer-init.ps1")
 }
 
 function Verify-Imports {
-    $python = Resolve-ArgoPython
+    $python = Resolve-NadiaPython
     Write-Host "verify preinstalled imports"
     if ($DryRun) { return }
     @'
@@ -181,7 +181,7 @@ if ($PrintPythonPackages) {
     exit 0
 }
 
-Install-Argo
+Install-Nadia
 Install-FdePythonPackages
 Write-FdeTemplates
 Write-LazyPolicy

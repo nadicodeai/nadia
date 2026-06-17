@@ -1,16 +1,16 @@
-Subject: Publish docker image to ghcr.io/nadicodeai/argo
+Subject: Publish docker image to ghcr.io/nadicodeai/nadia
 
 Replace upstream's Docker Hub publish flow with a GitHub Container
-Registry publish so the image lands at ghcr.io/nadicodeai/argo. The
+Registry publish so the image lands at ghcr.io/nadicodeai/nadia. The
 nadicodeai org does not own a Docker Hub namespace, and the upstream
 workflow's `secrets.DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` secrets
 are not configured in this repo.
 
-Why the image name is `argo`, not `argo-agent`: the new pristine-fork
-repo (nadicodeai/argo) publishes a `argo` image. The legacy in-tree
-rename repo (nadicodeai/argo-agent) used `…/argo-agent` because the
-GitHub repo was named that way. We do not carry that legacy name
-forward — see .shepherd/spec.md § Project Structure.
+Why the image name is `nadia`, not `nadia-agent`: this pristine-fork repo
+(nadicodeai/nadia) publishes a `nadia` image. The legacy in-tree rename repo
+(nadicodeai/nadia-agent) used `…/nadia-agent` because that GitHub repo was
+named that way. We do not carry that legacy image name forward — see
+.shepherd/spec.md § Project Structure.
 
 Auth uses the workflow's built-in GITHUB_TOKEN with `packages: write`,
 so no secret setup is required. All three `docker/login-action` steps
@@ -27,8 +27,8 @@ in patches/asserts/0005 pin the GHCR end-state.)
 
 Note: the four `if: github.repository == 'NousResearch/hermes-agent'`
 guards are intentionally not touched by this patch. The rename engine
-maps `NousResearch/hermes-agent` → `nadicodeai/argo`, so they end up
-correct in `dist/argo/` automatically.
+maps `NousResearch/hermes-agent` → `nadicodeai/nadia`, so they end up
+correct in `dist/nadia/` automatically.
 
 Spec FR-7 (Docker image), FR-11 (Docker-only distribution).
 
@@ -42,10 +42,10 @@ Index: .sync-workdir/.github/workflows/docker-publish.yml
  env:
 -  IMAGE_NAME: nousresearch/hermes-agent
 +  # Image published to GitHub Container Registry under the nadicodeai org.
-+  # Note: the new repo's image is `argo` (NOT `argo-agent` like the legacy
++  # Note: the new repo's image is `nadia` (NOT `nadia-agent` like the legacy
 +  # in-tree-rename fork). Authenticated via the workflow's built-in
 +  # GITHUB_TOKEN — no Docker Hub credentials needed.
-+  IMAGE_NAME: ghcr.io/nadicodeai/argo
++  IMAGE_NAME: ghcr.io/nadicodeai/nadia
  
  jobs:
    # ---------------------------------------------------------------------------

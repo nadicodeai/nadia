@@ -1,4 +1,4 @@
-# Golden VM for Forward-Deployed Argo Engineers
+# Golden VM for Forward-Deployed Nadia Engineers
 
 This is the supported VM-oriented path for customer infrastructure. It is not a
 Docker deployment path.
@@ -7,7 +7,7 @@ Docker deployment path.
 
 Use Ubuntu Server 22.04 LTS as the default golden image. It matches the existing
 install smoke baseline in `tests/install_smoke/run.sh`, has stable `apt`
-packages for Argo's host dependencies, and is broadly available across customer
+packages for Nadia's host dependencies, and is broadly available across customer
 hypervisors and cloud VM catalogs.
 
 Ubuntu Server 24.04 LTS is a reasonable later migration target, but 22.04 is the
@@ -22,12 +22,12 @@ installs:
 - OS packages needed by the full host experience: Git, curl, Python venv/pip,
   FFmpeg, ripgrep, xz-utils, compiler/build headers, OpenSSH client, and basic
   process tools.
-- Argo from the supported customer installer URL with `--skip-setup`.
+- Nadia from the supported customer installer URL with `--skip-setup`.
 - The FDE optional Python surface that the base installer does not install:
   Honcho, Telegram, Edge TTS, and `ddgs`.
 - Browser tooling unless `--skip-browser` is passed.
-- `/usr/local/bin/argo-customer-init`.
-- `~/.argo/SOUL.md.template` and `~/.argo/honcho.json.template`.
+- `/usr/local/bin/nadia-customer-init`.
+- `~/.nadia/SOUL.md.template` and `~/.nadia/honcho.json.template`.
 - `security.allow_lazy_installs: false` in the base config.
 
 The important policy is not "lazy install everything later." The golden VM does
@@ -37,7 +37,7 @@ not unexpectedly reach out to package registries on first use.
 
 ## Why Telegram And Honcho Need Explicit Bake Coverage
 
-Argo has Telegram and Honcho support in-tree, but the public installer runs the
+Nadia has Telegram and Honcho support in-tree, but the public installer runs the
 upstream-style `uv sync --extra all --locked` flow. In `upstream/pyproject.toml`,
 the `all` extra intentionally excludes some runtime feature extras. The matching
 runtime mechanism is `upstream/tools/lazy_deps.py`, where:
@@ -53,9 +53,9 @@ profile that enables Telegram or Honcho can trigger a runtime package install.
 On the clean VM:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/nadicodeai/argo/main/scripts/golden-vm-bake.sh -o /tmp/golden-vm-bake.sh
-curl -fsSL https://raw.githubusercontent.com/nadicodeai/argo/main/scripts/argo-customer-init -o /tmp/argo-customer-init
-chmod +x /tmp/golden-vm-bake.sh /tmp/argo-customer-init
+curl -fsSL https://raw.githubusercontent.com/nadicodeai/nadia/main/scripts/golden-vm-bake.sh -o /tmp/golden-vm-bake.sh
+curl -fsSL https://raw.githubusercontent.com/nadicodeai/nadia/main/scripts/nadia-customer-init -o /tmp/nadia-customer-init
+chmod +x /tmp/golden-vm-bake.sh /tmp/nadia-customer-init
 /tmp/golden-vm-bake.sh
 ```
 
@@ -68,7 +68,7 @@ For a headless customer image where browser automation is intentionally excluded
 For a dry-run plan:
 
 ```bash
-/tmp/golden-vm-bake.sh --dry-run --skip-argo-install --skip-os-packages --skip-browser
+/tmp/golden-vm-bake.sh --dry-run --skip-nadia-install --skip-os-packages --skip-browser
 ```
 
 ## Snapshot Boundary
@@ -85,14 +85,14 @@ Do not bake these into the snapshot:
 - Customer profile directories.
 - Gateway pairing state, sessions, or logs.
 
-The bake script removes the common mutable Argo state paths before completion.
+The bake script removes the common mutable Nadia state paths before completion.
 
 ## Per-Customer Initialization
 
 After cloning the golden VM into a customer environment, the FDE runs:
 
 ```bash
-argo-customer-init \
+nadia-customer-init \
   --profile acme-prod \
   --honcho-workspace acme \
   --honcho-peer fde-01 \
@@ -101,7 +101,7 @@ argo-customer-init \
   --telegram-allowed-users "12345678,87654321"
 ```
 
-This creates `~/.argo/profiles/acme-prod/` and writes:
+This creates `~/.nadia/profiles/acme-prod/` and writes:
 
 - `config.yaml` with `memory.provider: honcho`,
   `gateway.platform: telegram`, and `security.allow_lazy_installs: false`.
@@ -112,8 +112,8 @@ This creates `~/.argo/profiles/acme-prod/` and writes:
 By default the init command then runs:
 
 ```bash
-argo -p <profile> gateway install
-argo -p <profile> gateway start
+nadia -p <profile> gateway install
+nadia -p <profile> gateway start
 ```
 
 Use `--skip-gateway` for disposable validation environments that do not run
@@ -124,7 +124,7 @@ systemd.
 On a baked VM, verify:
 
 ```bash
-argo --version
+nadia --version
 /tmp/golden-vm-bake.sh --print-python-packages
 python -c "import honcho, telegram, edge_tts, ddgs"
 ```
@@ -132,8 +132,8 @@ python -c "import honcho, telegram, edge_tts, ddgs"
 After customer init:
 
 ```bash
-argo -p acme-prod doctor
-argo -p acme-prod gateway status
+nadia -p acme-prod doctor
+nadia -p acme-prod gateway status
 ```
 
 The result should be a repeatable VM image where forward-deployed engineers only
@@ -151,7 +151,7 @@ make golden-vm-qemu-smoke
 It runs QEMU/KVM from a disposable Docker runner, boots an Ubuntu 22.04 cloud
 image as a real VM, runs the bake inside that VM, shuts it down, creates a
 customer clone disk backed by the baked golden disk, boots the clone, and runs
-`argo-customer-init` inside the cloned VM.
+`nadia-customer-init` inside the cloned VM.
 
 The lighter `make golden-vm-smoke` target is only a container smoke. It is useful
 for fast script checks, but it is not a golden image validation.

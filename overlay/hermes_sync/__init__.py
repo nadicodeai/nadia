@@ -1,4 +1,4 @@
-"""hermes_sync — rename engine for argo-agent.
+"""hermes_sync — rename engine for nadia-agent.
 
 Provides :class:`~hermes_sync.engine.RenameEngine` (the ordered rename pipeline)
 and :class:`~hermes_sync.config.RenameConfig` (the declarative YAML config loader).

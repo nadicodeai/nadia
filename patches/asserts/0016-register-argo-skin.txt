@@ -1,9 +1,0 @@
-# Assertions for 0016-register-argo-skin.patch
-# Prove the built dist registers the generated Argo skin and carries its
-# NadicodeAI token-driven branding/art surfaces.
-path:argo_cli/skin_engine.py from argo_cli._argo_skin import ARGO_SKIN_DATA as _ARGO_SKIN_DATA
-path:argo_cli/skin_engine.py "argo": _ARGO_SKIN_DATA
-path:argo_cli/_argo_skin.py "agent_name": "Argo"
-path:argo_cli/_argo_skin.py "banner_title": "#50e3c2"
-path:argo_cli/_argo_skin.py "ui_error": "#cd212a"
-path:tests/argo_cli/test_skin_engine.py test_argo_skin_loads_with_generated_branding

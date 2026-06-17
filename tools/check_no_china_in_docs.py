@@ -6,7 +6,7 @@ WeCom, Weixin/WeChat, QQ Bot, Yuanbao) from the CODE — adapters, tools, skills
 leaf doc pages, and the zh-Hans locale. But the rest of the docs tree (landing page,
 the messaging hub, the env-var / tools / toolsets reference tables, guides) still
 enumerates, tabulates, and LINKS those platforms. The result shipped to
-docs.nadicode.ai/argo advertises features the product does not have and links to
+docs.nadicode.ai/nadia advertises features the product does not have and links to
 pages the strip deleted (live 404s).
 
 build.py's residual scan only checks code FILE NAMES under gateway/hermes_cli/tools/
@@ -27,7 +27,7 @@ Exit codes
 
 Usage
 -----
-    python tools/check_no_china_in_docs.py dist/argo/website/
+    python tools/check_no_china_in_docs.py dist/nadia/website/
 """
 
 from __future__ import annotations
@@ -84,7 +84,7 @@ def main(argv: list[str] | None = None) -> int:
         prog="check_no_china_in_docs.py",
         description="Fail if shipped docs reference a stripped China messaging platform.",
     )
-    parser.add_argument("target", type=Path, help="docs tree to scan (e.g. dist/argo/website/)")
+    parser.add_argument("target", type=Path, help="docs tree to scan (e.g. dist/nadia/website/)")
     parser.add_argument(
         "--list-files", action="store_true", help="print only the offending files, not every line"
     )

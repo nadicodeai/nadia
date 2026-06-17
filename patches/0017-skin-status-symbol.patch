@@ -2,7 +2,7 @@ Subject: Make CLI status glyph skin-driven
 
 The interactive footer still used the Hermes caduceus directly even when a
 non-Hermes skin was active. Read a skin branding value for that compact status
-symbol so the generated Argo skin can render a NadicodeAI-safe footer without
+symbol so the generated Nadia skin can render a NadicodeAI-safe footer without
 changing the default Hermes skin.
 
 Index: .sync-workdir/cli.py

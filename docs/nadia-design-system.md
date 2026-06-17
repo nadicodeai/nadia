@@ -1,6 +1,6 @@
-# Argo Design-System Skin Process
+# Nadia Design-System Skin Process
 
-This document is the maintenance process for the Argo terminal skin and the
+This document is the maintenance process for the Nadia terminal skin and the
 Ink `ui-tui` theme generated from `@nadicodeai/design-system`.
 
 ## Standards
@@ -21,14 +21,14 @@ Ink `ui-tui` theme generated from `@nadicodeai/design-system`.
 
 - `tools/skin-gen/package.json` declares the private git dependency.
 - `tools/skin-gen/package-lock.json` pins the resolved design-system commit.
-- `tools/gen_argo_skin.py` maps DTCG tokens to both generated outputs.
-- `overlay/hermes_cli/_argo_skin.py` is generated Python skin data.
-- `overlay/ui-tui/src/argoTheme.generated.ts` is generated Ink theme data.
-- `tests/test_gen_argo_skin.py` proves deterministic generation, full key
+- `tools/gen_nadia_skin.py` maps DTCG tokens to both generated outputs.
+- `overlay/hermes_cli/_nadia_skin.py` is generated Python skin data.
+- `overlay/ui-tui/src/nadiaTheme.generated.ts` is generated Ink theme data.
+- `tests/test_gen_nadia_skin.py` proves deterministic generation, full key
   coverage, token reflow, and loud failure when a mapped token disappears.
 
 Generated overlay paths use hermes names because the repo's build-time rename
-engine rewrites them into `dist/argo/`.
+engine rewrites them into `dist/nadia/`.
 
 ## Skin Reference Research
 
@@ -66,25 +66,25 @@ Inherited from `netrunner`:
 - The large braille `banner_hero` composition. It is recolored from
   NadicodeAI tokens and stripped of third-party fictional captions.
 
-Changed for Argo:
+Changed for Nadia:
 
 - Palette remaps to `@nadicodeai/design-system` tokens instead of hard-coded
   `netrunner` hex values.
-- Branding strings become Argo strings as defined by the Hermes docs:
+- Branding strings become Nadia strings as defined by the Hermes docs:
   `agent_name`, `welcome`, `goodbye`, `response_label`, `prompt_symbol`, and
   `help_header`.
 - Third-party fictional labels from `netrunner` are removed. No "Jinteki",
   "Jack In", cyberpunk role text, or explanatory labels are shown.
-- `banner_logo` is intentionally empty so Argo does not ship a fake terminal
+- `banner_logo` is intentionally empty so Nadia does not ship a fake terminal
   wordmark. Narrow `packaging-strip.yaml` content edits prevent non-default
-  empty logo art from falling back to Hermes' wordmark in the shipped Argo tree.
+  empty logo art from falling back to Hermes' wordmark in the shipped Nadia tree.
 
 Rejected approaches:
 
-- Official `default`: keeps the caduceus/kawaii identity, wrong for Argo.
+- Official `default`: keeps the caduceus/kawaii identity, wrong for Nadia.
 - Official `ares`, `poseidon`, `sisyphus`, `charizard`: too thematic.
 - Official `mono`/`slate`: clean but too close to a recolor, with no distinctive
-  Argo default identity.
+  Nadia default identity.
 - Community `mother`: beautiful, but amber/CRT identity fights the brand colors.
 - Community `lain`/`neonwave`: visually strong, but pink/purple palettes fight
   the brand colors.
@@ -98,15 +98,15 @@ make gen-skin
 ```
 
 The target runs `npm --prefix tools/skin-gen ci --no-audit`, then
-`python tools/gen_argo_skin.py`. It rewrites the generated overlay files from
+`python tools/gen_nadia_skin.py`. It rewrites the generated overlay files from
 the lockfile-pinned package.
 
 After regeneration, verify at least:
 
 ```bash
-pytest tests/test_gen_argo_skin.py -q
+pytest tests/test_gen_nadia_skin.py -q
 make gen-skin
-git diff --exit-code overlay/hermes_cli/_argo_skin.py overlay/ui-tui/src/argoTheme.generated.ts
+git diff --exit-code overlay/hermes_cli/_nadia_skin.py overlay/ui-tui/src/nadiaTheme.generated.ts
 ```
 
 The final integration work must also run the repo gates documented in
@@ -148,5 +148,5 @@ a quilt patch and keep generated data in overlay.
 - Patches carry structure that modifies upstream files.
 - Overlay carries additive generated data and fork-owned modules.
 - `content_edits` carries narrow distribution-default substitutions.
-- The token map in `tools/gen_argo_skin.py` is the single source for generated
+- The token map in `tools/gen_nadia_skin.py` is the single source for generated
   skin colors; generated hex values are not hand-maintained.

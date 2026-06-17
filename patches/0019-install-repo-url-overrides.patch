@@ -1,0 +1,23 @@
+Subject: install.sh: allow repo URL override for local smoke tests
+
+The Nadia migration cannot assume the public nadicodeai/nadia release branch
+already contains the unmerged migration. Local install smoke tests still need to
+exercise the real installer and git install path, so allow the installer
+repository URLs to be overridden by environment.
+
+The defaults remain the official upstream URLs. Build-time rebranding turns
+HERMES_REPO_URL_* into NADIA_REPO_URL_* in the shipped installer.
+
+--- a/scripts/install.sh
++++ b/scripts/install.sh
+@@ -40,8 +40,8 @@ NC='\033[0m' # No Color
+ BOLD='\033[1m'
+ 
+ # Configuration
+-REPO_URL_SSH="git@github.com:NousResearch/hermes-agent.git"
+-REPO_URL_HTTPS="https://github.com/NousResearch/hermes-agent.git"
++REPO_URL_SSH="${HERMES_REPO_URL_SSH:-git@github.com:NousResearch/hermes-agent.git}"
++REPO_URL_HTTPS="${HERMES_REPO_URL_HTTPS:-https://github.com/NousResearch/hermes-agent.git}"
+ HERMES_HOME="${HERMES_HOME:-$HOME/.hermes}"
+ # INSTALL_DIR is resolved AFTER arg parsing and OS detection so we can pick an
+ # FHS-style layout for root installs.  Track whether the user gave us an

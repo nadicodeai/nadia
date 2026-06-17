@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""tools/release_branch_push.py — force-push dist/argo/ to origin/release.
+"""tools/release_branch_push.py — force-push dist/nadia/ to origin/release.
 
 Invoked by ``.github/workflows/release.yml`` after a successful
 ``make build`` + ``make leakage-static`` gate. Closes the IU-FR-3 /
 IU-AC-3 storefront-branch contract: the long-lived ``release`` branch on
-``nadicodeai/argo`` carries the renamed ``dist/argo/`` tree only — no
+``nadicodeai/nadia`` carries the renamed ``dist/nadia/`` tree only — no
 patches/, no .shepherd/, no rename engine source.
 
 Architecture (.shepherd/install-update/standards.md § Architecture):
 
 - ``main`` = workshop. ``release`` = storefront.
-- ``dist/argo/`` is gitignored on ``main``; force-pushing to ``release``
+- ``dist/nadia/`` is gitignored on ``main``; force-pushing to ``release``
   is the only way the renamed tree reaches a tracked git ref.
 - Release history is LINEAR: each release commits ON TOP OF the previous
   release tip, so consecutive releases share ancestry. This lets the
@@ -35,8 +35,8 @@ recurring CI-driven push that supersedes it on every release.
 Usage::
 
     python tools/release_branch_push.py \\
-        --dist-root dist/argo \\
-        --remote-url https://github.com/nadicodeai/argo.git \\
+        --dist-root dist/nadia \\
+        --remote-url https://github.com/nadicodeai/nadia.git \\
         --branch release \\
         --source-sha "$(git rev-parse HEAD)" \\
         [--dry-run]
@@ -63,7 +63,7 @@ SCRATCH_PARENT = REPO_ROOT / ".sync-workdir" / "release-push"
 # script's "no global config writes" rule by injecting the identity via
 # per-invocation ``git -c`` flags rather than ``git config``.
 COMMIT_AUTHOR_EMAIL = "release-bot@nadicodeai"
-COMMIT_AUTHOR_NAME = "argo-release-bot"
+COMMIT_AUTHOR_NAME = "nadia-release-bot"
 
 
 # ---------------------------------------------------------------------------
@@ -85,7 +85,7 @@ class ReleasePushError(RuntimeError):
 
 class DistRootMissingError(ReleasePushError):
     """``--dist-root`` does not exist, is empty, or does not look like a
-    renamed argo tree."""
+    renamed nadia tree."""
 
 
 class ScratchSetupError(ReleasePushError):
@@ -147,9 +147,9 @@ def _run(
 
 
 def _verify_dist_root(dist_root: Path) -> None:
-    """Refuse to push unless ``dist_root`` looks like a renamed argo tree.
+    """Refuse to push unless ``dist_root`` looks like a renamed nadia tree.
 
-    The sentinel marker is ``argo_cli/main.py`` — the rename engine
+    The sentinel marker is ``nadia_cli/main.py`` — the rename engine
     produces it from upstream's ``hermes_cli/main.py``. Its absence
     means either the build did not run or the rename engine did not
     fire; either way the push would ship a broken tree.
@@ -172,10 +172,10 @@ def _verify_dist_root(dist_root: Path) -> None:
             f"--dist-root is empty: {dist_root}",
             step="preconditions",
         )
-    sentinel = dist_root / "argo_cli" / "main.py"
+    sentinel = dist_root / "nadia_cli" / "main.py"
     if not sentinel.is_file():
         raise DistRootMissingError(
-            f"--dist-root does not look like a renamed argo tree "
+            f"--dist-root does not look like a renamed nadia tree "
             f"(missing sentinel {sentinel.relative_to(dist_root)}); "
             "did `make build` run?",
             step="preconditions",
@@ -220,7 +220,7 @@ def _prepare_scratch() -> Path:
 def _strip_release_workflows(scratch: Path) -> None:
     """Remove ``.github/workflows/`` from the storefront tree before commit.
 
-    The ``release`` branch is a real branch on nadicodeai/argo, and CI pushes
+    The ``release`` branch is a real branch on nadicodeai/nadia, and CI pushes
     it with the Actions ``GITHUB_TOKEN``. GitHub forbids that token from
     creating or updating any file under ``.github/workflows/``: it lacks the
     ``workflow`` OAuth scope, and that scope CANNOT be granted to GITHUB_TOKEN
@@ -233,7 +233,7 @@ def _strip_release_workflows(scratch: Path) -> None:
     Customers do not need our (renamed-upstream) CI workflows, and leaving them
     on the storefront branch risks them spuriously triggering on ``release``.
     So we drop the whole ``.github/workflows/`` dir from the PUSHED tree only.
-    dist/argo/ itself — the native install, the tarball release asset, and the
+    dist/nadia/ itself — the native install, the tarball release asset, and the
     Docker image — is untouched; this exclusion is storefront-branch-specific.
 
     Idempotent: the first push after this change deletes the workflow files
@@ -259,7 +259,7 @@ def _strip_release_workflows(scratch: Path) -> None:
 def _copy_dist_into_scratch(dist_root: Path, scratch: Path) -> None:
     """Copy ``dist_root`` contents into ``scratch`` (mirrors ``cp -a
     <dist>/. <scratch>/``): the renamed tree becomes the scratch repo's
-    root (NOT nested under a ``dist/argo/`` subdir)."""
+    root (NOT nested under a ``dist/nadia/`` subdir)."""
     _log(f"scratch: copying {dist_root} → {scratch}")
     try:
         # symlinks=True preserves any symlinks the rename engine produced
@@ -541,7 +541,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="tools/release_branch_push.py",
         description=(
-            "Force-push the renamed dist/argo/ tree to the release branch "
+            "Force-push the renamed dist/nadia/ tree to the release branch "
             "on the workshop's remote (IU-FR-3 / IU-AC-3). Uses "
             "--force-with-lease and per-invocation `git -c user.*` flags "
             "so it never mutates the operator's global git config."
@@ -549,9 +549,9 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument(
         "--dist-root",
-        default="dist/argo",
+        default="dist/nadia",
         metavar="PATH",
-        help="Path to the built, renamed argo tree (default: dist/argo).",
+        help="Path to the built, renamed nadia tree (default: dist/nadia).",
     )
     p.add_argument(
         "--remote-url",
@@ -559,7 +559,7 @@ def _build_parser() -> argparse.ArgumentParser:
         metavar="URL",
         help=(
             "Git remote URL to push to "
-            "(e.g. https://x-access-token:TOKEN@github.com/nadicodeai/argo.git)."
+            "(e.g. https://x-access-token:TOKEN@github.com/nadicodeai/nadia.git)."
         ),
     )
     p.add_argument(

@@ -4,14 +4,14 @@
 Positive companion to ``tools/verify_no_leakage.py``. The leakage scanner catches
 *under*-rename (a stray ``hermes`` leaked into the shipped tree). This checker
 catches the opposite failure mode — *over*-rename — which leakage is structurally
-blind to: when the blanket ``hermes -> argo`` rename rewrites a string that the
+blind to: when the blanket ``hermes -> nadia`` rename rewrites a string that the
 Nous backend keys on (OAuth client_id, Portal attribution tags, the model-catalog
-User-Agent the WAF allow-lists), the value silently becomes ``argo-*`` and there is
+User-Agent the WAF allow-lists), the value silently becomes ``nadia-*`` and there is
 no ``hermes`` left for the leak scan to flag. The artifact ships green and the
-agent then fails to join the Nous portal in the field with "it says argo-cli".
+agent then fails to join the Nous portal in the field with "it says nadia-cli".
 
-This gate asserts each of those exact wire values is STILL PRESENT in ``dist/argo/``.
-A missing value means ``argo-rename.yaml``'s ``skip_contexts`` no longer protects it
+This gate asserts each of those exact wire values is STILL PRESENT in ``dist/nadia/``.
+A missing value means ``nadia-rename.yaml``'s ``skip_contexts`` no longer protects it
 (an upstream refactor drifted an anchor, or the skip entry was removed) — the build
 fails loudly here instead of shipping a portal-broken release.
 
@@ -23,7 +23,7 @@ Exit codes
 
 Usage
 -----
-    python tools/check_wire_identifiers.py dist/argo/
+    python tools/check_wire_identifiers.py dist/nadia/
 """
 
 from __future__ import annotations
@@ -38,18 +38,18 @@ from pathlib import Path
 class WireCheck:
     """One required literal that MUST survive the rebrand in a given dist file."""
 
-    rel_path: str          # path under dist/argo/ (post-rename: hermes_cli -> argo_cli)
+    rel_path: str          # path under dist/nadia/ (post-rename: hermes_cli -> nadia_cli)
     literal: str           # exact substring that must be present
     why: str               # what breaks in the field if it is missing
 
 
 # Each literal is sent to (or recognised by) a Nous endpoint and is protected by a
-# matching skip_contexts entry in argo-rename.yaml. Keep the two in lock-step.
+# matching skip_contexts entry in nadia-rename.yaml. Keep the two in lock-step.
 WIRE_CHECKS: tuple[WireCheck, ...] = (
     WireCheck(
-        "argo_cli/auth.py",
+        "nadia_cli/auth.py",
         'DEFAULT_NOUS_CLIENT_ID = "hermes-cli"',
-        "OAuth device-code client_id the Nous portal whitelists; argo-cli is rejected (login fails to join).",
+        "OAuth device-code client_id the Nous portal whitelists; nadia-cli is rejected (login fails to join).",
     ),
     WireCheck(
         "agent/portal_tags.py",
@@ -62,12 +62,12 @@ WIRE_CHECKS: tuple[WireCheck, ...] = (
         "Nous Portal client-release tag (client=hermes-client-v<version>).",
     ),
     WireCheck(
-        "argo_cli/model_catalog.py",
+        "nadia_cli/model_catalog.py",
         "hermes-cli/",
         "User-Agent for the Nous model-catalog probe; some catalogs WAF-403 an unknown UA.",
     ),
     WireCheck(
-        "argo_cli/models.py",
+        "nadia_cli/models.py",
         "hermes-cli/",
         "User-Agent for the Nous model-catalog probe (second copy).",
     ),
@@ -98,8 +98,8 @@ def run(dist: Path) -> list[str]:
         if chk.literal not in text:
             failures.append(
                 f"{chk.rel_path}: required wire identifier {chk.literal!r} NOT FOUND — "
-                f"the hermes->argo rename clobbered it. {chk.why} "
-                f"Restore the matching skip_contexts anchor in argo-rename.yaml."
+                f"the hermes->nadia rename clobbered it. {chk.why} "
+                f"Restore the matching skip_contexts anchor in nadia-rename.yaml."
             )
     return failures
 
@@ -109,7 +109,7 @@ def main(argv: list[str] | None = None) -> int:
         prog="check_wire_identifiers.py",
         description="Assert Nous wire-protocol identifiers survived the rebrand in a built dist tree.",
     )
-    parser.add_argument("target", type=Path, help="built dist directory (e.g. dist/argo/)")
+    parser.add_argument("target", type=Path, help="built dist directory (e.g. dist/nadia/)")
     args = parser.parse_args(argv)
 
     if not args.target.is_dir():

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# argo — tag + push the local builder image to ghcr.io/nadicodeai/argo.
+# nadia — tag + push the local builder image to ghcr.io/nadicodeai/nadia.
 #
 # Maps to spec FR-7 (image tagging conventions), FR-11 (Docker-only —
 # no PyPI), plan M5.2, OQ-13 (GHCR token handling).
@@ -31,7 +31,7 @@
 #
 # Refusals.
 #   1. Working tree dirty (git status --porcelain non-empty) -> exit 2.
-#   2. Source image `ghcr.io/nadicodeai/argo:dev` missing -> exit 3
+#   2. Source image `ghcr.io/nadicodeai/nadia:dev` missing -> exit 3
 #      (run `make image` first).
 #   3. $GHCR_TOKEN unset AND not already logged in to ghcr.io -> exit 4.
 #
@@ -49,12 +49,12 @@
 
 set -euo pipefail
 
-readonly IMAGE_REPO="ghcr.io/nadicodeai/argo"
+readonly IMAGE_REPO="ghcr.io/nadicodeai/nadia"
 readonly SOURCE_TAG="${IMAGE_REPO}:dev"
 
 usage() {
     cat <<EOF
-scripts/publish.sh — tag + push argo image to ghcr.io
+scripts/publish.sh — tag + push nadia image to ghcr.io
 
 Usage:
   scripts/publish.sh [--dry-run] [--help|-h]

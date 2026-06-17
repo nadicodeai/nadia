@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Update-smoke harness — Part B: Telegram /update mid-flight (IU-AC-6).
 #
-# Goal: boot argo in a container, point its gateway at the localhost
+# Goal: boot nadia in a container, point its gateway at the localhost
 # FakeTelegramServer, inject `/update`, observe the bot's reply, then
 # (best-effort) verify the post-restart banner.
 #
@@ -20,12 +20,12 @@
 #      builder.base_url() honours custom HTTP endpoints; the rewrite
 #      lands in upstream/gateway/platforms/telegram.py:1481-1490).
 #
-#   2. argo running in a Docker container with `--network host` so it
+#   2. nadia running in a Docker container with `--network host` so it
 #      can reach the host-bound fake on 127.0.0.1 — doable, but Docker
 #      Desktop on macOS doesn't expose host networking; CI on linux is
 #      OK. Tractable.
 #
-#   3. A configured TELEGRAM_BOT_TOKEN in `~/.argo/.env` and a gateway
+#   3. A configured TELEGRAM_BOT_TOKEN in `~/.nadia/.env` and a gateway
 #      profile pointing at the fake's URL. The setup wizard is
 #      interactive (upstream/hermes_cli/setup.py:_setup_telegram
 #      line ~1831); bypassing it requires either driving the wizard
@@ -34,7 +34,7 @@
 #      upstream refactor of the YAML schema would silently break the
 #      harness without `parity_runner` catching it.
 #
-#   4. A running gateway. `argo gateway run` runs in the foreground
+#   4. A running gateway. `nadia gateway run` runs in the foreground
 #      (upstream/hermes_cli/main.py:11306) so we can background it
 #      with `&` — fine. BUT cmd_update's restart path
 #      (upstream/hermes_cli/main.py:9367-9383) ends with a systemd
@@ -45,7 +45,7 @@
 #      without re-engineering: either the test image needs to be
 #      `jrei/systemd-ubuntu` (privileged container with /sys/fs/cgroup
 #      bind-mount), OR cmd_update needs an "in-process restart" path
-#      that argo doesn't currently have (and adding one would be a
+#      that nadia doesn't currently have (and adding one would be a
 #      behavioural divergence from hermes — forbidden by IU-FR-8).
 #
 #   5. A working LLM provider key so the gateway doesn't crash on
@@ -89,9 +89,9 @@ runner — both are scope expansions documented in this script's
 header comment.
 
 What IS exercised by Part A (tests/update_smoke/run.sh):
-  - IU-AC-9  (full) : no "Updating from fork" warning on argo update.
-  - IU-AC-10        : ARGO_MANAGED=1 prints "is managed by" to stderr.
-  - IU-AC-11        : pre_update_backup writes a zip; argo import restores.
+  - IU-AC-9  (full) : no "Updating from fork" warning on nadia update.
+  - IU-AC-10        : NADIA_MANAGED=1 prints "is managed by" to stderr.
+  - IU-AC-11        : pre_update_backup writes a zip; nadia import restores.
 
 IU-AC-6 and IU-AC-8 (partial Telegram mid-flight) remain open.
 Promote to M6 (parity surfaces, where the cmd-update surface diffs

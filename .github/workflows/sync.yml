@@ -1,4 +1,4 @@
-# argo — weekly upstream sync (spec FR-8, OQ-3)
+# nadia — weekly upstream sync (spec FR-8, OQ-3)
 #
 # Purpose.
 #   Pulls upstream hermes-agent, re-applies our quilt patch series, runs
@@ -33,14 +33,14 @@
 #   The failure-issue step still uses `GITHUB_TOKEN` since it does not
 #   need to trigger downstream workflows. See AGENTS.md § Sync bot token
 #   setup for how to provision the PAT.
-#   The bot identity `argo-sync-bot <noreply@nadicodeai.com>` is
+#   The bot identity `nadia-sync-bot <noreply@nadicodeai.com>` is
 #   configured inline; nothing else to provision out-of-band.
 #
 # Branch protection.
 #   Branch protection on `main` SHOULD NOT block this workflow's PRs from
 #   being merged after review — the bot goes through the same PR review
 #   flow as a human contributor. The bot never pushes directly to `main`;
-#   it pushes to `argo/sync-YYYYMMDD` and opens a PR against `main`.
+#   it pushes to `nadia/sync-YYYYMMDD` and opens a PR against `main`.
 #
 # How to disable temporarily.
 #   Set `if: false` on the `sync` job below (or comment out the `schedule`
@@ -74,19 +74,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: ./.github/actions/argo-setup
+      - uses: ./.github/actions/nadia-setup
         with:
           pip-packages: "pyyaml"
 
       - name: Configure git identity
         run: |
-          git config user.name "argo-sync-bot"
+          git config user.name "nadia-sync-bot"
           git config user.email "noreply@nadicodeai.com"
 
       - name: Create sync branch
         id: branch
         run: |
-          BRANCH="argo/sync-$(date -u +%Y%m%d)"
+          BRANCH="nadia/sync-$(date -u +%Y%m%d)"
           git checkout -b "$BRANCH"
           echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
 

@@ -1,4 +1,4 @@
-# argo Makefile — stable user-facing entry point surface
+# nadia Makefile — stable user-facing entry point surface
 #
 # This file is the contract between maintainers and the build pipeline.
 # Targets that are no-ops in M1 will be filled in by later plan milestones;
@@ -12,7 +12,7 @@
 
 .PHONY: help
 help:
-	@echo "argo — pristine-upstream fork of hermes-agent"
+	@echo "nadia — pristine-upstream fork of hermes-agent"
 	@echo ""
 	@echo "Setup:"
 	@echo "  make bootstrap        Pull upstream subtree + lift overlay assets (M1)"
@@ -21,10 +21,10 @@ help:
 	@echo "  make install-hooks    Enable the pre-commit build gate (sets core.hooksPath)"
 	@echo ""
 	@echo "Build:"
-	@echo "  make build            Produce dist/argo/ from upstream + patches + overlay (M1.8)"
-	@echo "  make gen-skin         Regenerate the committed Argo skin overlay from the design system"
+	@echo "  make build            Produce dist/nadia/ from upstream + patches + overlay (M1.8)"
+	@echo "  make gen-skin         Regenerate the committed Nadia skin overlay from the design system"
 	@echo "  make clean            Remove dist/ and .sync-workdir/"
-	@echo "  make leakage-static   Static leakage scan over dist/argo/ (M2.2)"
+	@echo "  make leakage-static   Static leakage scan over dist/nadia/ (M2.2)"
 	@echo ""
 	@echo "Sync:"
 	@echo "  make sync             Pull upstream, re-apply patches (M4.2)"
@@ -32,16 +32,16 @@ help:
 	@echo "  make sync-reset       Wipe .sync-workdir/ (M4.2)"
 	@echo ""
 	@echo "Docker:"
-	@echo "  make image            Build slim variant -> ghcr.io/nadicodeai/argo:dev (M5.1)"
-	@echo "  make image-full       Build full variant -> ghcr.io/nadicodeai/argo:dev-full (issue #2)"
-	@echo "  make fde-container    Build FDE customer image -> ghcr.io/nadicodeai/argo:fde-dev"
+	@echo "  make image            Build slim variant -> ghcr.io/nadicodeai/nadia:dev (M5.1)"
+	@echo "  make image-full       Build full variant -> ghcr.io/nadicodeai/nadia:dev-full (issue #2)"
+	@echo "  make fde-container    Build FDE customer image -> ghcr.io/nadicodeai/nadia:fde-dev"
 	@echo "  make publish          Push image to ghcr.io (M5.2)"
 	@echo ""
 	@echo "Quality gates:"
 	@echo "  make lint             ruff check (M4.3)"
 	@echo "  make typecheck        ty check (M4.3)"
-	@echo "  make test             pytest the fork's own tests/ (NOT dist/argo's)"
-	@echo "  make dist-test        Run dist/argo's renamed upstream suite (mirrors CI dist-argo-tests; the real gate for dist changes)"
+	@echo "  make test             pytest the fork's own tests/ (NOT dist/nadia's)"
+	@echo "  make dist-test        Run dist/nadia's renamed upstream suite (mirrors CI dist-nadia-tests; the real gate for dist changes)"
 	@echo "  make check-upstream-pristine Verify upstream/ matches last sync commit (M4.1)"
 	@echo "  make check-packaging-contract Verify ./Dockerfile tracks upstream packaging (no drift)"
 	@echo "  make install-smoke    Docker-driven install.sh smoke test (M5.2; IU-AC-4/5/9)"
@@ -49,7 +49,7 @@ help:
 	@echo "  make fde-live-smoke  Validate live Telegram/Honcho credentials from FDE_* env"
 	@echo "  make golden-vm-smoke  Docker-backed Ubuntu smoke for golden VM bake/init"
 	@echo "  make golden-vm-qemu-smoke Real QEMU/KVM Ubuntu VM smoke for golden image clone/init"
-	@echo "  make fde-vm-image     Produce dist/images/argo-fde-ubuntu-22.04.qcow2"
+	@echo "  make fde-vm-image     Produce dist/images/nadia-fde-ubuntu-22.04.qcow2"
 	@echo "  make update-smoke     Docker update-smoke (IU-AC-9/10/11; M5.3 Part A)"
 	@echo "  make update-smoke-telegram  Docker /update mid-flight (IU-AC-6; M5.3 Part B, currently SKIPPED)"
 	@echo ""
@@ -77,7 +77,7 @@ build:
 .PHONY: gen-skin
 gen-skin:
 	npm --prefix tools/skin-gen ci --no-audit
-	python tools/gen_argo_skin.py
+	python tools/gen_nadia_skin.py
 
 .PHONY: clean
 clean:
@@ -85,20 +85,24 @@ clean:
 
 .PHONY: leakage-static
 leakage-static:
-	python tools/verify_no_leakage.py dist/argo/
+	python tools/verify_no_leakage.py dist/nadia/
+	# Old fork-brand companion: the Hermes leakage scanner does not know that
+	# this fork used to ship as Argo. Keep built Nadia artifacts free of old
+	# command names, env vars, paths, and user-facing brand text.
+	python tools/verify_no_old_brand.py dist/nadia/
 	# Over-rename companion: leakage above catches a stray `hermes` (under-rename);
 	# this catches the OPPOSITE failure leakage is blind to — a Nous wire identifier
-	# (OAuth client_id, Portal tags, catalog User-Agent) clobbered to argo-* by the
+	# (OAuth client_id, Portal tags, catalog User-Agent) clobbered to nadia-* by the
 	# rename, which the Nous backend rejects. A clobbered value leaves no `hermes`
 	# to flag, so only this positive gate catches it. Wired here so every caller of
 	# `make leakage-static` (ci/release/deploy-docs/pre-commit/release script) gets it.
-	python tools/check_wire_identifiers.py dist/argo/
+	python tools/check_wire_identifiers.py dist/nadia/
 	# China-in-docs companion: the strip removes China platform CODE + leaf doc pages,
 	# but shared docs (landing, messaging hub, env/tool/toolset tables, mermaid, setup
 	# links) used to keep enumerating/dead-linking them. This gate fails the build if a
 	# stripped China messaging platform is still referenced in the shipped docs, so
-	# docs.nadicode.ai/argo can never again ship features the product does not have.
-	python tools/check_no_china_in_docs.py dist/argo/website/
+	# docs.nadicode.ai/nadia can never again ship features the product does not have.
+	python tools/check_no_china_in_docs.py dist/nadia/website/
 
 # -----------------------------------------------------------------------------
 # Sync workflow
@@ -129,7 +133,7 @@ sync-reset:
 #
 # SOURCE_DATE_EPOCH propagates the commit timestamp into the image for
 # AC-8 determinism. Determinism is a gate ONLY for the slim variant
-# (where the `dist/argo/` tree-hash is the artifact); the full variant
+# (where the `dist/nadia/` tree-hash is the artifact); the full variant
 # fetches chromium + s6-overlay + npm tarballs at build time and is
 # best-effort by design (spec § Build Reproducibility).
 .PHONY: image
@@ -139,7 +143,7 @@ image:
 		--platform linux/amd64 \
 		--target runtime-slim \
 		--load \
-		-t ghcr.io/nadicodeai/argo:dev \
+		-t ghcr.io/nadicodeai/nadia:dev \
 		.
 
 .PHONY: image-full
@@ -149,7 +153,7 @@ image-full:
 		--platform linux/amd64 \
 		--target runtime-full \
 		--load \
-		-t ghcr.io/nadicodeai/argo:dev-full \
+		-t ghcr.io/nadicodeai/nadia:dev-full \
 		.
 
 .PHONY: fde-container
@@ -159,7 +163,7 @@ fde-container:
 		--platform linux/amd64 \
 		--target runtime-fde \
 		--load \
-		-t ghcr.io/nadicodeai/argo:fde-dev \
+		-t ghcr.io/nadicodeai/nadia:fde-dev \
 		.
 
 .PHONY: publish
@@ -183,17 +187,17 @@ typecheck:
 test:
 	pytest -m 'not integration'
 
-# The renamed upstream test suite run against dist/argo/, EXACTLY as CI's
-# `dist-argo-tests` job does. This is the ONLY gate that exercises dist/argo
+# The renamed upstream test suite run against dist/nadia/, EXACTLY as CI's
+# `dist-nadia-tests` job does. This is the ONLY gate that exercises dist/nadia
 # content changes (packaging-strip.yaml prunes, content_edits, patches, rebrand)
 # against the full suite. `make build`, `leakage-static`, and `test` (which runs
-# the fork's OWN tests/, not dist/argo's) do NOT cover it.
+# the fork's OWN tests/, not dist/nadia's) do NOT cover it.
 #
 # CI runs this on `pull_request` + push to `main` only, and it is currently
 # *non-blocking* — so a branch pushed and merged straight to `main` (no PR)
 # bypasses it entirely. That gap shipped a red main once (China-strip: two
 # general tests that import/enumerate the pruned platforms). RUN THIS — or open
-# a PR and read the dist-argo-tests result — BEFORE merging any dist-affecting
+# a PR and read the dist-nadia-tests result — BEFORE merging any dist-affecting
 # change to main.
 #
 #   make dist-test                                              # full suite (heavy; provisions a 3.11 venv with [all,dev])
@@ -201,9 +205,9 @@ test:
 #   make dist-test DIST_TEST_ARGS="--paths tests/a.py:tests/b.py"  # only these files (colon-separated; fast iteration)
 .PHONY: dist-test
 dist-test: build
-	cd dist/argo && uv venv .venv-test --python 3.11
-	cd dist/argo && uv pip install --quiet --python .venv-test/bin/python -e ".[all,dev]"
-	cd dist/argo && OPENROUTER_API_KEY="" OPENAI_API_KEY="" NOUS_API_KEY="" \
+	cd dist/nadia && uv venv .venv-test --python 3.11
+	cd dist/nadia && uv pip install --quiet --python .venv-test/bin/python -e ".[all,dev]"
+	cd dist/nadia && OPENROUTER_API_KEY="" OPENAI_API_KEY="" NOUS_API_KEY="" \
 		.venv-test/bin/python scripts/run_tests_parallel.py $(DIST_TEST_ARGS)
 
 .PHONY: check-upstream-pristine
@@ -211,8 +215,8 @@ check-upstream-pristine:
 	python tools/check_upstream_pristine.py
 
 # Verify the shipped ./Dockerfile has not silently diverged from upstream's
-# packaging (the renamed-upstream oracle dist/argo/Dockerfile). Operates on an
-# existing dist/argo/ tree, like leakage-static — run `make build` first
+# packaging (the renamed-upstream oracle dist/nadia/Dockerfile). Operates on an
+# existing dist/nadia/ tree, like leakage-static — run `make build` first
 # (the checker exits 2 with that hint if the oracle is absent).
 .PHONY: check-packaging-contract
 check-packaging-contract:
@@ -220,10 +224,10 @@ check-packaging-contract:
 
 # M5.2: Docker-driven install.sh smoke harness.
 #
-# Pulls the renamed install.sh from the live release branch
-# (https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh),
+# Pulls the renamed install.sh from a local release-branch dry run by default
+# (use tests/install_smoke/run.sh --live after the public release branch updates),
 # runs it in a clean ubuntu:22.04 container, and asserts five invariants
-# (.install_method=git, argo --version exits 0, banner matches hermes regex,
+# (.install_method=git, nadia --version exits 0, banner matches hermes regex,
 # no "Updating from fork" warning, no ~/.hermes/ leakage). Closes IU-AC-4,
 # IU-AC-5, IU-AC-9 (static portion). See tests/install_smoke/run.sh.
 .PHONY: install-smoke
@@ -269,11 +273,11 @@ patch-list:
 # Update-smoke harness (M5.3)
 # -----------------------------------------------------------------------------
 # Part A — IU-AC-9 (full), IU-AC-10, IU-AC-11. Boots ubuntu:22.04, installs
-# argo from the public `release` branch, asserts:
-#   - no "Updating from fork" warning on `argo update` (IU-AC-9 full)
-#   - `ARGO_MANAGED=1 argo update` prints "is managed by" on stderr (IU-AC-10;
+# nadia from the public `release` branch, asserts:
+#   - no "Updating from fork" warning on `nadia update` (IU-AC-9 full)
+#   - `NADIA_MANAGED=1 nadia update` prints "is managed by" on stderr (IU-AC-10;
 #     exit code NOT asserted per plan § M5.3 stderr-substring note)
-#   - pre_update_backup writes a zip; `argo import` restores it (IU-AC-11)
+#   - pre_update_backup writes a zip; `nadia import` restores it (IU-AC-11)
 # Wall-clock budget < 5 min (spec IU-AC-15).
 #
 # Part B — IU-AC-6 Telegram /update mid-flight. Currently exits 77 (skipped)

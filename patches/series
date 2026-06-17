@@ -13,7 +13,9 @@
 0013-install-sh-update-reset-fallback.patch
 0014-readme-rebrand-commands.patch
 0015-rebrand-attribution.patch
-0016-register-argo-skin.patch
+0016-register-nadia-skin.patch
 0017-skin-status-symbol.patch
-0018-ui-tui-argo-theme.patch
+0018-ui-tui-nadia-theme.patch
+0019-install-repo-url-overrides.patch
 0020-ui-tui-cursor-drift-test-timeout.patch
+0021-update-fork-check-configured-origin.patch

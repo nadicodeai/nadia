@@ -101,7 +101,7 @@ def test_synthetic_drift_in_tracked_file_detected() -> None:
     """Mutating a tracked file under upstream/ → exit 1, file named in stderr."""
     target = REPO_ROOT / "upstream" / "README.md"
     assert target.is_file(), "test prerequisite: upstream/README.md must exist"
-    with _temporarily_modified(target, "\n# argo-drift-fixture\n"):
+    with _temporarily_modified(target, "\n# nadia-drift-fixture\n"):
         result = _run()
         assert result.returncode == 1, (
             f"expected 1, got {result.returncode}\n"
@@ -126,7 +126,7 @@ def test_synthetic_drift_in_tracked_file_detected() -> None:
 
 def test_synthetic_drift_untracked_file_detected() -> None:
     """An untracked file under upstream/ → exit 1, file named in stderr."""
-    target = REPO_ROOT / "upstream" / "argo_drift_untracked.txt"
+    target = REPO_ROOT / "upstream" / "nadia_drift_untracked.txt"
     # Refuse to clobber if a stray file is already there.
     assert not target.exists(), (
         f"test prerequisite: {target} must not pre-exist"
@@ -135,7 +135,7 @@ def test_synthetic_drift_untracked_file_detected() -> None:
         result = _run()
         assert result.returncode == 1
         assert "drift detected" in result.stderr
-        assert "argo_drift_untracked.txt" in result.stderr
+        assert "nadia_drift_untracked.txt" in result.stderr
     assert not target.exists(), "untracked fixture leaked"
 
 

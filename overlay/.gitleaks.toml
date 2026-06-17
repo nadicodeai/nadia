@@ -51,8 +51,8 @@ paths = [
 [[allowlists]]
 description = "OAuth public client IDs (Anthropic, Google, Codex, Minimax, XAI, Qwen, Copilot) — public by RFC 6749; ship in every distribution of the binary"
 paths = [
-  '''(?:argo|hermes)_cli/auth\.py''',
-  '''(?:argo|hermes)_cli/copilot_auth\.py''',
+  '''(?:nadia|hermes)_cli/auth\.py''',
+  '''(?:nadia|hermes)_cli/copilot_auth\.py''',
   '''agent/anthropic_adapter\.py''',
   '''agent/google_oauth\.py''',
 ]

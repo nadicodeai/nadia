@@ -1,19 +1,19 @@
-# argo — per-PR / per-push CI gate (spec AC-9, FR-15)
+# nadia — per-PR / per-push CI gate (spec AC-9, FR-15)
 #
 # Runs on every pull_request and every push to main. Declares the jobs that
-# verify argo is hermes-agent renamed:
+# verify nadia is hermes-agent renamed:
 #
 #    1. lint                            — ruff check (PLW1514 only, upstream convention)
 #    2. typecheck                       — ty check overlay/ tools/  (pre-build source)
-#    3. build                           — make build; uploads dist/argo/.argo/build-manifest.json
+#    3. build                           — make build; uploads dist/nadia/.nadia/build-manifest.json
 #    4. leakage                         — needs: build; make leakage-static (FR-12)
 #   4b. packaging-contract              — needs: build; make check-packaging-contract (Dockerfile-vs-upstream drift)
 #    5. test                            — pytest tests/ (build-tool tests; integration skipped)
 #    6. upstream-pristine               — make check-upstream-pristine (FR-15 / C3 gate)
 #    7. install-smoke                   — Docker-driven install.sh smoke (IU-AC-4/5/9)
 #    8. update-smoke                    — Docker-driven update flow (IU-AC-9/10/11)
-#    9. dist-argo-tests                 — 6-slice matrix over dist/argo/tests/ (UCS-AC-5/6)
-#   10. dist-argo-tests-save-durations  — companion to 9, main-only durations cache write
+#    9. dist-nadia-tests                 — 6-slice matrix over dist/nadia/tests/ (UCS-AC-5/6)
+#   10. dist-nadia-tests-save-durations  — companion to 9, main-only durations cache write
 #
 # Tool versions are pinned to spec § Tech Stack:
 #   Python  3.13 (type-check target)
@@ -25,7 +25,7 @@
 # to require these jobs. The workflow only DECLARES them; GitHub enforces.
 # Required checks should include: lint, typecheck, build, leakage,
 # packaging-contract, test, upstream-pristine. install-smoke, update-smoke,
-# and dist-argo-tests are visible-but-non-blocking pending promotion follow-ups.
+# and dist-nadia-tests are visible-but-non-blocking pending promotion follow-ups.
 
 name: ci
 
@@ -64,7 +64,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: ./.github/actions/argo-setup
+      - uses: ./.github/actions/nadia-setup
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           apt-packages: ""
@@ -86,7 +86,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: ./.github/actions/argo-setup
+      - uses: ./.github/actions/nadia-setup
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           apt-packages: ""
@@ -97,7 +97,7 @@ jobs:
           ty check overlay/ tools/
 
   # ---------------------------------------------------------------------------
-  # 3. build — `make build` produces dist/argo/ and runs FR-14 assertions.
+  # 3. build — `make build` produces dist/nadia/ and runs FR-14 assertions.
   #    Uploads the build manifest as a workflow artifact for downstream
   #    inspection by future jobs.
   # ---------------------------------------------------------------------------
@@ -108,7 +108,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: ./.github/actions/argo-setup
+      - uses: ./.github/actions/nadia-setup
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           pip-packages: "pyyaml"
@@ -121,12 +121,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-manifest
-          path: dist/argo/.argo/build-manifest.json
+          path: dist/nadia/.nadia/build-manifest.json
           if-no-files-found: warn
 
   # ---------------------------------------------------------------------------
   # 4. leakage — depends on build; re-runs make build then make leakage-static.
-  #    dist/argo/ is NOT shared between GH Actions jobs (only the manifest
+  #    dist/nadia/ is NOT shared between GH Actions jobs (only the manifest
   #    artifact is small enough to be worth uploading); re-running build is
   #    cheap and ensures the scan operates on a real tree, not a stale upload.
   # ---------------------------------------------------------------------------
@@ -138,11 +138,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: ./.github/actions/argo-setup
+      - uses: ./.github/actions/nadia-setup
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           pip-packages: "pyyaml"
-      - name: make build (recreate dist/argo/ for the scan)
+      - name: make build (recreate dist/nadia/ for the scan)
         run: |
           . .venv/bin/activate
           make build
@@ -154,7 +154,7 @@ jobs:
   # ---------------------------------------------------------------------------
   # 4b. packaging-contract — depends on build; re-runs make build then verifies
   #     the shipped ./Dockerfile has not silently diverged from upstream's
-  #     packaging (the renamed-upstream oracle dist/argo/Dockerfile). This is the
+  #     packaging (the renamed-upstream oracle dist/nadia/Dockerfile). This is the
   #     forcing function for fork-vs-upstream toolchain drift (e.g. the Node-18
   #     regression: apt nodejs vs upstream's pinned node:22). See
   #     tools/check_packaging_contract.py + packaging-overrides.yaml.
@@ -167,11 +167,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: ./.github/actions/argo-setup
+      - uses: ./.github/actions/nadia-setup
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           pip-packages: "pyyaml"
-      - name: make build (recreate dist/argo/ oracle)
+      - name: make build (recreate dist/nadia/ oracle)
         run: |
           . .venv/bin/activate
           make build
@@ -197,7 +197,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: ./.github/actions/argo-setup
+      - uses: ./.github/actions/nadia-setup
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           pip-packages: "pytest==${{ env.PYTEST_VERSION }} pytest-asyncio==${{ env.PYTEST_ASYNCIO_VERSION }} pytest-timeout==${{ env.PYTEST_TIMEOUT_VERSION }} pyyaml"
@@ -206,7 +206,7 @@ jobs:
           . .venv/bin/activate
           pytest tests/
       - name: pytest -m integration tests/test_dist_determinism.py (AC-8 gate)
-        # Spec AC-8 / NFR-4: dist/argo/ MUST be bit-identical across two
+        # Spec AC-8 / NFR-4: dist/nadia/ MUST be bit-identical across two
         # builds at the same SHA with SOURCE_DATE_EPOCH set. The test is
         # `@pytest.mark.integration` so the default `tests/` run above
         # skips it; we run it explicitly here so AC-8 is a real CI gate
@@ -228,7 +228,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: ./.github/actions/argo-setup
+      - uses: ./.github/actions/nadia-setup
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           apt-packages: ""
@@ -240,10 +240,10 @@ jobs:
   #
   #    Pulls the renamed install.sh from the live `release` branch and runs
   #    it in a clean ubuntu:22.04 container, asserting five invariants:
-  #      1. ~/.argo/.install_method == "git"                    (IU-AC-5)
-  #      2. `argo --version` exits 0                            (IU-AC-4 exit)
-  #      3. banner matches hermes regex                         (IU-AC-4 banner)
-  #      4. `argo update --check` does NOT print fork warning   (IU-AC-9 static)
+  #      1. ~/.nadia/.install_method == "git"                    (IU-AC-5)
+  #      2. `nadia --version` exits 0                            (IU-AC-4 exit)
+  #      3. banner matches nadia regex                          (IU-AC-4 banner)
+  #      4. `nadia update --check` does NOT print fork warning   (IU-AC-9 static)
   #      5. ~/.hermes/.install_method does not exist            (leakage)
   #
   #    NOT a required check yet — branch protection wiring is a follow-up.
@@ -256,13 +256,17 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/nadia-setup
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          pip-packages: pyyaml
       - name: bash tests/install_smoke/run.sh
         run: bash tests/install_smoke/run.sh
 
   # ---------------------------------------------------------------------------
   # 9. update-smoke — IU-AC-9 (full), IU-AC-10, IU-AC-11 (M5.3 Part A).
   #
-  #    Boots ubuntu:22.04, installs argo from the public `release` branch,
+  #    Boots ubuntu:22.04, installs nadia from the public `release` branch,
   #    asserts the three update-related ACs that don't require a live
   #    Telegram. Public artefacts only — no GHCR secrets needed.
   #
@@ -275,40 +279,44 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/nadia-setup
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          pip-packages: pyyaml
       - name: make update-smoke
         run: make update-smoke
 
   # ---------------------------------------------------------------------------
-  # 10. dist-argo-tests — run upstream's renamed unit test suite against
-  #     dist/argo/ (UCS-AC-5, UCS-AC-6).
+  # 10. dist-nadia-tests — run upstream's renamed unit test suite against
+  #     dist/nadia/ (UCS-AC-5, UCS-AC-6).
   #
-  #     Wires the ~26k renamed upstream unit tests (in dist/argo/tests/) into
+  #     Wires the ~26k renamed upstream unit tests (in dist/nadia/tests/) into
   #     CI so every push and PR exercises the rebrand product, not just the
   #     ~7 CLI surfaces parity covers. Mirrors upstream's tests.yml shape:
   #     6-slice matrix, fail-fast: false, durations-cache balancing, Python
   #     3.11 inside the dist-internal venv (wheel-resolution parity with
-  #     upstream's own CI). argo's other jobs above continue on Python 3.13.
+  #     upstream's own CI). nadia's other jobs above continue on Python 3.13.
   #
   #     Visible-but-non-blocking initially. Promotion to a required check on
   #     `main` is a deliberate follow-up after a green streak (per
   #     .shepherd/update-cycle-smoke/standards.md § Boundaries → Ask first).
   #
   #     Caches:
-  #       - argo-uv-cache-*       : ~/.cache/uv HTTP cache, keyed on the
-  #                                 upstream/pyproject.toml + argo-rename.yaml
+  #       - nadia-uv-cache-*       : ~/.cache/uv HTTP cache, keyed on the
+  #                                 upstream/pyproject.toml + nadia-rename.yaml
   #                                 content hash. Stable proxy for
-  #                                 dist/argo/pyproject.toml (which doesn't
+  #                                 dist/nadia/pyproject.toml (which doesn't
   #                                 exist until after `make build`).
-  #       - argo-test-durations   : per-file wall-clock cache used by
+  #       - nadia-test-durations   : per-file wall-clock cache used by
   #                                 scripts/run_tests_parallel.py's --slice
   #                                 to balance shards. Restored per shard,
   #                                 merged + saved on main by the companion
-  #                                 dist-argo-tests-save-durations job.
+  #                                 dist-nadia-tests-save-durations job.
   #
-  #     Names start with `argo-` to namespace cleanly from any future caches.
+  #     Names start with `nadia-` to namespace cleanly from any future caches.
   # ---------------------------------------------------------------------------
-  dist-argo-tests:
-    name: dist-argo-tests (slice ${{ matrix.slice }}/6)
+  dist-nadia-tests:
+    name: dist-nadia-tests (slice ${{ matrix.slice }}/6)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -320,7 +328,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: ./.github/actions/argo-setup
+      - uses: ./.github/actions/nadia-setup
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           # `pyyaml` so `tools/build.py` can run (same pattern as the
@@ -334,56 +342,56 @@ jobs:
         # daytona, …). Caching ~/.cache/uv across runs keeps the
         # per-shard install time within budget. Key is tied to the
         # upstream pyproject + the rebrand config — both are stable
-        # proxies for dist/argo/pyproject.toml (which doesn't exist
+        # proxies for dist/nadia/pyproject.toml (which doesn't exist
         # until after `make build` so we can't hashFiles() it here).
         uses: actions/cache@v4
         with:
           path: ~/.cache/uv
-          key: argo-uv-cache-${{ runner.os }}-${{ hashFiles('upstream/pyproject.toml', 'argo-rename.yaml') }}
+          key: nadia-uv-cache-${{ runner.os }}-${{ hashFiles('upstream/pyproject.toml', 'nadia-rename.yaml') }}
           restore-keys: |
-            argo-uv-cache-${{ runner.os }}-
+            nadia-uv-cache-${{ runner.os }}-
 
       - name: Restore test-durations cache
         # Mirror of the durations-cache restore step in upstream's
         # tests.yml workflow (the "Restore test durations" actions/cache
         # step). We restore to a temp path because `make build` blows
-        # away dist/argo/; we copy the restored file into
-        # dist/argo/test_durations.json AFTER the build so the runner
+        # away dist/nadia/; we copy the restored file into
+        # dist/nadia/test_durations.json AFTER the build so the runner
         # can find it. Restore-only here; the companion save-durations
         # job below writes the cache on main.
         id: durations-cache
         uses: actions/cache/restore@v4
         with:
-          path: /tmp/argo-test-durations.json
-          key: argo-test-durations
+          path: /tmp/nadia-test-durations.json
+          key: nadia-test-durations
 
       - name: make build
         run: |
           . .venv/bin/activate
           make build
 
-      - name: Seed dist/argo/test_durations.json from cache (if any)
+      - name: Seed dist/nadia/test_durations.json from cache (if any)
         # `scripts/run_tests_parallel.py` reads test_durations.json from
-        # the repo root, which is dist/argo/ for the renamed runner.
+        # the repo root, which is dist/nadia/ for the renamed runner.
         # Copy in the restored cache so --slice gets balanced slicing.
         run: |
-          if [ -f /tmp/argo-test-durations.json ]; then
-            cp /tmp/argo-test-durations.json dist/argo/test_durations.json
-            echo "Seeded dist/argo/test_durations.json from cache."
+          if [ -f /tmp/nadia-test-durations.json ]; then
+            cp /tmp/nadia-test-durations.json dist/nadia/test_durations.json
+            echo "Seeded dist/nadia/test_durations.json from cache."
           else
             echo "No durations cache hit; first run will distribute by count."
           fi
 
       - name: Provision dist-internal .venv-test (Python 3.11 + [all,dev])
         # Python 3.11 to match upstream tests.yml (wheel-resolution
-        # parity with upstream's own CI). argo's other jobs run on
+        # parity with upstream's own CI). nadia's other jobs run on
         # Python 3.13; this dist venv is the only 3.11 surface.
         run: |
-          cd dist/argo
+          cd dist/nadia
           uv venv .venv-test --python 3.11
           uv pip install --python .venv-test/bin/python -e ".[all,dev]"
 
-      - name: Run dist/argo tests (slice ${{ matrix.slice }}/6)
+      - name: Run dist/nadia tests (slice ${{ matrix.slice }}/6)
         # Upstream's own runner (rebrand-renamed) — UCS-AC-6 forbids
         # introducing a new runner. Per-file isolation, LPT-balanced
         # slicing by cached durations.
@@ -395,7 +403,7 @@ jobs:
           OPENAI_API_KEY: ""
           NOUS_API_KEY: ""
         run: |
-          cd dist/argo
+          cd dist/nadia
           .venv-test/bin/python scripts/run_tests_parallel.py --slice ${{ matrix.slice }}/6
 
       - name: Upload per-slice durations
@@ -404,26 +412,26 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: argo-test-durations-slice-${{ matrix.slice }}
-          path: dist/argo/test_durations.json
+          name: nadia-test-durations-slice-${{ matrix.slice }}
+          path: dist/nadia/test_durations.json
           if-no-files-found: warn
           retention-days: 1
 
   # ---------------------------------------------------------------------------
-  # 11. dist-argo-tests-save-durations — merge per-slice durations and save
+  # 11. dist-nadia-tests-save-durations — merge per-slice durations and save
   #     to cache. Gated to main so PRs only READ the cache (preventing
   #     forks from poisoning it). Mirrors upstream's save-durations job.
   # ---------------------------------------------------------------------------
-  dist-argo-tests-save-durations:
-    name: dist-argo-tests-save-durations (main only)
-    needs: dist-argo-tests
+  dist-nadia-tests-save-durations:
+    name: dist-nadia-tests-save-durations (main only)
+    needs: dist-nadia-tests
     if: always() && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Download all slice durations
         uses: actions/download-artifact@v4
         with:
-          pattern: argo-test-durations-slice-*
+          pattern: nadia-test-durations-slice-*
           path: durations
           merge-multiple: true
 
@@ -444,5 +452,4 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: test_durations.json
-          key: argo-test-durations
-
+          key: nadia-test-durations

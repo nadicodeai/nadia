@@ -1,14 +1,14 @@
 # syntax=docker/dockerfile:1.6
 #
-# Multi-stage Dockerfile for ghcr.io/nadicodeai/argo.
+# Multi-stage Dockerfile for ghcr.io/nadicodeai/nadia.
 #
 # Stages
 # ------
 # Stage 1 (builder):       apt {git, quilt, make, gcc, libffi-dev, python3-dev,
 #                          ca-certificates}; copies repo and runs `make build`
-#                          to produce dist/argo/. Never shipped.
-# Stage 2 (runtime-slim):  python:3.13-slim-bookworm; copies ONLY dist/argo/ →
-#                          /opt/argo. Strips argo_sync/ per spec OQ-10. Installs
+#                          to produce dist/nadia/. Never shipped.
+# Stage 2 (runtime-slim):  python:3.13-slim-bookworm; copies ONLY dist/nadia/ →
+#                          /opt/nadia. Strips nadia_sync/ per spec OQ-10. Installs
 #                          upstream's runtime deps via `pip install -e .` into a
 #                          venv inside the image. Result: ~371 MB CLI-only image
 #                          tagged `:slim` / `:dev`.
@@ -21,10 +21,10 @@
 #
 # Spec references
 # ---------------
-# FR-7  Docker image: multi-stage, ONLY dist/argo/ in final image, never
+# FR-7  Docker image: multi-stage, ONLY dist/nadia/ in final image, never
 #       upstream/patches/overlay/tools.
 # FR-11 Docker-only (no PyPI).
-# OQ-10 Strip argo_sync from final image.
+# OQ-10 Strip nadia_sync from final image.
 # AC-8  Determinism via SOURCE_DATE_EPOCH (slim path only — full path adds
 #       network-fetched npm + chromium + s6-overlay binaries which break
 #       byte-determinism by design).
@@ -40,14 +40,14 @@
 #
 # Selecting a stage
 # -----------------
-#   docker buildx build --target runtime-slim -t argo:slim .
-#   docker buildx build --target runtime-full -t argo:latest .
+#   docker buildx build --target runtime-slim -t nadia:slim .
+#   docker buildx build --target runtime-full -t nadia:latest .
 #
 # `make image` defaults to runtime-slim. `make image-full` builds runtime-full.
 #
 # Base image divergence from legacy
 # ---------------------------------
-# Legacy `~/Code/argo-agent/Dockerfile` builds on `debian:13.4` (trixie)
+# Legacy `~/Code/nadia-agent/Dockerfile` builds on `debian:13.4` (trixie)
 # and installs Python 3 via apt. The slim+full stages here build on
 # `python:3.13-slim-bookworm` (Debian 12 + an upstream-built CPython).
 # This is INTENTIONAL: bookworm's stable LTS posture + the python-slim
@@ -122,8 +122,8 @@ COPY . /src
 
 # Release-date stamp (the ONE value a hermetic build can't discover itself).
 #
-# `make build` regenerates dist/argo/ from PRISTINE upstream/, so
-# argo_cli/__init__.py would carry upstream's __release_date__, not the Argo
+# `make build` regenerates dist/nadia/ from PRISTINE upstream/, so
+# nadia_cli/__init__.py would carry upstream's __release_date__, not the Nadia
 # release date — which is exactly how the v2026.6.5 image shipped reporting
 # 2026.5.29. The date IS the release tag (v2026.6.5 → 2026.6.5), but the docker
 # build is hermetic: .dockerignore excludes .git (237 MB), so the builder can't
@@ -131,11 +131,11 @@ COPY . /src
 # (see _stamp_release_date). Empty on dev builds (PR/main) → upstream's date is
 # kept, honest for an unreleased tree. docker-publish.yml derives this from the
 # release tag automatically — nobody types it.
-ARG ARGO_RELEASE_DATE=""
-ENV ARGO_RELEASE_DATE=${ARGO_RELEASE_DATE}
+ARG NADIA_RELEASE_DATE=""
+ENV NADIA_RELEASE_DATE=${NADIA_RELEASE_DATE}
 
 # Run the renamer build pipeline: copies upstream/, applies patches/,
-# layers overlay/, runs the rename engine, writes dist/argo/.
+# layers overlay/, runs the rename engine, writes dist/nadia/.
 # The resulting tree is what the runtime stage ships.
 RUN make build
 
@@ -149,7 +149,7 @@ FROM python:${PYTHON_VERSION} AS runtime-slim
 ARG SOURCE_DATE_EPOCH
 ENV SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH}
 
-# Runtime apt deps kept to the minimum needed by upstream's argo runtime.
+# Runtime apt deps kept to the minimum needed by upstream's nadia runtime.
 #   ca-certificates → outbound TLS to model APIs.
 #   git → some upstream code paths shell out to `git` (skill clones, etc.).
 # Anything heavier (node, npm, playwright, ffmpeg, s6-overlay) lives in
@@ -162,83 +162,83 @@ RUN apt-get update && \
         git && \
     rm -rf /var/lib/apt/lists/*
 
-ARG ARGO_HOME=/home/argo/.argo
-ENV ARGO_HOME=${ARGO_HOME}
+ARG NADIA_HOME=/home/nadia/.nadia
+ENV NADIA_HOME=${NADIA_HOME}
 ENV PYTHONUNBUFFERED=1
-ENV PATH="/opt/argo/.venv/bin:${PATH}"
+ENV PATH="/opt/nadia/.venv/bin:${PATH}"
 
 # Non-root user, mirrors legacy convention (uid 10000 used `/opt/data` as
-# home; the slim image uses /home/argo for simplicity — the path is
-# contained by ARGO_HOME so user code doesn't depend on it). The full
-# stage rebinds ARGO_HOME to /opt/data to match legacy on-disk layout.
-RUN useradd -m -u 10000 -s /bin/bash argo
+# home; the slim image uses /home/nadia for simplicity — the path is
+# contained by NADIA_HOME so user code doesn't depend on it). The full
+# stage rebinds NADIA_HOME to /opt/data to match legacy on-disk layout.
+RUN useradd -m -u 10000 -s /bin/bash nadia
 
 # Copy ONLY the renamed tree from the builder. Nothing else (upstream/,
-# patches/, overlay/, tools/, .shepherd/, scripts/, argo-rename.yaml are
+# patches/, overlay/, tools/, .shepherd/, scripts/, nadia-rename.yaml are
 # all build-time-only and MUST NOT appear in the runtime image — spec
 # FR-7).
-COPY --from=builder --chown=argo:argo /src/dist/argo /opt/argo
+COPY --from=builder --chown=nadia:nadia /src/dist/nadia /opt/nadia
 
 # Strip the rename engine from the runtime image per spec OQ-10.
-# argo_sync/ is a build-time tool, not a runtime API. Keeping it in
+# nadia_sync/ is a build-time tool, not a runtime API. Keeping it in
 # the runtime image would let customers re-run the rename engine
 # against the shipped tree (small attack surface; pointless capability).
 # Also strip tests/ (dev-only).
 #
-# NOTE: /opt/argo/tools is intentionally PRESERVED. Upstream's
+# NOTE: /opt/nadia/tools is intentionally PRESERVED. Upstream's
 # pyproject.toml declares `tools` as a runtime package, and several
-# argo_cli modules (mcp_config, sessions DB) import from it at
+# nadia_cli modules (mcp_config, sessions DB) import from it at
 # runtime. The M5.1 implementer's defensive `rm tools/` broke
-# `argo mcp list` and `argo sessions list` — caught by the M6 parity
+# `nadia mcp list` and `nadia sessions list` — caught by the M6 parity
 # suite. The strip is now scoped to OUR build-time tools (none of
 # which land in dist/) plus upstream's tests; nothing else.
-RUN rm -rf /opt/argo/argo_sync /opt/argo/tests
+RUN rm -rf /opt/nadia/nadia_sync /opt/nadia/tests
 
 # Install upstream's runtime deps. Upstream's pyproject.toml lists the
 # package and its dep closure; `pip install -e .` resolves and installs
-# them into a venv at /opt/argo/.venv. `argo` ends up on PATH via the
+# them into a venv at /opt/nadia/.venv. `nadia` ends up on PATH via the
 # venv's bin/ directory (ENV PATH above).
-WORKDIR /opt/argo
+WORKDIR /opt/nadia
 RUN python -m venv .venv && \
     .venv/bin/pip install --no-cache-dir --upgrade pip && \
     .venv/bin/pip install --no-cache-dir -e . && \
-    chown -R argo:argo /opt/argo/.venv
+    chown -R nadia:nadia /opt/nadia/.venv
 
-# Ensure ARGO_HOME exists and is writable by the argo user. Without
-# this, `argo mcp list` / `argo sessions list` (and anything else that
-# does `ensure_argo_home()`) hit PermissionError because the COPY above
-# may have created /home/argo/.argo as root. Caught by M6 parity.
-RUN mkdir -p "${ARGO_HOME}" && chown -R argo:argo /home/argo
+# Ensure NADIA_HOME exists and is writable by the nadia user. Without
+# this, `nadia mcp list` / `nadia sessions list` (and anything else that
+# does `ensure_nadia_home()`) hit PermissionError because the COPY above
+# may have created /home/nadia/.nadia as root. Caught by M6 parity.
+RUN mkdir -p "${NADIA_HOME}" && chown -R nadia:nadia /home/nadia
 
-# Drop privileges. From here on the container runs as the argo user.
-USER argo
-WORKDIR /home/argo
+# Drop privileges. From here on the container runs as the nadia user.
+USER nadia
+WORKDIR /home/nadia
 
-# Volume for $ARGO_HOME so customers can mount persistent state.
-VOLUME ["/home/argo/.argo"]
+# Volume for $NADIA_HOME so customers can mount persistent state.
+VOLUME ["/home/nadia/.nadia"]
 
-# Default invocation: the renamed `argo` console script (from
-# argo_cli.main:main in pyproject's [project.scripts]).
-CMD ["argo"]
+# Default invocation: the renamed `nadia` console script (from
+# nadia_cli.main:main in pyproject's [project.scripts]).
+CMD ["nadia"]
 
 # ---------- Stage 3: runtime-full -----------------------------------------
 #
 # Customer-parity runtime. Adds the feature surface legacy v0.14.0 ships:
 #
-#   node + npm        → TUI web dashboard build / launch (`argo dashboard`,
-#                       `argo --tui`, ui-tui/web bundles).
+#   node + npm        → TUI web dashboard build / launch (`nadia dashboard`,
+#                       `nadia --tui`, ui-tui/web bundles).
 #   ffmpeg            → voice-mode audio capture + transcode pipeline.
 #   playwright +
 #     chromium (shell)→ browser-tool MCP, agent-browser npm dep.
 #   s6-overlay        → in-container supervisor (PID 1 = /init) for the
 #                       dashboard, gateway, and per-profile services. Mirrors
-#                       legacy ~/Code/argo-agent/Dockerfile's supervision
+#                       legacy ~/Code/nadia-agent/Dockerfile's supervision
 #                       model so customer-facing service lifecycle behaviour
 #                       is preserved.
 #
 # This stage explicitly trades determinism for parity: chromium binaries
 # and s6-overlay tarballs are network-fetched at build time. AC-8
-# determinism is only a gate for the slim image (where `dist/argo/`
+# determinism is only a gate for the slim image (where `dist/nadia/`
 # tree-hash is the artifact). The full image's reproducibility is
 # best-effort and explicitly NOT a gate (spec § Build Reproducibility).
 #
@@ -259,10 +259,10 @@ ENV PYTHONUNBUFFERED=1
 # Store Playwright browsers outside any volume mount so the build-time
 # install survives the /opt/data volume overlay at runtime. Mirrors
 # legacy Dockerfile line 9.
-ENV PLAYWRIGHT_BROWSERS_PATH=/opt/argo/.playwright
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/nadia/.playwright
 
 # Apt deps for the full feature surface. The set tracks legacy
-# `~/Code/argo-agent/Dockerfile`'s runtime apt closure (line 18-21) for
+# `~/Code/nadia-agent/Dockerfile`'s runtime apt closure (line 18-21) for
 # customer-parity. The deltas vs. an "absolute minimum" picture:
 #
 #   (node + npm)          → TUI dashboard build + launch. NOT apt-installed:
@@ -277,7 +277,7 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/opt/argo/.playwright
 #                           for file search; the fallback to `find`+`grep`
 #                           is correct but markedly slower. Legacy ships it
 #                           in the customer-facing image (review #6).
-#   openssh-client        → `argo_cli/profile_distribution.py` clones
+#   openssh-client        → `nadia_cli/profile_distribution.py` clones
 #                           profile bundles from `git@` / `ssh://` URLs at
 #                           runtime; without ssh that path errors out.
 #   make, gcc, g++,       → Native-compile toolchain. Two consumers:
@@ -347,8 +347,8 @@ RUN ln -sf /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && 
     ln -sf /usr/local/lib/node_modules/corepack/dist/corepack.js /usr/local/bin/corepack
 
 # ---------- s6-overlay install ----------
-# Mirrors legacy ~/Code/argo-agent/Dockerfile lines 23-68. /init becomes
-# PID 1 below (see ENTRYPOINT). Supplies supervision for the main argo
+# Mirrors legacy ~/Code/nadia-agent/Dockerfile lines 23-68. /init becomes
+# PID 1 below (see ENTRYPOINT). Supplies supervision for the main nadia
 # process, the dashboard, and per-profile gateways. Multi-arch via
 # TARGETARCH; checksum-verified against upstream-published SHA256.
 #
@@ -383,7 +383,7 @@ RUN set -eu; \
     rm /tmp/s6-overlay-*.tar.xz /tmp/s6-overlay.sha256
 
 # ---------- npm + playwright install ----------
-# The renamed tree in /opt/argo contains the upstream package.json (with
+# The renamed tree in /opt/nadia contains the upstream package.json (with
 # the agent-browser dep that transitively brings in playwright). Run npm
 # install + the workspace installs the same way legacy does. The chromium
 # --only-shell build is the headless shell variant (~280 MB instead of
@@ -396,7 +396,7 @@ RUN set -eu; \
 # Mirrors legacy's mitigation for the TUI launcher's npm-install loop.
 ENV npm_config_install_links=false
 
-WORKDIR /opt/argo
+WORKDIR /opt/nadia
 RUN npm install --prefer-offline --no-audit && \
     npx playwright install --with-deps chromium --only-shell && \
     if [ -d web ]; then (cd web && npm install --prefer-offline --no-audit); fi && \
@@ -410,39 +410,39 @@ RUN npm install --prefer-offline --no-audit && \
 RUN if [ -d web ] && [ -f web/package.json ]; then (cd web && npm run build); fi && \
     if [ -d ui-tui ] && [ -f ui-tui/package.json ]; then (cd ui-tui && npm run build); fi
 
-# Re-chown node_modules + ui-tui assets so the argo user can write to
+# Re-chown node_modules + ui-tui assets so the nadia user can write to
 # them at runtime (the TUI launcher's _tui_need_npm_install() may
 # trigger a runtime npm install — mirrors legacy line 152-154).
-RUN chmod -R a+rX /opt/argo && \
-    chown -R argo:argo /opt/argo/.venv && \
-    if [ -d /opt/argo/node_modules ]; then chown -R argo:argo /opt/argo/node_modules; fi && \
-    if [ -d /opt/argo/ui-tui ]; then chown -R argo:argo /opt/argo/ui-tui; fi
+RUN chmod -R a+rX /opt/nadia && \
+    chown -R nadia:nadia /opt/nadia/.venv && \
+    if [ -d /opt/nadia/node_modules ]; then chown -R nadia:nadia /opt/nadia/node_modules; fi && \
+    if [ -d /opt/nadia/ui-tui ]; then chown -R nadia:nadia /opt/nadia/ui-tui; fi
 
 # Point web_server.py at the built dashboard bundle. Upstream's vite build
-# emits to argo_cli/web_dist (post-rename); web_server.py reads
-# ARGO_WEB_DIST and falls back to a package-relative web_dist only when the
+# emits to nadia_cli/web_dist (post-rename); web_server.py reads
+# NADIA_WEB_DIST and falls back to a package-relative web_dist only when the
 # var is unset. Set it explicitly so the dashboard serves the build output
-# regardless of CWD. Mirrors dist/argo/Dockerfile.
-ENV ARGO_WEB_DIST=/opt/argo/argo_cli/web_dist
+# regardless of CWD. Mirrors dist/nadia/Dockerfile.
+ENV NADIA_WEB_DIST=/opt/nadia/nadia_cli/web_dist
 
-# Match legacy's on-disk layout: ARGO_HOME = /opt/data. Customer state
+# Match legacy's on-disk layout: NADIA_HOME = /opt/data. Customer state
 # bind-mounts to /opt/data via the docker-compose recipe shipped with
-# legacy (and any equivalent argo recipe). The slim stage's
-# /home/argo/.argo VOLUME declaration is overridden here.
-ENV ARGO_HOME=/opt/data
-RUN mkdir -p /opt/data && chown argo:argo /opt/data
+# legacy (and any equivalent nadia recipe). The slim stage's
+# /home/nadia/.nadia VOLUME declaration is overridden here.
+ENV NADIA_HOME=/opt/data
+RUN mkdir -p /opt/data && chown nadia:nadia /opt/data
 VOLUME ["/opt/data"]
 
 # ---------- s6-overlay service wiring ----------
-# The renamed source tree under /opt/argo/docker/ carries the supervision
+# The renamed source tree under /opt/nadia/docker/ carries the supervision
 # scripts that were lifted from upstream (hermes/main-hermes →
-# argo/main-argo) by the build-time rename engine. We install them into
+# nadia/main-nadia) by the build-time rename engine. We install them into
 # the canonical s6-overlay paths here so /init sees them at PID 1.
 #
-# Layout under /opt/argo/docker/ (post-rename):
+# Layout under /opt/nadia/docker/ (post-rename):
 #   docker/s6-rc.d/dashboard/{run,finish,type,dependencies.d/base}
-#   docker/s6-rc.d/main-argo/{run,type,dependencies.d/base}
-#   docker/s6-rc.d/user/contents.d/{dashboard,main-argo}
+#   docker/s6-rc.d/main-nadia/{run,type,dependencies.d/base}
+#   docker/s6-rc.d/user/contents.d/{dashboard,main-nadia}
 #   docker/cont-init.d/015-supervise-perms
 #   docker/cont-init.d/02-reconcile-profiles
 #   docker/stage2-hook.sh   (root-level cont-init logic)
@@ -459,32 +459,32 @@ VOLUME ["/opt/data"]
 # restart by /etc/cont-init.d/02-reconcile-profiles.
 USER root
 # `cp -a` preserves modes (so the 0755 on run/finish/stage2-hook.sh survives)
-# but also preserves ownership. The source files were COPY --chown=argo:argo'd
+# but also preserves ownership. The source files were COPY --chown=nadia:nadia'd
 # in the slim stage, so we explicitly re-chown the installed copies to root
 # so s6-overlay can supervise them with its standard expectations.
-RUN cp -a /opt/argo/docker/s6-rc.d/. /etc/s6-overlay/s6-rc.d/ && \
+RUN cp -a /opt/nadia/docker/s6-rc.d/. /etc/s6-overlay/s6-rc.d/ && \
     chown -R root:root /etc/s6-overlay/s6-rc.d/ && \
     mkdir -p /etc/cont-init.d && \
-    printf '#!/command/with-contenv sh\nexec /opt/argo/docker/stage2-hook.sh\n' \
-        > /etc/cont-init.d/01-argo-setup && \
-    chmod 0755 /etc/cont-init.d/01-argo-setup && \
-    cp /opt/argo/docker/cont-init.d/015-supervise-perms /etc/cont-init.d/015-supervise-perms && \
-    cp /opt/argo/docker/cont-init.d/02-reconcile-profiles /etc/cont-init.d/02-reconcile-profiles && \
+    printf '#!/command/with-contenv sh\nexec /opt/nadia/docker/stage2-hook.sh\n' \
+        > /etc/cont-init.d/01-nadia-setup && \
+    chmod 0755 /etc/cont-init.d/01-nadia-setup && \
+    cp /opt/nadia/docker/cont-init.d/015-supervise-perms /etc/cont-init.d/015-supervise-perms && \
+    cp /opt/nadia/docker/cont-init.d/02-reconcile-profiles /etc/cont-init.d/02-reconcile-profiles && \
     chown root:root /etc/cont-init.d/015-supervise-perms /etc/cont-init.d/02-reconcile-profiles && \
     chmod 0755 /etc/cont-init.d/015-supervise-perms /etc/cont-init.d/02-reconcile-profiles
 
 # /init must run as root so the stage2 cont-init hook can chown the
-# volume + usermod/groupmod the argo user for ARGO_UID/ARGO_GID remap.
-# Each supervised service then drops to the argo user via s6-setuidgid
+# volume + usermod/groupmod the nadia user for NADIA_UID/NADIA_GID remap.
+# Each supervised service then drops to the nadia user via s6-setuidgid
 # in its own `run` script. Legacy does the same (see legacy Dockerfile
-# lines 155-158). We intentionally do NOT switch to `USER argo` here:
-# the slim stage ends with `USER argo`, but for full /init must be root.
+# lines 155-158). We intentionally do NOT switch to `USER nadia` here:
+# the slim stage ends with `USER nadia`, but for full /init must be root.
 #
 # main-wrapper.sh and each s6 `run` script do their own `cd /opt/data`
 # before dropping privileges, so we don't need to reset WORKDIR from
-# the slim stage's `/home/argo` — it's irrelevant to /init.
+# the slim stage's `/home/nadia` — it's irrelevant to /init.
 
-# ENTRYPOINT mirrors legacy ~/Code/argo-agent/Dockerfile:223. /init is
+# ENTRYPOINT mirrors legacy ~/Code/nadia-agent/Dockerfile:223. /init is
 # PID 1 (s6-svscan); it sets up the supervision tree, runs
 # /etc/cont-init.d/* (our stage2 hook + supervise-perms +
 # reconcile-profiles), starts s6-rc services declared in
@@ -500,12 +500,12 @@ RUN cp -a /opt/argo/docker/s6-rc.d/. /etc/s6-overlay/s6-rc.d/ && \
 #   docker run <image> sleep infinity   → /init main-wrapper.sh sleep infinity
 #   docker run <image> --tui            → /init main-wrapper.sh --tui
 #
-# main-wrapper.sh handles arg routing (bare-exec vs argo subcommand vs
-# no-args), drops to the argo user via s6-setuidgid, and exec's the
+# main-wrapper.sh handles arg routing (bare-exec vs nadia subcommand vs
+# no-args), drops to the nadia user via s6-setuidgid, and exec's the
 # final program so its exit code becomes the container exit code.
 # Without the wrapper-as-ENTRYPOINT, leading-dash args like `--version`
 # or `--tui` would be intercepted by /init's POSIX shell.
-ENTRYPOINT [ "/init", "/opt/argo/docker/main-wrapper.sh" ]
+ENTRYPOINT [ "/init", "/opt/nadia/docker/main-wrapper.sh" ]
 CMD [ ]
 
 # ---------- Stage 4: runtime-fde ------------------------------------------
@@ -519,9 +519,9 @@ FROM runtime-full AS runtime-fde
 
 USER root
 
-COPY --chmod=0755 scripts/argo-customer-init /usr/local/bin/argo-customer-init
+COPY --chmod=0755 scripts/nadia-customer-init /usr/local/bin/nadia-customer-init
 
-RUN /opt/argo/.venv/bin/python -m pip install --no-cache-dir -U \
+RUN /opt/nadia/.venv/bin/python -m pip install --no-cache-dir -U \
         "honcho-ai==2.0.1" \
         "python-telegram-bot[webhooks]==22.6" \
         "edge-tts==7.2.7" \
@@ -529,7 +529,7 @@ RUN /opt/argo/.venv/bin/python -m pip install --no-cache-dir -U \
     mkdir -p /opt/data && \
     cat > /opt/data/SOUL.md.template <<'EOF' && \
     cat > /opt/data/honcho.json.template <<'EOF2' && \
-    chown -R argo:argo /opt/data
+    chown -R nadia:nadia /opt/data
 # Customer Operating Context
 
 Profile: {{PROFILE}}
@@ -540,7 +540,7 @@ Use this file for customer-specific operating context, preferences, boundaries,
 and escalation notes. Do not put long-lived secrets here.
 EOF
 {
-  "aiPeer": "argo",
+  "aiPeer": "nadia",
   "contextCadence": 1,
   "dialecticCadence": 2,
   "dialecticDepth": 1,

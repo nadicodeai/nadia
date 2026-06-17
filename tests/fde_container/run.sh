@@ -5,7 +5,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-IMAGE="${ARGO_FDE_CONTAINER_IMAGE:-ghcr.io/nadicodeai/argo:fde-dev}"
+IMAGE="${NADIA_FDE_CONTAINER_IMAGE:-ghcr.io/nadicodeai/nadia:fde-dev}"
 
 docker buildx build \
     --build-arg SOURCE_DATE_EPOCH="$(git -C "${REPO_ROOT}" log -1 --format=%ct)" \
@@ -16,7 +16,7 @@ docker buildx build \
     "${REPO_ROOT}"
 
 docker run --rm \
-    --entrypoint /usr/local/bin/argo-customer-init \
+    --entrypoint /usr/local/bin/nadia-customer-init \
     "${IMAGE}" \
     --profile smokeprod \
     --honcho-workspace smoke-workspace \
@@ -32,14 +32,14 @@ docker run --rm \
     --entrypoint bash \
     "${IMAGE}" \
     -c 'set -euo pipefail
-        /opt/argo/.venv/bin/argo --version
-        /opt/argo/.venv/bin/python - <<'"'"'PY'"'"'
+        /opt/nadia/.venv/bin/nadia --version
+        /opt/nadia/.venv/bin/python - <<'"'"'PY'"'"'
 import importlib
 for module in ("honcho", "telegram", "edge_tts", "ddgs"):
     importlib.import_module(module)
 print("imports ok")
 PY
-        test -f /usr/local/bin/argo-customer-init
+        test -f /usr/local/bin/nadia-customer-init
         test -f /opt/data/SOUL.md.template
         test -f /opt/data/honcho.json.template
     '

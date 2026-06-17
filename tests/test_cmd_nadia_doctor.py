@@ -1,4 +1,4 @@
-"""Tests for `argo doctor --static` and `argo doctor --live` (T4.2 + T4.3).
+"""Tests for `nadia doctor --static` and `nadia doctor --live` (T4.2 + T4.3).
 
 IMPORTANT: Generic fixture strings are used throughout — never literal source
 identifiers — so the leakage scanner never flags this file.
@@ -11,16 +11,16 @@ Layout note
 -----------
 
 This file lives at repo-root ``tests/`` because it asserts on
-``argo-rename.yaml`` (a build-tool input) and on the post-rename
-``argo doctor`` CLI surface — neither belongs in the customer artifact
-under ``dist/argo/tests/``.
+``nadia-rename.yaml`` (a build-tool input) and on the post-rename
+``nadia doctor`` CLI surface — neither belongs in the customer artifact
+under ``dist/nadia/tests/``.
 
-The ``argo doctor --static / --live`` subcommands are wired by
+The ``nadia doctor --static / --live`` subcommands are wired by
 ``patches/0008-doctor-static-live-wiring.patch`` and only exist in the
 built tree, so this file drives the subprocess against
-``dist/argo/argo_cli.main`` rather than the pre-rename ``hermes_cli``
+``dist/nadia/nadia_cli.main`` rather than the pre-rename ``hermes_cli``
 sources. ``make build`` is therefore a precondition; tests SKIP cleanly
-when ``dist/argo/`` is absent so a bare ``pytest tests/`` run on a fresh
+when ``dist/nadia/`` is absent so a bare ``pytest tests/`` run on a fresh
 clone never reds.
 """
 
@@ -40,18 +40,18 @@ import pytest
 # ---------------------------------------------------------------------------
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
-_RENAME_YAML = _REPO_ROOT / "argo-rename.yaml"
-_DIST_ARGO = _REPO_ROOT / "dist" / "argo"
-_DIST_ARGO_CLI_MAIN = _DIST_ARGO / "argo_cli" / "main.py"
+_RENAME_YAML = _REPO_ROOT / "nadia-rename.yaml"
+_DIST_NADIA = _REPO_ROOT / "dist" / "nadia"
+_DIST_NADIA_CLI_MAIN = _DIST_NADIA / "nadia_cli" / "main.py"
 
-# Module-level skip: argo doctor --static/--live is patched into the CLI by
+# Module-level skip: nadia doctor --static/--live is patched into the CLI by
 # patches/0008-doctor-static-live-wiring.patch, applied during `make build`.
-# Without dist/argo/ we have no CLI to drive. SKIP rather than fail so a
+# Without dist/nadia/ we have no CLI to drive. SKIP rather than fail so a
 # bare `pytest tests/` on a fresh checkout stays green.
 pytestmark = pytest.mark.skipif(
-    not _DIST_ARGO_CLI_MAIN.exists(),
+    not _DIST_NADIA_CLI_MAIN.exists(),
     reason=(
-        "dist/argo/ not built; run `make build` first. argo doctor --static / "
+        "dist/nadia/ not built; run `make build` first. nadia doctor --static / "
         "--live are wired by patches/0008-doctor-static-live-wiring.patch and "
         "only exist in the post-build tree."
     ),
@@ -59,7 +59,7 @@ pytestmark = pytest.mark.skipif(
 
 
 def _load_probe_token() -> str:
-    """Return the bare lowercase upstream token from argo-rename.yaml."""
+    """Return the bare lowercase upstream token from nadia-rename.yaml."""
     import yaml
 
     data = yaml.safe_load(_RENAME_YAML.read_text(encoding="utf-8"))
@@ -85,7 +85,7 @@ _PROBE = _load_probe_token()
 # ---------------------------------------------------------------------------
 
 # Pre-rename overlay location of the doctor leakage module (mirrors the
-# post-rename `argo_cli/doctor_leakage.py` that ships under dist/argo/).
+# post-rename `nadia_cli/doctor_leakage.py` that ships under dist/nadia/).
 _LEAKAGE_MOD = _REPO_ROOT / "overlay" / "hermes_cli" / "doctor_leakage.py"
 
 
@@ -94,24 +94,24 @@ _LEAKAGE_MOD = _REPO_ROOT / "overlay" / "hermes_cli" / "doctor_leakage.py"
 # ---------------------------------------------------------------------------
 
 
-def _argo_cmd() -> list[str]:
-    """Argv prefix that runs the BUILT post-rename argo CLI from dist/argo/."""
-    return [sys.executable, "-m", "argo_cli.main"]
+def _nadia_cmd() -> list[str]:
+    """Argv prefix that runs the BUILT post-rename nadia CLI from dist/nadia/."""
+    return [sys.executable, "-m", "nadia_cli.main"]
 
 
 def _run_static(repo_root: Path, rename_yaml: Path | None = None) -> subprocess.CompletedProcess:
-    """Run `argo doctor --static` against *repo_root* as a subprocess."""
+    """Run `nadia doctor --static` against *repo_root* as a subprocess."""
     yaml_path = rename_yaml or _RENAME_YAML
     return subprocess.run(
         [
-            *_argo_cmd(),
+            *_nadia_cmd(),
             "doctor", "--static",
             "--rename-yaml", str(yaml_path),
             "--repo-root", str(repo_root),
         ],
         capture_output=True,
         text=True,
-        cwd=str(_DIST_ARGO),
+        cwd=str(_DIST_NADIA),
     )
 
 
@@ -121,7 +121,7 @@ def _run_static(repo_root: Path, rename_yaml: Path | None = None) -> subprocess.
 
 
 class TestDoctorStatic:
-    """argo doctor --static — leakage detection against a file tree."""
+    """nadia doctor --static — leakage detection against a file tree."""
 
     def test_clean_repo_exits_zero(self, tmp_path: Path) -> None:
         """--static against a tree with no upstream tokens exits 0."""
@@ -162,7 +162,7 @@ class TestDoctorStatic:
 
         # Create a custom rename config that excepts the leaky file.
         custom_cfg = {
-            "mappings": [{"from": _PROBE, "to": "argo"}],
+            "mappings": [{"from": _PROBE, "to": "nadia"}],
             "exceptions": [{"path": "allowed_file.py", "why": "test exception"}],
             "skip_contexts": [],
         }
@@ -184,10 +184,10 @@ class TestDoctorStatic:
         """A token appearing inside a skip_contexts match must NOT be reported."""
         import yaml
 
-        # Create a config that skips https:// URLs (mirrors argo-rename.yaml pattern).
+        # Create a config that skips https:// URLs (mirrors nadia-rename.yaml pattern).
         skip_pat = r"https?://[^\s]+"
         custom_cfg = {
-            "mappings": [{"from": _PROBE, "to": "argo"}],
+            "mappings": [{"from": _PROBE, "to": "nadia"}],
             "exceptions": [],
             "skip_contexts": [skip_pat],
         }
@@ -212,7 +212,7 @@ class TestDoctorStatic:
 
         skip_pat = r"https?://[^\s]+"
         custom_cfg = {
-            "mappings": [{"from": _PROBE, "to": "argo"}],
+            "mappings": [{"from": _PROBE, "to": "nadia"}],
             "exceptions": [],
             "skip_contexts": [skip_pat],
         }
@@ -237,7 +237,7 @@ class TestDoctorStatic:
 
 
 class TestDoctorLive:
-    """argo doctor --live — runtime subprocess capture + leakage detection."""
+    """nadia doctor --live — runtime subprocess capture + leakage detection."""
 
     def test_live_planted_leakage_detected(self, tmp_path: Path) -> None:
         """--live detects leakage in a command's captured output.
@@ -250,14 +250,14 @@ class TestDoctorLive:
         leaky_cmd = f"{sys.executable} -c \"import sys; sys.stdout.write('{token}\\\\n')\""
         result = subprocess.run(
             [
-                *_argo_cmd(),
+                *_nadia_cmd(),
                 "doctor", "--live",
                 "--rename-yaml", str(_RENAME_YAML),
                 "--live-cmd", leaky_cmd,
             ],
             capture_output=True,
             text=True,
-            cwd=str(_DIST_ARGO),
+            cwd=str(_DIST_NADIA),
         )
 
         assert result.returncode != 0, (
@@ -268,23 +268,23 @@ class TestDoctorLive:
     def test_live_clean_exits_zero(self) -> None:
         """--live exits 0 when the captured output contains no upstream tokens.
 
-        This test runs against the real built tree via `argo --help` +
-        `argo --version` (the built-in fallback commands used when no
+        This test runs against the real built tree via `nadia --help` +
+        `nadia --version` (the built-in fallback commands used when no
         --live-cmd is given).  After `make build` the install must be free
         of upstream identifiers.
         """
         result = subprocess.run(
             [
-                *_argo_cmd(),
+                *_nadia_cmd(),
                 "doctor", "--live",
                 "--rename-yaml", str(_RENAME_YAML),
             ],
             capture_output=True,
             text=True,
-            cwd=str(_DIST_ARGO),
+            cwd=str(_DIST_NADIA),
         )
 
         assert result.returncode == 0, (
-            f"Expected exit 0 — real `argo` install should be leakage-free\n"
+            f"Expected exit 0 — real `nadia` install should be leakage-free\n"
             f"stdout: {result.stdout}\nstderr: {result.stderr}"
         )

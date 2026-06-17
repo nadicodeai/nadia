@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Produce the first importable Argo FDE VM artifact.
+# Produce the first importable Nadia FDE VM artifact.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-OUT_DIR="${ARGO_FDE_IMAGE_DIR:-${REPO_ROOT}/dist/images}"
-ARTIFACT_NAME="${ARGO_FDE_IMAGE_NAME:-argo-fde-ubuntu-22.04.qcow2}"
+OUT_DIR="${NADIA_FDE_IMAGE_DIR:-${REPO_ROOT}/dist/images}"
+ARTIFACT_NAME="${NADIA_FDE_IMAGE_NAME:-nadia-fde-ubuntu-22.04.qcow2}"
 
 mkdir -p "${OUT_DIR}"
 

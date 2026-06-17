@@ -38,7 +38,7 @@ from pathlib import Path
 import pytest
 
 # overlay/tests/ is not a Python package (no __init__.py — overlay files
-# ship as a flat copy into dist/argo/tests/), so import the sibling
+# ship as a flat copy into dist/nadia/tests/), so import the sibling
 # helpers module via sys.path.
 sys.path.insert(0, str(Path(__file__).parent))
 from _sync_fixture_helpers import (  # noqa: E402
@@ -179,7 +179,7 @@ def test_ac3_non_overlapping_quilt_push_succeeds(tmp_path: Path) -> None:
     assert "def cmd_new_flag" in final, (
         "post-quilt file missing the fork's cmd_new_flag"
     )
-    assert "argo fork: --new-flag invoked" in final
+    assert "nadia fork: --new-flag invoked" in final
 
     # 5c. Every pattern from asserts.txt is present in the final file.
     patterns = _load_asserts()

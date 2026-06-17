@@ -9,7 +9,7 @@ set -euo pipefail
 
 KEEP_WORKDIR=0
 ARTIFACT_DIR=""
-ARTIFACT_NAME="argo-fde-ubuntu-22.04.qcow2"
+ARTIFACT_NAME="nadia-fde-ubuntu-22.04.qcow2"
 
 while [ "$#" -gt 0 ]; do
     case "$1" in

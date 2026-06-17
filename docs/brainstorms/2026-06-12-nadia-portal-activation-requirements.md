@@ -1,13 +1,13 @@
 ---
 date: 2026-06-12
-topic: argo-portal-activation
+topic: nadia-portal-activation
 ---
 
-# Argo Portal activation — fork-side requirements
+# Nadia Portal activation — fork-side requirements
 
 ## Summary
 
-Argo deployments obtain managed model-access credentials from a NadicodeAI-operated portal at install time, through the OAuth device-authorization flow (RFC 8628). This document is the public, mechanism-only requirements for the fork side of that work — the installer/wizard changes, credential handling, and the box check-in — written so `ce-plan` can act on it within this repo. Commercial logic (pricing, channels, tenancy) is out of scope here and lives in the private company monorepo.
+Nadia deployments obtain managed model-access credentials from a NadicodeAI-operated portal at install time, through the OAuth device-authorization flow (RFC 8628). This document is the public, mechanism-only requirements for the fork side of that work — the installer/wizard changes, credential handling, and the box check-in — written so `ce-plan` can act on it within this repo. Commercial logic (pricing, channels, tenancy) is out of scope here and lives in the private company monorepo.
 
 This is a deliberately separate requirements doc from the product brainstorm. The fork-side work is independently buildable in this repo, so it carries its own `ce-plan` origin; requirement IDs are FR-numbered to stay distinct from the monorepo's R-numbers and to make cross-references unambiguous.
 

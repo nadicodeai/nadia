@@ -1,17 +1,17 @@
-"""tests/test_readme_commands_rebranded.py — README quickstart uses `argo`, not `hermes`.
+"""tests/test_readme_commands_rebranded.py — README quickstart uses `nadia`, not `hermes`.
 
-The installed binary is `argo` (pyproject [project.scripts]) and config lives in
-~/.argo, but README.md / README.zh-CN.md are engine-excepted so their command
+The installed binary is `nadia` (pyproject [project.scripts]) and config lives in
+~/.nadia, but README.md / README.zh-CN.md are engine-excepted so their command
 examples and config paths would otherwise ship as `hermes ...` / ~/.hermes —
 command-not-found for anyone following the docs. Patch 0014 rebrands the
 commands + paths while preserving attribution. This guards the END STATE:
 
-  * the quickstart commands are rebranded (`argo model`, `argo setup`, ...),
+  * the quickstart commands are rebranded (`nadia model`, `nadia setup`, ...),
   * no `hermes <subcommand>` invocations or ~/.hermes paths remain, AND
-  * attribution is preserved (the upstream repo + docs URLs survive — the
-    rebrand must NOT have over-reached into hermes-agent links).
+  * attribution is preserved (the upstream repo provenance survives), while
+    customer-facing docs URLs point at the Nadia docs site.
 
-Requires `make build` to have produced dist/argo/.
+Requires `make build` to have produced dist/nadia/.
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from pathlib import Path
 
 import pytest
 
-_DIST = Path(__file__).resolve().parent.parent / "dist" / "argo"
+_DIST = Path(__file__).resolve().parent.parent / "dist" / "nadia"
 _READMES = ["README.md", "README.zh-CN.md"]
 
 # Subcommands shown in the quickstart; their `hermes <cmd>` form must be gone.
@@ -32,11 +32,11 @@ def _read(rel: str) -> str:
     return (_DIST / rel).read_text(encoding="utf-8")
 
 
-@pytest.mark.skipif(not _DIST.is_dir(), reason="dist/argo not built (run `make build`)")
+@pytest.mark.skipif(not _DIST.is_dir(), reason="dist/nadia not built (run `make build`)")
 @pytest.mark.parametrize("rel", _READMES)
 def test_quickstart_commands_are_rebranded(rel: str) -> None:
     text = _read(rel)
-    assert "argo model" in text, f"{rel}: quickstart should show `argo model`"
+    assert "nadia model" in text, f"{rel}: quickstart should show `nadia model`"
     # No `hermes <subcommand>` invocations remain.
     for sub in _SUBCOMMANDS:
         assert f"hermes {sub}" not in text, f"{rel}: stale `hermes {sub}` command example"
@@ -46,10 +46,11 @@ def test_quickstart_commands_are_rebranded(rel: str) -> None:
     assert "~/.hermes" not in text, f"{rel}: stale ~/.hermes config path"
 
 
-@pytest.mark.skipif(not _DIST.is_dir(), reason="dist/argo not built (run `make build`)")
+@pytest.mark.skipif(not _DIST.is_dir(), reason="dist/nadia not built (run `make build`)")
 @pytest.mark.parametrize("rel", _READMES)
-def test_attribution_preserved(rel: str) -> None:
+def test_upstream_attribution_preserved_without_upstream_docs_links(rel: str) -> None:
     text = _read(rel)
-    # The rebrand must NOT have eaten the upstream attribution URLs.
+    # The rebrand must NOT have eaten the upstream repo provenance.
     assert "NousResearch/hermes-agent" in text, f"{rel}: upstream repo attribution URL was clobbered"
-    assert "hermes-agent.nousresearch.com" in text, f"{rel}: upstream docs URL was clobbered"
+    assert "https://docs.nadicode.ai/nadia" in text, f"{rel}: Nadia docs URL missing"
+    assert "hermes-agent.nousresearch.com/docs" not in text, f"{rel}: stale upstream docs URL"

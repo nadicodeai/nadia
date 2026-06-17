@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """tools/rebrand.py — run the rename engine against a target directory.
 
-Build-time entry point for the hermes→argo rebrand. Imports the engine
+Build-time entry point for the hermes→nadia rebrand. Imports the engine
 from `overlay/hermes_sync/` directly via `sys.path` injection (NOT from
-`dist/argo/argo_sync/`), so the build pipeline works on a cold start
+`dist/nadia/nadia_sync/`), so the build pipeline works on a cold start
 where `dist/` doesn't exist yet.
 
 Usage
@@ -42,20 +42,20 @@ sys.path.insert(0, str(_OVERLAY))
 # Engine import after sys.path is configured.
 from hermes_sync.config import RenameConfig  # noqa: E402  # ty: ignore[unresolved-import]
 from hermes_sync.engine import RenameEngine  # noqa: E402  # ty: ignore[unresolved-import]
-from hermes_sync.errors import ArgoSyncError  # noqa: E402  # ty: ignore[unresolved-import]
+from hermes_sync.errors import NadiaSyncError  # noqa: E402  # ty: ignore[unresolved-import]
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="rebrand.py",
-        description="Run the hermes→argo rename engine against a target tree.",
+        description="Run the hermes→nadia rename engine against a target tree.",
     )
     parser.add_argument("target", type=Path, help="directory to rename in place")
     parser.add_argument(
         "--rename-yaml",
         type=Path,
-        default=_REPO_ROOT / "argo-rename.yaml",
-        help="path to argo-rename.yaml (default: repo root)",
+        default=_REPO_ROOT / "nadia-rename.yaml",
+        help="path to nadia-rename.yaml (default: repo root)",
     )
     parser.add_argument(
         "--upstream-sha",
@@ -66,7 +66,7 @@ def main(argv: list[str] | None = None) -> int:
         "--no-manifest",
         action="store_true",
         help=(
-            "skip writing .argo/sync-manifest.json; emit {\"files_touched\": [...]} "
+            "skip writing .nadia/sync-manifest.json; emit {\"files_touched\": [...]} "
             "JSON to stdout instead. Used by tools/build.py to preserve AC-8 "
             "determinism (engine manifest carries wall-clock ran_at)."
         ),
@@ -111,7 +111,7 @@ def main(argv: list[str] | None = None) -> int:
 
             data = json.loads(manifest_path.read_text(encoding="utf-8"))
             n = len(data.get("files_touched", []))
-    except ArgoSyncError as exc:
+    except NadiaSyncError as exc:
         print(f"rebrand failed: {exc}", file=sys.stderr)
         return 1
 

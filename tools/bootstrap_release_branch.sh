@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # tools/bootstrap_release_branch.sh
 #
-# One-shot helper: seed the long-lived `release` branch on `nadicodeai/argo`
-# with the renamed `dist/argo/` tree. Closes M2.2 (IU-FR-3, IU-AC-2, IU-AC-3).
+# One-shot helper: seed the long-lived `release` branch on `nadicodeai/nadia`
+# with the renamed `dist/nadia/` tree. Closes M2.2 (IU-FR-3, IU-AC-2, IU-AC-3).
 #
 # Architecture (see .shepherd/install-update/standards.md):
 #   - `main` is the workshop (upstream/, patches/, overlay/, tools/, .shepherd/).
-#   - `release` is the storefront (renamed dist/argo/ contents only).
-#   - dist/argo/ is gitignored; force-push to release is the only way it lands
+#   - `release` is the storefront (renamed dist/nadia/ contents only).
+#   - dist/nadia/ is gitignored; force-push to release is the only way it lands
 #     on a tracked git ref.
 #   - Force-push uses --force-with-lease, never --force.
 #
@@ -18,7 +18,7 @@
 #   tools/bootstrap_release_branch.sh --branch release-test
 #
 # Hard constraints:
-#   - Refuses to run if `dist/argo/` is missing after `make build`.
+#   - Refuses to run if `dist/nadia/` is missing after `make build`.
 #   - Reads commit author identity from existing global git config; NEVER
 #     writes `git config --global` (that would mutate the operator's env).
 #   - Pushes using the *origin repo's* remote URL (resolved via
@@ -118,14 +118,14 @@ make leakage-static
 echo
 
 # ----------------------------------------------------------------------------
-# Sanity: dist/argo/ must exist after build
+# Sanity: dist/nadia/ must exist after build
 # ----------------------------------------------------------------------------
-DIST_DIR="$REPO_ROOT/dist/argo"
+DIST_DIR="$REPO_ROOT/dist/nadia"
 if [[ ! -d "$DIST_DIR" ]]; then
   echo "error: $DIST_DIR is missing after make build; aborting" >&2
   exit 4
 fi
-echo "==> dist/argo/ present"
+echo "==> dist/nadia/ present"
 echo
 
 # Capture the main SHA for the commit message
@@ -143,8 +143,8 @@ echo "==> preparing scratch dir at $SCRATCH"
 rm -rf "$SCRATCH_PARENT"
 mkdir -p "$SCRATCH"
 
-# `cp -a dist/argo/. <scratch>/` copies contents (including dotfiles) WITHOUT
-# nesting dist/argo/ inside scratch — the renamed tree becomes the repo root.
+# `cp -a dist/nadia/. <scratch>/` copies contents (including dotfiles) WITHOUT
+# nesting dist/nadia/ inside scratch — the renamed tree becomes the repo root.
 cp -a "$DIST_DIR/." "$SCRATCH/"
 echo "==> copied $(find "$SCRATCH" -mindepth 1 -maxdepth 1 | wc -l) top-level entries"
 echo
@@ -161,7 +161,7 @@ echo
   git config user.email "$AUTHOR_EMAIL"
   git checkout --orphan "$BRANCH" -q
   git add -A
-  git commit -q -m "release: initial bootstrap from dist/argo/ at $MAIN_SHA"
+  git commit -q -m "release: initial bootstrap from dist/nadia/ at $MAIN_SHA"
 )
 
 SCRATCH_SHA="$(git -C "$SCRATCH" rev-parse HEAD)"

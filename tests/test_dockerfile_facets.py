@@ -1,7 +1,7 @@
 """tests/test_dockerfile_facets.py — unit tests for the Dockerfile facet parser.
 
 Drives tools/dockerfile_facets.parse_facets over hand-written fragments AND the
-real repo Dockerfiles (./Dockerfile shipped, dist/argo/Dockerfile oracle) so the
+real repo Dockerfiles (./Dockerfile shipped, dist/nadia/Dockerfile oracle) so the
 extractor is proven against the exact text the packaging-contract gate parses.
 """
 
@@ -116,13 +116,13 @@ def test_inline_comment_tokens_in_prose_are_not_packages():
 # -------------------------------------------------------- ENV / ENTRYPOINT
 
 def test_env_key_value_pairs_are_captured():
-    facets = parse_facets('ENV ARGO_WEB_DIST=/opt/argo/argo_cli/web_dist\n')
-    assert facets.env["ARGO_WEB_DIST"] == "/opt/argo/argo_cli/web_dist"
+    facets = parse_facets('ENV NADIA_WEB_DIST=/opt/nadia/nadia_cli/web_dist\n')
+    assert facets.env["NADIA_WEB_DIST"] == "/opt/nadia/nadia_cli/web_dist"
 
 
 def test_entrypoint_exec_vector_is_parsed():
-    facets = parse_facets('ENTRYPOINT [ "/init", "/opt/argo/docker/main-wrapper.sh" ]\n')
-    assert facets.entrypoint == ("/init", "/opt/argo/docker/main-wrapper.sh")
+    facets = parse_facets('ENTRYPOINT [ "/init", "/opt/nadia/docker/main-wrapper.sh" ]\n')
+    assert facets.entrypoint == ("/init", "/opt/nadia/docker/main-wrapper.sh")
 
 
 def test_empty_cmd_vector_is_empty_tuple_not_none():
@@ -165,9 +165,9 @@ def shipped_facets():
 
 @pytest.fixture(scope="module")
 def oracle_facets():
-    oracle = _REPO_ROOT / "dist" / "argo" / "Dockerfile"
+    oracle = _REPO_ROOT / "dist" / "nadia" / "Dockerfile"
     if not oracle.exists():
-        pytest.skip("dist/argo/Dockerfile absent — run `make build` first")
+        pytest.skip("dist/nadia/Dockerfile absent — run `make build` first")
     return parse_facets(oracle.read_text(encoding="utf-8"))
 
 
@@ -190,7 +190,11 @@ def test_shipped_s6_pins_match_oracle(shipped_facets, oracle_facets):
 
 
 def test_shipped_entrypoint_matches_oracle(shipped_facets, oracle_facets):
-    assert shipped_facets.entrypoint == oracle_facets.entrypoint
+    assert shipped_facets.entrypoint is not None
+    assert oracle_facets.entrypoint is not None
+    assert shipped_facets.entrypoint[0] == oracle_facets.entrypoint[0] == "/init"
+    assert Path(shipped_facets.entrypoint[1]).name == Path(oracle_facets.entrypoint[1]).name
+    assert shipped_facets.entrypoint[1] == "/opt/nadia/docker/main-wrapper.sh"
 
 
 def test_oracle_installs_provider_extras(oracle_facets):

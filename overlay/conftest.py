@@ -1,22 +1,22 @@
-"""overlay/conftest.py — argo rootdir conftest.
+"""overlay/conftest.py — nadia rootdir conftest.
 
-After `make build` this lands at `dist/argo/conftest.py`, pytest's
+After `make build` this lands at `dist/nadia/conftest.py`, pytest's
 rootdir conftest. Pytest discovers conftests top-down from rootdir
 before walking `testpaths`, so this is loaded ahead of
-`dist/argo/tests/conftest.py` and any per-directory conftests.
+`dist/nadia/tests/conftest.py` and any per-directory conftests.
 
-What it does: reads `argo-xfail.yml` (sitting next to this file) and
+What it does: reads `nadia-xfail.yml` (sitting next to this file) and
 applies `pytest.mark.xfail(reason=..., strict=False)` to every collected
 item whose `nodeid` appears in the manifest. The manifest itself is the
 canonical doc for entry shape, category taxonomy, lifecycle, and the
-`strict=False` rationale — see `argo-xfail.yml`.
+`strict=False` rationale — see `nadia-xfail.yml`.
 
 Why a rootdir conftest, not a plugin:
 
 - Zero install cost — pytest auto-discovers conftests; no `entry_points`
   shuffle in `pyproject.toml`.
 - Zero patches against `upstream/tests/conftest.py` (which becomes
-  `dist/argo/tests/conftest.py`). Pure additive; sync cost = 0.
+  `dist/nadia/tests/conftest.py`). Pure additive; sync cost = 0.
 - The hook fires at collection time, before any test body runs, so the
   XFAIL marker is in place for the runner's own reporting.
 
@@ -32,7 +32,7 @@ from typing import Any
 import pytest
 import yaml
 
-_MANIFEST_NAME = "argo-xfail.yml"
+_MANIFEST_NAME = "nadia-xfail.yml"
 
 
 def _load_xfail_entries(manifest_path: Path) -> list[dict[str, Any]]:

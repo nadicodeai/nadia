@@ -1,13 +1,13 @@
 # Root-level gitleaks config for the source tree (pre-build).
 #
 # The overlay/.gitleaks.toml is the runtime/customer-image version and
-# only takes effect post-rebrand inside dist/argo/. This file applies
+# only takes effect post-rebrand inside dist/nadia/. This file applies
 # to the git pre-push hook scanning the source tree (which includes
 # the upstream/ subtree + squash commits that brought it in).
 #
 # Allowlist patterns match BOTH bare paths (as they appear in squash
 # commits' tree state — e.g. `tests/agent/...`) AND `upstream/`-prefixed
-# paths (as they appear in HEAD). Inherited from legacy argo-agent.
+# paths (as they appear in HEAD). Inherited from legacy nadia-agent.
 
 [extend]
 useDefault = true
@@ -49,8 +49,8 @@ paths = [
 [[allowlists]]
 description = "OAuth public client IDs (Anthropic, Google, Codex, etc.) — public by RFC 6749"
 paths = [
-  '''(?:argo|hermes)_cli/auth\.py''',
-  '''(?:argo|hermes)_cli/copilot_auth\.py''',
+  '''(?:nadia|hermes)_cli/auth\.py''',
+  '''(?:nadia|hermes)_cli/copilot_auth\.py''',
   '''agent/anthropic_adapter\.py''',
   '''agent/google_oauth\.py''',
 ]
@@ -85,8 +85,8 @@ paths = [
 ]
 
 [[allowlists]]
-description = "argo-rename.yaml and overlay/.gitleaks.toml legitimately contain example patterns"
+description = "nadia-rename.yaml and overlay/.gitleaks.toml legitimately contain example patterns"
 paths = [
-  '''argo-rename\.yaml''',
+  '''nadia-rename\.yaml''',
   '''overlay/\.gitleaks\.toml''',
 ]

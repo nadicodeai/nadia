@@ -1,6 +1,6 @@
-# argo — composite setup action (issue #7).
+# nadia — composite setup action (issue #7).
 #
-# Installs the prelude that every argo CI job needs in some subset:
+# Installs the prelude that every nadia CI job needs in some subset:
 #   1. uv (astral-sh/setup-uv, SHA-pinned to v5)
 #   2. CPython via `uv python install <version>`
 #   3. apt packages (quilt + zstd by default; extra packages opt-in)
@@ -15,8 +15,8 @@
 # `runs-on`/`needs`/`permissions`. The existing jobs only differ in their
 # step list, so a composite is the minimal-surgery factoring.
 
-name: argo setup
-description: Install uv + Python + system deps + pip deps for argo CI jobs.
+name: nadia setup
+description: Install uv + Python + system deps + pip deps for nadia CI jobs.
 
 inputs:
   python-version:

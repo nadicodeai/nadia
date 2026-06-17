@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Configure a customer-specific Argo profile on a baked golden VM.
+# Configure a customer-specific Nadia profile on a baked golden VM.
 
 set -euo pipefail
 
-ARGO_HOME="${ARGO_HOME:-${HOME}/.argo}"
-ARGO_INSTALL_DIR="${ARGO_INSTALL_DIR:-}"
+NADIA_HOME="${NADIA_HOME:-${HOME}/.nadia}"
+NADIA_INSTALL_DIR="${NADIA_INSTALL_DIR:-}"
 
 PROFILE=""
 HONCHO_WORKSPACE=""
@@ -19,7 +19,7 @@ YES=0
 
 usage() {
     cat <<'USAGE'
-Usage: argo-customer-init --profile NAME --honcho-workspace NAME --honcho-peer NAME
+Usage: nadia-customer-init --profile NAME --honcho-workspace NAME --honcho-peer NAME
                           --honcho-api-key KEY --telegram-token TOKEN
                           --telegram-allowed-users IDS [options]
 
@@ -31,15 +31,15 @@ Options:
   -h, --help                     Show this help.
 
 Writes:
-  $ARGO_HOME/profiles/<profile>/config.yaml
-  $ARGO_HOME/profiles/<profile>/honcho.json
-  $ARGO_HOME/profiles/<profile>/.env
-  $ARGO_HOME/profiles/<profile>/SOUL.md
+  $NADIA_HOME/profiles/<profile>/config.yaml
+  $NADIA_HOME/profiles/<profile>/honcho.json
+  $NADIA_HOME/profiles/<profile>/.env
+  $NADIA_HOME/profiles/<profile>/SOUL.md
 USAGE
 }
 
 die() {
-    printf 'argo-customer-init: %s\n' "$*" >&2
+    printf 'nadia-customer-init: %s\n' "$*" >&2
     exit "${2:-1}"
 }
 
@@ -119,25 +119,25 @@ prompt_if_missing HONCHO_API_KEY "Honcho API key"
 prompt_if_missing TELEGRAM_TOKEN "Telegram bot token"
 prompt_if_missing TELEGRAM_ALLOWED_USERS "Telegram allowed user ids"
 
-command -v argo >/dev/null 2>&1 || die "argo not found on PATH"
+command -v nadia >/dev/null 2>&1 || die "nadia not found on PATH"
 
-PROFILE_HOME="${ARGO_HOME}/profiles/${PROFILE}"
+PROFILE_HOME="${NADIA_HOME}/profiles/${PROFILE}"
 if [ ! -d "${PROFILE_HOME}" ]; then
-    argo profile create "${PROFILE}" --clone
+    nadia profile create "${PROFILE}" --clone
 fi
 mkdir -p "${PROFILE_HOME}"
 
 discover_python() {
-    if [ -n "${ARGO_INSTALL_DIR}" ] && [ -x "${ARGO_INSTALL_DIR}/venv/bin/python" ]; then
-        printf '%s\n' "${ARGO_INSTALL_DIR}/venv/bin/python"
+    if [ -n "${NADIA_INSTALL_DIR}" ] && [ -x "${NADIA_INSTALL_DIR}/venv/bin/python" ]; then
+        printf '%s\n' "${NADIA_INSTALL_DIR}/venv/bin/python"
         return 0
     fi
-    if [ -x "${ARGO_HOME}/argo-agent/venv/bin/python" ]; then
-        printf '%s\n' "${ARGO_HOME}/argo-agent/venv/bin/python"
+    if [ -x "${NADIA_HOME}/nadia-agent/venv/bin/python" ]; then
+        printf '%s\n' "${NADIA_HOME}/nadia-agent/venv/bin/python"
         return 0
     fi
-    if [ -x "/usr/local/lib/argo-agent/venv/bin/python" ]; then
-        printf '%s\n' "/usr/local/lib/argo-agent/venv/bin/python"
+    if [ -x "/usr/local/lib/nadia-agent/venv/bin/python" ]; then
+        printf '%s\n' "/usr/local/lib/nadia-agent/venv/bin/python"
         return 0
     fi
     command -v python3 >/dev/null 2>&1 || die "python3 not found"
@@ -170,7 +170,7 @@ path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
 PY
 
 "${PYTHON_BIN}" - \
-    "${ARGO_HOME}/honcho.json.template" \
+    "${NADIA_HOME}/honcho.json.template" \
     "${PROFILE_HOME}/honcho.json" \
     "${HONCHO_WORKSPACE}" \
     "${HONCHO_PEER}" \
@@ -215,7 +215,7 @@ umask 077
 } >"${PROFILE_HOME}/.env"
 chmod 600 "${PROFILE_HOME}/.env"
 
-SOUL_TEMPLATE="${ARGO_HOME}/SOUL.md.template"
+SOUL_TEMPLATE="${NADIA_HOME}/SOUL.md.template"
 if [ -f "${SOUL_TEMPLATE}" ]; then
     "${PYTHON_BIN}" - \
         "${SOUL_TEMPLATE}" \
@@ -249,8 +249,8 @@ EOF
 fi
 
 if [ "${SKIP_GATEWAY}" -eq 0 ]; then
-    argo -p "${PROFILE}" gateway install
-    argo -p "${PROFILE}" gateway start
+    nadia -p "${PROFILE}" gateway install
+    nadia -p "${PROFILE}" gateway start
 fi
 
 printf 'configured profile %s at %s\n' "${PROFILE}" "${PROFILE_HOME}"

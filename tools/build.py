@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
-"""tools/build.py — produce dist/argo/ from upstream + patches + overlay.
+"""tools/build.py — produce dist/nadia/ from upstream + patches + overlay.
 
 Pipeline (spec FR-4):
 
-1. Clean slate: `rm -rf dist/argo/`.
-2. Copy `upstream/*` → `dist/argo/` (preserving file modes).
-3. `cd dist/argo && quilt push -a` to apply the patch series.
-4. Copy `overlay/*` → `dist/argo/` (failing if any path collides
+1. Clean slate: `rm -rf dist/nadia/`.
+2. Copy `upstream/*` → `dist/nadia/` (preserving file modes).
+3. `cd dist/nadia && quilt push -a` to apply the patch series.
+4. Copy `overlay/*` → `dist/nadia/` (failing if any path collides
    post-patch).
-5. Copy customer-facing FDE helper scripts into `dist/argo/scripts/`.
-6. Prune `packaging-strip.yaml` denylisted paths from `dist/argo/` (fork
+5. Copy customer-facing FDE helper scripts into `dist/nadia/scripts/`.
+6. Prune `packaging-strip.yaml` denylisted paths from `dist/nadia/` (fork
    denylist; removes the China-platform surface from BOTH the native install
    and the image without patching hot upstream files — see that file's header).
-7. Run `tools/rebrand.py dist/argo/` to apply the hermes→argo rename.
+7. Run `tools/rebrand.py dist/nadia/` to apply the hermes→nadia rename.
 8. Run `tools/run_assertions.py` (if present, M3.1) to enforce per-patch
    grep assertions.
-9. Write `dist/argo/.argo/build-manifest.json` (deterministic JSON,
+9. Write `dist/nadia/.nadia/build-manifest.json` (deterministic JSON,
    sort_keys=True, indent=2).
 
 Exits non-zero on any step failure with a clear error message and the
@@ -35,23 +35,23 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DIST_DIR = REPO_ROOT / "dist" / "argo"
+DIST_DIR = REPO_ROOT / "dist" / "nadia"
 UPSTREAM_DIR = REPO_ROOT / "upstream"
 OVERLAY_DIR = REPO_ROOT / "overlay"
 PATCHES_DIR = REPO_ROOT / "patches"
 ASSERTS_DIR = PATCHES_DIR / "asserts"
-RENAME_YAML = REPO_ROOT / "argo-rename.yaml"
-# Overlay constants module baked from argo-rename.yaml so `argo doctor --static`
+RENAME_YAML = REPO_ROOT / "nadia-rename.yaml"
+# Overlay constants module baked from nadia-rename.yaml so `nadia doctor --static`
 # works in the published image where the yaml is intentionally absent
 # (issue #4). Regenerated on every build to keep the yaml as single source of
 # truth.
 RENAME_DEFAULTS = OVERLAY_DIR / "hermes_cli" / "_rename_defaults.py"
 STRIP_YAML = REPO_ROOT / "packaging-strip.yaml"
 FDE_SCRIPT_NAMES = (
-    "argo-fde-provision.sh",
-    "argo-fde-provision.ps1",
-    "argo-customer-init",
-    "argo-customer-init.ps1",
+    "nadia-fde-provision.sh",
+    "nadia-fde-provision.ps1",
+    "nadia-customer-init",
+    "nadia-customer-init.ps1",
 )
 
 # China-platform filename tokens for the post-prune residual scan. Distinctive
@@ -70,10 +70,10 @@ _CHINA_RESIDUAL_TOKENS = ("feishu", "dingtalk", "wecom", "weixin", "qqbot", "yua
 _RESIDUAL_SCAN_DIRS = ("gateway", "hermes_cli", "tools", "skills")
 
 # Release-date stamp. The banner's "(YYYY.M.D)" comes from __release_date__ in
-# argo_cli/__init__.py; since the build regenerates that file from pristine
+# nadia_cli/__init__.py; since the build regenerates that file from pristine
 # upstream/, the value arrives as upstream's. A release build overrides it via
-# $ARGO_RELEASE_DATE (see _stamp_release_date). Mirrors the calver shape used by
-# tools/argo_release.py / tools/apply_release_bump.py.
+# $NADIA_RELEASE_DATE (see _stamp_release_date). Mirrors the calver shape used by
+# tools/nadia_release.py / tools/apply_release_bump.py.
 _RELEASE_DATE_RE = re.compile(r'__release_date__\s*=\s*"[^"]+"')
 _CALVER_RE = re.compile(r"^\d{4}\.\d+\.\d+(?:\.\d+)?$")
 
@@ -117,27 +117,31 @@ def _clean_dist() -> None:
 
 
 def _copy_upstream() -> None:
-    _log("copy upstream/ → dist/argo/ (preserving modes)")
+    _log("copy upstream/ → dist/nadia/ (preserving modes)")
     if not UPSTREAM_DIR.is_dir():
         raise BuildError("copy-upstream", f"upstream/ not found at {UPSTREAM_DIR}")
     # shutil.copytree preserves modes by default; we exclude .commit and any
     # vcs metadata that might leak in.
     #
-    # Skip Python bytecode caches: running tests against upstream/ (e.g.
-    # `PYTHONPATH=upstream pytest`) leaves untracked __pycache__/*.pyc behind,
-    # and copying them verbatim lands compiled artifacts in dist/argo/ — which
-    # the China-strip step then trips on (a stripped *.py whose orphan *.pyc
-    # survives the prune reads as un-denylisted drift). They are never source.
+    # Skip local Python build artifacts: running tests or editable installs
+    # against upstream/ can leave untracked __pycache__/*.pyc or *.egg-info
+    # behind. Copying them verbatim lands compiled/stale metadata artifacts in
+    # dist/nadia/ and makes builds depend on checkout pollution. They are never
+    # source.
     for item in UPSTREAM_DIR.iterdir():
         if item.name == ".commit":
             continue  # tracking file, not part of the source tree
         if item.name == "__pycache__" or item.suffix in (".pyc", ".pyo"):
             continue  # bytecode cache / build artifact — never ship
+        if item.name.endswith(".egg-info"):
+            continue  # editable-install metadata artifact — never ship
         dst = DIST_DIR / item.name
         if item.is_dir():
             shutil.copytree(
                 item, dst, symlinks=True,
-                ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo"),
+                ignore=shutil.ignore_patterns(
+                    "__pycache__", "*.pyc", "*.pyo", "*.egg-info"
+                ),
             )
         else:
             shutil.copy2(item, dst)
@@ -185,10 +189,10 @@ def _apply_patches() -> list[str]:
 
 
 def _strip_quilt_state() -> None:
-    """Remove quilt's ``.pc/`` bookkeeping from ``dist/argo/`` after patches apply.
+    """Remove quilt's ``.pc/`` bookkeeping from ``dist/nadia/`` after patches apply.
 
     ``quilt push -a`` leaves a ``.pc/`` tree of per-patch backup copies inside
-    ``dist/argo/``. It is build-only state (needed for ``pop``/``refresh``, which
+    ``dist/nadia/``. It is build-only state (needed for ``pop``/``refresh``, which
     the build never does), so shipping it would bloat the release tarball and the
     Docker image with pre-rename backup files (e.g. stale ``/main/`` install
     URLs that no longer exist in the live tree). Strip it so the artifact — and
@@ -201,11 +205,11 @@ def _strip_quilt_state() -> None:
 
 
 def _regenerate_rename_defaults() -> None:
-    """Regenerate overlay/hermes_cli/_rename_defaults.py from argo-rename.yaml.
+    """Regenerate overlay/hermes_cli/_rename_defaults.py from nadia-rename.yaml.
 
     Keeps the baked Python constants in lock-step with the yaml on every
     build. The published Docker image relies on this module for
-    ``argo doctor --static`` since argo-rename.yaml is not shipped at
+    ``nadia doctor --static`` since nadia-rename.yaml is not shipped at
     runtime (spec FR-7, issue #4).
     """
     _log("rename-defaults: tools/generate_rename_defaults.py")
@@ -233,9 +237,9 @@ def _regenerate_rename_defaults() -> None:
 
 
 def _copy_overlay() -> list[str]:
-    """Copy overlay/* into dist/argo/. Fails on path collision.
+    """Copy overlay/* into dist/nadia/. Fails on path collision.
 
-    Returns sorted list of overlay file paths relative to dist/argo/.
+    Returns sorted list of overlay file paths relative to dist/nadia/.
     """
     if not OVERLAY_DIR.is_dir():
         _log("overlay: directory not present (skipping)")
@@ -299,7 +303,7 @@ def _load_strip_groups() -> list[dict]:
 
 
 def _strip_excluded_paths() -> list[str]:
-    """Remove packaging-strip.yaml denylisted paths from dist/argo/.
+    """Remove packaging-strip.yaml denylisted paths from dist/nadia/.
 
     Runs after overlay and BEFORE rebrand, on the assembled (still hermes-named)
     tree. Two self-policing guards keep the denylist honest across upstream
@@ -324,7 +328,7 @@ def _strip_excluded_paths() -> list[str]:
                 raise BuildError(
                     "strip",
                     f"stale packaging-strip.yaml entry: {rel!r} not found in "
-                    f"dist/argo/ (upstream renamed or removed it?). Re-review "
+                    f"dist/nadia/ (upstream renamed or removed it?). Re-review "
                     f"the entry in group {group.get('name', '?')!r}.",
                 )
             if target.is_dir():
@@ -354,7 +358,7 @@ def _strip_excluded_paths() -> list[str]:
 
 
 def _apply_content_edits() -> list[str]:
-    """Apply packaging-strip.yaml ``content_edits`` (find→replace) to dist/argo/.
+    """Apply packaging-strip.yaml ``content_edits`` (find→replace) to dist/nadia/.
 
     For China references that live INLINE inside a KEPT upstream file — where a
     path-prune cannot help and the fork carries no quilt patch. Today: the
@@ -395,17 +399,17 @@ def _apply_content_edits() -> list[str]:
 
 
 def _run_rebrand(upstream_sha: str) -> list[str]:
-    """Run tools/rebrand.py against dist/argo/. Returns sorted files-touched list.
+    """Run tools/rebrand.py against dist/nadia/. Returns sorted files-touched list.
 
     Invokes rebrand.py with ``--no-manifest`` so the rename engine does NOT
-    write its own ``.argo/sync-manifest.json`` (which would carry a
+    write its own ``.nadia/sync-manifest.json`` (which would carry a
     wall-clock ``ran_at`` not honouring ``SOURCE_DATE_EPOCH``, breaking
     AC-8 determinism). Instead, rebrand.py emits the touched-files list
     as a single JSON object on stdout; we parse it and fold the list into
     the authoritative ``build-manifest.json`` written below
     (spec FR-6: one manifest is enough).
     """
-    _log("rename: tools/rebrand.py dist/argo/ (--no-manifest, JSON on stdout)")
+    _log("rename: tools/rebrand.py dist/nadia/ (--no-manifest, JSON on stdout)")
     result = subprocess.run(
         [
             sys.executable,
@@ -443,31 +447,31 @@ def _run_rebrand(upstream_sha: str) -> list[str]:
 
 
 def _stamp_release_date() -> str | None:
-    """Stamp the Argo release date into dist/argo/argo_cli/__init__.py.
+    """Stamp the Nadia release date into dist/nadia/nadia_cli/__init__.py.
 
     ``make build`` regenerates the tree from pristine ``upstream/``, so the
     rebuilt ``__release_date__`` is UPSTREAM's value. For a RELEASE build the
-    Argo calver date (the git tag, e.g. ``v2026.6.5``) must replace it, or the
-    image's ``argo --version`` disagrees with the native install — which
-    ``release.yml`` stamps post-build. The date comes from ``$ARGO_RELEASE_DATE``
+    Nadia calver date (the git tag, e.g. ``v2026.6.5``) must replace it, or the
+    image's ``nadia --version`` disagrees with the native install — which
+    ``release.yml`` stamps post-build. The date comes from ``$NADIA_RELEASE_DATE``
     because its natural source, the git tag, is unreachable inside the hermetic
     docker builder (``.dockerignore`` excludes ``.git``). Unset → no-op: dev
     builds (PR / main / local) keep upstream's date, honest for an unreleased
     tree. ``__version__`` is left alone — it tracks upstream verbatim, so the
     rebuilt value is already correct.
 
-    Runs AFTER rebrand (the file is ``argo_cli/__init__.py`` by then). Returns
+    Runs AFTER rebrand (the file is ``nadia_cli/__init__.py`` by then). Returns
     the stamped date, or ``None`` when no stamp was requested.
     """
-    date = os.environ.get("ARGO_RELEASE_DATE", "").strip()
+    date = os.environ.get("NADIA_RELEASE_DATE", "").strip()
     if not date:
-        _log("release-date: ARGO_RELEASE_DATE unset — keeping upstream value (dev build)")
+        _log("release-date: NADIA_RELEASE_DATE unset — keeping upstream value (dev build)")
         return None
     if not _CALVER_RE.match(date):
         raise BuildError(
-            "release-date", f"ARGO_RELEASE_DATE not YYYY.M.D[.N]: {date!r}"
+            "release-date", f"NADIA_RELEASE_DATE not YYYY.M.D[.N]: {date!r}"
         )
-    init_path = DIST_DIR / "argo_cli" / "__init__.py"
+    init_path = DIST_DIR / "nadia_cli" / "__init__.py"
     if not init_path.is_file():
         raise BuildError("release-date", f"version file missing after rebrand: {init_path}")
     text = init_path.read_text(encoding="utf-8")
@@ -526,7 +530,7 @@ def _write_build_manifest(
     files_touched_by_rename: list[str],
     assertions_checked: list[str],
 ) -> Path:
-    manifest_dir = DIST_DIR / ".argo"
+    manifest_dir = DIST_DIR / ".nadia"
     manifest_dir.mkdir(parents=True, exist_ok=True)
     manifest = manifest_dir / "build-manifest.json"
     # Honor SOURCE_DATE_EPOCH for reproducibility (spec NFR-4 + AC-8).

@@ -109,7 +109,7 @@ class RenameEngine:
         """Run :meth:`apply` and persist the result as a sync manifest.
 
         Convenience method that combines the rename pass with manifest
-        writing so callers in ``bin/argo-sync`` can do this in one call.
+        writing so callers in ``bin/nadia-sync`` can do this in one call.
 
         Parameters
         ----------
@@ -126,7 +126,7 @@ class RenameEngine:
         -------
         Path
             Absolute path of the written manifest file
-            (``<root>/.argo/sync-manifest.json``).
+            (``<root>/.nadia/sync-manifest.json``).
         """
         files_touched = self.apply(root)
 

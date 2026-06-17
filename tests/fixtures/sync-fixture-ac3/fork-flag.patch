@@ -7,7 +7,7 @@ diff --git a/baseline.py b/baseline.py
  
 +def cmd_new_flag(args):
 +    """Fork-only command added by the AC-3 fork patch."""
-+    print("argo fork: --new-flag invoked")
++    print("nadia fork: --new-flag invoked")
 +    return 0
 +
 +

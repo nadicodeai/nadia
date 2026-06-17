@@ -1,6 +1,6 @@
 """Unit tests for the fake Telegram server fixture (M5.1).
 
-These tests cover the contracts that argo's gateway (via PTB) and the
+These tests cover the contracts that nadia's gateway (via PTB) and the
 M5.3 smoke harness will rely on. Every assertion runs against the
 in-process server bound to 127.0.0.1; no real Telegram API contact
 anywhere.
@@ -20,19 +20,19 @@ from typing import Any, Dict, Optional
 
 import pytest
 
-# argo's pyproject pins requests==2.33.0 in [project].dependencies, so
+# nadia's pyproject pins requests==2.33.0 in [project].dependencies, so
 # using it here is consistent with the runtime; fall back to urllib if
 # the test runs in a stripped-down environment.
 try:
     import requests  # type: ignore[import-untyped]
 
     _HAS_REQUESTS = True
-except ImportError:  # pragma: no cover — argo always has requests
+except ImportError:  # pragma: no cover — nadia always has requests
     _HAS_REQUESTS = False
 
 from .fake_telegram import FakeTelegramServer
 
-TOKEN = "TESTTOKEN:fake_argo_bot"
+TOKEN = "TESTTOKEN:fake_nadia_bot"
 
 
 # ---------------------------------------------------------------------------

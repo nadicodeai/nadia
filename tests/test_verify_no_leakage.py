@@ -8,7 +8,7 @@ Validates tools/verify_no_leakage.py against two fixture trees:
 
 - tests/fixtures/leakage_negative/  → MUST be clean (exit 0).
   Contains `hermes` inside skip_context-covered URLs and inside an
-  exception-listed file (argo-rename.yaml itself).
+  exception-listed file (nadia-rename.yaml itself).
 """
 
 from __future__ import annotations
@@ -42,7 +42,7 @@ def _run(target: Path, rename_yaml: Path) -> subprocess.CompletedProcess[str]:
 
 def test_positive_fixture_reports_leakage() -> None:
     """A file with an uncovered `hermes` token MUST be detected."""
-    result = _run(POSITIVE, POSITIVE / "argo-rename.yaml")
+    result = _run(POSITIVE, POSITIVE / "nadia-rename.yaml")
     assert result.returncode == 1, (
         f"expected exit 1, got {result.returncode}\n"
         f"stdout: {result.stdout}\nstderr: {result.stderr}"
@@ -54,7 +54,7 @@ def test_positive_fixture_reports_leakage() -> None:
 
 def test_positive_fixture_catches_stylized_brand_strings() -> None:
     """Mixed-case `HeRmEs` and `HERMES` must be reported (case-insensitive)."""
-    result = _run(POSITIVE, POSITIVE / "argo-rename.yaml")
+    result = _run(POSITIVE, POSITIVE / "nadia-rename.yaml")
     assert result.returncode == 1
     # The stylized.md file's lines should appear in stderr (case-insensitive
     # match, so the scanner finds HeRmEs and HERMES).
@@ -63,7 +63,7 @@ def test_positive_fixture_catches_stylized_brand_strings() -> None:
 
 def test_negative_fixture_no_leakage() -> None:
     """URL-bounded and exception-listed `hermes` MUST be tolerated."""
-    result = _run(NEGATIVE, NEGATIVE / "argo-rename.yaml")
+    result = _run(NEGATIVE, NEGATIVE / "nadia-rename.yaml")
     assert result.returncode == 0, (
         f"expected exit 0, got {result.returncode}\n"
         f"stdout: {result.stdout}\nstderr: {result.stderr}"

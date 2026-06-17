@@ -1,4 +1,4 @@
-# Cutting an Argo release
+# Cutting a Nadia release
 
 The single, reproducible procedure for shipping a release to customers. If you
 follow the **TL;DR** you do not need to make any release-engineering decisions —
@@ -11,10 +11,10 @@ From a **clean** `main` checkout, with `gh` authenticated (`gh auth status`):
 ```bash
 # Pin __version__ to upstream's current value (see "Versioning" — never bump it
 # independently); CalVer date defaults to today. One command does everything.
-python tools/argo_release.py --version "$(sed -nE 's/.*__version__ = "([^"]+)".*/\1/p' upstream/hermes_cli/__init__.py)"
+python tools/nadia_release.py --version "$(sed -nE 's/.*__version__ = "([^"]+)".*/\1/p' upstream/hermes_cli/__init__.py)"
 ```
 
-This builds `dist/argo/`, runs the gates, tags `main` HEAD, pushes the tag, and
+This builds `dist/nadia/`, runs the gates, tags `main` HEAD, pushes the tag, and
 creates the GitHub Release. The tag push fires `.github/workflows/release.yml`,
 which rebuilds and **force-pushes the renamed tree to `origin/release`** — the
 branch customers actually install from. Then watch CI:
@@ -23,7 +23,7 @@ branch customers actually install from. Then watch CI:
 gh run watch "$(gh run list --workflow=release.yml --limit 1 --json databaseId --jq '.[0].databaseId')" --exit-status
 ```
 
-When that is green, the release is live. A reinstall or `argo update` on a
+When that is green, the release is live. A reinstall or `nadia update` on a
 customer machine picks it up.
 
 ## Why there is a procedure at all (branch model)
@@ -31,9 +31,9 @@ customer machine picks it up.
 - **`main` = workshop.** Holds `upstream/`, `patches/`, `overlay/`, `tools/`,
   `packaging-strip.yaml`, the rename engine. **Not** a runnable install. Merging
   here does **not** ship anything.
-- **`release` = storefront.** The renamed, built `dist/argo/` tree, force-pushed
-  by CI. This is what `install.sh` clones and what `argo update` (`git pull`)
-  tracks. `dist/argo/` is gitignored on `main`; the only way it reaches a tracked
+- **`release` = storefront.** The renamed, built `dist/nadia/` tree, force-pushed
+  by CI. This is what `install.sh` clones and what `nadia update` (`git pull`)
+  tracks. `dist/nadia/` is gitignored on `main`; the only way it reaches a tracked
   ref is the release-branch force-push.
 - **A release happens only when a CalVer tag is pushed.** Nothing auto-promotes
   `main` → `release`. Merging a fix to `main` and never cutting a tag means
@@ -47,9 +47,9 @@ Two independent version numbers, by design (spec **IU-FR-12**, standards.md §
 | Surface | Scheme | When it changes |
 |---|---|---|
 | CalVer tag `vYYYY.M.D` (same-day re-cut `vYYYY.M.D.2`) | per release | every cut = today |
-| internal `argo_cli/__init__.py:__version__` (semver) | tracks upstream | **only** when an upstream sync lands a new upstream version |
+| internal `nadia_cli/__init__.py:__version__` (semver) | tracks upstream | **only** when an upstream sync lands a new upstream version |
 
-**Do not let the driver patch-bump the semver.** `argo_release.py` defaults to
+**Do not let the driver patch-bump the semver.** `nadia_release.py` defaults to
 `--bump patch`, which would diverge from upstream — wrong. Always pass
 `--version <upstream's current __version__>` (the TL;DR command reads it for
 you). Past releases held at `0.14.1` across three CalVer tags; the `0.15.1` value
@@ -66,8 +66,8 @@ only appeared because a sync moved upstream there.
 
 ## What the driver does (and its gate ordering)
 
-`tools/argo_release.py`, in order: `make build` → rewrite version in
-`dist/argo/` → `make leakage-static` → `run_assertions.py` → `git tag -a` →
+`tools/nadia_release.py`, in order: `make build` → rewrite version in
+`dist/nadia/` → `make leakage-static` → `run_assertions.py` → `git tag -a` →
 **`git push` the tag** → **`gh release create`** → print summary.
 
 - All gates run **before** any outward action; a gate failure aborts with
@@ -78,7 +78,7 @@ only appeared because a sync moved upstream there.
   until after its own build+leakage (minutes later).
 
 CI (`release.yml`) then: rebuild → leakage → re-apply the bump (read from the
-Release title) → deterministic tarball → sha256 → **force-push `dist/argo/` →
+Release title) → deterministic tarball → sha256 → **force-push `dist/nadia/` →
 `origin/release`** → upload assets.
 
 ## Same-day re-cut
@@ -86,7 +86,7 @@ Release title) → deterministic tarball → sha256 → **force-push `dist/argo/
 The CalVer tag for today already exists? Pass an explicit suffix:
 
 ```bash
-python tools/argo_release.py --version <upstream-ver> --release-date 2026.6.3.2
+python tools/nadia_release.py --version <upstream-ver> --release-date 2026.6.3.2
 ```
 
 To instead replace a failed cut cleanly (nothing consumed it yet):
@@ -110,7 +110,7 @@ purpose (`_strip_release_workflows`). Two reasons:
 2. Customers don't need our (renamed-upstream) CI, and those workflows could
    spuriously trigger on the `release` branch.
 
-`dist/argo/` itself (native install, tarball asset, Docker image) is untouched —
+`dist/nadia/` itself (native install, tarball asset, Docker image) is untouched —
 only the release-branch tree excludes them.
 
 **One-time caveat:** if the `release` branch ever regains workflow files (e.g. an
@@ -119,8 +119,8 @@ older release left them), the first push that removes them must come from a
 
 ```bash
 make build && python tools/apply_release_bump.py --version <ver> --release-date <date>
-python tools/release_branch_push.py --dist-root dist/argo \
-  --remote-url git@github.com:nadicodeai/argo.git --branch release \
+python tools/release_branch_push.py --dist-root dist/nadia \
+  --remote-url git@github.com:nadicodeai/nadia.git --branch release \
   --source-sha "$(git rev-parse HEAD)"
 ```
 
@@ -131,7 +131,7 @@ never sees a workflow-file change.
 
 ```bash
 git fetch origin release
-git show origin/release:argo_cli/__init__.py | grep -E '__version__|__release_date__'
+git show origin/release:nadia_cli/__init__.py | grep -E '__version__|__release_date__'
 # spot-check the strip survived:
 git ls-tree -r --name-only origin/release -- gateway/platforms/ | grep -iE 'feishu|wecom|weixin|dingtalk|qqbot|yuanbao'  # expect: nothing
 ```

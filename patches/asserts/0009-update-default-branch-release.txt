@@ -1,26 +1,26 @@
 # Assertions for 0009-update-default-branch-release.patch
 #
 # Pins the post-patch state of _resolve_update_branch's default branch
-# inside the renamed argo_cli/main.py. Without this, a future rename-
+# inside the renamed nadia_cli/main.py. Without this, a future rename-
 # engine regression, a sync conflict, or an accidental patch drop could
 # silently flip the default back to "main" — and customers running
-# `argo update` (or `argo update --check`) would be redirected to the
+# `nadia update` (or `nadia update --check`) would be redirected to the
 # workshop branch (main = upstream/, patches/, .shepherd/, NOT runnable)
 # instead of the long-lived release branch their install.sh cloned.
 #
 # Per spec line 28 ("Both install.sh (curl URL) and cmd_update
 # (git pull) target origin/release"), IU-FR-7, IU-FR-8, and IU-AC-9
-# (the customer-facing `argo update` flow), the renamed
-# argo_cli/main.py:_resolve_update_branch MUST return "release" by
+# (the customer-facing `nadia update` flow), the renamed
+# nadia_cli/main.py:_resolve_update_branch MUST return "release" by
 # default. The args.branch override path is intentionally NOT pinned:
-# developers can still pass `argo update --branch main` explicitly to
+# developers can still pass `nadia update --branch main` explicitly to
 # update against the workshop layout for fork-development use cases.
 #
 # This pairs with 0006-install-default-branch-release.txt (which pins
 # the install.sh default `BRANCH="release"`) to close the regression
 # observed during M4.3b end-to-end verification on a fresh Ubuntu 22.04
 # container, where install.sh cloned the release branch correctly but
-# `argo update --check` reported "Update available: 82 commits behind
+# `nadia update --check` reported "Update available: 82 commits behind
 # origin/main" because cmd_update's default branch was still "main".
 #
 # tools/run_assertions.py format: "path:<glob> <literal>" — the literal
@@ -28,6 +28,6 @@
 # docstring, regex anchors (^ / $) match the whole file (no MULTILINE),
 # so we pin the literal Python-source form. If the rename engine or a
 # future sync conflict flips it back to `main`, this literal will no
-# longer appear under argo_cli/main.py and the build fails loudly.
+# longer appear under nadia_cli/main.py and the build fails loudly.
 
-path:argo_cli/main.py return (getattr(args, "branch", None) or "release").strip() or "release"
+path:nadia_cli/main.py return (getattr(args, "branch", None) or "release").strip() or "release"

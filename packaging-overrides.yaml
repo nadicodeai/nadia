@@ -1,7 +1,7 @@
 # packaging-overrides.yaml — reviewed fork-vs-upstream packaging divergences.
 #
 # The packaging-contract gate (tools/check_packaging_contract.py) compares the
-# shipped ./Dockerfile against the renamed-upstream ORACLE (dist/argo/Dockerfile,
+# shipped ./Dockerfile against the renamed-upstream ORACLE (dist/nadia/Dockerfile,
 # produced verbatim from upstream/Dockerfile by `make build`). Every pinned
 # external toolchain (the node base digest, the s6-overlay version + checksums)
 # MUST track the oracle; every system dep and install extra upstream ships MUST
@@ -54,7 +54,7 @@ apt_exceptions:
       Upstream's debian:13.4 base apt-installs python3-venv so its system
       python3 can create virtualenvs (Debian splits ensurepip/venv out of the
       core python3 package). The fork's python:3.13-slim-bookworm base ships
-      venv + ensurepip in the stdlib, so `python -m venv /opt/argo/.venv` (the
+      venv + ensurepip in the stdlib, so `python -m venv /opt/nadia/.venv` (the
       runtime venv) works with no apt package. Mirroring it would be a no-op at
       best. Same root cause as the python3 / python-is-python3 entries above.
       Issue #2.
@@ -73,7 +73,7 @@ apt_exceptions:
 # Upstream EAGERLY installs these (uv sync --extra all/messaging/anthropic/
 # bedrock/azure-identity) specifically "so Docker users can use these providers
 # without requiring runtime lazy-install access to PyPI (often blocked in
-# containerized envs)" (dist/argo/Dockerfile). The fork's runtime-full instead
+# containerized envs)" (dist/nadia/Dockerfile). The fork's runtime-full instead
 # runs a bare `pip install -e .` (no extras) and relies on tools/lazy_deps.py to
 # install platform packages at first use — which needs runtime PyPI access. In a
 # PyPI-blocked container the Anthropic/Bedrock/Azure providers and the messaging
