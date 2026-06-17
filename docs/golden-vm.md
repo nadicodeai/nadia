@@ -53,8 +53,8 @@ profile that enables Telegram or Honcho can trigger a runtime package install.
 On the clean VM:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/nadicodeai/argo/main/scripts/golden-vm-bake.sh -o /tmp/golden-vm-bake.sh
-curl -fsSL https://raw.githubusercontent.com/nadicodeai/argo/main/scripts/nadia-customer-init -o /tmp/nadia-customer-init
+curl -fsSL https://raw.githubusercontent.com/nadicodeai/nadia/main/scripts/golden-vm-bake.sh -o /tmp/golden-vm-bake.sh
+curl -fsSL https://raw.githubusercontent.com/nadicodeai/nadia/main/scripts/nadia-customer-init -o /tmp/nadia-customer-init
 chmod +x /tmp/golden-vm-bake.sh /tmp/nadia-customer-init
 /tmp/golden-vm-bake.sh
 ```

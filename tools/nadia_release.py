@@ -745,7 +745,7 @@ def _release_notes(
     (the previous code hardcoded "First CalVer release" on EVERY release).
     """
     changelog_url = (
-        f"https://github.com/nadicodeai/argo/commits/{state.tag_name}"
+        f"https://github.com/nadicodeai/nadia/commits/{state.tag_name}"
     )
     if first_release:
         _log("--first-release: emitting static first-release note")

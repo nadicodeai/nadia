@@ -236,38 +236,38 @@ content_edits:
       Upstream now documents the short hermes-agent.nousresearch.com install
       URLs inside the kept installer. The Nadia release tree is the only
       customer-runnable install surface, so shipped installer help must point at
-      raw.githubusercontent.com/nadicodeai/argo/release rather than the upstream
+      raw.githubusercontent.com/nadicodeai/nadia/release rather than the upstream
       host.
     find: "https://hermes-agent.nousresearch.com/install.sh"
-    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh"
+    replace: "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.sh"
   - name: install-sh-windows-release-shortlink
     file: scripts/install.sh
     why: >-
       The POSIX installer prints the Windows one-liner when the OS is wrong.
       Keep that recovery hint on the Nadia release branch too.
     find: "https://hermes-agent.nousresearch.com/install.ps1"
-    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1"
+    replace: "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.ps1"
   - name: install-ps1-release-shortlinks
     file: scripts/install.ps1
     why: >-
       Windows installer comments and recovery output must point at the shipped
       Nadia release-branch script, not the upstream Hermes shortlink.
     find: "https://hermes-agent.nousresearch.com/install.ps1"
-    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1"
+    replace: "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.ps1"
   - name: install-cmd-release-shortlinks
     file: scripts/install.cmd
     why: >-
       install.cmd is a live Windows bootstrapper; its PowerShell bootstrap URL
       must fetch the Nadia release-branch installer.
     find: "https://hermes-agent.nousresearch.com/install.ps1"
-    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1"
+    replace: "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.ps1"
   - name: cli-update-reinstall-release-shortlink
     file: hermes_cli/main.py
     why: >-
       The update reinstall hint is a customer-facing recovery path. Point it at
       the Nadia release-branch installer so it can run from the published tree.
     find: "https://hermes-agent.nousresearch.com/install.sh"
-    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh"
+    replace: "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.sh"
   - name: readme-ur-pk-install-sh-release-shortlink
     file: README.ur-pk.md
     why: >-
@@ -276,7 +276,7 @@ content_edits:
       upstream install shortlinks intact. Point its customer install command at
       the Nadia release-branch installer.
     find: "https://hermes-agent.nousresearch.com/install.sh"
-    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh"
+    replace: "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.sh"
   - name: readme-ur-pk-install-ps1-release-shortlink
     file: README.ur-pk.md
     why: >-
@@ -284,21 +284,21 @@ content_edits:
       URL must fetch Nadia's release-branch installer, not the upstream Hermes
       shortlink preserved by the URL guard.
     find: "https://hermes-agent.nousresearch.com/install.ps1"
-    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1"
+    replace: "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.ps1"
   - name: uninstall-reinstall-release-shortlinks
     file: hermes_cli/uninstall.py
     why: >-
       The uninstall flow prints reinstall commands after removal. Keep both
       POSIX and Windows reinstall hints on the Nadia release branch.
     find: "https://hermes-agent.nousresearch.com/install.sh"
-    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh"
+    replace: "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.sh"
   - name: uninstall-windows-reinstall-release-shortlink
     file: hermes_cli/uninstall.py
     why: >-
       The Windows reinstall hint emitted by uninstall.py must also use the
       shipped Nadia release-branch installer.
     find: "https://hermes-agent.nousresearch.com/install.ps1"
-    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1"
+    replace: "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.ps1"
   - name: update-command-tests-patch-slash-commands-file
     file: tests/gateway/test_update_command.py
     why: >-
@@ -407,7 +407,7 @@ content_edits:
       at repository root on the release branch. The workshop main branch keeps
       the website under upstream/ and does not serve this raw path.
     find: "https://raw.githubusercontent.com/NousResearch/hermes-agent/main/website/static/api/model-catalog.json"
-    replace: "https://raw.githubusercontent.com/nadicodeai/argo/release/website/static/api/model-catalog.json"
+    replace: "https://raw.githubusercontent.com/nadicodeai/nadia/release/website/static/api/model-catalog.json"
   - name: model-catalog-test-fallback-release
     file: tests/hermes_cli/test_model_catalog.py
     why: >-
@@ -415,7 +415,7 @@ content_edits:
       runtime fallback above. This is a test expectation transform for the
       generated dist tree, not a new regression test.
     find: "\"https://raw.githubusercontent.com/NousResearch/hermes-agent\"\n        \"/main/website/static/api/model-catalog.json\""
-    replace: "\"https://raw.githubusercontent.com/nadicodeai/argo\"\n        \"/release/website/static/api/model-catalog.json\""
+    replace: "\"https://raw.githubusercontent.com/nadicodeai/nadia\"\n        \"/release/website/static/api/model-catalog.json\""
   - name: desktop-update-default-branch-release
     file: apps/desktop/electron/main.cjs
     why: >-
@@ -431,6 +431,200 @@ content_edits:
       above; the hermesDesktop API name is rebranded by the later rename pass.
     find: "// Branch we track for self-update. The GUI work has merged to main, so this\n// tracks main. User can also override at runtime via\n// hermesDesktop.updates.setBranch()."
     replace: "// Branch we track for self-update. Nadia customer installs track release;\n// users can override at runtime via hermesDesktop.updates.setBranch()."
+  - name: desktop-package-product-name-nadia-agent
+    file: apps/desktop/package.json
+    why: >-
+      The app bundle/display identity is the customer-facing desktop product.
+      It must say Nadia Agent, not the short CLI command name.
+    find: '"productName": "Hermes"'
+    replace: '"productName": "Nadia Agent"'
+  - name: desktop-package-author-nadicodeai
+    file: apps/desktop/package.json
+    why: >-
+      Nadia desktop artifacts are published by NadicodeAI. Keep upstream
+      attribution in docs, but do not put Nous Research in fork package
+      publisher metadata.
+    find: '"author": "Nous Research"'
+    replace: '"author": "NadicodeAI"'
+  - name: desktop-package-app-id-nadicodeai
+    file: apps/desktop/package.json
+    why: >-
+      Bundle identifiers are app identity, not upstream provenance. Use a
+      NadicodeAI-owned identifier in the generated desktop package metadata.
+    find: '"appId": "com.nousresearch.hermes"'
+    replace: '"appId": "ai.nadicode.nadia"'
+  - name: desktop-package-executable-nadia-agent
+    file: apps/desktop/package.json
+    why: >-
+      Keep the generated macOS/Windows app executable identity aligned with
+      the product name. The CLI remains the separate `nadia` command.
+    find: '"executableName": "Hermes"'
+    replace: '"executableName": "Nadia Agent"'
+  - name: desktop-package-protocol-name-nadia-agent
+    file: apps/desktop/package.json
+    why: >-
+      The custom URL protocol display name is a desktop identity surface.
+    find: '"name": "Hermes Protocol"'
+    replace: '"name": "Nadia Agent Protocol"'
+  - name: desktop-package-artifact-name-nadia-agent
+    file: apps/desktop/package.json
+    why: >-
+      Downloadable desktop artifacts must be named for Nadia Agent, not Hermes
+      and not a bare short product label.
+    find: '"artifactName": "Hermes-${version}-${os}-${arch}.${ext}"'
+    replace: '"artifactName": "Nadia-Agent-${version}-${os}-${arch}.${ext}"'
+  - name: desktop-package-macos-bundle-nadia-agent
+    file: apps/desktop/package.json
+    why: >-
+      macOS Finder, menu, and bundle metadata must identify the product as
+      Nadia Agent.
+    find: "\"CFBundleDisplayName\": \"Hermes\",\n        \"CFBundleExecutable\": \"Hermes\",\n        \"CFBundleName\": \"Hermes\""
+    replace: "\"CFBundleDisplayName\": \"Nadia Agent\",\n        \"CFBundleExecutable\": \"Nadia Agent\",\n        \"CFBundleName\": \"Nadia Agent\""
+  - name: desktop-package-macos-permissions-nadia-agent
+    file: apps/desktop/package.json
+    why: >-
+      macOS permission prompts are directly customer-facing and must use the
+      full Nadia Agent product name.
+    find: "Hermes uses"
+    replace: "Nadia Agent uses"
+  - name: desktop-package-dmg-title-nadia-agent
+    file: apps/desktop/package.json
+    why: >-
+      The DMG window title is the macOS download/install surface.
+    find: '"title": "Install Hermes"'
+    replace: '"title": "Install Nadia Agent"'
+  - name: desktop-package-windows-labels-nadia-agent
+    file: apps/desktop/package.json
+    why: >-
+      Windows shortcuts, uninstall display names, and legal-trademark metadata
+      are user-facing desktop surfaces.
+    find: "\"legalTrademarks\": \"Hermes\",\n      \"target\": ["
+    replace: "\"legalTrademarks\": \"Nadia Agent\",\n      \"target\": ["
+  - name: desktop-package-linux-maintainer-nadicodeai
+    file: apps/desktop/package.json
+    why: >-
+      Linux package metadata should name the fork publisher, not the upstream
+      project owner.
+    find: '"maintainer": "Nous Research <support@nousresearch.com>"'
+    replace: '"maintainer": "NadicodeAI <support@nadicode.ai>"'
+  - name: desktop-package-nsis-nadia-agent
+    file: apps/desktop/package.json
+    why: >-
+      NSIS shortcut and uninstall labels are Windows customer-facing app
+      identity.
+    find: "\"shortcutName\": \"Hermes\",\n      \"uninstallDisplayName\": \"Hermes\""
+    replace: "\"shortcutName\": \"Nadia Agent\",\n      \"uninstallDisplayName\": \"Nadia Agent\""
+  - name: desktop-readme-nadicodeai-product-subject
+    file: apps/desktop/README.md
+    why: >-
+      The desktop README should present Nadia Agent as a NadicodeAI-maintained
+      product while preserving upstream provenance.
+    find: "**The native desktop app for [Hermes Agent](../../README.md) — the self-improving AI agent from [Nous Research](https://nousresearch.com).** Same agent, same skills, same memory as the CLI and gateway, in a polished native window — chat with streaming tool output, side-by-side previews, a file browser, voice, and settings, no terminal required. Available for **macOS, Windows, and Linux**."
+    replace: "**The native desktop app for [Nadia Agent](../../README.md), the NadicodeAI-maintained agent based on Nous Research's Hermes Agent.** Same agent, same skills, same memory as the CLI and gateway, in a polished native window: chat with streaming tool output, side-by-side previews, a file browser, voice, and settings, no terminal required. Available for **macOS, Windows, and Linux**."
+  - name: desktop-readme-tcc-bundle-id-nadicodeai
+    file: apps/desktop/README.md
+    why: >-
+      The macOS permissions reset command must target the generated Nadia
+      bundle identifier.
+    find: "tccutil reset Microphone com.nousresearch.hermes"
+    replace: "tccutil reset Microphone ai.nadicode.nadia"
+  - name: desktop-readme-footer-nadicodeai
+    file: apps/desktop/README.md
+    why: >-
+      Preserve upstream credit but do not claim the fork desktop is built by
+      Nous Research.
+    find: "Built by [Nous Research](https://nousresearch.com)."
+    replace: "Maintained by NadicodeAI. Based on [Hermes Agent](https://github.com/NousResearch/hermes-agent) by [Nous Research](https://nousresearch.com)."
+  - name: desktop-exe-identity-nadia-agent
+    file: apps/desktop/scripts/set-exe-identity.cjs
+    why: >-
+      The Windows executable resource metadata is a customer-visible desktop
+      identity surface.
+    find: "ProductName: 'Hermes',\n      FileDescription: 'Hermes',\n      CompanyName: 'Nous Research',\n      LegalCopyright: 'Copyright (c) 2026 Nous Research'"
+    replace: "ProductName: 'Nadia Agent',\n      FileDescription: 'Nadia Agent',\n      CompanyName: 'NadicodeAI',\n      LegalCopyright: 'Copyright (c) 2026 NadicodeAI'"
+  - name: desktop-about-copyright-nadicodeai
+    file: apps/desktop/electron/main.cjs
+    why: >-
+      Native About panel copyright is desktop product metadata.
+    find: "copyright: 'Copyright © 2026 Nous Research'"
+    replace: "copyright: 'Copyright © 2026 NadicodeAI'"
+  - name: bootstrap-package-description-nadia-agent
+    file: apps/bootstrap-installer/package.json
+    why: >-
+      The bootstrap installer package metadata is part of the macOS/Windows
+      download/install surface.
+    find: '"description": "Hermes Setup — signed installer that drives scripts/install.ps1 with a polished native UI."'
+    replace: '"description": "Nadia Agent Setup, signed installer that drives scripts/install.ps1 with a polished native UI."'
+  - name: bootstrap-cargo-description-nadia-agent
+    file: apps/bootstrap-installer/src-tauri/Cargo.toml
+    why: >-
+      The Windows setup executable metadata should use the Nadia Agent setup
+      name.
+    find: 'description = "Hermes Setup — signed installer that drives scripts/install.ps1"'
+    replace: 'description = "Nadia Agent Setup, signed installer that drives scripts/install.ps1"'
+  - name: bootstrap-cargo-author-nadicodeai
+    file: apps/bootstrap-installer/src-tauri/Cargo.toml
+    why: >-
+      The setup app package author should be the fork publisher.
+    find: 'authors = ["Nous Research <info@nousresearch.com>"]'
+    replace: 'authors = ["NadicodeAI <support@nadicode.ai>"]'
+  - name: bootstrap-tauri-product-nadia-agent
+    file: apps/bootstrap-installer/src-tauri/tauri.conf.json
+    why: >-
+      The native setup app product name, window title, and short description
+      must identify the installer as Nadia Agent Setup.
+    find: '"productName": "Hermes"'
+    replace: '"productName": "Nadia Agent Setup"'
+  - name: bootstrap-tauri-identifier-nadicodeai
+    file: apps/bootstrap-installer/src-tauri/tauri.conf.json
+    why: >-
+      The setup app bundle identifier is app identity, not upstream
+      provenance.
+    find: '"identifier": "com.nousresearch.hermes.setup"'
+    replace: '"identifier": "ai.nadicode.nadia.setup"'
+  - name: bootstrap-tauri-window-title-nadia-agent
+    file: apps/bootstrap-installer/src-tauri/tauri.conf.json
+    why: >-
+      The setup window title is the first customer-facing installer chrome.
+    find: '"title": "Hermes"'
+    replace: '"title": "Nadia Agent Setup"'
+  - name: bootstrap-tauri-short-description-nadia-agent
+    file: apps/bootstrap-installer/src-tauri/tauri.conf.json
+    why: >-
+      The setup app short description appears in bundle/package metadata.
+    find: '"shortDescription": "Hermes"'
+    replace: '"shortDescription": "Nadia Agent Setup"'
+  - name: bootstrap-tauri-publisher-nadicodeai
+    file: apps/bootstrap-installer/src-tauri/tauri.conf.json
+    why: >-
+      Setup app publisher metadata should name NadicodeAI.
+    find: '"publisher": "Nous Research"'
+    replace: '"publisher": "NadicodeAI"'
+  - name: bootstrap-tauri-copyright-nadicodeai
+    file: apps/bootstrap-installer/src-tauri/tauri.conf.json
+    why: >-
+      Setup app copyright metadata should name NadicodeAI.
+    find: '"copyright": "Copyright © 2026 Nous Research"'
+    replace: '"copyright": "Copyright © 2026 NadicodeAI"'
+  - name: bootstrap-manifest-nadia-agent
+    file: apps/bootstrap-installer/src-tauri/hermes-setup.manifest
+    why: >-
+      Windows application manifest text is part of setup executable identity.
+    find: "Hermes Setup"
+    replace: "Nadia Agent Setup"
+  - name: profile-builder-heading-nadia
+    file: web/src/pages/ProfileBuilderPage.tsx
+    why: >-
+      The dashboard profile builder is a customer onboarding surface. Name the
+      profile as a Nadia profile instead of a generic agent profile.
+    find: "<H2>New profile</H2>"
+    replace: "<H2>New Nadia profile</H2>"
+  - name: profile-builder-placeholder-nadia
+    file: web/src/pages/ProfileBuilderPage.tsx
+    why: >-
+      Keep the profile builder identity copy aligned with the Nadia product.
+    find: 'placeholder="What this agent profile is for"'
+    replace: 'placeholder="What this Nadia profile is for"'
   - name: send-message-drop-yuanbao-example
     file: tools/send_message_tool.py
     why: >-
@@ -538,7 +732,7 @@ content_edits:
       reach inside it), leaving it pointed upstream. Flip it to the GHCR package
       versions page here (runs pre-rebrand on the exact upstream URL).
     find: "https://hub.docker.com/r/nousresearch/hermes-agent/tags"
-    replace: "https://github.com/nadicodeai/argo/pkgs/container/nadia"
+    replace: "https://github.com/nadicodeai/nadia/pkgs/container/nadia"
   # ---- ACP registry manifest test: assert the rebranded docs host ----
   - name: acp-manifest-test-docs-host
     file: tests/acp/test_registry_manifest.py

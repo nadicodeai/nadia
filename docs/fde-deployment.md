@@ -30,8 +30,8 @@ provision time instead of at first customer use.
 macOS and Linux use:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/nadia-fde-provision.sh -o /tmp/nadia-fde-provision.sh
-curl -fsSL https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/nadia-customer-init -o /tmp/nadia-customer-init
+curl -fsSL https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/nadia-fde-provision.sh -o /tmp/nadia-fde-provision.sh
+curl -fsSL https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/nadia-customer-init -o /tmp/nadia-customer-init
 chmod +x /tmp/nadia-fde-provision.sh /tmp/nadia-customer-init
 /tmp/nadia-fde-provision.sh
 ```
@@ -39,8 +39,8 @@ chmod +x /tmp/nadia-fde-provision.sh /tmp/nadia-customer-init
 Windows uses:
 
 ```powershell
-irm https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/nadia-fde-provision.ps1 -OutFile $env:TEMP\nadia-fde-provision.ps1
-irm https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/nadia-customer-init.ps1 -OutFile $env:TEMP\nadia-customer-init.ps1
+irm https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/nadia-fde-provision.ps1 -OutFile $env:TEMP\nadia-fde-provision.ps1
+irm https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/nadia-customer-init.ps1 -OutFile $env:TEMP\nadia-customer-init.ps1
 powershell -ExecutionPolicy Bypass -File $env:TEMP\nadia-fde-provision.ps1
 ```
 

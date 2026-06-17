@@ -17,7 +17,7 @@ Instructions for AI agents (and humans) working on nadia. Keep this short; deep 
 Customers install nadia directly on a Linux host (no Docker) with a single curl one-liner:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.sh | bash
 ```
 
 Two optional flags are honoured: `--skip-setup` skips the interactive Telegram-pairing wizard at the end (useful for CI/headless bootstrap), and `--skip-browser` skips the Node/browser-tool provisioning step (useful for headless servers without `xz-utils`).
@@ -106,7 +106,7 @@ A conflict can also surface one stage **earlier — in `git subtree pull` itself
 
 ### Sync bot token setup
 
-The weekly `sync.yml` workflow opens its PR with `secrets.SYNC_BOT_TOKEN` (a fine-grained PAT), not the default `GITHUB_TOKEN`. This is REQUIRED so the PR fires downstream `pull_request` workflows (i.e. `ci.yml`) — GitHub intentionally suppresses those events for PRs opened by `GITHUB_TOKEN` (issue #6). Provision once via GitHub Settings → Developer settings → Personal access tokens → Fine-grained tokens; scope the token to the `nadicodeai/argo` repository with `Pull requests: write` + `Contents: write`, then save it under repo settings → Secrets and variables → Actions as `SYNC_BOT_TOKEN`. The workflow's "Verify sync bot token" step fails fast with a pointer to this section if the secret is missing.
+The weekly `sync.yml` workflow opens its PR with `secrets.SYNC_BOT_TOKEN` (a fine-grained PAT), not the default `GITHUB_TOKEN`. This is REQUIRED so the PR fires downstream `pull_request` workflows (i.e. `ci.yml`) — GitHub intentionally suppresses those events for PRs opened by `GITHUB_TOKEN` (issue #6). Provision once via GitHub Settings → Developer settings → Personal access tokens → Fine-grained tokens; scope the token to the `nadicodeai/nadia` repository with `Pull requests: write` + `Contents: write`, then save it under repo settings → Secrets and variables → Actions as `SYNC_BOT_TOKEN`. The workflow's "Verify sync bot token" step fails fast with a pointer to this section if the secret is missing.
 
 ## Quilt cheatsheet
 
@@ -176,7 +176,7 @@ A bare `docker pull ghcr.io/nadicodeai/nadia` resolves to `:latest` = full varia
 
 ### Issue tracker
 
-Issues live in GitHub Issues (`nadicodeai/argo`). See `docs/agents/issue-tracker.md`.
+Issues live in GitHub Issues (`nadicodeai/nadia`). See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

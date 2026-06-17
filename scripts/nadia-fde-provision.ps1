@@ -7,7 +7,7 @@ param(
     [switch]$AllowLazyInstalls,
     [string]$NadiaHome = $(if ($env:NADIA_HOME) { $env:NADIA_HOME } else { Join-Path $env:LOCALAPPDATA "nadia" }),
     [string]$NadiaInstallDir = $(if ($env:NADIA_INSTALL_DIR) { $env:NADIA_INSTALL_DIR } else { "" }),
-    [string]$InstallUrl = $(if ($env:NADIA_INSTALL_URL) { $env:NADIA_INSTALL_URL } else { "https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.ps1" })
+    [string]$InstallUrl = $(if ($env:NADIA_INSTALL_URL) { $env:NADIA_INSTALL_URL } else { "https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.ps1" })
 )
 
 $ErrorActionPreference = "Stop"

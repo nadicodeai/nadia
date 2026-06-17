@@ -8,7 +8,7 @@ nadia's customer-facing tree lives on the long-lived `release` branch
 (IU-FR-3, IU-FR-4): CI force-pushes the renamed dist/nadia/ there after
 every successful release build. The public install one-liner
 
-    curl -fsSL https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh | bash
+    curl -fsSL https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.sh | bash
 
 MUST therefore clone `release` (runnable renamed tree), not `main`
 (workshop layout — upstream/, patches/, .shepherd/, NOT runnable as

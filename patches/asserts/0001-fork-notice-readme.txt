@@ -2,7 +2,7 @@
 #
 # After `make build`, the patch must land in dist/nadia/README.md with:
 #   - the literal fork-notice phrase ("Fork of NousResearch/hermes-agent"),
-#   - the live repo URL slug ("nadicodeai/argo"), proving the post-build
+#   - the live repo URL slug ("nadicodeai/nadia"), proving the post-build
 #     content points at the current GitHub repository while naming the product
 #     Nadia.
 #
@@ -10,4 +10,4 @@
 # in dist/nadia/ (e.g. an upstream-installed file) cannot mask a real drop.
 
 path:README.md Fork of NousResearch/hermes-agent
-path:README.md nadicodeai/argo
+path:README.md nadicodeai/nadia

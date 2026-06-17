@@ -7,7 +7,7 @@
 mappings:
   # --- URL-form mapping (longest first; must precede bare hermes-agent) ---
   # GitHub URLs for the upstream Hermes repo map to this fork's GitHub repo
-  # (nadicodeai/argo). nadicode does not own nousresearch.com, so the upstream
+  # (nadicodeai/nadia). nadicode does not own nousresearch.com, so the upstream
   # PyPI package (pypi.org/p/hermes-agent) and the bare upstream host are NOT
   # rewritten. The ONE nousresearch.com exception is the self-referential DOCS
   # path (hermes-agent.nousresearch.com/docs/...), which the fork now mirrors at
@@ -24,7 +24,7 @@ mappings:
   # (engine sorts longest-first), rewriting org + branch + path in one pass.
   # README*/CONTRIBUTING are engine-excepted, so their one-liners are handled by
   # patch 0002 instead. See tests/test_install_url_release_branch.py.
-  - {from: "NousResearch/hermes-agent/main/scripts/install", to: "nadicodeai/argo/release/scripts/install"}
+  - {from: "NousResearch/hermes-agent/main/scripts/install", to: "nadicodeai/nadia/release/scripts/install"}
   # --- Self-referential Nadia docs site (host + /docs baseUrl swap) ---
   # Upstream Docusaurus is host `hermes-agent.nousresearch.com` + baseUrl
   # '/docs/'. The Nadia fork now publishes the RENAMED docs (built from
@@ -49,18 +49,18 @@ mappings:
   # release (patch 0011); flip the documented flag to match. Only appears in the
   # windows-native install guides, so a substring map is safe.
   - {from: "-Branch main", to: "-Branch release"}
-  - {from: "NousResearch/hermes-agent", to: "nadicodeai/argo"}
+  - {from: "NousResearch/hermes-agent", to: "nadicodeai/nadia"}
   # Capitalised repo slug used in package.json repository/bugs/homepage URLs
   # (git+https://github.com/NousResearch/Hermes-Agent.git). Without this the
   # bare `Hermes-Agent` -> `Nadia-Agent` mapping would mangle it to a nonexistent
   # NousResearch/Nadia-Agent; map the whole upstream-repo slug to the fork.
-  - {from: "NousResearch/Hermes-Agent", to: "nadicodeai/argo"}
+  - {from: "NousResearch/Hermes-Agent", to: "nadicodeai/nadia"}
   # Lowercase canonical GitHub forms produced by runtime remote normalization.
   # These are repository identifiers, not Docker image names. They must map to
   # the live GitHub repo slug before the broad lowercase Docker image mapping
   # below sees `nousresearch/hermes-agent`.
-  - {from: "git@github.com:nousresearch/hermes-agent", to: "git@github.com:nadicodeai/argo"}
-  - {from: "github.com/nousresearch/hermes-agent", to: "github.com/nadicodeai/argo"}
+  - {from: "git@github.com:nousresearch/hermes-agent", to: "git@github.com:nadicodeai/nadia"}
+  - {from: "github.com/nousresearch/hermes-agent", to: "github.com/nadicodeai/nadia"}
   # --- Docker/OCI image references (point at the fork's real published image) ---
   # Upstream's `nadia update` message, docker-compose, and browser/tool help tell
   # users to pull `nousresearch/hermes-agent` (Docker Hub) / `ghcr.io/nousresearch/
@@ -162,7 +162,7 @@ exceptions:
 skip_contexts:
   # Preserve every URL whose host/path is NOT something nadicode controls.
   # We only rewrite GitHub URLs for the upstream hermes-agent repo (handled by
-  # the NousResearch/hermes-agent → nadicodeai/argo mapping above), the
+  # the NousResearch/hermes-agent → nadicodeai/nadia mapping above), the
   # hermes-agent.local devhost, AND the self-referential DOCS path
   # hermes-agent.nousresearch.com/docs (rewritten to docs.nadicode.ai/nadia by the
   # docs mapping above — the fork now hosts its own docs site, so that path is
@@ -210,7 +210,7 @@ skip_contexts:
   # `NousResearch/Hermes-Agent-Thinking-GLM-4.7-SFT2`, and
   # `NousResearch/terminal-tasks-glm-hermes-agent`. These are not GitHub repo
   # slugs and not fork-owned product branding; rewriting them creates
-  # nonexistent `nadicodeai/argo-*` or `...-nadia-agent` dataset names. Preserve
+  # nonexistent `nadicodeai/nadia-*` or `...-nadia-agent` dataset names. Preserve
   # only the larger dataset-id forms. The exact repo slug
   # `NousResearch/hermes-agent` remains rewritable for GitHub clone/issues URLs.
   - '(?i)\bNousResearch/(?:[A-Za-z0-9_.-]+-hermes-agent|hermes-agent-[A-Za-z0-9_.-]+)\b'
@@ -228,7 +228,7 @@ skip_contexts:
   # AND verify_no_leakage (which compiles skip_contexts without re.IGNORECASE).
   # NOTE: do NOT add a bare 'nousresearch/hermes.*' rule — it would also match
   # the upstream REPO url github.com/NousResearch/hermes-agent, which MUST
-  # rebrand to nadicodeai/argo. The version-digit rule below already protects
+  # rebrand to nadicodeai/nadia. The version-digit rule below already protects
   # the model-id tail (e.g. nousresearch/hermes-4-405b) via the \b after '/'.
   #
   # Underscore is split out from the other separators on purpose. The IRC

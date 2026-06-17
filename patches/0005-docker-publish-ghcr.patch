@@ -7,7 +7,7 @@ workflow's `secrets.DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` secrets
 are not configured in this repo.
 
 Why the image name is `nadia`, not `nadia-agent`: this pristine-fork repo
-(nadicodeai/argo) publishes a `nadia` image. The legacy in-tree rename repo
+(nadicodeai/nadia) publishes a `nadia` image. The legacy in-tree rename repo
 (nadicodeai/nadia-agent) used `…/nadia-agent` because that GitHub repo was
 named that way. We do not carry that legacy image name forward — see
 .shepherd/spec.md § Project Structure.
@@ -27,7 +27,7 @@ in patches/asserts/0005 pin the GHCR end-state.)
 
 Note: the four `if: github.repository == 'NousResearch/hermes-agent'`
 guards are intentionally not touched by this patch. The rename engine
-maps `NousResearch/hermes-agent` → `nadicodeai/argo`, so they end up
+maps `NousResearch/hermes-agent` → `nadicodeai/nadia`, so they end up
 correct in `dist/nadia/` automatically.
 
 Spec FR-7 (Docker image), FR-11 (Docker-only distribution).

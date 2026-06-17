@@ -10,7 +10,7 @@ one-liners 404s for customers.
 The fix is split: README*/CONTRIBUTING are engine-excepted (so patch 0002 hard-
 codes /release/), and every other file is corrected by the nadia-rename.yaml
 mapping `NousResearch/hermes-agent/main/scripts/install ->
-nadicodeai/argo/release/scripts/install`. This test asserts the END STATE on the
+nadicodeai/nadia/release/scripts/install`. This test asserts the END STATE on the
 built tree: NO `/main/scripts/install` survives anywhere a customer can see it,
 and the key entry points carry the /release/ form.
 
@@ -26,9 +26,9 @@ import pytest
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _DIST = _REPO_ROOT / "dist" / "nadia"
 
-# The 404-ing form (post-rename: org is already nadicodeai/argo) that must not
+# The 404-ing form (post-rename: org is already nadicodeai/nadia) that must not
 # appear anywhere in the shipped tree.
-_BAD = "nadicodeai/argo/main/scripts/install"
+_BAD = "nadicodeai/nadia/main/scripts/install"
 
 # Build cruft / VCS dirs that are NOT part of the customer-facing surface.
 # .pc/ is quilt's per-patch backup state (pre-patch snapshots); it is not a live
@@ -66,13 +66,13 @@ def test_no_main_branch_install_url_anywhere_in_dist() -> None:
 @pytest.mark.parametrize(
     "rel_path, needle",
     [
-        ("README.md", "nadicodeai/argo/release/scripts/install.sh"),
-        ("README.zh-CN.md", "nadicodeai/argo/release/scripts/install.sh"),
-        ("scripts/install.sh", "nadicodeai/argo/release/scripts/install"),
-        ("scripts/install.ps1", "nadicodeai/argo/release/scripts/install.ps1"),
-        ("scripts/install.cmd", "nadicodeai/argo/release/scripts/install.ps1"),  # live bootstrap
-        ("nadia_cli/main.py", "nadicodeai/argo/release/scripts/install.sh"),       # update reinstall hint
-        ("nadia_cli/uninstall.py", "nadicodeai/argo/release/scripts/install.sh"),  # uninstall reinstall hint
+        ("README.md", "nadicodeai/nadia/release/scripts/install.sh"),
+        ("README.zh-CN.md", "nadicodeai/nadia/release/scripts/install.sh"),
+        ("scripts/install.sh", "nadicodeai/nadia/release/scripts/install"),
+        ("scripts/install.ps1", "nadicodeai/nadia/release/scripts/install.ps1"),
+        ("scripts/install.cmd", "nadicodeai/nadia/release/scripts/install.ps1"),  # live bootstrap
+        ("nadia_cli/main.py", "nadicodeai/nadia/release/scripts/install.sh"),       # update reinstall hint
+        ("nadia_cli/uninstall.py", "nadicodeai/nadia/release/scripts/install.sh"),  # uninstall reinstall hint
     ],
 )
 def test_key_entrypoints_use_release_branch(rel_path: str, needle: str) -> None:

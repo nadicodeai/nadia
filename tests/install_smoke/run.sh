@@ -23,7 +23,7 @@
 #                                   [--keep-container]
 #
 # Defaults to a local release-branch dry run built from dist/nadia, because the
-# public nadicodeai/argo release branch may not yet contain this migration. Use
+# public nadicodeai/nadia release branch may not yet contain this migration. Use
 # --live only after the public release branch has been updated.
 # Override --url to point at a fork or local web server during development;
 # --repo-url is exported as NADIA_REPO_URL_HTTPS/NADIA_REPO_URL_SSH for the
@@ -38,7 +38,7 @@ set -euo pipefail
 # Arg parsing
 # ---------------------------------------------------------------------------
 
-LIVE_URL="https://raw.githubusercontent.com/nadicodeai/argo/release/scripts/install.sh"
+LIVE_URL="https://raw.githubusercontent.com/nadicodeai/nadia/release/scripts/install.sh"
 URL=""
 REPO_URL=""
 BRANCH=""
@@ -195,8 +195,8 @@ apt-get install -y -qq --no-install-recommends \
 if [ -n "${NADIA_LOCAL_REPO_URL:-}" ]; then
     git config --global --add safe.directory /tmp/nadia-release 2>/dev/null || true
     git config --global --add safe.directory /tmp/nadia-release/.git 2>/dev/null || true
-    git config --global "url.${NADIA_LOCAL_REPO_URL}.insteadOf" "https://github.com/nadicodeai/argo.git"
-    git config --global --add "url.${NADIA_LOCAL_REPO_URL}.insteadOf" "git@github.com:nadicodeai/argo.git"
+    git config --global "url.${NADIA_LOCAL_REPO_URL}.insteadOf" "https://github.com/nadicodeai/nadia.git"
+    git config --global --add "url.${NADIA_LOCAL_REPO_URL}.insteadOf" "git@github.com:nadicodeai/nadia.git"
 fi
 
 echo "==> fetch install.sh from ${INSTALL_URL}"
@@ -210,7 +210,7 @@ bash /tmp/install.sh ${INSTALL_ARGS}
 if [ -n "${NADIA_LOCAL_REPO_URL:-}" ]; then
     for repo in /usr/local/lib/nadia-agent "${HOME}/.nadia/nadia-agent"; do
         if [ -d "${repo}/.git" ]; then
-            git -C "${repo}" config remote.origin.url https://github.com/nadicodeai/argo.git
+            git -C "${repo}" config remote.origin.url https://github.com/nadicodeai/nadia.git
         fi
     done
 fi

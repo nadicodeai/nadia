@@ -16,18 +16,18 @@ from __future__ import annotations
 GENERATED_FROM: str = 'nadia-rename.yaml'
 
 MAPPINGS: tuple[tuple[str, str], ...] = (
-    ('NousResearch/hermes-agent/main/scripts/install', 'nadicodeai/argo/release/scripts/install'),
+    ('NousResearch/hermes-agent/main/scripts/install', 'nadicodeai/nadia/release/scripts/install'),
     ('test_matches_real_nous_hermes_chat_models', 'test_matches_real_nous_model_family_chat_models'),
-    ('git@github.com:nousresearch/hermes-agent', 'git@github.com:nadicodeai/argo'),
-    ('github.com/nousresearch/hermes-agent', 'github.com/nadicodeai/argo'),
+    ('git@github.com:nousresearch/hermes-agent', 'git@github.com:nadicodeai/nadia'),
+    ('github.com/nousresearch/hermes-agent', 'github.com/nadicodeai/nadia'),
     ('hermes-agent.nousresearch.com/docs', 'docs.nadicode.ai/nadia'),
     ('ghcr.io/nousresearch/hermes-agent', 'ghcr.io/nadicodeai/nadia'),
     ('test_nous_hermes_non_agentic', 'test_nous_model_family_non_agentic'),
     ('_check_hermes_model_warning', '_check_nous_model_family_warning'),
     ('_NOUS_HERMES_NON_AGENTIC_RE', '_NOUS_MODEL_FAMILY_NON_AGENTIC_RE'),
     ('is_nous_hermes_non_agentic', 'is_nous_model_family_non_agentic'),
-    ('NousResearch/hermes-agent', 'nadicodeai/argo'),
-    ('NousResearch/Hermes-Agent', 'nadicodeai/argo'),
+    ('NousResearch/hermes-agent', 'nadicodeai/nadia'),
+    ('NousResearch/Hermes-Agent', 'nadicodeai/nadia'),
     ('nousresearch/hermes-agent', 'ghcr.io/nadicodeai/nadia'),
     ('hermes_tools_mcp_server', 'nadia_tools_mcp_server'),
     ('_HERMES_MODEL_WARNING', '_NOUS_MODEL_FAMILY_WARNING'),

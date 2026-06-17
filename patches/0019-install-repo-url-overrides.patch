@@ -1,6 +1,6 @@
 Subject: install.sh: allow repo URL override for local smoke tests
 
-The Nadia migration cannot assume the public nadicodeai/argo release branch
+The Nadia migration cannot assume the public nadicodeai/nadia release branch
 already contains the unmerged migration. Local install smoke tests still need to
 exercise the real installer and git install path, so allow the installer
 repository URLs to be overridden by environment.
