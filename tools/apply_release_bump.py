@@ -32,6 +32,7 @@ Exit codes: 0 ok / 1 user error / 2 unexpected.
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import subprocess
 import sys
@@ -90,6 +91,32 @@ def _rewrite_file(path: Path, pattern: re.Pattern[str], replacement: str) -> Non
         path.write_text(new, encoding="utf-8")
 
 
+def _rewrite_json_version(path: Path, version: str) -> None:
+    if not path.is_file():
+        raise SystemExit(f"missing {path} — run `make build` first")
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise SystemExit(f"expected JSON object in {path}")
+    data["version"] = version
+    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+
+def _rewrite_package_lock_workspace_version(
+    path: Path,
+    *,
+    workspace: str,
+    version: str,
+) -> None:
+    if not path.is_file():
+        raise SystemExit(f"missing {path} — run `make build` first")
+    data = json.loads(path.read_text(encoding="utf-8"))
+    packages = data.get("packages")
+    if not isinstance(packages, dict) or not isinstance(packages.get(workspace), dict):
+        raise SystemExit(f"missing packages.{workspace!r} in {path}")
+    packages[workspace]["version"] = version
+    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Apply nadia_release.py's version+release-date bump to dist/nadia/.",
@@ -128,6 +155,8 @@ def main(argv: list[str] | None = None) -> int:
     dist_root = args.dist_root
     init_path = dist_root / "nadia_cli" / "__init__.py"
     pyproject_path = dist_root / "pyproject.toml"
+    desktop_package_path = dist_root / "apps" / "desktop" / "package.json"
+    package_lock_path = dist_root / "package-lock.json"
     if not init_path.is_file():
         raise SystemExit(f"missing {init_path} — run `make build` first")
     if not pyproject_path.is_file():
@@ -137,12 +166,24 @@ def main(argv: list[str] | None = None) -> int:
     _rewrite_file(init_path, _VERSION_RE, f'__version__ = "{version}"')
     _rewrite_file(init_path, _RELEASE_DATE_RE, f'__release_date__ = "{release_date}"')
     _rewrite_file(pyproject_path, _PYPROJECT_VERSION_RE, f'version = "{version}"')
+    _rewrite_json_version(desktop_package_path, version)
+    _rewrite_package_lock_workspace_version(
+        package_lock_path,
+        workspace="apps/desktop",
+        version=version,
+    )
 
     verify_text = init_path.read_text(encoding="utf-8")
     if f'__version__ = "{version}"' not in verify_text:
         raise SystemExit(f"verify failed: __version__ not set in {init_path}")
     if f'__release_date__ = "{release_date}"' not in verify_text:
         raise SystemExit(f"verify failed: __release_date__ not set in {init_path}")
+    verify_desktop_package = json.loads(desktop_package_path.read_text(encoding="utf-8"))
+    if verify_desktop_package.get("version") != version:
+        raise SystemExit(f"verify failed: version not set in {desktop_package_path}")
+    verify_package_lock = json.loads(package_lock_path.read_text(encoding="utf-8"))
+    if verify_package_lock["packages"]["apps/desktop"].get("version") != version:
+        raise SystemExit(f"verify failed: apps/desktop version not set in {package_lock_path}")
     _log("verify ok")
     return 0
 
