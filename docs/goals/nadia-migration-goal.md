@@ -1,4 +1,4 @@
-# Goal: Migrate Argo To Nadia
+# Goal: Complete The Nadia Agent Product Migration
 
 ## Active Objective
 
@@ -6,87 +6,102 @@ Complete and verify the objective defined in `/home/vadim/Code/argo/docs/goals/n
 
 ## Outcome
 
-Migrate this repository's fork brand from Argo to Nadia so every fork-owned and customer-facing surface that currently says `argo`, `Argo`, or `ARGO` becomes `nadia`, `Nadia`, or `NADIA`, while preserving the fork architecture:
+Make this fork ship and present itself as **Nadia Agent** everywhere an end user, customer, installer, updater, desktop user, profile-builder user, contributor, or release consumer sees it.
 
-- `upstream/` remains pristine and is never edited directly.
-- Patches and overlay source remain authored against upstream `hermes` names.
-- The build-time rename engine remains the mechanism that turns upstream `hermes` surfaces into the fork's customer-visible Nadia surfaces.
-- The shipped agent is called `nadia`, not `argo`.
-- Important caveat: the live GitHub repository remains `nadicodeai/argo` unless Vadim explicitly approves a repo rename. GitHub clone URLs, raw install URLs, issue links, release links, and GitHub API targets must keep that repo slug while the product, command, package, image, paths, and runtime branding become Nadia.
+The target state is:
+
+- Product name: `Nadia Agent`.
+- CLI command: `nadia`.
+- Customer config and state: `~/.nadia`, `.nadia/`, `NADIA_*`.
+- Public source/release repository coordinate, if GitHub remains the public coordinate: `nadicodeai/nadia`.
+- Container/image coordinate, if container publishing remains supported: Nadia-named, for example `nadia` under the chosen registry.
+- macOS and Windows app identity: `Nadia Agent`.
+- Profile builder/onboarding identity: Nadia-branded.
+- Install, update, download, docs, release, and support surfaces: Nadia-branded.
+- `Argo` / `argo` / `ARGO`: removed from active product and distribution surfaces.
+- `Hermes`: preserved only for upstream provenance, real external project names, real model identifiers, real parser/protocol names, and real Nous/Hermes wire identifiers.
+- `Nous`: preserved when it is the real company, provider, Portal, model source, or backend protocol surface.
+
+The user-facing success condition is simple: a customer can install the Nadia Agent CLI, download the Nadia Agent macOS or Windows app, use the Nadia profile builder/setup flow, update Nadia, and read Nadia docs without encountering Argo branding or fake renamed external Hermes names.
 
 ## Baseline
 
-Today the fork target brand is Argo:
+The repository has already moved many runtime surfaces from Argo to Nadia, and commit `6f716db` fixed the first wave of bad mechanical Hermes renames. Current known facts:
 
-- Build output is rooted at `dist/argo/`.
-- Customer command is `argo`.
-- Python/package output includes names such as `argo_cli`, `argo_agent`, and `argo_sync`.
-- Runtime config and state use `~/.argo`, `.argo/`, `ARGO_HOME`, and `ARGO_*`.
-- Public surfaces point at `nadicodeai/argo`, `ghcr.io/nadicodeai/argo`, and `docs.nadicode.ai/argo`.
-- Release tooling and tests use Argo names, including `tools/argo_release.py`, `argo-rename.yaml`, `scripts/argo-*`, smoke tests, docs, CI comments, Docker tags, release assets, and generated skin files.
-
-There may be thousands of Argo tokens. Do not rely on a small manual list. Inventory text and filenames with `rg` before and after the migration.
+- The branch is `feature/nadia-migration`.
+- `dist/nadia` is the built customer tree.
+- The current repo path is still `/home/vadim/Code/argo`; local path names are not themselves customer proof.
+- Previous goal text incorrectly allowed `nadicodeai/argo` as the permanent public repo coordinate. That is no longer valid.
+- Current scans still find `nadicodeai/argo`, `ghcr.io/nadicodeai/argo`, `hermes-agent.nousresearch.com`, `setup.hermes-agent.nousresearch.com`, old README policy, release tooling comments, and docs/install surfaces that must be re-evaluated under the new decision.
+- There are unrelated untracked PNG files in the worktree: `create-controls.png`, `create-started.png`, `create.png`, `home.png`. Do not stage or delete them unless separately instructed.
 
 ## Required Architectural Understanding
 
-This is not an in-source upstream rename.
+This is not an in-place upstream rename.
 
-The repository is a pristine-upstream fork:
+The fork architecture remains:
 
-1. `upstream/` is a pinned subtree of NousResearch `hermes-agent`.
+1. `upstream/` is a pristine pinned subtree of NousResearch `hermes-agent`.
 2. Fork changes that modify upstream files live in `patches/` as quilt patches.
-3. Additive fork files live in `overlay/`, using upstream `hermes` paths and symbols.
-4. `tools/build.py` builds a temporary distribution tree from upstream, patches, and overlay.
-5. The rename engine applies the fork brand at build time.
-6. The built tree is what customers run and install.
+3. Additive fork files live in `overlay/`, using upstream `hermes` paths and symbols where they target upstream files.
+4. `tools/build.py` builds a distribution tree from upstream, patches, overlay, packaging rules, content edits, and the rename engine.
+5. The built tree is what customers run and install.
 
-Do not pre-rename patch or overlay source to `nadia_*` if it is supposed to target an upstream `hermes_*` surface. The authored side stays `hermes`; the built side becomes Nadia.
+Do not edit `upstream/` directly. Do not hand edit `dist/`. If an upstream-owned file must change, use the patch/content-edit mechanism already used by this repo. If a fork-owned mechanism or config must change, edit the fork-owned source and regenerate any generated defaults through the existing generator.
 
 ## Scope
 
-Change all Argo fork-brand surfaces to Nadia, including at minimum:
+Bring all fork-owned and customer-facing surfaces to Nadia Agent, including at minimum:
 
-- Rename config mappings, exceptions, comments, and generated defaults.
-- Build output path decisions, such as whether `dist/argo/` becomes `dist/nadia/`.
-- CLI command, package/module output, environment variables, home/config paths, metadata, banners, docs URLs, install URLs, update hints, GHCR image names, Docker labels/tags, and release asset names.
-- Release tooling names and behavior, including the release driver and workflow parsing of release titles.
-- Native install and update smoke harnesses.
-- Tests and fixtures that currently assert Argo names.
-- User-facing docs, README, AGENTS references, Shepherd loop docs that remain active, and goal/plan docs that future agents will read.
-- Generated skin and preview surfaces currently carrying Argo names.
-- File names that include `argo`, where they are fork-owned rather than upstream historical references.
-- GitHub repository transport and issue-tracker surfaces stay on `nadicodeai/argo` until the separate public repo-rename gate is approved. Treat this as an allowed historical slug, not a product brand.
+- Repository coordinates and docs that currently reference `nadicodeai/argo`, where they are public product or support coordinates.
+- Install scripts, install URLs, install docs, install smoke tests, and platform-specific install commands.
+- Update logic, update docs, update smoke tests, release branch assumptions, and release manifest behavior.
+- CLI command names, package metadata, script entry points, env vars, config paths, banners, logs, diagnostic messages, and help output.
+- Public release metadata, release title parsing, release asset names, release workflow comments, release verification docs, and release driver references.
+- Container image names, Docker labels, compose examples, docs, and GHCR or alternative-registry references.
+- macOS desktop app name, product filename, app metadata, bundle identifiers, update metadata, download links, installer text, and tests.
+- Windows desktop app name, installer metadata, app identity, update metadata, download links, setup text, and tests.
+- Bootstrap/profile-builder/onboarding surfaces, including setup endpoints, profile-builder UI copy, generated config paths, docs, and tests.
+- Generated website docs and root README docs so the product subject is Nadia Agent, with only a concise Hermes provenance section.
+- Leak scanners and allowlists for old Argo branding and for over-renamed external Hermes identifiers.
 
-Historical references may remain only when they are intentionally about old Argo history, attribution, prior releases, or migration context. Every retained Argo occurrence must be justified in a documented allowlist or in an inline comment near the verifier.
+Historical Argo references may remain only when they are explicitly about old migration history, prior release archaeology, or a temporary compatibility bridge approved by Vadim. Every retained Argo occurrence must be justified in a documented allowlist or a nearby comment.
 
 ## Non-Goals
 
-- Do not edit `upstream/`.
+- Do not edit `upstream/` directly.
 - Do not commit `dist/`, `.sync-workdir/`, quilt backup state, generated caches, or local scratch artifacts.
+- Do not create fake Nadia names for real external Hermes-named projects, models, parsers, packages, or protocols.
+- Do not remove the existing Hermes/Nous wire-identifier protections.
+- Do not publish to PyPI unless Vadim explicitly approves it.
 - Do not implement a legacy `argo` compatibility alias, `~/.argo` migration, or `ARGO_*` compatibility layer unless Vadim explicitly approves it.
-- Do not publish to PyPI unless Vadim explicitly reverses the existing no-PyPI decision.
-- Do not redesign install or update behavior. Preserve current behavior, renamed to Nadia.
-- Do not rename the public GitHub repo, force-push `release`, publish GHCR images, change DNS/docs hosting, or cut a release without explicit approval.
-- Do not point GitHub clone/raw/issue/release URLs at `nadicodeai/nadia` while the public repository remains `nadicodeai/argo`.
+- Do not choose or invent a public artifact domain. Implement the code and docs in terms of the settled canonical coordinates or a clearly named configurable artifact base until Vadim chooses the public host.
+- Do not perform public repo renames, DNS changes, release publication, image publication, or paid infrastructure setup without explicit approval.
 
 ## Approval Gates
 
 Ask Vadim before any irreversible, public, shared, or costly action:
 
-- Renaming the GitHub repository from `nadicodeai/argo` to `nadicodeai/nadia`.
-- Creating or moving public GHCR images.
-- Changing `docs.nadicode.ai/argo` to a Nadia URL or changing DNS.
-- Force-pushing the `release` branch.
-- Cutting or deleting release tags.
+- Renaming the GitHub repository in GitHub settings.
+- Making the source repository private.
+- Creating a new public release repository.
+- Choosing or changing DNS or a public artifact host.
+- Publishing or moving GHCR or other registry images.
+- Force-pushing the release branch.
+- Cutting, deleting, or moving release tags.
 - Creating a GitHub Release.
-- Adding backwards compatibility for old Argo commands, paths, or env vars.
+- Publishing macOS or Windows artifacts publicly.
+- Changing signed/notarized desktop identities in a way that affects existing update continuity.
 - Publishing to PyPI.
+- Adding old Argo compatibility aliases or migrations.
 
-Local branches, local commits, tests, and local documentation edits do not need separate approval.
+Local branches, local commits, local docs, local tests, generated local builds, and local dry-run release artifacts do not need separate approval.
 
 ## Primary Verifier
 
-The migration is not complete until the updated equivalents of these commands pass from a clean feature branch:
+The goal is not complete until the Nadia Agent customer contract is proven by local commands and artifact inspection from a clean feature branch.
+
+Required gates:
 
 ```bash
 make build
@@ -97,47 +112,53 @@ make install-smoke
 make update-smoke
 ```
 
-If target names change, update the Makefile and tests so the commands still represent the same gates for Nadia. Do not delete or weaken a gate to make this list pass.
+If command names change, keep equivalent targets and document the equivalence. Do not delete or weaken gates to make this list pass.
 
 ## Required End-State Checks
 
 The final verified state must prove:
 
 - `nadia --version` exits 0 and prints `Nadia Agent v... (...)`.
-- A fresh install writes `~/.nadia/.install_method` containing `git`.
-- The update path runs as Nadia and does not print the fork warning.
-- No unapproved `argo`, `Argo`, or `ARGO` remains in the built customer tree. `nadicodeai/argo` is approved only as the live GitHub repository slug.
+- Fresh CLI install writes only Nadia paths, especially `~/.nadia` and the Nadia install root.
+- `nadia update` updates from a Nadia-branded release/artifact coordinate or a configurable artifact base, not an Argo-branded coordinate.
+- macOS desktop build metadata, app name, installer/download metadata, and tests identify the app as `Nadia Agent`.
+- Windows desktop build metadata, app name, installer/download metadata, and tests identify the app as `Nadia Agent`.
+- The profile builder/setup/onboarding flow is Nadia-branded and writes Nadia config.
+- No unapproved `argo`, `Argo`, or `ARGO` remains in the built customer tree.
 - No unapproved Argo filenames remain in fork-owned source.
-- Existing protected Hermes external identifiers remain protected. Do not break Nous model IDs, OAuth client IDs, attribution strings, or other wire-protocol identifiers that must stay Hermes.
+- No customer docs instruct users to install, download, or update Argo.
+- No customer docs present Hermes Agent as the product subject. Hermes may appear only in provenance, upstream links, real model IDs, real external project names, parser/protocol names, or protected wire identifiers.
+- Existing protected Hermes external identifiers remain exact: Nous model IDs, OAuth client IDs, Portal tags, `--tool-call-parser hermes`, `HermesClaw`, `Hermes Mod`, `hermes-lcm`, `rtk-hermes`, and other documented external names.
 - The renamed upstream test suite still runs against the built tree.
-- Release/storefront dry-run or approved live verification shows Nadia assets and Nadia paths, with no workshop files in the storefront tree.
+- Release/storefront dry-run or approved live verification shows Nadia assets, Nadia paths, and no workshop-only files in the customer artifact tree.
 
 ## Supporting Verifiers
 
 Add or update focused checks as needed:
 
-- A config-aware Argo-leakage scanner, analogous to the current Hermes leakage scanner, with positive and negative fixtures.
-- Tests proving rename mappings now produce Nadia outputs from Hermes inputs.
-- Tests proving install URLs point at the correct Nadia release branch surface.
-- Tests proving install URLs point at the correct `nadicodeai/argo` release branch surface while installing Nadia.
+- Config-aware Argo leakage scanner with positive and negative fixtures.
+- File-name inventory check for old Argo paths.
+- Tests proving install URLs and update URLs use Nadia coordinates or a configurable artifact base.
 - Tests proving smoke harnesses assert `nadia`, `~/.nadia`, and `NADIA_*`.
 - Tests proving release title parsing accepts `Nadia Agent v... (...)`.
-- File-name inventory checks for old Argo paths.
+- Tests proving desktop bundle/app metadata says Nadia Agent.
+- Tests proving profile builder/setup surfaces say Nadia and write Nadia config.
+- Tests proving external Hermes identifiers remain preserved exactly.
 
-Keep the existing Hermes leakage and wire-identifier checks. The goal is not to remove all Hermes strings blindly; Hermes remains upstream, attribution, model, and protocol identity where the current repo says it must.
+Keep the existing Hermes leakage and wire-identifier checks. A clean Hermes leakage scan is not proof that Argo is gone.
 
 ## Iteration Loop
 
-1. Create or find the GitHub issue for this migration and reference this goal file.
-2. Work on a feature branch, never directly on `main`.
-3. Record a baseline inventory:
+1. Work on a feature branch, never directly on `main`.
+2. Record and refresh baseline inventories:
    - `rg -n "argo|Argo|ARGO" --glob '!dist/**' --glob '!.sync-workdir/**'`
    - `rg --files --glob '!dist/**' --glob '!.sync-workdir/**' | rg '(^|/)(argo|Argo|ARGO)'`
-4. Change one meaningful surface group at a time.
-5. After each surface group, run the focused tests for that group plus `make build` and `make leakage-static`.
-6. Commit small green slices.
-7. Run the full primary verifier before requesting merge or public release action.
-8. Preserve a short worklog in the GitHub issue or a sibling result file if the run spans multiple sessions.
+   - `rg -n "nadicodeai/argo|ghcr.io/nadicodeai/argo|docs.nadicode.ai/argo|hermes-agent.nousresearch.com|setup.hermes-agent.nousresearch.com" --glob '!dist/**' --glob '!.sync-workdir/**'`
+3. Change one meaningful surface group at a time.
+4. After each surface group, run focused tests plus `make build` and `make leakage-static`.
+5. Commit small green slices.
+6. Run the full primary verifier before requesting merge or any public action.
+7. Preserve a short worklog in this goal file or a sibling result file if the run spans multiple sessions.
 
 ## Anti-Cheating Rules
 
@@ -145,29 +166,31 @@ Keep the existing Hermes leakage and wire-identifier checks. The goal is not to 
 - Do not edit generated `dist/` files.
 - Do not bypass quilt patch rules.
 - Do not remove tests, xfail tests, or narrow scanners without explaining why and preserving equivalent coverage.
-- Do not treat a clean Hermes leakage scan as proof that no Argo branding remains.
 - Do not hide retained Argo strings under broad binary or directory skips.
-- Do not create mocks for install/update proof when an existing smoke harness exercises the real artifact.
-- Do not report "done" after source grep only. The built tree and install/update paths are the product.
+- Do not pretend a public hosting/domain decision has been made when it has not.
+- Do not replace a real external Hermes identifier with an invented Nadia identifier.
+- Do not report done after source grep only. The built tree, install/update paths, desktop artifacts, and profile-builder path are the product.
 
 ## Blocker Standard
 
-Mark the goal blocked only after the same external blocker repeats across the required goal turns and no meaningful local progress remains. Valid blockers include missing approval for a public rename, missing credentials for a public release action, or an external service outage that prevents the required approved verification.
+Mark blocked only after the same external blocker repeats across the required goal turns and no meaningful local progress remains. Valid blockers include missing approval for a public repo rename, source privacy change, DNS/artifact-host decision, release publication, image publication, desktop signing/notarization identity change, or unavailable credentials for an approved public action.
 
-Build failures, test failures, stale docs, or a large number of Argo occurrences are not blockers. They are the work.
+Build failures, test failures, stale docs, many old-brand occurrences, and unclear implementation details are not blockers. They are the work.
 
 ## Completion Proof
 
 Before marking complete, provide:
 
-- Tracking issue URL.
 - Branch name and final commit SHA or PR URL.
 - Exact commands run and their exit status.
 - Sample `nadia --version` output.
-- Install-smoke proof showing `~/.nadia/.install_method = git`.
-- Update-smoke proof showing no fork warning.
-- Argo-leakage scan result and any allowlist of retained Argo references.
-- Dist-test result.
+- Install-smoke proof showing Nadia paths and no Argo branding.
+- Update-smoke proof showing Nadia update coordinates and no Argo branding.
+- Desktop artifact or metadata proof for macOS and Windows Nadia Agent identity.
+- Profile builder/setup proof showing Nadia branding and Nadia config output.
+- Old-brand scan result and allowlist of any retained Argo references.
+- Hermes external-identifier preservation scan result.
+- Full `make dist-test` result.
 - Release/storefront verification result, either dry-run or approved live result.
 - List of public actions not taken because they require separate approval.
 
