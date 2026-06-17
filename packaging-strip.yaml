@@ -258,6 +258,35 @@ content_edits:
       lower-case nadia.exe entry point.
     find: "Hermes.exe"
     replace: "Nadia Agent.exe"
+  - name: install-sh-desktop-help-macos-app-nadia-agent
+    file: scripts/install.sh
+    why: >-
+      The POSIX installer help advertises --include-desktop. Keep the generated
+      macOS bundle name aligned with electron-builder's Nadia Agent.app output.
+    find: "apps/desktop -> Hermes.app"
+    replace: "apps/desktop -> Nadia Agent.app"
+  - name: install-sh-desktop-macos-app-nadia-agent
+    file: scripts/install.sh
+    why: >-
+      Stage-Desktop probes the built macOS app bundle after npm run pack. The
+      bundle is Nadia Agent.app, not the generic post-rename Nadia.app.
+    find: "Hermes.app"
+    replace: "Nadia Agent.app"
+  - name: install-sh-desktop-linux-executable-nadia-agent
+    file: scripts/install.sh
+    why: >-
+      electron-builder uses the Nadia Agent executableName for the Linux
+      unpacked desktop binary too. Probe that output before falling back to the
+      legacy lower-case name.
+    find: 'if [ -x "$desktop_dir/release/linux-unpacked/Hermes" ]; then'
+    replace: 'if [ -x "$desktop_dir/release/linux-unpacked/Nadia Agent" ]; then'
+  - name: install-sh-desktop-linux-app-path-nadia-agent
+    file: scripts/install.sh
+    why: >-
+      Keep the POSIX installer launch path aligned with the Nadia Agent Linux
+      desktop executable name.
+    find: 'app="$desktop_dir/release/linux-unpacked/Hermes"'
+    replace: 'app="$desktop_dir/release/linux-unpacked/Nadia Agent"'
   - name: install-ps1-desktop-build-log-nadia
     file: scripts/install.ps1
     why: "Keep the desktop build log filename aligned with the Nadia product name."
@@ -609,6 +638,119 @@ content_edits:
       used by electron-builder.
     find: "Hermes.app"
     replace: "Nadia Agent.app"
+  - name: cli-desktop-macos-app-path-nadia-agent
+    file: hermes_cli/main.py
+    why: >-
+      The `nadia gui` command locates and relaunches locally packaged desktop
+      builds. Keep its macOS bundle probes aligned with Nadia Agent.app.
+    find: "Hermes.app"
+    replace: "Nadia Agent.app"
+  - name: cli-desktop-macos-executable-nadia-agent
+    file: hermes_cli/main.py
+    why: >-
+      The executable inside Nadia Agent.app follows electron-builder's
+      executableName. Keep `nadia gui` aligned with that generated binary.
+    find: "Contents/MacOS/Hermes"
+    replace: "Contents/MacOS/Nadia Agent"
+  - name: cli-desktop-windows-exe-path-nadia-agent
+    file: hermes_cli/main.py
+    why: >-
+      The `nadia gui` command locates, rebuilds, and unlocks locally packaged
+      Windows desktop builds. Keep those probes and diagnostics aligned with
+      Nadia Agent.exe.
+    find: "Hermes.exe"
+    replace: "Nadia Agent.exe"
+  - name: cli-desktop-linux-executable-nadia-agent
+    file: hermes_cli/main.py
+    why: >-
+      electron-builder uses the Nadia Agent executableName for the Linux
+      unpacked desktop binary. Keep `nadia gui` aligned with that output.
+    find: 'release_dir / "linux-unpacked" / "Hermes"'
+    replace: 'release_dir / "linux-unpacked" / "Nadia Agent"'
+  - name: cli-desktop-linux-arm64-executable-nadia-agent
+    file: hermes_cli/main.py
+    why: >-
+      Keep the Linux arm64 packaged desktop probe aligned with the Nadia Agent
+      executableName.
+    find: 'release_dir / "linux-arm64-unpacked" / "Hermes"'
+    replace: 'release_dir / "linux-arm64-unpacked" / "Nadia Agent"'
+  - name: cli-gui-uninstall-macos-app-path-nadia-agent
+    file: hermes_cli/gui_uninstall.py
+    why: >-
+      GUI uninstall discovers packaged macOS desktop installs by bundle name.
+      The product bundle is Nadia Agent.app.
+    find: "Hermes.app"
+    replace: "Nadia Agent.app"
+  - name: cli-gui-uninstall-windows-install-dir-nadia-agent
+    file: hermes_cli/gui_uninstall.py
+    why: >-
+      GUI uninstall discovers NSIS per-user/per-machine desktop installs by
+      product directory. The product directory is Nadia Agent.
+    find: "Programs\\\\Hermes"
+    replace: "Programs\\\\Nadia Agent"
+  - name: cli-gui-uninstall-windows-path-nadia-agent
+    file: hermes_cli/gui_uninstall.py
+    why: >-
+      GUI uninstall discovers Windows packaged desktop installs by product
+      directory. The product directory is Nadia Agent.
+    find: 'Path(program_files) / "Hermes"'
+    replace: 'Path(program_files) / "Nadia Agent"'
+  - name: cli-gui-uninstall-windows-local-path-nadia-agent
+    file: hermes_cli/gui_uninstall.py
+    why: >-
+      GUI uninstall discovers NSIS per-user desktop installs by product
+      directory. The product directory is Nadia Agent.
+    find: 'local_base / "Programs" / "Hermes"'
+    replace: 'local_base / "Programs" / "Nadia Agent"'
+  - name: cli-gui-uninstall-userdata-nadia-agent
+    file: hermes_cli/gui_uninstall.py
+    why: >-
+      Electron userData follows the product name. Remove Nadia Agent GUI state
+      on GUI uninstall, not a generic post-rename Nadia directory.
+    find: '"Hermes"'
+    replace: '"Nadia Agent"'
+  - name: cli-gui-command-test-macos-app-nadia-agent
+    file: tests/hermes_cli/test_gui_command.py
+    why: >-
+      The renamed upstream GUI command tests must model electron-builder's
+      Nadia Agent.app output, not the generic Nadia.app path.
+    find: "Hermes.app"
+    replace: "Nadia Agent.app"
+  - name: cli-gui-command-test-macos-executable-nadia-agent
+    file: tests/hermes_cli/test_gui_command.py
+    why: >-
+      The renamed upstream GUI command tests must model the executable inside
+      Nadia Agent.app.
+    find: "Contents\" / \"MacOS\" / \"Hermes"
+    replace: "Contents\" / \"MacOS\" / \"Nadia Agent"
+  - name: cli-gui-command-test-windows-exe-nadia-agent
+    file: tests/hermes_cli/test_gui_command.py
+    why: >-
+      The renamed upstream GUI command tests must model the Nadia Agent.exe
+      desktop executable.
+    find: "Hermes.exe"
+    replace: "Nadia Agent.exe"
+  - name: cli-gui-uninstall-test-macos-app-nadia-agent
+    file: tests/hermes_cli/test_gui_uninstall.py
+    why: >-
+      The renamed upstream GUI uninstall tests must model the Nadia Agent.app
+      package path.
+    find: "Hermes.app"
+    replace: "Nadia Agent.app"
+  - name: cli-gui-uninstall-test-userdata-nadia-agent
+    file: tests/hermes_cli/test_gui_uninstall.py
+    why: >-
+      The renamed upstream GUI uninstall tests must model Electron userData for
+      the Nadia Agent product name.
+    find: '"Hermes"'
+    replace: '"Nadia Agent"'
+  - name: desktop-uninstall-macos-executable-comment-nadia-agent
+    file: apps/desktop/electron/desktop-uninstall.cjs
+    why: >-
+      Keep desktop uninstall helper comments aligned with the executable inside
+      Nadia Agent.app.
+    find: "Contents/MacOS/Hermes"
+    replace: "Contents/MacOS/Nadia Agent"
   - name: desktop-test-macos-app-path-nadia-agent
     file: apps/desktop/scripts/test-desktop.mjs
     why: >-
@@ -848,6 +990,13 @@ content_edits:
       desktop tree. Keep that fake tree aligned with Nadia Agent.app.
     find: 'join("Hermes")'
     replace: 'join("Nadia Agent")'
+  - name: bootstrap-comments-macos-executable-nadia-agent
+    file: apps/bootstrap-installer/src-tauri/src/bootstrap.rs
+    why: >-
+      Keep bootstrap installer comments aligned with the executable inside
+      Nadia Agent.app.
+    find: "Contents/MacOS/Hermes"
+    replace: "Contents/MacOS/Nadia Agent"
   - name: bootstrap-update-macos-app-path-nadia-agent
     file: apps/bootstrap-installer/src-tauri/src/update.rs
     why: >-
@@ -863,6 +1012,27 @@ content_edits:
       locked.
     find: "        let _ = std::process::Command::new(\"taskkill\")\n            .args([\n                \"/F\",\n                \"/T\",\n                \"/IM\",\n                \"hermes.exe\",\n                \"/FI\",\n                &format!(\"PID ne {my_pid}\"),\n            ])\n            .stdout(std::process::Stdio::null())\n            .stderr(std::process::Stdio::null())\n            .status();"
     replace: "        for image in [\"nadia.exe\", \"Nadia Agent.exe\"] {\n            let _ = std::process::Command::new(\"taskkill\")\n                .args([\n                    \"/F\",\n                    \"/T\",\n                    \"/IM\",\n                    image,\n                    \"/FI\",\n                    &format!(\"PID ne {my_pid}\"),\n                ])\n                .stdout(std::process::Stdio::null())\n                .stderr(std::process::Stdio::null())\n                .status();\n        }"
+  - name: bootstrap-update-windows-taskkill-comments-nadia-agent
+    file: apps/bootstrap-installer/src-tauri/src/update.rs
+    why: >-
+      Preserve the backend nadia.exe mention, but keep comments clear that the
+      desktop process is Nadia Agent.exe.
+    find: "desktop Hermes.exe"
+    replace: "desktop Nadia Agent.exe"
+  - name: bootstrap-update-windows-force-kill-comment-nadia-agent
+    file: apps/bootstrap-installer/src-tauri/src/update.rs
+    why: >-
+      Keep the Windows update fallback comment aligned with the desktop process
+      name while preserving the live taskkill list.
+    find: "force-kill every Hermes.exe"
+    replace: "force-kill every Nadia Agent.exe"
+  - name: bootstrap-success-desktop-exe-comment-nadia-agent
+    file: apps/bootstrap-installer/src/routes/success.tsx
+    why: >-
+      The bootstrap success screen launches the desktop app. Keep its failure
+      comment aligned with the Nadia Agent.exe desktop executable.
+    find: "Hermes.exe doesn't exist"
+    replace: "Nadia Agent.exe doesn't exist"
   - name: bootstrap-package-description-nadia-agent
     file: apps/bootstrap-installer/package.json
     why: >-

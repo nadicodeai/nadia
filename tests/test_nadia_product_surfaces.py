@@ -73,6 +73,11 @@ def test_desktop_packaging_paths_follow_nadia_agent_name() -> None:
     uninstall = (
         DIST / "apps" / "desktop" / "electron" / "desktop-uninstall.cjs"
     ).read_text(encoding="utf-8")
+    cli_main = (DIST / "nadia_cli" / "main.py").read_text(encoding="utf-8")
+    cli_uninstall = (DIST / "nadia_cli" / "gui_uninstall.py").read_text(
+        encoding="utf-8"
+    )
+    install_sh = (DIST / "scripts" / "install.sh").read_text(encoding="utf-8")
 
     assert "Nadia Agent.app" in desktop_test
     assert "Nadia Agent.exe" in desktop_test
@@ -96,6 +101,23 @@ def test_desktop_packaging_paths_follow_nadia_agent_name() -> None:
     assert "Nadia Agent.exe" in uninstall
     assert "Nadia Agent$/i.test(dir)" in uninstall
     assert "Hermes" not in uninstall
+
+    assert "Nadia Agent.app/Contents/MacOS/Nadia Agent" in cli_main
+    assert '"win-unpacked" / "Nadia Agent.exe"' in cli_main
+    assert '"linux-unpacked" / "Nadia Agent"' in cli_main
+    assert "Nadia.app/Contents/MacOS/Nadia" not in cli_main
+    assert "Nadia.exe" not in cli_main
+
+    assert "/Applications/Nadia Agent.app" in cli_uninstall
+    assert '"Programs" / "Nadia Agent"' in cli_uninstall
+    assert '"Nadia Agent"' in cli_uninstall
+    assert "/Applications/Nadia.app" not in cli_uninstall
+
+    assert "apps/desktop -> Nadia Agent.app" in install_sh
+    assert "linux-unpacked/Nadia Agent" in install_sh
+    assert "mac-arm64/Nadia Agent.app" in install_sh
+    assert "apps/desktop -> Nadia.app" not in install_sh
+    assert "mac-arm64/Nadia.app" not in install_sh
 
 
 @pytest.mark.skipif(not DIST.is_dir(), reason="dist/nadia not built (run `make build`)")
