@@ -78,6 +78,9 @@ def test_desktop_packaging_paths_follow_nadia_agent_name() -> None:
         encoding="utf-8"
     )
     install_sh = (DIST / "scripts" / "install.sh").read_text(encoding="utf-8")
+    bootstrap_runner = (
+        DIST / "apps" / "desktop" / "electron" / "bootstrap-runner.cjs"
+    ).read_text(encoding="utf-8")
 
     assert "Nadia Agent.app" in desktop_test
     assert "Nadia Agent.exe" in desktop_test
@@ -118,6 +121,18 @@ def test_desktop_packaging_paths_follow_nadia_agent_name() -> None:
     assert "mac-arm64/Nadia Agent.app" in install_sh
     assert "apps/desktop -> Nadia.app" not in install_sh
     assert "mac-arm64/Nadia.app" not in install_sh
+
+    assert "const DESKTOP_INSTALL_BRANCH = 'release'" in bootstrap_runner
+    assert (
+        "raw.githubusercontent.com/nadicodeai/nadia/${DESKTOP_INSTALL_BRANCH}/scripts/${scriptName}"
+        in bootstrap_runner
+    )
+    assert (
+        "raw.githubusercontent.com/nadicodeai/nadia/${commit}/scripts/${scriptName}"
+        not in bootstrap_runner
+    )
+    assert "args.push('--commit', installStamp.commit)" not in bootstrap_runner
+    assert "args.push('-Commit', installStamp.commit)" not in bootstrap_runner
 
 
 @pytest.mark.skipif(not DIST.is_dir(), reason="dist/nadia not built (run `make build`)")

@@ -1,0 +1,12 @@
+# Assertions for 0022-desktop-bootstrap-release-install.patch
+#
+# Desktop first-launch must fetch installer scripts from the generated release
+# branch and run installer stages against that release branch. The app bundle's
+# build stamp is a workshop/source commit, so using it in the raw installer URL
+# or passing it as --commit/-Commit installs the wrong tree or 404s.
+
+path:apps/desktop/electron/bootstrap-runner.cjs const DESKTOP_INSTALL_BRANCH = 'release'
+path:apps/desktop/electron/bootstrap-runner.cjs raw.githubusercontent.com/nadicodeai/nadia/${DESKTOP_INSTALL_BRANCH}/scripts/${scriptName}
+path:apps/desktop/electron/bootstrap-runner.cjs return ['-Branch', DESKTOP_INSTALL_BRANCH]
+path:apps/desktop/electron/bootstrap-runner.cjs '--branch',
+path:apps/desktop/electron/bootstrap-runner.cjs DESKTOP_INSTALL_BRANCH
