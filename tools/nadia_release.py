@@ -91,6 +91,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import os
 import re
 import subprocess
@@ -109,6 +110,8 @@ ARTIFACTS_DIR_REL = Path(".sync-workdir") / "release-artifacts"
 
 VERSION_FILE_REL = DIST_DIR_REL / "nadia_cli" / "__init__.py"
 PYPROJECT_FILE_REL = DIST_DIR_REL / "pyproject.toml"
+DESKTOP_PACKAGE_FILE_REL = DIST_DIR_REL / "apps" / "desktop" / "package.json"
+PACKAGE_LOCK_FILE_REL = DIST_DIR_REL / "package-lock.json"
 UPSTREAM_VERSION_FILE_REL = Path("upstream") / "hermes_cli" / "__init__.py"
 
 INSTALL_SH_REL = DIST_DIR_REL / "scripts" / "install.sh"
@@ -485,6 +488,28 @@ def _rewrite_pyproject_version(text: str, *, new_version: str) -> str:
     return _PYPROJECT_VERSION_RE.sub(f'version = "{new_version}"', text)
 
 
+def _rewrite_package_version(text: str, *, new_version: str) -> str:
+    data = json.loads(text)
+    if not isinstance(data, dict):
+        raise ValueError("expected package JSON object")
+    data["version"] = new_version
+    return json.dumps(data, indent=2) + "\n"
+
+
+def _rewrite_package_lock_workspace_version(
+    text: str,
+    *,
+    workspace: str,
+    new_version: str,
+) -> str:
+    data = json.loads(text)
+    packages = data.get("packages")
+    if not isinstance(packages, dict) or not isinstance(packages.get(workspace), dict):
+        raise ValueError(f"expected package-lock packages.{workspace!r} object")
+    packages[workspace]["version"] = new_version
+    return json.dumps(data, indent=2) + "\n"
+
+
 def _apply_rewrites(repo: Path, state: VersionState, *, dry_run: bool) -> None:
     """Rewrite the two files; verify both rewrites by reading them back.
 
@@ -494,6 +519,8 @@ def _apply_rewrites(repo: Path, state: VersionState, *, dry_run: bool) -> None:
     """
     init_path = repo / VERSION_FILE_REL
     pyproject_path = repo / PYPROJECT_FILE_REL
+    desktop_package_path = repo / DESKTOP_PACKAGE_FILE_REL
+    package_lock_path = repo / PACKAGE_LOCK_FILE_REL
 
     if dry_run:
         _log(
@@ -505,6 +532,15 @@ def _apply_rewrites(repo: Path, state: VersionState, *, dry_run: bool) -> None:
         _log(
             f"DRY-RUN rewrite {PYPROJECT_FILE_REL}: "
             f'version "{state.current_version}" → "{state.new_version}"'
+        )
+        _log(
+            f"DRY-RUN rewrite {DESKTOP_PACKAGE_FILE_REL}: "
+            f'version "{state.current_version}" → "{state.new_version}"'
+        )
+        _log(
+            f"DRY-RUN rewrite {PACKAGE_LOCK_FILE_REL}: "
+            f'packages.apps/desktop.version "{state.current_version}" → '
+            f'"{state.new_version}"'
         )
         return
 
@@ -518,6 +554,16 @@ def _apply_rewrites(repo: Path, state: VersionState, *, dry_run: bool) -> None:
             f"missing post-build pyproject: {pyproject_path}",
             step="rewrite",
         )
+    if not desktop_package_path.is_file():
+        raise GateFailedError(
+            f"missing post-build desktop package: {desktop_package_path}",
+            step="rewrite",
+        )
+    if not package_lock_path.is_file():
+        raise GateFailedError(
+            f"missing post-build package-lock: {package_lock_path}",
+            step="rewrite",
+        )
 
     init_before = _read_text(init_path)
     init_after = _rewrite_version_file(
@@ -529,9 +575,22 @@ def _apply_rewrites(repo: Path, state: VersionState, *, dry_run: bool) -> None:
     pyproject_after = _rewrite_pyproject_version(
         pyproject_before, new_version=state.new_version
     )
+    desktop_package_before = _read_text(desktop_package_path)
+    desktop_package_after = _rewrite_package_version(
+        desktop_package_before,
+        new_version=state.new_version,
+    )
+    package_lock_before = _read_text(package_lock_path)
+    package_lock_after = _rewrite_package_lock_workspace_version(
+        package_lock_before,
+        workspace="apps/desktop",
+        new_version=state.new_version,
+    )
 
     init_path.write_text(init_after, encoding="utf-8")
     pyproject_path.write_text(pyproject_after, encoding="utf-8")
+    desktop_package_path.write_text(desktop_package_after, encoding="utf-8")
+    package_lock_path.write_text(package_lock_after, encoding="utf-8")
 
     # Verify (re-read + re-grep) — abort if the rewrite did not land.
     verify_init = _read_text(init_path)
@@ -551,7 +610,25 @@ def _apply_rewrites(repo: Path, state: VersionState, *, dry_run: bool) -> None:
             f"verify failed: version not rewritten in {pyproject_path}",
             step="verify-rewrite",
         )
-    _log(f"rewrote {VERSION_FILE_REL} and {PYPROJECT_FILE_REL}; verify OK")
+    verify_desktop_package = json.loads(_read_text(desktop_package_path))
+    if verify_desktop_package.get("version") != state.new_version:
+        raise GateFailedError(
+            f"verify failed: version not rewritten in {desktop_package_path}",
+            step="verify-rewrite",
+        )
+    verify_package_lock = json.loads(_read_text(package_lock_path))
+    if (
+        verify_package_lock["packages"]["apps/desktop"].get("version")
+        != state.new_version
+    ):
+        raise GateFailedError(
+            f"verify failed: apps/desktop version not rewritten in {package_lock_path}",
+            step="verify-rewrite",
+        )
+    _log(
+        f"rewrote {VERSION_FILE_REL}, {PYPROJECT_FILE_REL}, "
+        f"{DESKTOP_PACKAGE_FILE_REL}, and {PACKAGE_LOCK_FILE_REL}; verify OK"
+    )
 
 
 # ---------------------------------------------------------------------------

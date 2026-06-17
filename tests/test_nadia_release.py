@@ -20,6 +20,7 @@ Run with::
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 from datetime import date
 from pathlib import Path
@@ -228,6 +229,40 @@ class TestRewritePyprojectVersion:
         text = "[project]\nname = \"nadia-agent\"\n"
         out = nadia_release._rewrite_pyproject_version(text, new_version="9.9.9")
         assert out == text
+
+
+# ---------------------------------------------------------------------------
+# Desktop package version rewrites
+# ---------------------------------------------------------------------------
+
+
+class TestRewriteDesktopVersions:
+    def test_rewrites_desktop_package_version(self) -> None:
+        out = nadia_release._rewrite_package_version(
+            json.dumps({"name": "nadia", "version": "0.15.1", "private": True}),
+            new_version="0.16.0",
+        )
+        data = json.loads(out)
+        assert data["version"] == "0.16.0"
+        assert data["name"] == "nadia"
+
+    def test_rewrites_package_lock_desktop_workspace_version(self) -> None:
+        out = nadia_release._rewrite_package_lock_workspace_version(
+            json.dumps(
+                {
+                    "name": "nadia-agent",
+                    "packages": {
+                        "": {"name": "nadia-agent", "version": "1.0.0"},
+                        "apps/desktop": {"name": "nadia", "version": "0.15.1"},
+                    },
+                }
+            ),
+            workspace="apps/desktop",
+            new_version="0.16.0",
+        )
+        data = json.loads(out)
+        assert data["packages"][""]["version"] == "1.0.0"
+        assert data["packages"]["apps/desktop"]["version"] == "0.16.0"
 
 
 # ---------------------------------------------------------------------------
