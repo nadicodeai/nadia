@@ -17,20 +17,16 @@
 #   final step to `gh release create` and remove this note.
 #
 # Pipeline.
-#   1. checkout (fetch-depth: 0 — required for SOURCE_DATE_EPOCH).
-#   2. setup (uv + Python 3.13 + apt: quilt + zstd + pyyaml) via the
-#      `nadia-setup` composite action (issue #7 factoring).
-#   3. make build              — fail fast on rename-engine errors.
-#   4. make leakage-static     — IU-AC-14 gate; a hermes string leaking
-#                                into the customer-facing tree blocks
-#                                the release.
-#   5. tar deterministically   — IU-NFR-3 / foundation AC-8.
-#   6. sha256 sums             — covers the tarball and install scripts.
-#   7. release_branch_push.py  — force-with-lease push dist/nadia/ →
-#                                origin/release (IU-FR-3 / IU-AC-3).
-#   8. gh release upload …     — attach assets to the pre-existing
-#                                release object created by
-#                                tools/nadia_release.py (M4.3a).
+#   1. prepare-release-tree: checkout, setup, make build,
+#      make leakage-static, apply the release bump, build the deterministic
+#      source tarball, and upload the exact dist/nadia tree for native desktop
+#      packaging jobs.
+#   2. desktop-macos: package the Nadia Agent DMG from that tree.
+#   3. desktop-windows: package the Nadia Agent NSIS EXE from that tree.
+#   4. publish: force-with-lease push dist/nadia/ to origin/release
+#      (IU-FR-3 / IU-AC-3), compute sha256 sums for every release asset, and
+#      upload tarball + install scripts + DMG + EXE to the pre-existing GitHub
+#      Release object.
 #
 # Concurrency.
 #   standards.md mandates a serialized release group so two tag pushes
@@ -80,8 +76,8 @@ permissions:
   # workflow file. See _strip_release_workflows() there.
 
 jobs:
-  release:
-    name: release (build + leakage + branch push + asset upload)
+  prepare-release-tree:
+    name: prepare release tree (build + leakage + tarball)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -163,36 +159,182 @@ jobs:
             -czf "nadia-${GITHUB_REF_NAME}.tar.gz" -C dist/nadia .
           ls -l "nadia-${GITHUB_REF_NAME}.tar.gz"
 
-      - name: Compute sha256 sums
-        # The release ships the tarball + the standalone install scripts
-        # as assets. Sums let customers verify integrity without trusting
-        # the GitHub Release UI. install.ps1 is presence-gated because
-        # an air-gapped/Linux-only rename-engine config could legitimately
-        # produce a Linux-only release tree.
-        #
-        # Hash by BASENAME, not by path. Release assets are uploaded flat
-        # (install.sh, install.ps1, nadia-*.tar.gz live side-by-side in the
-        # download dir), so the manifest must read e.g. `install.sh`, not
-        # `dist/nadia/scripts/install.sh` — otherwise `sha256sum -c
-        # sha256sums.txt` in a flat dir fails with "No such file". This also
-        # matches tools/nadia_release.py, whose _write_sha256sums() already
-        # emits `<hex>  <basename>` (p.name). The tarball already sits at the
-        # repo root, so its sha256sum line is a basename too.
+      - name: Stage base release assets
+        # The final publish job adds desktop DMG/EXE artifacts and computes one
+        # sha256sums.txt over the flat asset directory. install.ps1 is
+        # presence-gated because an air-gapped/Linux-only rename-engine config
+        # could legitimately produce a Linux-only release tree.
         run: |
           set -euo pipefail
-          # Tarball is at the repo root: its name is already a basename.
-          sha256sum "nadia-${GITHUB_REF_NAME}.tar.gz" > sha256sums.txt
-          # cd into the scripts dir so sha256sum records bare basenames
-          # (install.sh / install.ps1), appending to the manifest.
-          (
-            cd dist/nadia/scripts
-            SCRIPTS=("install.sh")
-            if [ -f "install.ps1" ]; then
-              SCRIPTS+=("install.ps1")
-            fi
-            sha256sum "${SCRIPTS[@]}"
-          ) >> sha256sums.txt
-          cat sha256sums.txt
+          mkdir -p release-base-assets
+          cp "nadia-${GITHUB_REF_NAME}.tar.gz" release-base-assets/
+          cp dist/nadia/scripts/install.sh release-base-assets/
+          if [ -f "dist/nadia/scripts/install.ps1" ]; then
+            cp dist/nadia/scripts/install.ps1 release-base-assets/
+          fi
+          find release-base-assets -maxdepth 1 -type f -printf '%f\n' | sort
+
+      - name: Pack dist/nadia for native desktop jobs
+        run: |
+          set -euo pipefail
+          tar -cf dist-nadia-worktree.tar -C dist/nadia .
+
+      - name: Upload dist/nadia worktree
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-nadia-worktree
+          path: dist-nadia-worktree.tar
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload base release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-base-assets
+          path: release-base-assets/*
+          if-no-files-found: error
+          retention-days: 1
+
+  desktop-macos:
+    name: desktop macOS DMG
+    needs: prepare-release-tree
+    runs-on: macos-latest
+    steps:
+      - name: Download dist/nadia worktree
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-nadia-worktree
+
+      - name: Extract dist/nadia worktree
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/nadia
+          tar -xf dist-nadia-worktree.tar -C dist/nadia
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: dist/nadia/package-lock.json
+
+      - name: Install npm dependencies
+        working-directory: dist/nadia
+        run: npm ci
+
+      - name: Build Nadia Agent DMG
+        working-directory: dist/nadia/apps/desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npm run dist:mac:dmg
+
+      - name: Collect DMG asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p desktop-macos-assets
+          find dist/nadia/apps/desktop/release -maxdepth 1 -type f -name 'Nadia-Agent-*.dmg' -exec cp {} desktop-macos-assets/ \;
+          test -n "$(find desktop-macos-assets -maxdepth 1 -type f -name 'Nadia-Agent-*.dmg' -print -quit)"
+          find desktop-macos-assets -maxdepth 1 -type f -print | sort
+
+      - name: Upload DMG asset
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-macos-assets
+          path: desktop-macos-assets/*
+          if-no-files-found: error
+          retention-days: 1
+
+  desktop-windows:
+    name: desktop Windows EXE
+    needs: prepare-release-tree
+    runs-on: windows-latest
+    steps:
+      - name: Download dist/nadia worktree
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-nadia-worktree
+
+      - name: Extract dist/nadia worktree
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/nadia
+          tar -xf dist-nadia-worktree.tar -C dist/nadia
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: dist/nadia/package-lock.json
+
+      - name: Install npm dependencies
+        working-directory: dist/nadia
+        run: npm ci
+
+      - name: Build Nadia Agent Windows installer
+        working-directory: dist/nadia/apps/desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npm run dist:win:nsis
+
+      - name: Collect EXE asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p desktop-windows-assets
+          find dist/nadia/apps/desktop/release -maxdepth 1 -type f -name 'Nadia-Agent-*.exe' -exec cp {} desktop-windows-assets/ \;
+          test -n "$(find desktop-windows-assets -maxdepth 1 -type f -name 'Nadia-Agent-*.exe' -print -quit)"
+          find desktop-windows-assets -maxdepth 1 -type f -print | sort
+
+      - name: Upload EXE asset
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-windows-assets
+          path: desktop-windows-assets/*
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    name: publish release (branch push + asset upload)
+    needs:
+      - prepare-release-tree
+      - desktop-macos
+      - desktop-windows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download dist/nadia worktree
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-nadia-worktree
+
+      - name: Extract dist/nadia worktree
+        run: |
+          set -euo pipefail
+          mkdir -p dist/nadia
+          tar -xf dist-nadia-worktree.tar -C dist/nadia
+
+      - name: Download base release assets
+        uses: actions/download-artifact@v4
+        with:
+          name: release-base-assets
+          path: release-assets
+
+      - name: Download macOS desktop assets
+        uses: actions/download-artifact@v4
+        with:
+          name: desktop-macos-assets
+          path: release-assets
+
+      - name: Download Windows desktop assets
+        uses: actions/download-artifact@v4
+        with:
+          name: desktop-windows-assets
+          path: release-assets
 
       - name: Force-push dist/nadia/ to origin/release (IU-FR-3)
         # The release branch is the customer-facing storefront tree.
@@ -202,12 +344,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          . .venv/bin/activate
-          python tools/release_branch_push.py \
+          python3 tools/release_branch_push.py \
             --dist-root dist/nadia \
             --remote-url "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
             --branch release \
             --source-sha "${GITHUB_SHA}"
+
+      - name: Compute sha256 sums
+        # Hash by BASENAME, not by path. Release assets are uploaded flat
+        # (install.sh, install.ps1, nadia-*.tar.gz, Nadia-Agent-*.dmg, and
+        # Nadia-Agent-*.exe live side-by-side in the download dir), so the
+        # manifest must read e.g. `install.sh`, not `release-assets/install.sh`.
+        run: |
+          set -euo pipefail
+          (
+            cd release-assets
+            find . -maxdepth 1 -type f ! -name sha256sums.txt -printf '%P\0' \
+              | sort -z \
+              | xargs -0 sha256sum
+          ) > release-assets/sha256sums.txt
+          cat release-assets/sha256sums.txt
 
       - name: Upload assets to the existing release (M4.3a coordination)
         # tools/nadia_release.py (M4.3a) already created the release
@@ -216,14 +372,9 @@ jobs:
         # would 422. `gh release upload --clobber` is idempotent:
         # safe to re-run, overwrites previously uploaded assets with
         # the same name.
-        #
-        # install.ps1 is presence-gated to mirror the sha256 step.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          ASSETS=("nadia-${GITHUB_REF_NAME}.tar.gz" "dist/nadia/scripts/install.sh" "sha256sums.txt")
-          if [ -f "dist/nadia/scripts/install.ps1" ]; then
-            ASSETS+=("dist/nadia/scripts/install.ps1")
-          fi
+          mapfile -t ASSETS < <(find release-assets -maxdepth 1 -type f | sort)
           gh release upload "${GITHUB_REF_NAME}" "${ASSETS[@]}" --clobber

@@ -52,6 +52,53 @@ def test_windows_exe_resource_metadata_identifies_nadia_agent() -> None:
 
 
 @pytest.mark.skipif(not DIST.is_dir(), reason="dist/nadia not built (run `make build`)")
+def test_desktop_packaging_paths_follow_nadia_agent_name() -> None:
+    desktop_test = (
+        DIST / "apps" / "desktop" / "scripts" / "test-desktop.mjs"
+    ).read_text(encoding="utf-8")
+    desktop_main = (DIST / "apps" / "desktop" / "electron" / "main.cjs").read_text(
+        encoding="utf-8"
+    )
+    bootstrap = (
+        DIST
+        / "apps"
+        / "bootstrap-installer"
+        / "src-tauri"
+        / "src"
+        / "bootstrap.rs"
+    ).read_text(encoding="utf-8")
+    update = (
+        DIST / "apps" / "bootstrap-installer" / "src-tauri" / "src" / "update.rs"
+    ).read_text(encoding="utf-8")
+    uninstall = (
+        DIST / "apps" / "desktop" / "electron" / "desktop-uninstall.cjs"
+    ).read_text(encoding="utf-8")
+
+    assert "Nadia Agent.app" in desktop_test
+    assert "Nadia Agent.exe" in desktop_test
+    assert "Nadia-Agent-${PACKAGE_JSON.version}" in desktop_test
+    assert "Nadia.app" not in desktop_test
+    assert "Nadia.exe" not in desktop_test
+    assert "Nadia-${PACKAGE_JSON.version}" not in desktop_test
+
+    assert "Nadia Agent.app" in desktop_main
+    assert "'Nadia.app'" not in desktop_main
+
+    assert "Nadia Agent.app" in bootstrap
+    assert "Nadia Agent.exe" in bootstrap
+    assert "Nadia.app" not in bootstrap
+    assert "Nadia.exe" not in bootstrap
+
+    assert "Nadia Agent.app" in update
+    assert 'for image in ["nadia.exe", "Nadia Agent.exe"]' in update
+    assert "Nadia.app" not in update
+
+    assert "Nadia Agent.exe" in uninstall
+    assert "Nadia Agent$/i.test(dir)" in uninstall
+    assert "Hermes" not in uninstall
+
+
+@pytest.mark.skipif(not DIST.is_dir(), reason="dist/nadia not built (run `make build`)")
 def test_bootstrap_installer_metadata_identifies_nadia_agent_setup() -> None:
     package = _read_json(DIST / "apps" / "bootstrap-installer" / "package.json")
     conf = _read_json(

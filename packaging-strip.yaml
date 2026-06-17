@@ -460,6 +460,120 @@ content_edits:
       the product name. The CLI remains the separate `nadia` command.
     find: '"executableName": "Hermes"'
     replace: '"executableName": "Nadia Agent"'
+  - name: desktop-main-macos-app-path-nadia-agent
+    file: apps/desktop/electron/main.cjs
+    why: >-
+      The desktop updater looks for the rebuilt macOS app bundle by filename.
+      Keep that resolver aligned with the Nadia Agent product/executable name
+      used by electron-builder.
+    find: "Hermes.app"
+    replace: "Nadia Agent.app"
+  - name: desktop-test-macos-app-path-nadia-agent
+    file: apps/desktop/scripts/test-desktop.mjs
+    why: >-
+      The packaged desktop verification helper must look for the generated
+      Nadia Agent.app bundle, not the generic post-rename Nadia.app path.
+    find: "Hermes.app"
+    replace: "Nadia Agent.app"
+  - name: desktop-test-macos-binary-nadia-agent
+    file: apps/desktop/scripts/test-desktop.mjs
+    why: >-
+      The packaged desktop verification helper must launch the generated
+      macOS binary name inside Nadia Agent.app.
+    find: "'Contents', 'MacOS', 'Hermes'"
+    replace: "'Contents', 'MacOS', 'Nadia Agent'"
+  - name: desktop-test-windows-binary-nadia-agent
+    file: apps/desktop/scripts/test-desktop.mjs
+    why: >-
+      The packaged desktop verification helper must launch the generated
+      Windows executable name from the Nadia Agent NSIS build.
+    find: "Hermes.exe"
+    replace: "Nadia Agent.exe"
+  - name: desktop-test-artifact-prefix-nadia-agent
+    file: apps/desktop/scripts/test-desktop.mjs
+    why: >-
+      Electron-builder artifacts use the Nadia-Agent filename prefix. The DMG
+      resolver in the verification helper must use the same artifact prefix.
+    find: "Hermes-${PACKAGE_JSON.version}"
+    replace: "Nadia-Agent-${PACKAGE_JSON.version}"
+  - name: desktop-after-pack-comments-nadia-agent-exe
+    file: apps/desktop/scripts/after-pack.cjs
+    why: >-
+      Keep the generated Windows packaging helper comments aligned with the
+      Nadia Agent executable name.
+    find: "Hermes.exe"
+    replace: "Nadia Agent.exe"
+  - name: desktop-before-pack-comments-nadia-agent-app
+    file: apps/desktop/scripts/before-pack.cjs
+    why: >-
+      Keep the generated packaging helper comments aligned with the Nadia Agent
+      macOS app bundle name.
+    find: "Hermes.app"
+    replace: "Nadia Agent.app"
+  - name: desktop-set-exe-comments-nadia-agent
+    file: apps/desktop/scripts/set-exe-identity.cjs
+    why: >-
+      Keep the generated resource-stamping helper comments aligned with the
+      Nadia Agent executable name.
+    find: "Hermes.exe"
+    replace: "Nadia Agent.exe"
+  - name: desktop-uninstall-comments-macos-nadia-agent
+    file: apps/desktop/electron/desktop-uninstall.cjs
+    why: >-
+      The desktop uninstall helper documents the package paths it resolves.
+      Keep those examples aligned with the Nadia Agent bundle name.
+    find: "Hermes.app"
+    replace: "Nadia Agent.app"
+  - name: desktop-uninstall-comments-windows-nadia-agent
+    file: apps/desktop/electron/desktop-uninstall.cjs
+    why: >-
+      The desktop uninstall helper documents the package paths it resolves.
+      Keep those examples aligned with the Nadia Agent executable name.
+    find: "Hermes.exe"
+    replace: "Nadia Agent.exe"
+  - name: desktop-uninstall-windows-install-dir-nadia-agent
+    file: apps/desktop/electron/desktop-uninstall.cjs
+    why: >-
+      The packaged NSIS app directory follows the Nadia Agent product name.
+      The uninstall helper must recognize that install directory, while still
+      preserving the legacy nadia-desktop folder fallback.
+    find: 'if (/[\\/]Hermes$/i.test(dir) || /[\\/]hermes-desktop$/i.test(dir)) return dir'
+    replace: 'if (/[\\/]Nadia Agent$/i.test(dir) || /[\\/]nadia-desktop$/i.test(dir)) return dir'
+  - name: desktop-uninstall-test-programs-path-nadia-agent
+    file: apps/desktop/electron/desktop-uninstall.test.cjs
+    why: >-
+      The uninstall tests should model the generated NSIS install directory and
+      executable name for Nadia Agent.
+    find: 'C:\\Users\\x\\AppData\\Local\\Programs\\Hermes\\Hermes.exe'
+    replace: 'C:\\Users\\x\\AppData\\Local\\Programs\\Nadia Agent\\Nadia Agent.exe'
+  - name: desktop-uninstall-test-legacy-path-nadia-agent
+    file: apps/desktop/electron/desktop-uninstall.test.cjs
+    why: >-
+      Keep the legacy desktop install-path test aligned with the generated
+      Nadia Agent executable while preserving the legacy nadia-desktop folder.
+    find: 'C:\\Users\\x\\AppData\\Local\\hermes-desktop\\Hermes.exe'
+    replace: 'C:\\Users\\x\\AppData\\Local\\nadia-desktop\\Nadia Agent.exe'
+  - name: desktop-uninstall-test-temp-path-nadia-agent
+    file: apps/desktop/electron/desktop-uninstall.test.cjs
+    why: >-
+      Keep the negative Windows uninstall-path test aligned with the generated
+      Nadia Agent executable name.
+    find: 'C:\\Temp\\foo\\Hermes.exe'
+    replace: 'C:\\Temp\\foo\\Nadia Agent.exe'
+  - name: desktop-uninstall-test-macos-nadia-agent
+    file: apps/desktop/electron/desktop-uninstall.test.cjs
+    why: >-
+      The uninstall tests should model the generated Nadia Agent.app bundle and
+      executable name.
+    find: "Hermes.app"
+    replace: "Nadia Agent.app"
+  - name: desktop-uninstall-test-macos-executable-nadia-agent
+    file: apps/desktop/electron/desktop-uninstall.test.cjs
+    why: >-
+      The uninstall tests should model the generated executable inside Nadia
+      Agent.app.
+    find: "MacOS/Hermes"
+    replace: "MacOS/Nadia Agent"
   - name: desktop-package-protocol-name-nadia-agent
     file: apps/desktop/package.json
     why: >-
@@ -548,6 +662,49 @@ content_edits:
       Native About panel copyright is desktop product metadata.
     find: "copyright: 'Copyright © 2026 Nous Research'"
     replace: "copyright: 'Copyright © 2026 NadicodeAI'"
+  - name: bootstrap-desktop-paths-macos-app-nadia-agent
+    file: apps/bootstrap-installer/src-tauri/src/bootstrap.rs
+    why: >-
+      The native setup app launches the rebuilt desktop app from electron-builder
+      output paths. Keep those paths aligned with the Nadia Agent app bundle.
+    find: "Hermes.app"
+    replace: "Nadia Agent.app"
+  - name: bootstrap-desktop-paths-windows-exe-nadia-agent
+    file: apps/bootstrap-installer/src-tauri/src/bootstrap.rs
+    why: >-
+      The native setup app launches the rebuilt desktop app from electron-builder
+      output paths. Keep the Windows executable path aligned with Nadia Agent.
+    find: "Hermes.exe"
+    replace: "Nadia Agent.exe"
+  - name: bootstrap-desktop-paths-macos-executable-nadia-agent
+    file: apps/bootstrap-installer/src-tauri/src/bootstrap.rs
+    why: >-
+      The native setup app launches the macOS executable inside Nadia Agent.app.
+      The executable name must match electron-builder's generated binary name.
+    find: '", "Hermes")'
+    replace: '", "Nadia Agent")'
+  - name: bootstrap-desktop-paths-macos-test-binary-nadia-agent
+    file: apps/bootstrap-installer/src-tauri/src/bootstrap.rs
+    why: >-
+      The bootstrap installer's resolver tests construct a fake built macOS
+      desktop tree. Keep that fake tree aligned with Nadia Agent.app.
+    find: 'join("Hermes")'
+    replace: 'join("Nadia Agent")'
+  - name: bootstrap-update-macos-app-path-nadia-agent
+    file: apps/bootstrap-installer/src-tauri/src/update.rs
+    why: >-
+      The native updater probes and swaps the rebuilt macOS app bundle. Keep
+      those paths aligned with the Nadia Agent app bundle.
+    find: "Hermes.app"
+    replace: "Nadia Agent.app"
+  - name: bootstrap-update-windows-taskkill-nadia-agent
+    file: apps/bootstrap-installer/src-tauri/src/update.rs
+    why: >-
+      Windows update fallback must clear both the backend nadia.exe shim and
+      the packaged Nadia Agent.exe desktop process when either keeps app.asar
+      locked.
+    find: "        let _ = std::process::Command::new(\"taskkill\")\n            .args([\n                \"/F\",\n                \"/T\",\n                \"/IM\",\n                \"hermes.exe\",\n                \"/FI\",\n                &format!(\"PID ne {my_pid}\"),\n            ])\n            .stdout(std::process::Stdio::null())\n            .stderr(std::process::Stdio::null())\n            .status();"
+    replace: "        for image in [\"nadia.exe\", \"Nadia Agent.exe\"] {\n            let _ = std::process::Command::new(\"taskkill\")\n                .args([\n                    \"/F\",\n                    \"/T\",\n                    \"/IM\",\n                    image,\n                    \"/FI\",\n                    &format!(\"PID ne {my_pid}\"),\n                ])\n                .stdout(std::process::Stdio::null())\n                .stderr(std::process::Stdio::null())\n                .status();\n        }"
   - name: bootstrap-package-description-nadia-agent
     file: apps/bootstrap-installer/package.json
     why: >-
