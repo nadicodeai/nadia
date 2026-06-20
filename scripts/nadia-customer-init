@@ -1,0 +1,256 @@
+#!/usr/bin/env bash
+# Configure a customer-specific Nadia profile on a baked golden VM.
+
+set -euo pipefail
+
+NADIA_HOME="${NADIA_HOME:-${HOME}/.nadia}"
+NADIA_INSTALL_DIR="${NADIA_INSTALL_DIR:-}"
+
+PROFILE=""
+HONCHO_WORKSPACE=""
+HONCHO_PEER=""
+HONCHO_API_KEY=""
+HONCHO_BASE_URL=""
+TELEGRAM_TOKEN=""
+TELEGRAM_ALLOWED_USERS=""
+TELEGRAM_HOME_CHANNEL=""
+SKIP_GATEWAY=0
+YES=0
+
+usage() {
+    cat <<'USAGE'
+Usage: nadia-customer-init --profile NAME --honcho-workspace NAME --honcho-peer NAME
+                          --honcho-api-key KEY --telegram-token TOKEN
+                          --telegram-allowed-users IDS [options]
+
+Options:
+  --honcho-base-url URL          Optional non-default Honcho API URL.
+  --telegram-home-channel ID     Optional default Telegram channel/chat id.
+  --skip-gateway                 Do not run gateway install/start.
+  --yes                          Non-interactive mode; fail if required values are absent.
+  -h, --help                     Show this help.
+
+Writes:
+  $NADIA_HOME/profiles/<profile>/config.yaml
+  $NADIA_HOME/profiles/<profile>/honcho.json
+  $NADIA_HOME/profiles/<profile>/.env
+  $NADIA_HOME/profiles/<profile>/SOUL.md
+USAGE
+}
+
+die() {
+    printf 'nadia-customer-init: %s\n' "$*" >&2
+    exit "${2:-1}"
+}
+
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --profile)
+            PROFILE="${2:-}"
+            shift 2
+            ;;
+        --honcho-workspace)
+            HONCHO_WORKSPACE="${2:-}"
+            shift 2
+            ;;
+        --honcho-peer)
+            HONCHO_PEER="${2:-}"
+            shift 2
+            ;;
+        --honcho-api-key)
+            HONCHO_API_KEY="${2:-}"
+            shift 2
+            ;;
+        --honcho-base-url)
+            HONCHO_BASE_URL="${2:-}"
+            shift 2
+            ;;
+        --telegram-token)
+            TELEGRAM_TOKEN="${2:-}"
+            shift 2
+            ;;
+        --telegram-allowed-users)
+            TELEGRAM_ALLOWED_USERS="${2:-}"
+            shift 2
+            ;;
+        --telegram-home-channel)
+            TELEGRAM_HOME_CHANNEL="${2:-}"
+            shift 2
+            ;;
+        --skip-gateway)
+            SKIP_GATEWAY=1
+            shift
+            ;;
+        --yes)
+            YES=1
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            die "unknown argument: $1" 2
+            ;;
+    esac
+done
+
+prompt_if_missing() {
+    local var_name="$1"
+    local prompt="$2"
+    local current="${!var_name}"
+    if [ -n "${current}" ]; then
+        return 0
+    fi
+    if [ "${YES}" -eq 1 ]; then
+        die "missing required value: ${var_name}" 2
+    fi
+    read -r -p "${prompt}: " current
+    printf -v "${var_name}" '%s' "${current}"
+    if [ -z "${current}" ]; then
+        die "missing required value: ${var_name}" 2
+    fi
+}
+
+prompt_if_missing PROFILE "Profile name"
+prompt_if_missing HONCHO_WORKSPACE "Honcho workspace"
+prompt_if_missing HONCHO_PEER "Honcho peer name"
+prompt_if_missing HONCHO_API_KEY "Honcho API key"
+prompt_if_missing TELEGRAM_TOKEN "Telegram bot token"
+prompt_if_missing TELEGRAM_ALLOWED_USERS "Telegram allowed user ids"
+
+command -v nadia >/dev/null 2>&1 || die "nadia not found on PATH"
+
+PROFILE_HOME="${NADIA_HOME}/profiles/${PROFILE}"
+if [ ! -d "${PROFILE_HOME}" ]; then
+    nadia profile create "${PROFILE}" --clone
+fi
+mkdir -p "${PROFILE_HOME}"
+
+discover_python() {
+    if [ -n "${NADIA_INSTALL_DIR}" ] && [ -x "${NADIA_INSTALL_DIR}/venv/bin/python" ]; then
+        printf '%s\n' "${NADIA_INSTALL_DIR}/venv/bin/python"
+        return 0
+    fi
+    if [ -x "${NADIA_HOME}/nadia-agent/venv/bin/python" ]; then
+        printf '%s\n' "${NADIA_HOME}/nadia-agent/venv/bin/python"
+        return 0
+    fi
+    if [ -x "/usr/local/lib/nadia-agent/venv/bin/python" ]; then
+        printf '%s\n' "/usr/local/lib/nadia-agent/venv/bin/python"
+        return 0
+    fi
+    command -v python3 >/dev/null 2>&1 || die "python3 not found"
+    command -v python3
+}
+
+PYTHON_BIN="$(discover_python)"
+
+"${PYTHON_BIN}" - "${PROFILE_HOME}/config.yaml" <<'PY'
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+import yaml
+
+path = Path(sys.argv[1])
+data = {}
+if path.exists():
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+if not isinstance(data, dict):
+    data = {}
+for section_name in ("memory", "security", "gateway"):
+    if not isinstance(data.get(section_name), dict):
+        data[section_name] = {}
+data["memory"]["provider"] = "honcho"
+data["security"]["allow_lazy_installs"] = False
+data["gateway"]["platform"] = "telegram"
+path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+PY
+
+"${PYTHON_BIN}" - \
+    "${NADIA_HOME}/honcho.json.template" \
+    "${PROFILE_HOME}/honcho.json" \
+    "${HONCHO_WORKSPACE}" \
+    "${HONCHO_PEER}" \
+    "${HONCHO_API_KEY}" \
+    "${HONCHO_BASE_URL}" <<'PY'
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+template_path = Path(sys.argv[1])
+out_path = Path(sys.argv[2])
+workspace = sys.argv[3]
+peer = sys.argv[4]
+api_key = sys.argv[5]
+base_url = sys.argv[6]
+
+data = {}
+if template_path.exists():
+    data = json.loads(template_path.read_text(encoding="utf-8") or "{}")
+if not isinstance(data, dict):
+    data = {}
+data["workspace"] = workspace
+data["peerName"] = peer
+data["apiKey"] = api_key
+if base_url:
+    data["baseUrl"] = base_url
+else:
+    data.pop("baseUrl", None)
+out_path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+PY
+chmod 600 "${PROFILE_HOME}/honcho.json"
+
+umask 077
+{
+    printf 'TELEGRAM_BOT_TOKEN=%s\n' "${TELEGRAM_TOKEN}"
+    printf 'TELEGRAM_ALLOWED_USERS=%s\n' "${TELEGRAM_ALLOWED_USERS}"
+    if [ -n "${TELEGRAM_HOME_CHANNEL}" ]; then
+        printf 'TELEGRAM_HOME_CHANNEL=%s\n' "${TELEGRAM_HOME_CHANNEL}"
+    fi
+} >"${PROFILE_HOME}/.env"
+chmod 600 "${PROFILE_HOME}/.env"
+
+SOUL_TEMPLATE="${NADIA_HOME}/SOUL.md.template"
+if [ -f "${SOUL_TEMPLATE}" ]; then
+    "${PYTHON_BIN}" - \
+        "${SOUL_TEMPLATE}" \
+        "${PROFILE_HOME}/SOUL.md" \
+        "${PROFILE}" \
+        "${HONCHO_WORKSPACE}" \
+        "${HONCHO_PEER}" <<'PY'
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+template = Path(sys.argv[1]).read_text(encoding="utf-8")
+values = {
+    "{{PROFILE}}": sys.argv[3],
+    "{{HONCHO_WORKSPACE}}": sys.argv[4],
+    "{{HONCHO_PEER}}": sys.argv[5],
+}
+for marker, value in values.items():
+    template = template.replace(marker, value)
+Path(sys.argv[2]).write_text(template, encoding="utf-8")
+PY
+else
+    cat >"${PROFILE_HOME}/SOUL.md" <<EOF
+# Customer Operating Context
+
+Profile: ${PROFILE}
+Honcho workspace: ${HONCHO_WORKSPACE}
+Honcho peer: ${HONCHO_PEER}
+EOF
+fi
+
+if [ "${SKIP_GATEWAY}" -eq 0 ]; then
+    nadia -p "${PROFILE}" gateway install
+    nadia -p "${PROFILE}" gateway start
+fi
+
+printf 'configured profile %s at %s\n' "${PROFILE}" "${PROFILE_HOME}"

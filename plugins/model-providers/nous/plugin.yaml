@@ -1,0 +1,5 @@
+name: nadia-provider
+kind: model-provider
+version: 1.0.0
+description: NadicodeAI Portal
+author: NadicodeAI
