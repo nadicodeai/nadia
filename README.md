@@ -1,11 +1,13 @@
 # Nadia Agent
 
-Nadia Agent is an installed AI agent for companies that want one repeated
-workflow handled with clear human approval points.
+Nadia Agent is an installed AI agent that works alongside the people in your
+company, taking on jobs they hand it. Those jobs come from looking at the
+workflows your team already runs and identifying the parts an agent can own,
+with clear human approval points.
 
 Install Nadia on a Linux or macOS server, pair it with your messaging gateway,
 and teach it the steps, rules, examples, exceptions, and permission boundaries
-your team already uses. Nadia handles the repeatable parts while people keep
+your team already uses. Nadia takes on the work it is given while people keep
 judgment, relationships, approvals, and responsibility.
 
 ## Install
