@@ -243,12 +243,12 @@ If a model is genuinely unavailable, [open an issue](https://github.com/nadicode
 
 - `model.provider` set to `openrouter`/`anthropic`/etc. instead of `nous`
 - An OAuth refresh failure that fell back to a different configured provider
-- Multiple Nadia profiles where you're using the wrong one (check `nadia profile current`)
+- Multiple Nadia profiles where you're using the wrong one (check `nadia profile list`)
 
 ### Want to revoke and start clean
 
 ```bash
-nadia auth remove nadia       # wipes the local refresh token
+nadia auth logout nadia       # wipes the local refresh token
 # Then re-run setup or remove the subscription from the Portal web UI
 ```
 

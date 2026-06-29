@@ -76,10 +76,7 @@ test('normalizeNadiaHomeRoot maps profile homes back to the global Nadia root', 
     normalizeNadiaHomeRoot('C:\\Users\\test\\AppData\\Local\\nadia\\profiles\\oracle', { pathModule: path.win32 }),
     'C:\\Users\\test\\AppData\\Local\\nadia'
   )
-  assert.equal(
-    normalizeNadiaHomeRoot('/Users/test/.nadia', { pathModule: path.posix }),
-    '/Users/test/.nadia'
-  )
+  assert.equal(normalizeNadiaHomeRoot('/Users/test/.nadia', { pathModule: path.posix }), '/Users/test/.nadia')
 })
 
 test('Windows PATH casing and delimiter are preserved without POSIX sane entries', () => {
@@ -104,8 +101,5 @@ test('Windows PATH casing and delimiter are preserved without POSIX sane entries
 })
 
 test('appendUniquePathEntries drops empty entries and keeps first occurrence', () => {
-  assert.equal(
-    appendUniquePathEntries([':/a::/b', ['/a', '/c']], { delimiter: ':' }),
-    '/a:/b:/c'
-  )
+  assert.equal(appendUniquePathEntries([':/a::/b', ['/a', '/c']], { delimiter: ':' }), '/a:/b:/c')
 })

@@ -2,7 +2,7 @@
 
 > **Bundled with Nadia Agent.** Originally authored by [@PCinkusz](https://github.com/PCinkusz) at https://github.com/PCinkusz/hermes-achievements — vendored into `plugins/nadia-achievements/` so it ships with the dashboard out-of-the-box and stays in lockstep with Nadia feature changes. Upstream repo remains the staging ground for new badges and UI iteration.
 >
-> When Nadia is installed via `pip install nadia-agent` or cloned from source, this plugin auto-registers as a dashboard tab on first `nadia dashboard` launch. No separate install step. See [Built-in Plugins → nadia-achievements](../../website/docs/user-guide/features/built-in-plugins.md) in the main docs.
+> When Nadia is installed via the install script or cloned from source, this plugin auto-registers as a dashboard tab on first `nadia dashboard` launch. No separate install step. See [Built-in Plugins → nadia-achievements](../../website/docs/user-guide/features/built-in-plugins.md) in the main docs.
 
 Achievement system for the Nadia Dashboard: collectible, tiered badges generated from real local Nadia session history.
 

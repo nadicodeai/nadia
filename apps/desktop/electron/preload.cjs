@@ -6,6 +6,33 @@ contextBridge.exposeInMainWorld('nadiaDesktop', {
   touchBackend: profile => ipcRenderer.invoke('nadia:backend:touch', profile),
   getGatewayWsUrl: profile => ipcRenderer.invoke('nadia:gateway:ws-url', profile),
   openSessionWindow: (sessionId, opts) => ipcRenderer.invoke('nadia:window:openSession', sessionId, opts),
+  openNewSessionWindow: () => ipcRenderer.invoke('nadia:window:openNewSession'),
+  petOverlay: {
+    // Main renderer → main process: window lifecycle + drag. `request` is
+    // `{ bounds, screen }`; resolves with the screen bounds it actually used.
+    open: request => ipcRenderer.invoke('nadia:pet-overlay:open', request),
+    close: () => ipcRenderer.invoke('nadia:pet-overlay:close'),
+    setBounds: bounds => ipcRenderer.send('nadia:pet-overlay:set-bounds', bounds),
+    setIgnoreMouse: ignore => ipcRenderer.send('nadia:pet-overlay:ignore-mouse', ignore),
+    // Flip the overlay focusable (and focus it) while the composer needs keys.
+    setFocusable: focusable => ipcRenderer.send('nadia:pet-overlay:set-focusable', focusable),
+    // Main renderer → overlay (forwarded by main): push the latest pet state.
+    pushState: payload => ipcRenderer.send('nadia:pet-overlay:state', payload),
+    // Overlay → main renderer (forwarded by main): pop back in / composer submit.
+    control: payload => ipcRenderer.send('nadia:pet-overlay:control', payload),
+    // Overlay subscribes to state pushes.
+    onState: callback => {
+      const listener = (_event, payload) => callback(payload)
+      ipcRenderer.on('nadia:pet-overlay:state', listener)
+      return () => ipcRenderer.removeListener('nadia:pet-overlay:state', listener)
+    },
+    // Main renderer subscribes to overlay control messages.
+    onControl: callback => {
+      const listener = (_event, payload) => callback(payload)
+      ipcRenderer.on('nadia:pet-overlay:control', listener)
+      return () => ipcRenderer.removeListener('nadia:pet-overlay:control', listener)
+    }
+  },
   getBootProgress: () => ipcRenderer.invoke('nadia:boot-progress:get'),
   getConnectionConfig: profile => ipcRenderer.invoke('nadia:connection-config:get', profile),
   saveConnectionConfig: payload => ipcRenderer.invoke('nadia:connection-config:save', payload),
@@ -43,6 +70,7 @@ contextBridge.exposeInMainWorld('nadiaDesktop', {
   setTranslucency: payload => ipcRenderer.send('nadia:translucency', payload),
   setPreviewShortcutActive: active => ipcRenderer.send('nadia:previewShortcutActive', Boolean(active)),
   openExternal: url => ipcRenderer.invoke('nadia:openExternal', url),
+  openPreviewInBrowser: url => ipcRenderer.invoke('nadia:openPreviewInBrowser', url),
   fetchLinkTitle: url => ipcRenderer.invoke('nadia:fetchLinkTitle', url),
   sanitizeWorkspaceCwd: cwd => ipcRenderer.invoke('nadia:workspace:sanitize', cwd),
   settings: {
@@ -54,7 +82,35 @@ contextBridge.exposeInMainWorld('nadiaDesktop', {
   getRecentLogs: () => ipcRenderer.invoke('nadia:logs:recent'),
   readDir: dirPath => ipcRenderer.invoke('nadia:fs:readDir', dirPath),
   gitRoot: startPath => ipcRenderer.invoke('nadia:fs:gitRoot', startPath),
-  worktrees: cwds => ipcRenderer.invoke('nadia:fs:worktrees', cwds),
+  revealPath: targetPath => ipcRenderer.invoke('nadia:fs:reveal', targetPath),
+  renamePath: (targetPath, newName) => ipcRenderer.invoke('nadia:fs:rename', targetPath, newName),
+  writeTextFile: (filePath, content) => ipcRenderer.invoke('nadia:fs:writeText', filePath, content),
+  trashPath: targetPath => ipcRenderer.invoke('nadia:fs:trash', targetPath),
+  git: {
+    worktreeList: repoPath => ipcRenderer.invoke('nadia:git:worktreeList', repoPath),
+    worktreeAdd: (repoPath, options) => ipcRenderer.invoke('nadia:git:worktreeAdd', repoPath, options),
+    worktreeRemove: (repoPath, worktreePath, options) =>
+      ipcRenderer.invoke('nadia:git:worktreeRemove', repoPath, worktreePath, options),
+    branchSwitch: (repoPath, branch) => ipcRenderer.invoke('nadia:git:branchSwitch', repoPath, branch),
+    branchList: repoPath => ipcRenderer.invoke('nadia:git:branchList', repoPath),
+    repoStatus: repoPath => ipcRenderer.invoke('nadia:git:repoStatus', repoPath),
+    fileDiff: (repoPath, filePath) => ipcRenderer.invoke('nadia:git:fileDiff', repoPath, filePath),
+    scanRepos: (roots, options) => ipcRenderer.invoke('nadia:git:scanRepos', roots, options),
+    review: {
+      list: (repoPath, scope, baseRef) => ipcRenderer.invoke('nadia:git:review:list', repoPath, scope, baseRef),
+      diff: (repoPath, filePath, scope, baseRef, staged) =>
+        ipcRenderer.invoke('nadia:git:review:diff', repoPath, filePath, scope, baseRef, staged),
+      stage: (repoPath, filePath) => ipcRenderer.invoke('nadia:git:review:stage', repoPath, filePath),
+      unstage: (repoPath, filePath) => ipcRenderer.invoke('nadia:git:review:unstage', repoPath, filePath),
+      revert: (repoPath, filePath) => ipcRenderer.invoke('nadia:git:review:revert', repoPath, filePath),
+      revParse: (repoPath, ref) => ipcRenderer.invoke('nadia:git:review:revParse', repoPath, ref),
+      commit: (repoPath, message, push) => ipcRenderer.invoke('nadia:git:review:commit', repoPath, message, push),
+      commitContext: repoPath => ipcRenderer.invoke('nadia:git:review:commitContext', repoPath),
+      push: repoPath => ipcRenderer.invoke('nadia:git:review:push', repoPath),
+      shipInfo: repoPath => ipcRenderer.invoke('nadia:git:review:shipInfo', repoPath),
+      createPr: repoPath => ipcRenderer.invoke('nadia:git:review:createPr', repoPath)
+    }
+  },
   terminal: {
     dispose: id => ipcRenderer.invoke('nadia:terminal:dispose', id),
     resize: (id, size) => ipcRenderer.invoke('nadia:terminal:resize', id, size),
@@ -139,6 +195,7 @@ contextBridge.exposeInMainWorld('nadiaDesktop', {
     return () => ipcRenderer.removeListener('nadia:bootstrap:event', listener)
   },
   getVersion: () => ipcRenderer.invoke('nadia:version'),
+  getRemoteDisplayReason: () => ipcRenderer.invoke('nadia:get-remote-display-reason'),
   uninstall: {
     summary: () => ipcRenderer.invoke('nadia:uninstall:summary'),
     run: mode => ipcRenderer.invoke('nadia:uninstall:run', { mode })

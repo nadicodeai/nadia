@@ -57,6 +57,19 @@ _nb_get_link_dir() {
     fi
 }
 
+# Redirect a Nadia-managed Node's `npm install -g` to the command link dir
+# (already on PATH) instead of the default $NADIA_HOME/node/bin, which is off
+# PATH and wiped on every Node upgrade. Scoped to the managed Node via its
+# prefix-local global npmrc; the user's other Node installs / ~/.npmrc are
+# untouched. Idempotent no-op when there's no managed npm.
+_nb_configure_npm_prefix() {
+    [ -x "$NADIA_HOME/node/bin/npm" ] || return 0
+    local _link_dir
+    _link_dir="$(_nb_get_link_dir)"
+    mkdir -p "$NADIA_HOME/node/etc"
+    printf 'prefix=%s\n' "$(dirname "$_link_dir")" > "$NADIA_HOME/node/etc/npmrc"
+}
+
 _nb_node_major() {
     local v
     v=$(node --version 2>/dev/null | sed 's/^v//' | cut -d. -f1)
@@ -206,6 +219,9 @@ _nb_install_bundled_node() {
     ln -sf "$NADIA_HOME/node/bin/node" "$_link_dir/node"
     ln -sf "$NADIA_HOME/node/bin/npm"  "$_link_dir/npm"
     ln -sf "$NADIA_HOME/node/bin/npx"  "$_link_dir/npx"
+
+    _nb_configure_npm_prefix
+
     export PATH="$NADIA_HOME/node/bin:$PATH"
 
     _nb_have_modern_node || return 1
@@ -214,11 +230,58 @@ _nb_install_bundled_node() {
 }
 
 # ---------------------------------------------------------------------------
+# Heal a broken Nadia-managed Node tree (partial upgrade / missing lib/)
+# ---------------------------------------------------------------------------
+
+_nb_managed_tool_broken() {
+    local tool="$1"
+    local probe
+    for probe in \
+        "$NADIA_HOME/node/bin/$tool" \
+        "$NADIA_HOME/node/${tool}.exe" \
+        "$NADIA_HOME/node/$tool"; do
+        if [ -x "$probe" ] || [ -f "$probe" ]; then
+            if ! "$probe" --version >/dev/null 2>&1; then
+                return 0
+            fi
+        fi
+    done
+    return 1
+}
+
+_nb_managed_node_needs_heal() {
+    local tool
+    for tool in node npm npx; do
+        if _nb_managed_tool_broken "$tool"; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Redownload the pinned nodejs.org tarball when a managed tree exists but
+# node/npm/npx fail a --version probe. No-op when the tree is healthy or
+# absent. Used by nadia_constants.find_nadia_node_executable() and safe
+# to call from install reruns.
+heal_managed_node() {
+    [ -d "$NADIA_HOME/node" ] || return 1
+    if ! _nb_managed_node_needs_heal; then
+        return 0
+    fi
+    _nb_log "Nadia-managed Node is broken — redownloading to $NADIA_HOME/node/..."
+    _nb_install_bundled_node
+}
+
+# ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
 
 ensure_node() {
     NADIA_NODE_AVAILABLE=false
+
+    # Repair pre-existing managed installs where `npm install -g` lands off
+    # PATH. No-op when there's no managed Node, so it's safe to run first.
+    _nb_configure_npm_prefix
 
     if _nb_have_modern_node; then
         _nb_ok "Node $(node --version) found"

@@ -20,7 +20,7 @@ The simplest path: a one-click installer with a guided, point-and-click setup. N
 
 ### 1. Download and install
 
-[Download the Nadia Desktop installer](https://github.com/nadicodeai/nadia/releases/latest) for macOS or Windows, then open it. On first launch it finishes setting itself up (usually under a minute).
+[Download the Nadia Desktop installer](https://docs.nadicode.ai/nadia/) for macOS or Windows, then open it. On first launch it finishes setting itself up (usually under a minute).
 
 ### 2. Connect Nadia Agents Portal
 

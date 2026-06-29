@@ -47,14 +47,14 @@ Honcho provides AI-native cross-session user modeling. It learns who the user is
 ### Cloud (app.honcho.dev)
 
 ```bash
-nadia honcho setup
+nadia memory setup honcho
 # select "cloud", paste API key from https://app.honcho.dev
 ```
 
 ### Self-hosted
 
 ```bash
-nadia honcho setup
+nadia memory setup honcho
 # select "local", enter base URL (e.g. http://localhost:8000)
 ```
 

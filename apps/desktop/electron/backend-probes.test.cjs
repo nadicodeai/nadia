@@ -11,7 +11,7 @@ const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 
-const { canImportNadiaCli, verifyNadiaCli } = require('./backend-probes.cjs')
+const { canImportNadiaCli, nadiaRuntimeImportProbe, verifyNadiaCli } = require('./backend-probes.cjs')
 
 // Resolve the host's own Node binary -- guaranteed to be on disk and
 // runnable. We use it as both a stand-in for "a python that doesn't
@@ -38,6 +38,12 @@ test('canImportNadiaCli returns false when interpreter cannot run -c', () => {
 test('canImportNadiaCli returns false when binary does not exist', () => {
   const ghost = path.join(os.tmpdir(), 'nadia-probes-ghost-' + Date.now() + '.exe')
   assert.equal(canImportNadiaCli(ghost), false)
+})
+
+test('nadia runtime import probe checks config dependencies', () => {
+  const probe = nadiaRuntimeImportProbe()
+  assert.match(probe, /\bimport yaml\b/)
+  assert.match(probe, /\bimport nadia_cli\.config\b/)
 })
 
 test('verifyNadiaCli returns false when command is falsy', () => {

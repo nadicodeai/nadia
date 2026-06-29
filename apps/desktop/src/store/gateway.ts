@@ -1,8 +1,7 @@
-import type { ConnectionState, GatewayEvent } from '@nadia/shared'
+import { type ConnectionState, type GatewayEvent, resolveGatewayWsUrl } from '@nadia/shared'
 import { atom } from 'nanostores'
 
 import { NadiaGateway } from '@/nadia'
-import { resolveGatewayWsUrl } from '@/lib/gateway-ws-url'
 import { setGatewayState } from '@/store/session'
 
 // ── Multi-profile gateway routing ──────────────────────────────────────────

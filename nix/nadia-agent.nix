@@ -37,10 +37,14 @@
 }:
 let
   nodejs = nodejs_22;
-  nadiaVenv = callPackage ./python.nix {
-    inherit uv2nix pyproject-nix pyproject-build-systems;
-    dependency-groups = [ "all" ] ++ extraDependencyGroups;
-  };
+  mkNadiaVenv =
+    extraDependencyGroups:
+    callPackage ./python.nix {
+      inherit uv2nix pyproject-nix pyproject-build-systems;
+      dependency-groups = [ "all" ] ++ extraDependencyGroups;
+    };
+
+  nadiaVenv = mkNadiaVenv extraDependencyGroups;
 
   nadiaNpmLib = callPackage ./lib.nix {
     inherit npm-lockfile-fix nodejs;
@@ -106,12 +110,6 @@ let
 
   pythonPath = lib.makeSearchPath sitePackagesPath allExtraPythonPackages;
 
-  pyprojectHash = builtins.hashString "sha256" (builtins.readFile ../pyproject.toml);
-  uvLockHash =
-    if builtins.pathExists ../uv.lock then
-      builtins.hashString "sha256" (builtins.readFile ../uv.lock)
-    else
-      "none";
   checkPackageCollisions = ''
     import pathlib, sys, re
 
@@ -223,21 +221,10 @@ stdenv.mkDerivation (finalAttrs: {
     };
 
     devShellHook = ''
-      STAMP=".nix-stamps/nadia-agent"
-      STAMP_VALUE="${pyprojectHash}:${uvLockHash}"
-      if [ ! -f "$STAMP" ] || [ "$(cat "$STAMP")" != "$STAMP_VALUE" ]; then
-        echo "nadia-agent: installing Python dependencies..."
-        uv venv .venv --python ${python312}/bin/python3 2>/dev/null || true
-        source .venv/bin/activate
-        uv pip install -e ".[all]"
-        [ -d mini-swe-agent ] && uv pip install -e ./mini-swe-agent 2>/dev/null || true
-        mkdir -p .nix-stamps
-        echo "$STAMP_VALUE" > "$STAMP"
-      else
-        source .venv/bin/activate
-        export NADIA_PYTHON=${nadiaVenv}/bin/python3
-      fi
+      export NADIA_PYTHON=${nadiaVenv}/bin/python3
     '';
+
+    devDeps = runtimeDeps ++ [ (mkNadiaVenv (extraDependencyGroups ++ [ "dev" ])) ];
   };
 
   meta = with lib; {

@@ -20,7 +20,7 @@ Use when a Nadia Kanban worker wants to run Codex CLI as an isolated implementat
 | Author | Nadia Agent |
 | License | MIT |
 | Tags | `kanban`, `codex`, `worktrees`, `autonomous-agents`, `prediction-market-bot` |
-| Related skills | [`kanban-worker`](/docs/user-guide/skills/bundled/devops/devops-kanban-worker), [`codex`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-codex), [`nadia-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-nadia-agent) |
+| Related skills | [`codex`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-codex), [`nadia-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-nadia-agent) |
 
 ## Reference: full SKILL.md
 

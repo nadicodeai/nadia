@@ -6,6 +6,12 @@ import { defineFieldCopy, fieldCopyForSchemaKey, schemaKeyToFieldCopyKey } from 
 import { enumOptionsFor, getNested, providerGroup, setNested, stripToolsetLabel, toolsetDisplayLabel } from './helpers'
 
 describe('settings helpers', () => {
+  it('lists Hindsight as a built-in desktop memory provider option', () => {
+    const options = enumOptionsFor('memory.provider', '', {})
+
+    expect(options).toContain('hindsight')
+  })
+
   describe('defineFieldCopy', () => {
     it('flattens nested field copy paths', () => {
       const copy = defineFieldCopy({
@@ -126,9 +132,9 @@ describe('settings helpers', () => {
       // KIMI_CN_ likewise must beat KIMI_.
       expect(providerGroup('KIMI_CN_API_KEY')).toBe('Kimi (China)')
       expect(providerGroup('KIMI_API_KEY')).toBe('Kimi / Moonshot')
-      // NADIA_QWEN_ and NADIA_GEMINI_ both share the NADIA_ stem.
+      // NADIA_QWEN_ shares the NADIA_ stem with other integrations.
       expect(providerGroup('NADIA_QWEN_BASE_URL')).toBe('DashScope (Qwen)')
-      expect(providerGroup('NADIA_GEMINI_CLIENT_ID')).toBe('Gemini')
+      expect(providerGroup('GEMINI_API_KEY')).toBe('Gemini')
     })
 
     it('falls back to "Other" for un-grouped env vars', () => {

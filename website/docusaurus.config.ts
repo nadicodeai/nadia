@@ -131,7 +131,7 @@ const config: Config = {
           position: 'left',
         },
         {
-          href: 'https://github.com/nadicodeai/nadia/releases/latest',
+          href: 'https://docs.nadicode.ai/nadia/',
           label: 'Download',
           position: 'left',
         },
@@ -179,7 +179,7 @@ const config: Config = {
         {
           title: 'More',
           items: [
-            { label: 'Desktop Download', href: 'https://github.com/nadicodeai/nadia/releases/latest' },
+            { label: 'Desktop Download', href: 'https://docs.nadicode.ai/nadia/' },
             { label: 'GitHub', href: 'https://github.com/nadicodeai/nadia' },
             { label: 'NadicodeAI', href: 'https://nadicode.ai' },
           ],

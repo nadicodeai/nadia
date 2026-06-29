@@ -343,7 +343,6 @@ The registry of record is `nadia_cli/commands.py` — every consumer
 /commands [page]     Browse all commands (gateway)
 /usage               Token usage
 /insights [days]     Usage analytics
-/gquota              Show Google Gemini Code Assist quota usage (CLI)
 /status              Session info (gateway)
 /profile             Active profile info
 /debug               Upload debug report (system info + logs) and get shareable links
@@ -360,7 +359,7 @@ The registry of record is `nadia_cli/commands.py` — every consumer
 
 ```
 ~/.nadia/config.yaml       Main configuration
-~/.nadia/.env              API keys and secrets
+~/.nadia/.env              API keys and secrets (under $NADIA_HOME if set)
 $NADIA_HOME/skills/        Installed skills
 ~/.nadia/sessions/         Gateway routing index, request dumps, *.jsonl transcripts (and optional per-session JSON snapshots when sessions.write_json_snapshots: true)
 ~/.nadia/state.db          Canonical session store (SQLite + FTS5)
@@ -377,7 +376,7 @@ Edit with `nadia config edit` or `nadia config set section.key value`.
 
 | Section | Key options |
 |---------|-------------|
-| `model` | `default`, `provider`, `base_url`, `api_key`, `context_length` |
+| `model` | `default`, `provider`, `base_url`, `api_key`, `context_length` (explicit override; clear to `""` for auto-detect from server `/v1/models`) |
 | `agent` | `max_turns` (90), `tool_use_enforcement` |
 | `terminal` | `backend` (local/docker/ssh/modal), `cwd`, `timeout` (180) |
 | `compression` | `enabled`, `threshold` (0.50), `target_ratio` (0.20) |
@@ -453,7 +452,6 @@ Enable/disable via `nadia tools` (interactive) or `nadia tools enable/disable NA
 | `discord` | Discord integration tools |
 | `discord_admin` | Discord admin/moderation tools |
 | `rl` | Reinforcement learning tools (off by default) |
-| `moa` | Mixture of Agents (off by default) |
 
 Full enumeration lives in `toolsets.py` as the `TOOLSETS` dict; `_NADIA_CORE_TOOLS` is the default bundle most platforms inherit from.
 
@@ -872,6 +870,22 @@ nadia config set auxiliary.vision.model <model_name>
 ```
 
 ---
+### Context window shows wrong size
+
+If Nadia reports a smaller context window than your local model supports
+(e.g., 128k when llama-server has `-c 262144`):
+
+**Check if `model.context_length` is explicitly set.** Nadia uses a
+multi-source resolution chain (highest priority first):
+
+1. `model.context_length` in config.yaml — **blocks auto-detection if set**
+2. Custom provider per-model setting
+3. Persistent cache (survives restarts)
+4. `/v1/models` endpoint from your server — auto-detected when nothing
+   above overrides it
+
+**Fix:** Clear the override so auto-detection falls through:
+
 
 ## Where to Find Things
 
@@ -924,7 +938,7 @@ nadia-agent/
 ```
 <!-- ascii-guard-ignore-end -->
 
-Config: `~/.nadia/config.yaml` (settings), `~/.nadia/.env` (API keys).
+Config: `~/.nadia/config.yaml` (settings), `~/.nadia/.env` (API keys) — both under `$NADIA_HOME` when it is set.
 
 ### Adding a Tool (3 files)
 

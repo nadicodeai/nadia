@@ -14,7 +14,7 @@ If you want a practical setup walkthrough with recommended configurations and re
 
 Before using voice features, make sure you have:
 
-1. **Nadia Agent installed** — `pip install nadia-agent` (see [Installation](/getting-started/installation))
+1. **Nadia Agent installed** — via the install script (see [Installation](/getting-started/installation))
 2. **An LLM provider configured** — run `nadia model` or set your preferred provider credentials in `~/.nadia/.env`
 3. **A working base setup** — run `nadia` to verify the agent responds to text before enabling voice
 
@@ -40,19 +40,19 @@ A paid [Nadia Agents Portal](/user-guide/features/tool-gateway) subscription sup
 
 ```bash
 # CLI voice mode (microphone + audio playback)
-pip install "nadia-agent[voice]"
+cd ~/.nadia/nadia-agent && uv pip install -e ".[voice]"
 
 # Discord + Telegram messaging (includes discord.py[voice] for VC support)
-pip install "nadia-agent[messaging]"
+cd ~/.nadia/nadia-agent && uv pip install -e ".[messaging]"
 
 # Premium TTS (ElevenLabs)
-pip install "nadia-agent[tts-premium]"
+cd ~/.nadia/nadia-agent && uv pip install -e ".[tts-premium]"
 
 # Local TTS (NeuTTS, optional)
 python -m pip install -U neutts[all]
 
 # Everything at once
-pip install "nadia-agent[all]"
+cd ~/.nadia/nadia-agent && uv pip install -e ".[all]"
 ```
 
 | Extra | Packages | Required For |

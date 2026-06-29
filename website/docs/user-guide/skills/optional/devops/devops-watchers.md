@@ -77,7 +77,7 @@ python $NADIA_HOME/skills/devops/watchers/scripts/watch_rss.py \
   --name hn --url https://news.ycombinator.com/rss --max 5
 ```
 
-Watch a GitHub repo (set `GITHUB_TOKEN` in `~/.nadia/.env` to avoid the 60 req/hr anonymous rate limit):
+Watch a GitHub repo (set `GITHUB_TOKEN` in `${NADIA_HOME:-~/.nadia}/.env` to avoid the 60 req/hr anonymous rate limit):
 
 ```bash
 python $NADIA_HOME/skills/devops/watchers/scripts/watch_github.py \

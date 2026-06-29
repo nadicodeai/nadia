@@ -45,8 +45,8 @@ if command -v gh &>/dev/null && gh auth status &>/dev/null; then
 else
   AUTH="git"
   if [ -z "$GITHUB_TOKEN" ]; then
-    if [ -f ~/.nadia/.env ] && grep -q "^GITHUB_TOKEN=" ~/.nadia/.env; then
-      GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" ~/.nadia/.env | head -1 | cut -d= -f2 | tr -d '\n\r')
+    if _nadia_env="${NADIA_HOME:-$HOME/.nadia}/.env"; [ -f "$_nadia_env" ] && grep -q "^GITHUB_TOKEN=" "$_nadia_env"; then
+      GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" "$_nadia_env" | head -1 | cut -d= -f2 | tr -d '\n\r')
     elif grep -q "github.com" ~/.git-credentials 2>/dev/null; then
       GITHUB_TOKEN=$(grep "github.com" ~/.git-credentials 2>/dev/null | head -1 | sed 's|https://[^:]*:\([^@]*\)@.*|\1|')
     fi

@@ -12,7 +12,6 @@
     let
       packages = builtins.attrValues self'.packages;
       nadiaNpmLib = self'.packages.default.passthru.nadiaNpmLib;
-      fixLockfilesExe = pkgs.lib.getExe self'.packages.fix-lockfiles;
 
       # Collect all packageJsonPath values from npm workspace packages.
       npmPackageJsonPaths = builtins.filter (p: p != null) (
@@ -26,14 +25,16 @@
     in
     {
       devShells.default = pkgs.mkShell {
-        inputsFrom = packages;
-        packages = with pkgs; [
-          uv
-        ];
+        packages =
+          with pkgs;
+          [
+            uv
+          ]
+          ++ self'.packages.default.passthru.devDeps;
         shellHook = ''
           echo "Nadia Agent dev shell"
           ${combinedNonNpm}
-          ${nadiaNpmLib.mkNpmDevShellHook npmPackageJsonPaths fixLockfilesExe}
+          ${nadiaNpmLib.mkNpmDevShellHook npmPackageJsonPaths}
           echo "Ready. Run 'nadia' to start."
         '';
       };

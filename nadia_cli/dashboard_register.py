@@ -155,7 +155,7 @@ def _register_self_hosted_client(
         if exc.code == 401:
             raise RuntimeError(
                 "Nadia Agents Portal rejected the access token (401). "
-                "Try `nadia auth login nadia` to re-authenticate."
+                "Try `nadia auth add nous` to re-authenticate."
             ) from exc
         if exc.code == 403:
             raise RuntimeError(
@@ -251,7 +251,7 @@ def cmd_dashboard_register(args) -> None:
     except AuthError as exc:
         if getattr(exc, "relogin_required", False):
             print("✗ You're not logged into Nadia Agents Portal.")
-            print("  Run `nadia setup` (or `nadia auth login nadia`) first, then retry.")
+            print("  Run `nadia setup` (or `nadia auth add nous`) first, then retry.")
         else:
             print(f"✗ Could not resolve a Nadia Agents Portal access token: {exc}")
         sys.exit(1)

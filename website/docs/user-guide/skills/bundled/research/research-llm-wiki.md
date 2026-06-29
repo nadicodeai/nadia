@@ -52,7 +52,7 @@ Use this skill when the user:
 
 ## Wiki Location
 
-**Location:** Set via `WIKI_PATH` environment variable (e.g. in `~/.nadia/.env`).
+**Location:** Set via `WIKI_PATH` environment variable (e.g. in `${NADIA_HOME:-~/.nadia}/.env`).
 
 If unset, defaults to `~/wiki`.
 
