@@ -1077,9 +1077,9 @@ def run_doctor(args):
 
         nous_status = get_nous_auth_status()
         if nous_status.get("logged_in"):
-            check_ok("Nadia Agents Portal auth", "(logged in)")
+            check_ok("NadicodeAI Portal auth", "(logged in)")
         else:
-            check_warn("Nadia Agents Portal auth", "(not logged in)")
+            check_warn("NadicodeAI Portal auth", "(not logged in)")
 
         codex_status = get_codex_auth_status()
         if codex_status.get("logged_in"):

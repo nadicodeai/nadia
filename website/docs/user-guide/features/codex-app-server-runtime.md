@@ -10,7 +10,7 @@ Nadia can optionally hand `openai/*` and `openai-codex/*` turns to the [Codex CL
 This is **opt-in only**. Default Nadia behavior is unchanged unless you flip the flag. Nadia never auto-routes you onto this runtime.
 
 :::tip
-Not using OpenAI Codex? `nadia setup --portal` configures a non-Codex backend with Claude/Gemini/etc. in one step. See [Nadia Agents Portal](/integrations/nadia-portal).
+Not using OpenAI Codex? `nadia setup --portal` configures a non-Codex backend with Claude/Gemini/etc. in one step. See [NadicodeAI Portal](/integrations/nadia-portal).
 :::
 
 ## Why

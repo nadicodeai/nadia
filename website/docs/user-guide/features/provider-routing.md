@@ -12,7 +12,7 @@ When using [OpenRouter](https://openrouter.ai) as your LLM provider, Nadia Agent
 OpenRouter routes requests to many providers (e.g., Anthropic, Google, AWS Bedrock, Together AI). Provider routing lets you optimize for cost, speed, quality, or enforce specific provider requirements.
 
 :::tip
-Traffic routed through [Nadia Agents Portal](/integrations/nadia-portal) still respects per-model routing and priority configs — and Portal subscribers get 10% off token-billed providers.
+Traffic routed through [NadicodeAI Portal](/integrations/nadia-portal) still respects per-model routing and priority configs — and Portal subscribers get 10% off token-billed providers.
 :::
 
 ## Configuration

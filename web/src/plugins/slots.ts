@@ -21,7 +21,7 @@ import React, { Fragment, useEffect, useState } from "react";
  *  Shell-wide slots:
  *  - `backdrop`         — rendered inside `<Backdrop />`, above the noise layer
  *  - `header-left`      — injected before the Nadia brand in the top bar
- *  - `header-right`     — injected before the theme/language switchers
+ *  - `header-right`     — injected before the sidebar mode/language controls
  *  - `header-banner`    — injected below the top nav bar, full-width
  *  - `sidebar`          — the cockpit sidebar rail (only rendered when
  *                         `layoutVariant === "cockpit"`)
@@ -31,7 +31,7 @@ import React, { Fragment, useEffect, useState } from "react";
  *  - `footer-right`     — replaces the right footer cell content
  *  - `overlay`          — fixed-position layer above everything else;
  *                         useful for chrome (scanlines, vignettes) the
- *                         theme's customCSS can't achieve alone
+ *                         static dashboard CSS can't achieve alone
  *
  *  Page-scoped slots (rendered inside a specific built-in page — use these
  *  to inject widgets, cards, or toolbars into existing pages without

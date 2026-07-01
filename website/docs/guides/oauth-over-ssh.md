@@ -53,7 +53,7 @@ Nadia uses the **same PKCE verifier, state and nonce** for both paths, so the up
 | MCP servers (`auth: oauth`) | auto-picked per server | Yes, when Nadia is remote |
 | `anthropic` (Claude Pro/Max) | n/a | No — paste-the-code flow |
 | `openai-codex` (ChatGPT Plus/Pro) | n/a | No — device code flow |
-| `minimax`, `nadia-portal` | n/a | No — device code flow |
+| `minimax`, NadicodeAI Portal | n/a | No — device code flow |
 
 If your provider isn't in the table, you don't need a tunnel.
 

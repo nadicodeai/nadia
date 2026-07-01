@@ -231,7 +231,7 @@ class KreaImageGenProvider(ImageGenProvider):
 
     def is_available(self) -> bool:
         # Available with a direct Krea key OR via the managed Nadia gateway
-        # (Nadia Subscription), so portal users with no Krea key can still
+        # (NadicodeAI Subscription), so portal users with no Krea key can still
         # reach Krea 2 through the gateway.
         return bool(os.environ.get("KREA_API_KEY")) or _managed_krea_gateway_ready()
 
@@ -254,7 +254,7 @@ class KreaImageGenProvider(ImageGenProvider):
         return {
             "name": "Krea",
             "badge": "paid",
-            "tag": "Krea 2 foundation model — Medium ($0.03), Large ($0.06), Medium Turbo ($0.015). Style transfer, moodboards, reference-guided generation. Direct key or managed Nadia Subscription gateway.",
+            "tag": "Krea 2 foundation model — Medium ($0.03), Large ($0.06), Medium Turbo ($0.015). Style transfer, moodboards, reference-guided generation. Direct key or managed NadicodeAI Subscription gateway.",
             "env_vars": [
                 {
                     "key": "KREA_API_KEY",
@@ -327,7 +327,7 @@ class KreaImageGenProvider(ImageGenProvider):
                 aspect_ratio=aspect,
             )
 
-        # Route through the managed Nadia gateway (Nadia Subscription) when the
+        # Route through the managed Nadia gateway (NadicodeAI Subscription) when the
         # user is on the managed path; otherwise use the direct Krea API with a
         # BYO ``KREA_API_KEY``. The gateway owns the shared Krea credential and
         # meters/bills per generation, so the caller token is the Nadia access
@@ -364,7 +364,7 @@ class KreaImageGenProvider(ImageGenProvider):
             if isinstance(kwargs.get("styles"), list) and kwargs.get("styles"):
                 return error_response(
                     error=(
-                        "Managed Krea (Nadia Subscription) does not support "
+                        "Managed Krea (NadicodeAI Subscription) does not support "
                         "trained styles (LoRAs). Set KREA_API_KEY to use Krea "
                         "directly, or omit `styles`."
                     ),
@@ -377,7 +377,7 @@ class KreaImageGenProvider(ImageGenProvider):
             if isinstance(kwargs.get("moodboards"), list) and kwargs.get("moodboards"):
                 return error_response(
                     error=(
-                        "Managed Krea (Nadia Subscription) does not support "
+                        "Managed Krea (NadicodeAI Subscription) does not support "
                         "moodboards. Set KREA_API_KEY to use Krea directly, or "
                         "omit `moodboards`."
                     ),
@@ -463,7 +463,7 @@ class KreaImageGenProvider(ImageGenProvider):
             logger.error("Krea submit failed (%d): %s", status, err_msg)
             # On a managed 4xx, surface actionable remediation mirroring the
             # FAL managed gateway path: the model may not be enabled/priced on
-            # the Nadia Agents Portal, or the gateway's shared Krea key hit its
+            # the NadicodeAI Portal, or the gateway's shared Krea key hit its
             # concurrency cap (429).
             if managed is not None and 400 <= status < 500:
                 hint = (
@@ -471,14 +471,14 @@ class KreaImageGenProvider(ImageGenProvider):
                     if status == 429
                     else (
                         f"Model '{model_id}' may not be enabled/priced on the "
-                        "Nadia Agents Portal's Krea gateway. Set KREA_API_KEY to use "
+                        "NadicodeAI Portal's Krea gateway. Set KREA_API_KEY to use "
                         "Krea directly, or pick a different model via "
                         "`nadia tools` → Image Generation."
                     )
                 )
                 return error_response(
                     error=(
-                        f"Nadia Subscription Krea gateway rejected '{model_id}' "
+                        f"NadicodeAI Subscription Krea gateway rejected '{model_id}' "
                         f"(HTTP {status}): {err_msg}. {hint}"
                     ),
                     error_type="api_error",

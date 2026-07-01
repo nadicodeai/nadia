@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { Package, Power, Server, Trash2, X, Zap } from "lucide-react";
-import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Select, SelectOption } from "@nous-research/ui/ui/components/select";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
-import { H2 } from "@nous-research/ui/ui/components/typography/h2";
+import { Badge } from "@/nadicodeai-ui";
+import { Button } from "@/nadicodeai-ui";
+import { Select, SelectOption } from "@/nadicodeai-ui";
+import { Spinner } from "@/nadicodeai-ui";
+import { H2 } from "@/nadicodeai-ui";
 import { api } from "@/lib/api";
 import type {
   McpCatalogDiagnostic,
@@ -14,13 +14,13 @@ import type {
   McpTestResult,
 } from "@/lib/api";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
-import { useToast } from "@nous-research/ui/hooks/use-toast";
-import { useConfirmDelete } from "@nous-research/ui/hooks/use-confirm-delete";
+import { useToast } from "@/nadicodeai-ui";
+import { useConfirmDelete } from "@/nadicodeai-ui";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
-import { Toast } from "@nous-research/ui/ui/components/toast";
-import { Card, CardContent } from "@nous-research/ui/ui/components/card";
-import { Input } from "@nous-research/ui/ui/components/input";
-import { Label } from "@nous-research/ui/ui/components/label";
+import { Toast } from "@/nadicodeai-ui";
+import { Card, CardContent } from "@/nadicodeai-ui";
+import { Input } from "@/nadicodeai-ui";
+import { Label } from "@/nadicodeai-ui";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { cn, themedBody } from "@/lib/utils";
 
@@ -361,7 +361,7 @@ export default function McpPage() {
             <header className="p-5 pb-3 border-b border-border">
               <h2
                 id="create-mcp-title"
-                className="font-mondwest text-display text-base tracking-wider"
+                className="text-display-sm text-base tracking-wider"
               >
                 Add MCP server
               </h2>
@@ -482,7 +482,7 @@ export default function McpPage() {
             <header className="p-5 pb-3 border-b border-border">
               <h2
                 id="install-mcp-title"
-                className="font-mondwest text-display text-base tracking-wider"
+                className="text-display-sm text-base tracking-wider"
               >
                 Install {installEntry.name}
               </h2>
@@ -683,7 +683,7 @@ export default function McpPage() {
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Browse Nadia-approved MCP servers and install them with one click.
+          Browse curated MCP servers and install them with one click.
         </p>
 
         {catalog.length === 0 && (

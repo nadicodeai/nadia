@@ -272,7 +272,7 @@ fix(security): prevent shell injection in sudo password piping
 
 ## Community
 
-- **Discord**: [discord.gg/NadicodeAI](https://discord.gg/NadicodeAI)
+- **GitHub Issues**: [github.com/nadicodeai/nadia/issues](https://github.com/nadicodeai/nadia/issues)
 - **GitHub Discussions**: For design proposals and architecture discussions
 - **Skills Hub**: Upload specialized skills and share with the community
 

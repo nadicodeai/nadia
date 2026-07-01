@@ -4,15 +4,11 @@ No React, no JavaScript dependency. Listed providers come from the
 registry; clicking a provider sends a GET to
 ``/auth/login?provider=<name>``.
 
-Visual styling mirrors the NadicodeAI design system (the
-``@nous-research/ui`` package the React dashboard uses): the same
-``Collapse`` / ``Rules Compressed`` typeface, amber-on-dark colour
-tokens (``#170d02`` / ``#ffac02`` / ``#fff``), uppercase + wide-tracking
-brand chrome, and the inset-bevel button shadow. Fonts are served
-out of the SPA's ``/fonts/`` directory which the dashboard-auth gate
-already allowlists pre-auth (see ``_GATE_PUBLIC_PREFIXES`` in
-``middleware.py``), so the page renders without needing the React
-bundle loaded.
+Visual styling follows the NadicodeAI design system palette with
+Geist / Geist Mono served from the SPA's ``/fonts/`` directory. The
+dashboard-auth gate already allowlists that directory pre-auth (see
+``_GATE_PUBLIC_PREFIXES`` in ``middleware.py``), so the page renders
+without needing the React bundle loaded.
 
 Test-stable class names: the existing test suite extracts the
 ``class="provider-btn"`` anchor href to walk the OAuth flow. That
@@ -38,45 +34,78 @@ _LOGIN_HTML_TEMPLATE = """\
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sign in — Nadia Agent</title>
+<title>Sign in - Nadia</title>
 <style>
-  /* Brand fonts shipped by @nous-research/ui — same files the SPA loads. */
+  /* Brand fonts shipped with the public dashboard assets. */
   @font-face {{
-    font-family: 'Collapse';
+    font-family: 'Geist';
     font-style: normal;
-    font-weight: 400;
+    font-weight: 100 900;
     font-display: swap;
-    src: url('/fonts/Collapse-Regular.woff2') format('woff2');
+    src: url('/fonts/Geist-Variable.woff2') format('woff2');
   }}
   @font-face {{
-    font-family: 'Collapse';
-    font-style: normal;
-    font-weight: 700;
+    font-family: 'Geist';
+    font-style: italic;
+    font-weight: 100 900;
     font-display: swap;
-    src: url('/fonts/Collapse-Bold.woff2') format('woff2');
+    src: url('/fonts/Geist-Italic.woff2') format('woff2');
   }}
   @font-face {{
-    font-family: 'Rules Compressed';
+    font-family: 'Geist Mono';
     font-style: normal;
-    font-weight: 400;
+    font-weight: 100 900;
     font-display: swap;
-    src: url('/fonts/RulesCompressed-Regular.woff2') format('woff2');
+    src: url('/fonts/GeistMono-Variable.woff2') format('woff2');
   }}
   @font-face {{
-    font-family: 'Rules Compressed';
-    font-style: normal;
-    font-weight: 600;
+    font-family: 'Geist Mono';
+    font-style: italic;
+    font-weight: 100 900;
     font-display: swap;
-    src: url('/fonts/RulesCompressed-Medium.woff2') format('woff2');
+    src: url('/fonts/GeistMono-Italic.woff2') format('woff2');
   }}
 
   :root {{
-    --background-base: #170d02;
-    --background: #170d02;
-    --midground: #ffac02;
-    --foreground: #ffffff;
-    --hairline: color-mix(in srgb, #ffac02 18%, transparent);
-    --hairline-strong: color-mix(in srgb, #ffac02 35%, transparent);
+    --background-base: #ffffff;
+    --surface: #fafafa;
+    --surface-strong: #f5f5f5;
+    --foreground: #171717;
+    --body-copy: #4d4d4d;
+    --muted-copy: #888888;
+    --line: #e5e5e5;
+    --brand-accent: #007a5e;
+    --brand-accent-strong: #005d49;
+    --brand-accent-soft: #d8f0e9;
+    --accent-foreground: #ffffff;
+    --error: #b80022;
+    --error-soft: #f4d7dc;
+    --code-bg: #d8f0e9;
+    --code-text: #005d49;
+    --hairline: var(--line);
+    --hairline-strong: color-mix(in srgb, var(--brand-accent) 42%, var(--line));
+  }}
+
+  @media (prefers-color-scheme: dark) {{
+    :root {{
+      --background-base: #101414;
+      --surface: #151b19;
+      --surface-strong: #1d2522;
+      --foreground: #f5f7f4;
+      --body-copy: #c8d0cb;
+      --muted-copy: #8d9892;
+      --line: #2c3632;
+      --brand-accent: #7ee7c6;
+      --brand-accent-strong: #b8ffe5;
+      --brand-accent-soft: #163f34;
+      --accent-foreground: #101414;
+      --error: #ffb3c0;
+      --error-soft: #3b1f27;
+      --code-bg: #163f34;
+      --code-text: #b8ffe5;
+      --hairline: var(--line);
+      --hairline-strong: color-mix(in srgb, var(--brand-accent) 34%, var(--line));
+    }}
   }}
 
   *, *::before, *::after {{ box-sizing: border-box; }}
@@ -87,23 +116,22 @@ _LOGIN_HTML_TEMPLATE = """\
     min-height: 100%;
     background: var(--background-base);
     color: var(--foreground);
-    font-family: 'Collapse', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-family: 'Geist', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     font-size: 16px;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }}
 
-  /* Subtle dot-grid backdrop — DS idiom (see `.dither` in globals.css). */
   body {{
     background-image:
       radial-gradient(
         ellipse at top,
-        color-mix(in srgb, var(--midground) 6%, transparent) 0%,
+        color-mix(in srgb, var(--brand-accent) 12%, transparent) 0%,
         transparent 55%
       ),
       repeating-conic-gradient(
-        color-mix(in srgb, var(--midground) 4%, transparent) 0% 25%,
+        color-mix(in srgb, var(--brand-accent) 5%, transparent) 0% 25%,
         transparent 0% 50%
       );
     background-size: auto, 3px 3px;
@@ -133,54 +161,54 @@ _LOGIN_HTML_TEMPLATE = """\
     main {{ animation: none; }}
   }}
 
-  /* Brand wordmark above the card — same uppercase + wide-tracking
-     idiom DS Buttons use. */
   .brand {{
     text-align: center;
-    margin-bottom: 1.75rem;
-    font-family: 'Rules Compressed', 'Collapse', sans-serif;
-    font-weight: 600;
-    font-size: 1.05rem;
-    letter-spacing: 0.32em;
-    text-transform: uppercase;
-    color: var(--midground);
+    margin-bottom: 0.4rem;
+    font-family: 'Geist', sans-serif;
+    font-weight: 760;
+    font-size: 1.15rem;
+    letter-spacing: 0;
+    color: var(--brand-accent);
   }}
-  .brand .dot {{
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    background: var(--midground);
-    margin: 0 0.55em 0.18em;
-    vertical-align: middle;
-    border-radius: 1px;
+  .brand-note {{
+    text-align: center;
+    margin: 0 0 1.75rem;
+    color: var(--muted-copy);
+    font-size: 0.76rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }}
+  .brand-note a {{
+    color: var(--brand-accent-strong);
+    text-decoration: none;
+  }}
+  .brand-note a:hover {{
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
   }}
 
   .card {{
     position: relative;
     padding: 2.25rem 2rem 2rem;
-    background: color-mix(in srgb, #ffffff 2%, var(--background-base));
+    background: var(--surface);
     border: 1px solid var(--hairline);
-    /* Hairline highlight + bevel shadow — matches DS Button SHADOW_DEFAULT
-       (`inset -1px -1px 0 #00000080, inset 1px 1px 0 #ffffff80`) at panel scale. */
     box-shadow:
-      inset 1px 1px 0 0 color-mix(in srgb, #ffffff 5%, transparent),
-      inset -1px -1px 0 0 rgba(0, 0, 0, 0.4),
-      0 24px 60px -20px rgba(0, 0, 0, 0.6);
+      inset 1px 1px 0 0 color-mix(in srgb, #ffffff 38%, transparent),
+      0 24px 60px -28px color-mix(in srgb, var(--foreground) 30%, transparent);
   }}
 
   h1 {{
     margin: 0 0 0.4rem;
-    font-family: 'Rules Compressed', 'Collapse', sans-serif;
-    font-weight: 600;
-    font-size: 1.85rem;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
+    font-family: 'Geist', sans-serif;
+    font-weight: 720;
+    font-size: 1.75rem;
+    letter-spacing: 0;
     color: var(--foreground);
   }}
 
   .subtitle {{
     margin: 0 0 1.75rem;
-    color: color-mix(in srgb, var(--foreground) 65%, transparent);
+    color: var(--body-copy);
     font-size: 0.95rem;
   }}
 
@@ -189,56 +217,67 @@ _LOGIN_HTML_TEMPLATE = """\
     gap: 0.75rem;
   }}
 
-  /* Provider button — mirrors DS Button (default variant):
-     amber surface, dark text, uppercase + wide tracking, inset bevel. */
   .provider-btn {{
     display: block;
     width: 100%;
     box-sizing: border-box;
     padding: 0.95rem 1rem;
     text-align: center;
-    background: var(--midground);
-    color: var(--background-base);
-    font-family: 'Collapse', sans-serif;
+    background: var(--brand-accent);
+    color: var(--accent-foreground);
+    font-family: 'Geist', sans-serif;
     font-weight: 700;
     font-size: 0.78rem;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     text-decoration: none;
     border: 0;
-    border-radius: 0;  /* DS Button is squared — no rounded corners. */
+    border-radius: 0;
     cursor: pointer;
     box-shadow:
-      inset 1px 1px 0 0 rgba(255, 255, 255, 0.5),
-      inset -1px -1px 0 0 rgba(0, 0, 0, 0.5);
-    transition: filter 0.12s ease-out;
+      inset 1px 1px 0 0 color-mix(in srgb, #ffffff 36%, transparent),
+      inset -1px -1px 0 0 color-mix(in srgb, #000000 24%, transparent);
+    transition: filter 0.12s ease-out, opacity 0.12s ease-out;
   }}
   .provider-btn:hover {{
-    filter: brightness(1.08);
+    filter: brightness(1.06);
   }}
   .provider-btn:active {{
-    /* DS Button uses `active:invert` on the default surface. */
-    filter: invert(1);
+    filter: brightness(0.85);
   }}
   .provider-btn:focus-visible {{
-    outline: 2px solid var(--midground);
+    outline: 2px solid var(--brand-accent);
     outline-offset: 3px;
+    box-shadow:
+      0 0 0 4px color-mix(in srgb, var(--brand-accent) 22%, transparent),
+      inset 1px 1px 0 0 color-mix(in srgb, #ffffff 36%, transparent),
+      inset -1px -1px 0 0 color-mix(in srgb, #000000 24%, transparent);
+  }}
+  .provider-btn:disabled,
+  .provider-btn[disabled],
+  .provider-btn[aria-disabled="true"] {{
+    cursor: not-allowed;
+    opacity: 0.55;
+    filter: saturate(0.65);
+  }}
+  .provider-btn:disabled:hover,
+  .provider-btn[disabled]:hover,
+  .provider-btn[aria-disabled="true"]:hover {{
+    filter: saturate(0.65);
   }}
 
-  /* Password provider form — same visual language as the OAuth buttons:
-     squared inputs, hairline borders, amber focus ring. */
   .provider-form {{
     display: grid;
     gap: 0.75rem;
     text-align: left;
   }}
   .form-title {{
-    font-family: 'Rules Compressed', 'Collapse', sans-serif;
-    font-weight: 600;
+    font-family: 'Geist', sans-serif;
+    font-weight: 720;
     font-size: 0.72rem;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: color-mix(in srgb, var(--foreground) 70%, transparent);
+    color: var(--body-copy);
   }}
   .field {{
     display: grid;
@@ -248,26 +287,29 @@ _LOGIN_HTML_TEMPLATE = """\
     font-size: 0.72rem;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: color-mix(in srgb, var(--foreground) 55%, transparent);
+    color: var(--muted-copy);
   }}
   .field-input {{
     width: 100%;
     box-sizing: border-box;
     padding: 0.7rem 0.8rem;
-    background: color-mix(in srgb, #000000 25%, var(--background-base));
+    background: var(--surface-strong);
     color: var(--foreground);
     border: 1px solid var(--hairline-strong);
     border-radius: 0;
-    font-family: 'Collapse', sans-serif;
+    font-family: 'Geist', sans-serif;
     font-size: 0.95rem;
   }}
   .field-input:focus-visible {{
     outline: none;
-    border-color: var(--midground);
-    box-shadow: 0 0 0 1px var(--midground);
+    border-color: var(--brand-accent);
+    box-shadow: 0 0 0 1px var(--brand-accent);
   }}
   .form-error {{
-    color: #ff6b6b;
+    color: var(--error);
+    background: color-mix(in srgb, var(--error-soft) 55%, transparent);
+    border-left: 2px solid var(--error);
+    padding: 0.45rem 0.6rem;
     font-size: 0.82rem;
     letter-spacing: 0.02em;
   }}
@@ -278,7 +320,7 @@ _LOGIN_HTML_TEMPLATE = """\
   footer {{
     margin-top: 1.75rem;
     text-align: center;
-    color: color-mix(in srgb, var(--foreground) 45%, transparent);
+    color: var(--muted-copy);
     font-size: 0.75rem;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -293,26 +335,25 @@ _LOGIN_HTML_TEMPLATE = """\
     margin: 0 0.6em 0.2em;
   }}
 
-  /* Selection — DS uses midground bg + background text. */
   ::selection {{
-    background: var(--midground);
-    color: var(--background-base);
+    background: var(--brand-accent-soft);
+    color: var(--foreground);
   }}
 </style>
 </head>
 <body>
 <main>
-  <div class="brand">Nadicode<span class="dot"></span>AI</div>
-  <div style="text-align:center;margin:-1.25rem 0 1.75rem;font-size:0.72rem;letter-spacing:0.05em;color:var(--midground);opacity:0.72;">Nadia Agent by <a href="https://nadicode.ai" style="color:inherit;">NadicodeAI</a></div>
+  <div class="brand">Nadia</div>
+  <div class="brand-note">Nadia Agent by <a href="https://nadicode.ai">NadicodeAI</a></div>
   <div class="card">
     <h1>Sign in</h1>
-    <p class="subtitle">Choose a sign-in method to continue to the Nadia Agent dashboard.</p>
+    <p class="subtitle">Choose a sign-in method to continue to the Nadia dashboard.</p>
     <div class="provider-list">
 {provider_buttons}
     </div>
   </div>
   <footer>
-    <span class="sep"></span>Public bind &middot; Auth required<span class="sep"></span>
+    <span class="sep"></span>NadicodeAI &middot; Auth required<span class="sep"></span>
   </footer>
 </main>
 {password_script}
@@ -326,34 +367,72 @@ _EMPTY_HTML = """\
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sign-in unavailable — Nadia Agent</title>
+<title>Sign-in unavailable - Nadia</title>
 <style>
   @font-face {
-    font-family: 'Collapse';
+    font-family: 'Geist';
     font-style: normal;
-    font-weight: 400;
+    font-weight: 100 900;
     font-display: swap;
-    src: url('/fonts/Collapse-Regular.woff2') format('woff2');
+    src: url('/fonts/Geist-Variable.woff2') format('woff2');
   }
   @font-face {
-    font-family: 'Rules Compressed';
-    font-style: normal;
-    font-weight: 600;
+    font-family: 'Geist';
+    font-style: italic;
+    font-weight: 100 900;
     font-display: swap;
-    src: url('/fonts/RulesCompressed-Medium.woff2') format('woff2');
+    src: url('/fonts/Geist-Italic.woff2') format('woff2');
+  }
+  @font-face {
+    font-family: 'Geist Mono';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('/fonts/GeistMono-Variable.woff2') format('woff2');
+  }
+  @font-face {
+    font-family: 'Geist Mono';
+    font-style: italic;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('/fonts/GeistMono-Italic.woff2') format('woff2');
   }
   :root {
-    --background-base: #170d02;
-    --midground: #ffac02;
-    --foreground: #ffffff;
-    --hairline: color-mix(in srgb, #ffac02 18%, transparent);
+    --background-base: #ffffff;
+    --surface: #fafafa;
+    --foreground: #171717;
+    --body-copy: #4d4d4d;
+    --muted-copy: #888888;
+    --line: #e5e5e5;
+    --brand-accent: #007a5e;
+    --brand-accent-strong: #005d49;
+    --brand-accent-soft: #d8f0e9;
+    --code-bg: #d8f0e9;
+    --code-text: #005d49;
+    --hairline: var(--line);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background-base: #101414;
+      --surface: #151b19;
+      --foreground: #f5f7f4;
+      --body-copy: #c8d0cb;
+      --muted-copy: #8d9892;
+      --line: #2c3632;
+      --brand-accent: #7ee7c6;
+      --brand-accent-strong: #b8ffe5;
+      --brand-accent-soft: #163f34;
+      --code-bg: #163f34;
+      --code-text: #b8ffe5;
+      --hairline: var(--line);
+    }
   }
   *, *::before, *::after { box-sizing: border-box; }
   html, body {
     margin: 0; padding: 0; min-height: 100%;
     background: var(--background-base);
     color: var(--foreground);
-    font-family: 'Collapse', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-family: 'Geist', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     font-size: 16px; line-height: 1.5;
     -webkit-font-smoothing: antialiased;
   }
@@ -364,38 +443,56 @@ _EMPTY_HTML = """\
   main {
     width: 100%; max-width: 32rem;
     padding: 2.25rem 2rem;
-    background: color-mix(in srgb, #ffffff 2%, var(--background-base));
+    background: var(--surface);
     border: 1px solid var(--hairline);
     box-shadow:
-      inset 1px 1px 0 0 color-mix(in srgb, #ffffff 5%, transparent),
-      inset -1px -1px 0 0 rgba(0, 0, 0, 0.4),
-      0 24px 60px -20px rgba(0, 0, 0, 0.6);
+      inset 1px 1px 0 0 color-mix(in srgb, #ffffff 38%, transparent),
+      0 24px 60px -28px color-mix(in srgb, var(--foreground) 30%, transparent);
+  }
+  .brand {
+    margin: 0 0 0.4rem;
+    color: var(--brand-accent);
+    font-weight: 760;
+    font-size: 1.15rem;
+  }
+  .brand-note {
+    margin: 0 0 1.5rem;
+    color: var(--muted-copy);
+    font-size: 0.76rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
   h1 {
     margin: 0 0 1rem;
-    font-family: 'Rules Compressed', 'Collapse', sans-serif;
-    font-weight: 600; font-size: 1.5rem;
-    letter-spacing: 0.05em; text-transform: uppercase;
-    color: var(--midground);
+    font-family: 'Geist', sans-serif;
+    font-weight: 720; font-size: 1.5rem;
+    letter-spacing: 0;
+    color: var(--foreground);
   }
-  p { margin: 0 0 1rem; }
+  p { margin: 0 0 1rem; color: var(--body-copy); }
   code {
-    background: var(--midground);
-    color: var(--background-base);
+    background: var(--code-bg);
+    color: var(--code-text);
     padding: 0.1em 0.35em;
-    font-family: 'Courier New', monospace;
+    font-family: 'Geist Mono', "SF Mono", Consolas, monospace;
     font-size: 0.9em;
+  }
+  ::selection {
+    background: var(--brand-accent-soft);
+    color: var(--foreground);
   }
 </style>
 </head>
 <body>
 <main>
+<div class="brand">Nadia</div>
+<div class="brand-note">Nadia Agent by NadicodeAI</div>
 <h1>Sign-in unavailable</h1>
 <p>This dashboard is bound to a non-loopback host but no authentication
 providers are installed.</p>
-<p>Install <code>plugins/dashboard-auth-nadia</code> (default) or another
-auth provider, or restart with <code>--insecure</code> to bypass the
-auth gate (not recommended on untrusted networks).</p>
+<p>Install a dashboard authentication provider, or restart with
+<code>--insecure</code> to bypass the auth gate (not recommended on
+untrusted networks).</p>
 </main>
 </body>
 </html>

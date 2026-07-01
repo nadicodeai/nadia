@@ -21,7 +21,7 @@ Delegate coding to xAI Grok Build CLI (features, PRs).
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `Coding-Agent`, `Grok`, `xAI`, `Code-Review`, `Refactoring`, `Automation` |
-| Related skills | [`codex`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-codex), [`claude-code`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-claude-code), [`nadia-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-nadia-agent) |
+| Related skills | [`codex`](/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-codex), [`claude-code`](/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-claude-code), [`nadia-agent`](/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-nadia-agent) |
 
 ## Reference: full SKILL.md
 

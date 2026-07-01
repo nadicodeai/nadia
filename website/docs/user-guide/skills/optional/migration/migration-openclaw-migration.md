@@ -21,7 +21,7 @@ Migrate a user's OpenClaw customization footprint into Nadia Agent. Imports Nadi
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `Migration`, `OpenClaw`, `Nadia`, `Memory`, `Persona`, `Import` |
-| Related skills | [`nadia-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-nadia-agent) |
+| Related skills | [`nadia-agent`](/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-nadia-agent) |
 
 ## Reference: full SKILL.md
 

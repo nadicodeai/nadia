@@ -117,9 +117,9 @@ How generation works (a two-step, cost-bounded flow):
 
 ### Image backend
 
-Generation uses the active [image-generation provider](/user-guide/features/image-generation), but it requires **reference-image grounding** so each animation row stays the same character as the base. Reference-capable backends: **Nadia Agents Portal**, **OpenRouter**, **OpenAI** (`gpt-image-2`), and **Krea**. OpenRouter/Nadia run a quality-first model chain by default.
+Generation uses the active [image-generation provider](/user-guide/features/image-generation), but it requires **reference-image grounding** so each animation row stays the same character as the base. Reference-capable backends: **NadicodeAI Portal**, **OpenRouter**, **OpenAI** (`gpt-image-2`), and **Krea**. OpenRouter/Nadia run a quality-first model chain by default.
 
-- Resolution order prefers Nadia Agents Portal → OpenAI → OpenRouter.
+- Resolution order prefers NadicodeAI Portal → OpenAI → OpenRouter.
 - If no reference-capable backend is configured, generation surfaces an actionable error pointing you to `nadia tools` → Image Generation. (Installing/adopting existing gallery pets needs no image backend.)
 - Override the backend with the `NADIA_PET_IMAGE_PROVIDER` env var (e.g. `NADIA_PET_IMAGE_PROVIDER=openrouter`).
 

@@ -65,7 +65,7 @@ Read before adding or editing UI styles. These rules keep the dashboard legible 
 
 - **Never apply opacity below 0.7 to text.** No `opacity-30`, `opacity-50`, `opacity-60` on `<span>`s, `<p>`s, labels, etc.
 - **Do not stack opacity tokens.** Patterns like `text-muted-foreground/60`, `text-midground/70`, `text-foreground/50` create unpredictable WCAG failures because the parent token already has alpha.
-- Use the **semantic text tokens** from `@nous-research/ui`'s `globals.css`:
+- Use the **semantic text tokens** from `@nadicodeai/ui`'s `globals.css`:
   - `text-text-primary` — default body text.
   - `text-text-secondary` — subtitles, meta, inactive nav.
   - `text-text-tertiary` — small chrome labels, counts, footnotes.
@@ -101,4 +101,3 @@ Typography is **opt-in per surface**, not global on layout shells — the app sh
 - Prefer **semantic tokens** (`text-text-*`, `bg-card`, `border-border`, `text-foreground`, `text-destructive`, `text-success`, `text-warning`) over raw layer references (`text-midground`, `text-foreground`).
 - `text-muted-foreground` is now wired to `--color-text-secondary`, so existing call sites stay correct, but new code should prefer the semantic name.
 - When you genuinely need a non-token color (icon de-emphasis on a chart, terminal foreground via inline style), keep alpha at `≥ 0.7` for any text.
-

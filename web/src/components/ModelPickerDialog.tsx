@@ -1,9 +1,9 @@
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Checkbox } from "@nous-research/ui/ui/components/checkbox";
-import { ListItem } from "@nous-research/ui/ui/components/list-item";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
-import { Input } from "@nous-research/ui/ui/components/input";
-import { Label } from "@nous-research/ui/ui/components/label";
+import { Button } from "@/nadicodeai-ui";
+import { Checkbox } from "@/nadicodeai-ui";
+import { ListItem } from "@/nadicodeai-ui";
+import { Spinner } from "@/nadicodeai-ui";
+import { Input } from "@/nadicodeai-ui";
+import { Label } from "@/nadicodeai-ui";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type { GatewayClient } from "@/lib/gatewayClient";
 import { Check, Search, X } from "lucide-react";
@@ -308,7 +308,7 @@ export function ModelPickerDialog(props: Props) {
         <header className="p-5 pb-3 border-b border-border">
           <h2
             id="model-picker-title"
-            className="font-mondwest text-display text-base tracking-wider"
+            className="text-display-sm text-base tracking-wider"
           >
             {title}
           </h2>
@@ -381,7 +381,7 @@ export function ModelPickerDialog(props: Props) {
               />
 
               <Label
-                className="font-mondwest normal-case tracking-normal text-xs text-muted-foreground cursor-pointer"
+                className="normal-case tracking-normal text-xs text-muted-foreground cursor-pointer"
                 htmlFor="model-picker-persist-global"
               >
                 Persist globally (otherwise this session only)
@@ -566,7 +566,7 @@ function ModelColumn({
 
 function CurrentTag() {
   return (
-    <span className="text-display text-xs tracking-wider text-primary shrink-0">
+    <span className="text-display-sm text-xs tracking-wider text-primary shrink-0">
       current
     </span>
   );

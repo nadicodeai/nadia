@@ -4,12 +4,14 @@ title: "CLI Interface"
 description: "Master the Nadia Agent terminal interface — commands, keybindings, personalities, and more"
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
 # CLI Interface
 
 Nadia Agent's CLI is a full terminal user interface (TUI) — not a web UI. It features multiline editing, slash-command autocomplete, conversation history, interrupt-and-redirect, and streaming tool output. Built for people who live in the terminal.
 
 :::tip First-time setup
-One command — `nadia setup --portal` — and you're ready to `nadia chat`. See [Nadia Agents Portal](/integrations/nadia-portal).
+One command — `nadia setup --portal` — and you're ready to `nadia chat`. See [NadicodeAI Portal](/integrations/nadia-portal).
 :::
 
 :::tip
@@ -29,7 +31,7 @@ nadia chat -q "Hello"
 nadia chat --model "anthropic/claude-sonnet-4"
 
 # With a specific provider
-nadia chat --provider nadia        # Use Nadia Agents Portal
+nadia chat --provider nadia        # Use NadicodeAI Portal
 nadia chat --provider openrouter  # Force OpenRouter
 
 # With specific toolsets
@@ -53,7 +55,7 @@ nadia -w -z "Fix issue #123"     # Single query in worktree
 
 ## Interface Layout
 
-<img className="docs-terminal-figure" src="/docs/img/docs/cli-layout.svg" alt="Stylized preview of the Nadia CLI layout showing the banner, conversation area, and fixed input prompt." />
+<img className="docs-terminal-figure" src={useBaseUrl("/img/docs/cli-layout.svg")} alt="Stylized preview of the Nadia CLI layout showing the banner, conversation area, and fixed input prompt." />
 <p className="docs-figure-caption">The Nadia CLI banner, conversation stream, and fixed input prompt rendered as a stable docs figure instead of fragile text art.</p>
 
 The welcome banner shows your model, terminal backend, working directory, available tools, and installed skills at a glance.

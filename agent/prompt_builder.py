@@ -1684,12 +1684,12 @@ def build_skills_system_prompt(
 
 
 def build_nous_subscription_prompt(valid_tool_names: "set[str] | None" = None) -> str:
-    """Build a compact Nadia subscription capability block for the system prompt."""
+    """Build a compact NadicodeAI subscription capability block for the system prompt."""
     try:
         from nadia_cli.nous_subscription import get_nous_subscription_features
         from tools.tool_backend_helpers import managed_nous_tools_enabled
     except Exception as exc:
-        logger.debug("Failed to import Nadia subscription helper: %s", exc)
+        logger.debug("Failed to import NadicodeAI subscription helper: %s", exc)
         return ""
 
     if not managed_nous_tools_enabled():
@@ -1722,26 +1722,26 @@ def build_nous_subscription_prompt(valid_tool_names: "set[str] | None" = None) -
 
     def _status_line(feature) -> str:
         if feature.managed_by_nous:
-            return f"- {feature.label}: active via Nadia subscription"
+            return f"- {feature.label}: active via NadicodeAI subscription"
         if feature.active:
             current = feature.current_provider or "configured provider"
             return f"- {feature.label}: currently using {current}"
         if feature.included_by_default and features.nous_auth_present:
-            return f"- {feature.label}: included with Nadia subscription, not currently selected"
+            return f"- {feature.label}: included with NadicodeAI subscription, not currently selected"
         if feature.key == "modal" and features.nous_auth_present:
-            return f"- {feature.label}: optional via Nadia subscription"
+            return f"- {feature.label}: optional via NadicodeAI subscription"
         return f"- {feature.label}: not currently available"
 
     lines = [
-        "# Nadia Subscription",
-        "Nadia subscription includes managed web tools (Firecrawl), image generation (FAL), OpenAI TTS, OpenAI Whisper STT, and browser automation (Browser Use) by default. Modal execution is optional.",
+        "# NadicodeAI Subscription",
+        "NadicodeAI subscription includes managed web tools (Firecrawl), image generation (FAL), OpenAI TTS, OpenAI Whisper STT, and browser automation (Browser Use) by default. Modal execution is optional.",
         "Current capability status:",
     ]
     lines.extend(_status_line(feature) for feature in features.items())
     lines.extend(
         [
             "When a Nadia-managed feature is active, do not ask the user for Firecrawl, FAL, OpenAI TTS, OpenAI Whisper, or Browser-Use API keys.",
-            "If the user is not subscribed and asks for a capability that Nadia subscription would unlock or simplify, suggest Nadia subscription as one option alongside direct setup or local alternatives.",
+            "If the user is not subscribed and asks for a capability that NadicodeAI subscription would unlock or simplify, suggest NadicodeAI subscription as one option alongside direct setup or local alternatives.",
             "Do not mention subscription unless the user asks about it or it directly solves the current missing capability.",
             "Useful commands: nadia setup, nadia setup tools, nadia setup terminal, nadia status.",
         ]

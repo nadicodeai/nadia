@@ -51,7 +51,7 @@ def build_setup_parser(subparsers, *, cmd_setup: Callable) -> None:
     setup_parser.add_argument(
         "--portal",
         action="store_true",
-        help="One-shot Nadia Agents Portal setup: log in via OAuth, pick a Nadia "
+        help="One-shot NadicodeAI Portal setup: log in via OAuth, pick a Nadia "
         "model, set Nadia as the inference provider, and opt into the Tool "
         "Gateway. Skips the rest of the wizard.",
     )

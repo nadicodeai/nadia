@@ -706,7 +706,7 @@ export const en: Translations = {
       noProviderOptions: 'This toolset has no provider options — enable it and it works with your current setup.',
       noProviders: 'No providers are available for this toolset right now.',
       ready: 'Ready',
-      nadiaIncluded: 'Included with a Nadia subscription — sign in to Nadia Agents Portal to activate.',
+      nadiaIncluded: 'Included with a NadicodeAI subscription — sign in to NadicodeAI Portal to activate.',
       noApiKeyRequired: 'No API key required.',
       postSetupHint: step =>
         `This backend needs a one-time install (${step}). Runs on this machine — may take a few minutes.`,
@@ -1755,7 +1755,7 @@ export const en: Translations = {
     loadFailed: 'Could not load models',
     noAuthenticatedProviders: 'No authenticated providers.',
     pro: 'Pro',
-    proNeedsSubscription: 'Pro models need a paid Nadia subscription.',
+    proNeedsSubscription: 'Pro models need a paid NadicodeAI subscription.',
     free: 'Free',
     freeTier: 'Free tier',
     priceTitle: 'Input / Output price per million tokens'

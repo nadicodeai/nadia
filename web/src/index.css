@@ -1,16 +1,9 @@
-@import 'tailwindcss';
-/* `fonts.css` must come BEFORE `globals.css`: as of @nous-research/ui 0.14.x,
-   `globals.css` only declares the `--font-*` CSS variables (Collapse, Rules
-   Compressed/Expanded, Mondwest). The `@font-face` registrations live in
-   `fonts.css`, so without this import the DS variables resolve to font
-   families the browser never loads and components fall back to a system
-   stack (Tabs, Segmented, Typography, Buttons, etc. all look unstyled). */
-@import '@nous-research/ui/styles/fonts.css';
-@import '@nous-research/ui/styles/globals.css';
+@import '@nadicodeai/design-system/assets/fonts/geist.css';
+@import '@nadicodeai/ui/globals.css';
 
-/* Scan the published design-system bundle so its utility classes survive
+/* Scan the published UI bundle so its utility classes survive
    Tailwind's JIT purge. */
-@source '../node_modules/@nous-research/ui/dist';
+@source '../node_modules/@nadicodeai/ui/dist';
 
 /* ------------------------------------------------------------------ */
 /* JetBrains Mono — bundled for the embedded TUI (/chat tab).          */
@@ -43,58 +36,68 @@
 }
 
 /* ------------------------------------------------------------------ */
-/* Nadia Agent — Nadia DS with the LENS_0 (Nadia teal) lens applied   */
-/* statically. Mirrors nousnet-web/(nadia-agent)/layout.tsx so the    */
-/* canonical Nadia palette is the default — teal canvas + cream      */
-/* accent — without relying on leva/gsap at runtime.                  */
+/* Dashboard shell tokens backed by the NadicodeAI design system.      */
 /* ------------------------------------------------------------------ */
 
 :root {
-  /* LENS_0 — from design-language/src/ui/components/overlays/index.tsx.
-     These are the defaults for the `default` (Nadia Teal) dashboard theme;
-     ThemeProvider rewrites them as inline styles when a user switches themes. */
-  --foreground: color-mix(in srgb, #ffffff 0%, transparent);
-  --foreground-base: #ffffff;
-  --foreground-alpha: 0;
-  --midground: color-mix(in srgb, #ffe6cb 100%, transparent);
-  --midground-base: #ffe6cb;
+  color-scheme: light;
+
+  /* Compatibility aliases for legacy dashboard chrome and Backdrop. */
+  --foreground-base: var(--nc-ink);
+  --foreground-alpha: 1;
+  --midground: var(--nc-link-deep);
+  --midground-base: var(--nc-link-deep);
   --midground-alpha: 1;
-  --background: color-mix(in srgb, #041c1c 100%, transparent);
-  --background-base: #041c1c;
+  --background-base: var(--nc-canvas);
   --background-alpha: 1;
 
-  /* Consumed by <Backdrop />; also theme-switchable. */
-  --warm-glow: rgba(255, 189, 56, 0.35);
-  --noise-opacity-mul: 1;
+  /* Consumed by <Backdrop />. */
+  --warm-glow: color-mix(in srgb, var(--nc-link) 22%, transparent);
+  --noise-opacity-mul: 0.28;
 
-  /* Typography tokens — rewritten by ThemeProvider. Defaults match the
-     system stack so themes that don't override look native. */
-  --theme-font-sans: system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
-  --theme-font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo,
-    Consolas, monospace;
+  /* Typography tokens used by the dashboard shell. */
+  --theme-font-sans: "Geist", Inter, system-ui, -apple-system, sans-serif;
+  --theme-font-mono: "Geist Mono", "JetBrains Mono", ui-monospace,
+    "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
   --theme-font-display: var(--theme-font-sans);
   --theme-base-size: 15px;
   --theme-line-height: 1.55;
   --theme-letter-spacing: 0;
 
   /* Layout tokens. */
-  --radius: 0.5rem;
-  --theme-radius: 0.5rem;
+  --theme-radius: var(--radius-md);
   --theme-spacing-mul: 1;
   --theme-density: comfortable;
 
   /* Data-series accents — consumed by Analytics + Models pages for the
      input-vs-output token visualisations (chart bars, table values,
-     legend swatches). Defaults are tuned for the Nadia-teal LENS_0
-     look: cream input + emerald-400 output read as warm/cool against
-     the dark canvas. Themes override via ThemeProvider, which emits
-     these as `--series-input-token` / `--series-output-token`. */
-  --series-input-token: #ffe6cb;
-  --series-output-token: #34d399;
+     legend swatches). */
+  --series-input-token: var(--nc-link);
+  --series-output-token: var(--nc-cyan-deep);
+  --dashboard-text-secondary: var(--nc-body);
+  --dashboard-text-tertiary: var(--nc-muted);
+  --dashboard-success: var(--nc-success);
+  --dashboard-warning: var(--nc-warning);
 }
 
-/* Theme tokens cascade into the document root so every descendant inherits
+.dark {
+  color-scheme: dark;
+
+  --foreground-base: var(--nc-dark-ink);
+  --midground: var(--nc-dark-link);
+  --midground-base: var(--nc-dark-link);
+  --background-base: var(--nc-dark-canvas);
+  --warm-glow: color-mix(in srgb, var(--nc-dark-link) 26%, transparent);
+  --noise-opacity-mul: 0.35;
+  --series-input-token: var(--nc-dark-link);
+  --series-output-token: var(--nc-dark-cyan);
+  --dashboard-text-secondary: var(--nc-dark-body);
+  --dashboard-text-tertiary: var(--nc-dark-muted);
+  --dashboard-success: var(--nc-dark-link);
+  --dashboard-warning: var(--nc-dark-warning);
+}
+
+/* Shell tokens cascade into the document root so every descendant inherits
    the font stack, base size, and letter spacing without explicit calls. */
 html {
   font-family: var(--theme-font-sans);
@@ -108,6 +111,8 @@ html {
 
 body {
   font-family: var(--theme-font-sans);
+  color: var(--foreground);
+  background: var(--background);
   min-height: 0;
   height: 100%;
   margin: 0;
@@ -126,6 +131,15 @@ code, kbd, pre, samp, .font-mono, .font-mono-ui {
   --spacing: calc(0.25rem * var(--theme-spacing-mul, 1));
   --font-sans: var(--theme-font-sans);
   --font-mono: var(--theme-font-mono);
+  --font-display: var(--theme-font-display);
+
+  --color-background-base: var(--background-base);
+  --color-foreground-base: var(--foreground-base);
+  --color-midground: var(--midground);
+  --color-text-secondary: var(--dashboard-text-secondary);
+  --color-text-tertiary: var(--dashboard-text-tertiary);
+  --color-success: var(--dashboard-success);
+  --color-warning: var(--dashboard-warning);
 }
 
 #root {
@@ -147,50 +161,9 @@ code, kbd, pre, samp, .font-mono, .font-mono-ui {
   }
 }
 
-/* Nousnet's nadia-agent layout bumps `small` and `code` to readable
-   dashboard sizes. Keep in sync. */
+/* Readable dashboard defaults. */
 small { font-size: 1.0625rem; }
 code { font-size: 0.875rem; }
-
-/* Shadcn-compat tokens.
-   The dashboard's page code predates the Nadia DS and uses shadcn-style
-   utility classes (bg-card, text-muted-foreground, border-border, etc.)
-   extensively. Rather than rewrite every call site, we expose those
-   tokens on top of the Nadia palette so classes continue to resolve. */
-@theme inline {
-  /* Remap foreground to midground so `text-foreground` / `bg-foreground`
-     stay visible — in LENS_0, `--foreground` itself has alpha 0. */
-  --color-foreground: var(--midground);
-
-  --color-card: color-mix(in srgb, var(--midground-base) 4%, var(--background-base));
-  --color-card-foreground: var(--midground);
-  --color-primary: var(--midground);
-  --color-primary-foreground: var(--background-base);
-  --color-secondary: color-mix(in srgb, var(--midground-base) 6%, var(--background-base));
-  --color-secondary-foreground: var(--midground);
-  --color-muted: color-mix(in srgb, var(--midground-base) 8%, var(--background-base));
-  /* Routes the shadcn `muted-foreground` slot through the DS semantic
-     text-secondary token (defaults to midground 80%) so legacy call
-     sites that use `text-muted-foreground` get a readable color
-     instead of the old 55%-transparent default. */
-  --color-muted-foreground: var(--color-text-secondary);
-  --color-accent: color-mix(in srgb, var(--midground-base) 10%, var(--background-base));
-  --color-accent-foreground: var(--midground);
-  --color-destructive: #fb2c36;
-  --color-destructive-foreground: #ffffff;
-  --color-success: #4ade80;
-  --color-warning: #ffbd38;
-  --color-border: color-mix(in srgb, var(--midground-base) 15%, transparent);
-  --color-input: color-mix(in srgb, var(--midground-base) 15%, transparent);
-  --color-ring: var(--midground);
-  --color-popover: color-mix(in srgb, var(--midground-base) 4%, var(--background-base));
-  --color-popover-foreground: var(--midground);
-
-  --radius-sm: calc(var(--theme-radius) - 4px);
-  --radius-md: calc(var(--theme-radius) - 2px);
-  --radius-lg: var(--theme-radius);
-  --radius-xl: calc(var(--theme-radius) + 4px);
-}
 
 
 /* Collapsed sidebar tooltip entrance — skipped when moving between items. */
@@ -235,9 +208,7 @@ code { font-size: 0.875rem; }
 
 /* System UI-monospace stack — distinct from `font-courier` (Courier
    Prime), used for dense data readouts where the display font would
-   break the grid. Routes through the theme's mono stack so themes
-   with a different monospace (JetBrains Mono, IBM Plex Mono, etc.)
-   still apply here. */
+   break the grid. Routes through the shell mono stack. */
 .font-mono-ui {
   font-family: var(--theme-font-mono);
 }
@@ -256,14 +227,12 @@ code { font-size: 0.875rem; }
     2px 2px;
 }
 
-/* When a theme provides `assets.bg`, the backdrop's <div> renders it as
-   a CSS background; the default filler <img> is hidden to prevent
-   double-compositing. Unset → initial → empty, so the :not() selector
-   matches and the default image stays visible. */
+/* When a future shell override provides `assets.bg`, the backdrop's <div>
+   renders it as a CSS background and the default filler <img> is hidden to
+   prevent double-compositing. */
 :root:not([style*="--theme-asset-bg:"]) .theme-default-filler {
   display: block;
 }
 :root[style*="--theme-asset-bg:"] .theme-default-filler {
   display: none;
 }
-

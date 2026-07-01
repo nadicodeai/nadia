@@ -199,7 +199,7 @@ function notifyReady(provider: string) {
   notify({ kind: 'success', title: 'Nadia is ready', message: `${provider} connected.` })
 }
 
-// Human-friendly labels for tools auto-routed through the Nadia Tool Gateway,
+// Human-friendly labels for tools auto-routed through the NadicodeAI Tool Gateway,
 // mirroring nadia_cli/nous_subscription._GATEWAY_TOOL_LABELS so the GUI and
 // CLI describe the same thing.
 const GATEWAY_TOOL_LABELS: Record<string, string> = {
@@ -224,7 +224,7 @@ function notifyGatewayTools(tools: string[] | undefined) {
   notify({
     durationMs: 8000,
     kind: 'info',
-    message: `${list} now run through your Nadia subscription — no separate API keys needed.`,
+    message: `${list} now run through your NadicodeAI subscription — no separate API keys needed.`,
     title: 'Tool Gateway enabled'
   })
 }

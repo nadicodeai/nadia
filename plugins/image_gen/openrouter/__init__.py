@@ -1,13 +1,13 @@
-"""OpenRouter-compatible image generation backend (OpenRouter + Nadia Agents Portal).
+"""OpenRouter-compatible image generation backend (OpenRouter + NadicodeAI Portal).
 
-Both OpenRouter and the Nadia Agents Portal inference endpoint speak the same
+Both OpenRouter and the NadicodeAI Portal inference endpoint speak the same
 OpenAI-style ``/chat/completions`` image-generation protocol: send
 ``modalities: ["image", "text"]`` with an image-output model (e.g.
 ``google/gemini-3-pro-image``), pass reference images as ``image_url``
 content parts for grounding, and read the generated images back from
 ``choices[0].message.images[].image_url.url`` (a ``data:image/...;base64`` URI).
 
-Nadia Agents Portal proxies OpenRouter, so one implementation services both — we only
+NadicodeAI Portal proxies OpenRouter, so one implementation services both — we only
 swap the resolved ``(base_url, api_key)``. Credentials are resolved through the
 agent's existing :func:`~nadia_cli.runtime_provider.resolve_runtime_provider`,
 which already understands OpenRouter's key pool and the Nadia OAuth device-code
@@ -171,7 +171,7 @@ def _dedupe_models(models: list[str]) -> list[str]:
 class OpenRouterCompatImageProvider(ImageGenProvider):
     """Image generation over an OpenRouter-compatible chat-completions endpoint.
 
-    Instantiated once per backend (OpenRouter, Nadia Agents Portal). The two differ only
+    Instantiated once per backend (OpenRouter, NadicodeAI Portal). The two differ only
     in which runtime provider supplies ``(base_url, api_key)`` and in the config
     namespace used for the model override.
     """
@@ -321,7 +321,7 @@ class OpenRouterCompatImageProvider(ImageGenProvider):
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
-            # OpenRouter attribution headers (harmless against Nadia Agents Portal).
+            # OpenRouter attribution headers (harmless against NadicodeAI Portal).
             "HTTP-Referer": "https://github.com/nadicodeai/nadia",
             "X-Title": "Nadia Agent",
         }
@@ -490,14 +490,14 @@ def _build_providers() -> List[OpenRouterCompatImageProvider]:
         ),
         OpenRouterCompatImageProvider(
             provider_name="nous",
-            display_name="Nadia Agents Portal",
+            display_name="NadicodeAI Portal",
             runtime_name="nous",
             config_key="nous",
             model_env_var="NADIA_IMAGE_MODEL",
             setup_schema={
-                "name": "Nadia Agents Portal (image)",
+                "name": "NadicodeAI Portal (image)",
                 "badge": "subscription",
-                "tag": "Reference-grounded image generation via Nadia Agents Portal (OpenRouter-backed)",
+                "tag": "Reference-grounded image generation via NadicodeAI Portal (OpenRouter-backed)",
                 "env_vars": [],
                 "requires_nous_auth": True,
             },
@@ -506,6 +506,6 @@ def _build_providers() -> List[OpenRouterCompatImageProvider]:
 
 
 def register(ctx: Any) -> None:
-    """Register the OpenRouter + Nadia Agents Portal image gen providers."""
+    """Register the OpenRouter + NadicodeAI Portal image gen providers."""
     for provider in _build_providers():
         ctx.register_image_gen_provider(provider)

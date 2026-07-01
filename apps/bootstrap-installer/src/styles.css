@@ -18,10 +18,9 @@
  *     to the file that contains them, so they continue to point at the
  *     correct node_modules path even from here.
  *
- * Forced light mode: the desktop ships with a runtime theme switcher
- * (ThemeProvider + applyTheme) that can flip to dark via document.documentElement.
- * The installer has no UI for theme switching, so we stay on the desktop's
- * default light surface (Nadia-blue accent on near-white chrome).
+ * System theme mode: src/main.tsx toggles document.documentElement.dark from
+ * prefers-color-scheme so the installer follows the user's OS appearance
+ * without carrying the desktop's full theme provider machinery.
  */
 @import '../../desktop/src/styles.css';
 

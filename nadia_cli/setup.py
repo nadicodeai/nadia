@@ -411,7 +411,7 @@ def _print_setup_summary(config: dict, nadia_home):
 
     # Web tools (Exa, Parallel, Firecrawl, or Tavily)
     if subscription_features.web.managed_by_nous:
-        tool_status.append(("Web Search & Extract (Nadia subscription)", True, None))
+        tool_status.append(("Web Search & Extract (NadicodeAI subscription)", True, None))
     elif subscription_features.web.available:
         label = "Web Search & Extract"
         if subscription_features.web.current_provider:
@@ -453,7 +453,7 @@ def _print_setup_summary(config: dict, nadia_home):
     # Image generation — FAL (direct or via Nadia), or any plugin-registered
     # provider (OpenAI, etc.)
     if subscription_features.image_gen.managed_by_nous:
-        tool_status.append(("Image Generation (Nadia subscription)", True, None))
+        tool_status.append(("Image Generation (NadicodeAI subscription)", True, None))
     elif subscription_features.image_gen.available:
         tool_status.append(("Image Generation", True, None))
     else:
@@ -485,7 +485,7 @@ def _print_setup_summary(config: dict, nadia_home):
     # Only show the row when a plugin reports available so we don't badger
     # users who don't care about video gen with a "missing" status line.
     if subscription_features.video_gen.managed_by_nous:
-        tool_status.append(("Video Generation (FAL via Nadia subscription)", True, None))
+        tool_status.append(("Video Generation (FAL via NadicodeAI subscription)", True, None))
     else:
         try:
             from agent.video_gen_registry import list_providers as _list_video_providers
@@ -507,7 +507,7 @@ def _print_setup_summary(config: dict, nadia_home):
     # TTS — show configured provider
     tts_provider = cfg_get(config, "tts", "provider", default="edge")
     if subscription_features.tts.managed_by_nous:
-        tool_status.append(("Text-to-Speech (OpenAI via Nadia subscription)", True, None))
+        tool_status.append(("Text-to-Speech (OpenAI via NadicodeAI subscription)", True, None))
     elif tts_provider == "elevenlabs" and get_env_value("ELEVENLABS_API_KEY"):
         tool_status.append(("Text-to-Speech (ElevenLabs)", True, None))
     elif tts_provider == "openai" and (
@@ -542,14 +542,14 @@ def _print_setup_summary(config: dict, nadia_home):
         tool_status.append(("Text-to-Speech (Edge TTS)", True, None))
 
     if subscription_features.modal.managed_by_nous:
-        tool_status.append(("Modal Execution (Nadia subscription)", True, None))
+        tool_status.append(("Modal Execution (NadicodeAI subscription)", True, None))
     elif cfg_get(config, "terminal", "backend") == "modal":
         if subscription_features.modal.direct_override:
             tool_status.append(("Modal Execution (direct Modal)", True, None))
         else:
             tool_status.append(("Modal Execution", False, "run 'nadia setup terminal'"))
     elif managed_nous_tools_enabled() and subscription_features.nous_auth_present:
-        tool_status.append(("Modal Execution (optional via Nadia subscription)", True, None))
+        tool_status.append(("Modal Execution (optional via NadicodeAI subscription)", True, None))
 
     # Home Assistant
     if get_env_value("HASS_TOKEN"):
@@ -940,7 +940,7 @@ def _setup_tts_provider(config: dict):
     choices = []
     providers = []
     if managed_nous_tools_enabled() and subscription_features.nous_auth_present:
-        choices.append("Nadia Subscription (managed OpenAI TTS, billed to your subscription)")
+        choices.append("NadicodeAI Subscription (managed OpenAI TTS, billed to your subscription)")
         providers.append("nadia-openai")
     choices.extend(
         [
@@ -1264,7 +1264,7 @@ def setup_terminal_backend(config: dict):
         use_managed_modal = False
         if managed_modal_available:
             modal_choices = [
-                "Use my Nadia subscription",
+                "Use my NadicodeAI subscription",
                 "Use my own Modal account",
             ]
             if modal_mode == "managed":
@@ -2623,7 +2623,7 @@ SETUP_SECTIONS = [
 
 
 def _run_portal_one_shot(config: dict) -> None:
-    """One-shot Nadia Agents Portal setup — OAuth + model pick + provider + Tool Gateway.
+    """One-shot NadicodeAI Portal setup — OAuth + model pick + provider + Tool Gateway.
 
     Wired into ``nadia setup --portal`` and ``nadia portal``. This is the
     Nadia-Portal slice of the first-time quick setup, collapsed into a single
@@ -2648,7 +2648,7 @@ def _run_portal_one_shot(config: dict) -> None:
             Colors.MAGENTA,
         )
     )
-    print(color("│     ⚕ Nadia Setup — Nadia Agents Portal (one-shot)             │", Colors.MAGENTA))
+    print(color("│     ⚕ Nadia Setup — NadicodeAI Portal (one-shot)             │", Colors.MAGENTA))
     print(
         color(
             "└─────────────────────────────────────────────────────────┘",
@@ -2658,9 +2658,9 @@ def _run_portal_one_shot(config: dict) -> None:
     print()
     print_info("  One subscription, 300+ models, plus the Tool Gateway:")
     print_info("    web search, image generation, TTS, browser automation")
-    print_info("    — all routed through your Nadia Agents Portal sub.")
+    print_info("    — all routed through your NadicodeAI Portal sub.")
     print()
-    print_info("  Sign up: https://portal.nadicode.ai/manage-subscription")
+    print_info("  Sign up: https://portal.nadicodeai.com/manage-subscription")
     print()
 
     # _model_flow_nous handles BOTH the logged-out path (device-code OAuth,
@@ -2685,7 +2685,7 @@ def _run_portal_one_shot(config: dict) -> None:
     except Exception as exc:
         logger.debug("_model_flow_nous error during `nadia portal`: %s", exc)
         print()
-        print_error(f"  Nadia Agents Portal setup encountered an error: {exc}")
+        print_error(f"  NadicodeAI Portal setup encountered an error: {exc}")
         print_info("  You can retry later with `nadia portal`.")
         return
 
@@ -2761,7 +2761,7 @@ def run_setup_wizard(args):
         )
         return
 
-    # --portal: one-shot Nadia Agents Portal setup. Skips the rest of the wizard.
+    # --portal: one-shot NadicodeAI Portal setup. Skips the rest of the wizard.
     if bool(getattr(args, "portal", False)):
         _run_portal_one_shot(config)
         return
@@ -2881,7 +2881,7 @@ def run_setup_wizard(args):
         setup_mode = prompt_choice(
             "How would you like to set up Nadia?",
             [
-                "Quick Setup (Nadia Agents Portal) — free OAuth login, no API keys, model + tools (recommended)",
+                "Quick Setup (NadicodeAI Portal) — free OAuth login, no API keys, model + tools (recommended)",
                 "Full setup — configure every provider, tool & option yourself (bring your own keys)",
                 "Blank Slate — everything off except the bare minimum; opt in to each capability",
             ],
@@ -2942,9 +2942,9 @@ def run_setup_wizard(args):
 
 
 def _run_first_time_quick_setup(config: dict, nadia_home, is_existing: bool):
-    """Streamlined first-time setup via Nadia Agents Portal: OAuth, model, terminal & messaging.
+    """Streamlined first-time setup via NadicodeAI Portal: OAuth, model, terminal & messaging.
 
-    Routes straight to the Nadia Agents Portal provider — runs the device-code OAuth
+    Routes straight to the NadicodeAI Portal provider — runs the device-code OAuth
     login, picks a Nadia model, then configures the terminal backend and (optionally)
     a messaging platform. Applies sensible defaults for everything else (agent
     settings, tools); the user can customize later via ``nadia setup <section>``
@@ -2952,25 +2952,25 @@ def _run_first_time_quick_setup(config: dict, nadia_home, is_existing: bool):
     """
     from nadia_cli.config import load_config
 
-    # Step 1: Nadia Agents Portal — OAuth login + model selection.
+    # Step 1: NadicodeAI Portal — OAuth login + model selection.
     # _model_flow_nous() handles both the logged-out path (device-code OAuth,
     # which selects a model internally) and the already-logged-in path (curated
     # Nadia model picker). Provider is set to "nous" by the login/model save.
     print()
-    print_header("Nadia Agents Portal")
+    print_header("NadicodeAI Portal")
     print_info("One subscription, 300+ models, plus the Tool Gateway:")
     print_info("  web search, image generation, TTS, browser automation.")
-    print_info("Sign up: https://portal.nadicode.ai/manage-subscription")
+    print_info("Sign up: https://portal.nadicodeai.com/manage-subscription")
     print()
     try:
         from nadia_cli.main import _model_flow_nous
         _model_flow_nous(config)
     except (KeyboardInterrupt, EOFError):
         print()
-        print_info("Nadia Agents Portal setup cancelled.")
+        print_info("NadicodeAI Portal setup cancelled.")
     except Exception as exc:
         logger.debug("_model_flow_nous error during quick setup: %s", exc)
-        print_warning(f"Nadia Agents Portal setup encountered an error: {exc}")
+        print_warning(f"NadicodeAI Portal setup encountered an error: {exc}")
         print_info("You can try again later with: nadia model")
 
     # Re-sync the wizard's config dict from disk — _model_flow_nous (and the

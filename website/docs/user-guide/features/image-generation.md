@@ -30,7 +30,7 @@ Prices are FAL's pricing at time of writing; check [fal.ai](https://fal.ai/) for
 ## Setup
 
 :::tip Nadia Subscribers
-If you have a paid [Nadia Agents Portal](https://portal.nadicode.ai) subscription, you can use image generation through the **[Tool Gateway](tool-gateway.md)** without a FAL API key. Your model selection persists across both paths. New installs can run `nadia setup --portal` to log in and turn on every gateway tool at once; existing installs can pick **Nadia Subscription** as the image-gen backend via `nadia tools`.
+If you have a paid [NadicodeAI Portal](https://portal.nadicodeai.com) subscription, you can use image generation through the **[Tool Gateway](tool-gateway.md)** without a FAL API key. Your model selection persists across both paths. New installs can run `nadia setup --portal` to log in and turn on every gateway tool at once; existing installs can pick **NadicodeAI Subscription** as the image-gen backend via `nadia tools`.
 
 If the managed gateway returns `HTTP 4xx` for a specific model, that model isn't yet proxied on the portal side — the agent will tell you so, with remediation steps (set `FAL_KEY` for direct access, or pick a different model).
 :::
@@ -48,7 +48,7 @@ Run the tools command:
 nadia tools
 ```
 
-Navigate to **🎨 Image Generation**, pick your backend (Nadia Subscription or FAL.ai), then the picker shows all supported models in a column-aligned table — arrow keys to navigate, Enter to select:
+Navigate to **🎨 Image Generation**, pick your backend (NadicodeAI Subscription or FAL.ai), then the picker shows all supported models in a column-aligned table — arrow keys to navigate, Enter to select:
 
 ```
   Model                          Speed    Strengths                    Price
@@ -63,12 +63,12 @@ Your selection is saved to `config.yaml`:
 ```yaml
 image_gen:
   model: fal-ai/flux-2/klein/9b
-  use_gateway: false            # true if using Nadia Subscription
+  use_gateway: false            # true if using NadicodeAI Subscription
 ```
 
 ### GPT-Image Quality
 
-The `fal-ai/gpt-image-1.5` and `fal-ai/gpt-image-2` request quality is pinned to `medium` (~$0.034–$0.06/image at 1024×1024). We don't expose the `low` / `high` tiers as a user-facing option so that Nadia Agents Portal billing stays predictable across all users — the cost spread between tiers is 3–22×. If you want a cheaper option, pick Klein 9B or Z-Image Turbo; if you want higher quality, use Nano Banana Pro or Recraft V4 Pro.
+The `fal-ai/gpt-image-1.5` and `fal-ai/gpt-image-2` request quality is pinned to `medium` (~$0.034–$0.06/image at 1024×1024). We don't expose the `low` / `high` tiers as a user-facing option so that NadicodeAI Portal billing stays predictable across all users — the cost spread between tiers is 3–22×. If you want a cheaper option, pick Klein 9B or Z-Image Turbo; if you want higher quality, use Nano Banana Pro or Recraft V4 Pro.
 
 ## Usage
 
@@ -192,7 +192,7 @@ Debug logs go to `./logs/image_tools_debug_<session_id>.json` with per-call deta
 
 ## Limitations
 
-- **Requires credentials** for the active backend (FAL `FAL_KEY` / Nadia Subscription, `OPENAI_API_KEY`, xAI OAuth, `KREA_API_KEY`)
+- **Requires credentials** for the active backend (FAL `FAL_KEY` / NadicodeAI Subscription, `OPENAI_API_KEY`, xAI OAuth, `KREA_API_KEY`)
 - **Editing is model-dependent** — image-to-image works only on edit-capable models (see the table above); text-to-image-only models reject image inputs with a clear error
 - **Temporary URLs** — backends return hosted URLs that expire after hours/days; Nadia materializes them to the local cache so delivery still works after expiry
 - **Per-model constraints** — some models don't support `seed`, `num_inference_steps`, etc. The `supports` / `edit_supports` filter silently drops unsupported params; this is expected behavior

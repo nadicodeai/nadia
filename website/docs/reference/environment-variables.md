@@ -16,7 +16,7 @@ Nadia reads environment variables from the process environment and, for user-man
 | `OPENROUTER_BASE_URL` | Override the OpenRouter-compatible base URL |
 | `NADIA_OPENROUTER_CACHE` | Enable OpenRouter response caching (`1`/`true`/`yes`/`on`). Overrides `openrouter.response_cache` in config.yaml. See [Response Caching](https://openrouter.ai/docs/guides/features/response-caching). |
 | `NADIA_OPENROUTER_CACHE_TTL` | Cache TTL in seconds (1-86400). Overrides `openrouter.response_cache_ttl` in config.yaml. |
-| `NOUS_BASE_URL` | Override Nadia Agents Portal base URL (rarely needed; development/testing only) |
+| `NOUS_BASE_URL` | Override NadicodeAI Portal base URL (rarely needed; development/testing only) |
 | `NOUS_INFERENCE_BASE_URL` | Override Nadia inference endpoint directly |
 | `OPENAI_API_KEY` | API key for custom OpenAI-compatible endpoints (used with `OPENAI_BASE_URL`) |
 | `OPENAI_BASE_URL` | Base URL for custom endpoint (VLLM, SGLang, etc.) |
@@ -115,7 +115,7 @@ For native Anthropic auth, Nadia prefers Claude Code's own credential files when
 
 | Variable | Description |
 |----------|-------------|
-| `NADIA_PORTAL_BASE_URL` | Override Nadia Agents Portal URL (for development/testing) |
+| `NADIA_PORTAL_BASE_URL` | Override NadicodeAI Portal URL (for development/testing) |
 | `NOUS_INFERENCE_BASE_URL` | Override Nadia inference API URL |
 | `NADIA_NOUS_MIN_KEY_TTL_SECONDS` | Min agent key TTL before re-mint (default: 1800 = 30min) |
 | `NADIA_NOUS_TIMEOUT_SECONDS` | HTTP timeout for Nadia credential / token flows |
@@ -189,13 +189,13 @@ Environment variables for the bundled [`observability/langfuse`](/user-guide/fea
 | `NADIA_LANGFUSE_DEBUG` | `true` enables verbose plugin logging to `agent.log` |
 | `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` / `LANGFUSE_BASE_URL` | Standard Langfuse SDK names. Accepted as fallbacks when the `NADIA_LANGFUSE_*` equivalents are unset. |
 
-### Nadia Tool Gateway
+### NadicodeAI Tool Gateway
 
-These variables configure the [Tool Gateway](/user-guide/features/tool-gateway) for paid Nadia subscribers or self-hosted gateway deployments. Most users don't need to set these — the gateway is configured automatically via `nadia model` or `nadia tools`.
+These variables configure the [Tool Gateway](/user-guide/features/tool-gateway) for NadicodeAI Portal subscribers or self-hosted gateway deployments. Most users don't need to set these — the gateway is configured automatically via `nadia model` or `nadia tools`.
 
 | Variable | Description |
 |----------|-------------|
-| `TOOL_GATEWAY_DOMAIN` | Base domain for Tool Gateway routing (default: `nadicode.ai`) |
+| `TOOL_GATEWAY_DOMAIN` | Base domain for Tool Gateway routing (default: NadicodeAI-managed gateway domain) |
 | `TOOL_GATEWAY_SCHEME` | HTTP or HTTPS scheme for gateway URLs (default: `https`) |
 | `TOOL_GATEWAY_USER_TOKEN` | Auth token for the Tool Gateway (normally auto-populated from Nadia auth) |
 | `FIRECRAWL_GATEWAY_URL` | Override URL for the Firecrawl gateway endpoint specifically |
@@ -434,7 +434,7 @@ For cloud sandbox backends, persistence is filesystem-oriented. `TERMINAL_LIFETI
 
 Auth for the [web dashboard](/user-guide/features/web-dashboard) and for connecting [Nadia Desktop to a remote backend](/user-guide/features/web-dashboard#connecting-nadia-desktop-to-a-remote-backend). Per the secrets-only convention, credentials belong in `~/.nadia/.env`; the OAuth `client_id` is better set under `dashboard.oauth` in `config.yaml` (env wins when set).
 
-Three dashboard-auth providers ship in the box. For a remote Nadia Desktop connection or any internet-facing dashboard, the recommended provider is **OAuth (Nadia Agents Portal)** — set `NADIA_DASHBOARD_OAUTH_CLIENT_ID` (provision it with `nadia dashboard register`). The bundled **username/password** provider (`NADIA_DASHBOARD_BASIC_AUTH_*`) is the quickest option for a backend on a trusted LAN or behind a VPN, but is not suitable for direct public-internet exposure. To authenticate against your own identity provider, use the **self-hosted OIDC** provider (`NADIA_DASHBOARD_OIDC_*`). Either way, a non-loopback bind (`nadia dashboard --host 0.0.0.0`) engages the auth gate. See [Web Dashboard → Authentication](/user-guide/features/web-dashboard#authentication-gated-mode) for the full picture.
+Three dashboard-auth providers ship in the box. For a remote Nadia Desktop connection or any internet-facing dashboard, the recommended provider is **OAuth (NadicodeAI Portal)** — set `NADIA_DASHBOARD_OAUTH_CLIENT_ID` (provision it with `nadia dashboard register`). The bundled **username/password** provider (`NADIA_DASHBOARD_BASIC_AUTH_*`) is the quickest option for a backend on a trusted LAN or behind a VPN, but is not suitable for direct public-internet exposure. To authenticate against your own identity provider, use the **self-hosted OIDC** provider (`NADIA_DASHBOARD_OIDC_*`). Either way, a non-loopback bind (`nadia dashboard --host 0.0.0.0`) engages the auth gate. See [Web Dashboard → Authentication](/user-guide/features/web-dashboard#authentication-gated-mode) for the full picture.
 
 | Variable | Description |
 |----------|-------------|

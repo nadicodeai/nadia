@@ -989,7 +989,7 @@ def run_conversation(
         agent._current_api_request_id = api_request_id
 
         while retry_count < max_retries:
-            # ── Nadia Agents Portal rate limit guard ──────────────────────
+            # ── NadicodeAI Portal rate limit guard ──────────────────────
             # If another session already recorded that Nadia is rate-
             # limited, skip the API call entirely.  Each attempt
             # (including SDK-level retries) counts against RPH and
@@ -1003,7 +1003,7 @@ def run_conversation(
                     _nous_remaining = nous_rate_limit_remaining()
                     if _nous_remaining is not None and _nous_remaining > 0:
                         _nous_msg = (
-                            f"Nadia Agents Portal rate limit active — "
+                            f"NadicodeAI Portal rate limit active — "
                             f"resets in {_fmt_nous_remaining(_nous_remaining)}."
                         )
                         agent._buffer_vprint(
@@ -2536,7 +2536,7 @@ def run_conversation(
                         print(f"{agent.log_prefix}   Most likely: Portal OAuth expired, account out of credits, or agent key revoked.")
                     print(f"{agent.log_prefix}   Troubleshooting:")
                     print(f"{agent.log_prefix}     • Re-authenticate: nadia auth add nous")
-                    print(f"{agent.log_prefix}     • Check credits / billing: https://portal.nadicode.ai")
+                    print(f"{agent.log_prefix}     • Check credits / billing: https://portal.nadicodeai.com")
                     print(f"{agent.log_prefix}     • Verify stored credentials: {_dhh}/auth.json")
                     print(f"{agent.log_prefix}     • Switch providers temporarily: /model <model> --provider openrouter")
                 if (
@@ -2990,7 +2990,7 @@ def run_conversation(
                         _retry.primary_recovery_attempted = False
                         continue
 
-                # ── Nadia Agents Portal: record rate limit & skip retries ─────
+                # ── NadicodeAI Portal: record rate limit & skip retries ─────
                 # When Nadia returns a 429 that is a genuine account-
                 # level rate limit, record the reset time to a shared
                 # file so ALL sessions (cron, gateway, auxiliary) know
@@ -2999,7 +2999,7 @@ def run_conversation(
                 # The retry loop's top-of-iteration guard will catch
                 # this on the next pass and try fallback or bail.
                 #
-                # IMPORTANT: Nadia Agents Portal multiplexes multiple upstream
+                # IMPORTANT: NadicodeAI Portal multiplexes multiple upstream
                 # providers (DeepSeek, Kimi, MiMo, Nadia).  A 429 can
                 # also mean an UPSTREAM provider is out of capacity
                 # for one specific model -- transient, clears in
@@ -3465,15 +3465,15 @@ def run_conversation(
                                 agent._vprint(f"{agent.log_prefix}   💡 xAI OAuth token was rejected (HTTP 401). To fix:", force=True)
                                 agent._vprint(f"{agent.log_prefix}      re-authenticate with xAI Grok OAuth (SuperGrok / Premium+) from `nadia model`.", force=True)
                             else:  # nadia
-                                agent._vprint(f"{agent.log_prefix}   💡 Nadia Agents Portal OAuth token was rejected (HTTP 401). Your token may be", force=True)
+                                agent._vprint(f"{agent.log_prefix}   💡 NadicodeAI Portal OAuth token was rejected (HTTP 401). Your token may be", force=True)
                                 agent._vprint(f"{agent.log_prefix}      expired, revoked, or your account may be out of credits. To fix:", force=True)
                                 agent._vprint(f"{agent.log_prefix}      1. Re-authenticate: nadia portal", force=True)
-                                agent._vprint(f"{agent.log_prefix}      2. Check your portal account: https://portal.nadicode.ai", force=True)
-                                # ``:free`` is OpenRouter slug syntax; Nadia Agents Portal will reject
+                                agent._vprint(f"{agent.log_prefix}      2. Check your portal account: https://portal.nadicodeai.com", force=True)
+                                # ``:free`` is OpenRouter slug syntax; NadicodeAI Portal will reject
                                 # the model name even after a successful re-auth.
                                 if isinstance(_model, str) and _model.endswith(":free"):
                                     agent._vprint(f"{agent.log_prefix}      ⚠️  Note: `{_model}` looks like an OpenRouter slug (`:free` suffix).", force=True)
-                                    agent._vprint(f"{agent.log_prefix}         Nadia Agents Portal won't recognize that model name. Either switch to a", force=True)
+                                    agent._vprint(f"{agent.log_prefix}         NadicodeAI Portal won't recognize that model name. Either switch to a", force=True)
                                     agent._vprint(f"{agent.log_prefix}         Nadia catalog model, or run `/model openrouter:{_model}` to use OpenRouter.", force=True)
                         else:
                             agent._vprint(f"{agent.log_prefix}   💡 Your API key was rejected by the provider. Check:", force=True)

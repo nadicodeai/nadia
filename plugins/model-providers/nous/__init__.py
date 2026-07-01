@@ -1,4 +1,4 @@
-"""Nadia Agents Portal provider profile."""
+"""NadicodeAI Portal provider profile."""
 
 from typing import Any
 
@@ -8,7 +8,7 @@ from providers.base import ProviderProfile
 
 
 class NousProfile(ProviderProfile):
-    """Nadia Agents Portal — product tags, reasoning with Nadia-specific omission."""
+    """NadicodeAI Portal — product tags, reasoning with Nadia-specific omission."""
 
     def build_extra_body(
         self, *, session_id: str | None = None, **context
@@ -40,8 +40,8 @@ nadia = NousProfile(
     name="nous",
     aliases=("nadia-portal", "nadicode"),
     env_vars=("NOUS_API_KEY",),
-    display_name="NadicodeAI",
-    description="NadicodeAI — Nadia model family",
+    display_name="NadicodeAI Portal",
+    description="NadicodeAI Portal — hosted model access",
     signup_url="https://nadicode.ai/",
     fallback_models=(
         "hermes-3-405b",

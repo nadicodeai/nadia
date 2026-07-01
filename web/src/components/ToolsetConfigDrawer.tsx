@@ -7,14 +7,14 @@ import type {
   ToolsetInfo,
   ToolsetProvider,
 } from "@/lib/api";
-import { useToast } from "@nous-research/ui/hooks/use-toast";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Input } from "@nous-research/ui/ui/components/input";
-import { Label } from "@nous-research/ui/ui/components/label";
-import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Switch } from "@nous-research/ui/ui/components/switch";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
-import { Toast } from "@nous-research/ui/ui/components/toast";
+import { useToast } from "@/nadicodeai-ui";
+import { Button } from "@/nadicodeai-ui";
+import { Input } from "@/nadicodeai-ui";
+import { Label } from "@/nadicodeai-ui";
+import { Badge } from "@/nadicodeai-ui";
+import { Switch } from "@/nadicodeai-ui";
+import { Spinner } from "@/nadicodeai-ui";
+import { Toast } from "@/nadicodeai-ui";
 import { cn, themedBody } from "@/lib/utils";
 
 interface Props {
@@ -238,7 +238,7 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
         {/* Header — toolset identity + enable toggle */}
         <header className="p-5 pb-3 border-b border-border">
           <div className="flex items-center gap-3 pr-8">
-            <span className="font-mondwest text-display text-base tracking-wider">
+            <span className="text-display-sm text-base tracking-wider">
               {labelText}
             </span>
             <Badge tone={enabled ? "success" : "outline"} className="text-xs">
@@ -299,7 +299,7 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
                       )}
                       {provider.requires_nous_auth && (
                         <Badge tone="outline" className="text-xs">
-                          Nadia Agents Portal
+                          NadicodeAI Portal
                         </Badge>
                       )}
                     </div>

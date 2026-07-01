@@ -103,7 +103,7 @@ _EXCLUDED_NAMES = {
 #     gateway whose recorded state is ``running``. A backup taken from a
 #     machine where the gateway was stopped (or carrying a stale/foreign
 #     value) overwrites the container's own state and leaves the gateway
-#     stuck "starting"/"cooking", disconnecting it from the Nadia Agents Portal
+#     stuck "starting"/"cooking", disconnecting it from the NadicodeAI Portal
 #     (NS-508 / the second half of NS-501).
 #   - ``gateway.pid`` / ``cron.pid`` / ``gateway.lock`` / ``processes.json``
 #     reference PIDs and locks in the *source* machine's process namespace; a
@@ -625,7 +625,7 @@ def run_import(args) -> None:
             # namespaced to the machine/container the backup was taken on;
             # clobbering them (especially gateway_state.json) breaks the gateway
             # reconciler on the target and disconnects hosted instances from the
-            # Nadia Agents Portal. Matched by basename so both the root profile and
+            # NadicodeAI Portal. Matched by basename so both the root profile and
             # named profiles (profiles/<name>/gateway_state.json) are covered.
             if Path(rel).name in _IMPORT_SKIP_NAMES:
                 skipped_runtime.append(rel)

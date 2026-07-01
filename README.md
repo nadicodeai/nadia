@@ -37,7 +37,7 @@ curl -fsSL https://raw.githubusercontent.com/nadicodeai/nadia/main/scripts/insta
 - a command-line Nadia Agent runtime
 - a gateway for customer messaging workflows
 - local configuration under `~/.nadia`
-- optional setup for managed model access through the Nadia Agents Portal
+- optional setup for managed model access through the NadicodeAI Portal
 
 This public source tree ships the server, CLI, and gateway runtime. Desktop,
 website, bundled skill packs, optional integration catalogs, and Windows/macOS

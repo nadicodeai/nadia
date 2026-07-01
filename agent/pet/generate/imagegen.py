@@ -21,7 +21,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 # Providers that can ground generation on a reference image, in preference order
-# (Nadia Agents Portal → OpenAI → OpenRouter → …). OpenRouter/Nadia run a quality-first
+# (NadicodeAI Portal → OpenAI → OpenRouter → …). OpenRouter/Nadia run a quality-first
 # model chain and may fall back depending on account access and endpoint behavior,
 # so fidelity can vary by configured backend + model availability.
 _REF_CAPABLE = ("nous", "openai", "openai-codex", "openrouter", "krea")
@@ -29,7 +29,7 @@ _REF_CAPABLE = ("nous", "openai", "openai-codex", "openrouter", "krea")
 # Friendly display label per reference-capable provider, surfaced in the desktop
 # pet-gen picker.
 _PROVIDER_LABELS: dict[str, str] = {
-    "nous": "Nadia Agents Portal",
+    "nous": "NadicodeAI Portal",
     "openrouter": "OpenRouter",
     "openai": "OpenAI",
     "openai-codex": "OpenAI (Codex)",
@@ -121,7 +121,7 @@ def resolve_provider(*, require_references: bool = True, prefer: str | None = No
 
     raise GenerationError(
         "Pet generation needs an image backend that supports reference images. "
-        "Open `nadia tools` → Image Generation and configure Nadia Agents Portal, "
+        "Open `nadia tools` → Image Generation and configure NadicodeAI Portal, "
         "OpenRouter, or OpenAI (gpt-image-2) with an API key."
     )
 

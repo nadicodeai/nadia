@@ -201,7 +201,7 @@ FAL_MODELS: Dict[str, Dict[str, Any]] = {
             "output_format": "png",
             "safety_tolerance": "5",
             # "1K" is the cheapest tier; 4K doubles the per-image cost.
-            # Users on Nadia Subscription should stay at 1K for predictable billing.
+            # Users on NadicodeAI Subscription should stay at 1K for predictable billing.
             "resolution": "1K",
         },
         "supports": {
@@ -447,7 +447,7 @@ _managed_fal_client_lock = threading.Lock()
 
 
 # ---------------------------------------------------------------------------
-# Managed FAL gateway (Nadia Subscription)
+# Managed FAL gateway (NadicodeAI Subscription)
 # ---------------------------------------------------------------------------
 def _resolve_managed_fal_gateway():
     """Return managed fal-queue gateway config when the user prefers the gateway
@@ -514,9 +514,9 @@ def _submit_fal_request(model: str, arguments: Dict[str, Any]):
                     )
                 )
             raise ValueError(
-                f"Nadia Subscription gateway rejected model '{model}' "
+                f"NadicodeAI Subscription gateway rejected model '{model}' "
                 f"(HTTP {status}). This model may not yet be enabled on "
-                f"the Nadia Agents Portal's FAL proxy. Either:\n"
+                f"the NadicodeAI Portal's FAL proxy. Either:\n"
                 f"  • Set FAL_KEY in your environment to use FAL.ai directly, or\n"
                 f"  • Pick a different model via `nadia tools` → Image Generation."
                 f"{gateway_message}"

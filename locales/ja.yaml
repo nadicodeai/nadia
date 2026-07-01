@@ -339,7 +339,7 @@ Future messages in this room will use that transcript until `/reset` or another 
     no_data:                  "このセッションの使用データはありません。"
 
   credits:
-    not_logged_in:            "Nadia Agents Portal にログインしていません。ログインすると残高の確認とチャージができます。"
+    not_logged_in:            "NadicodeAI Portal にログインしていません。ログインすると残高の確認とチャージができます。"
 
   verbose:
     not_enabled:           "`/verbose` コマンドはメッセージングプラットフォームで有効になっていません。\n\n`config.yaml` で有効にしてください:\n```yaml\ndisplay:\n  tool_progress_command: true\n```"

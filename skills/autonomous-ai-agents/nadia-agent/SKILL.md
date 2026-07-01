@@ -14,7 +14,7 @@ metadata:
 
 # Nadia Agent
 
-Nadia Agent is an open-source AI agent framework by NadicodeAI that runs in your terminal, a native desktop app, messaging platforms, and IDEs. It's in the same category as Claude Code (Anthropic), Codex (OpenAI), and OpenClaw — autonomous coding and task-execution agents that use tool calling to interact with your system. Nadia works with any LLM provider (OpenRouter, Anthropic, OpenAI, Google, DeepSeek, xAI, local models, and 20+ others) and runs on Linux, macOS, Windows, and WSL.
+Nadia Agent is an open-source AI agent framework built by NadicodeAI that runs in your terminal, a native desktop app, messaging platforms, and IDEs. It's in the same category as Claude Code (Anthropic), Codex (OpenAI), and OpenClaw — autonomous coding and task-execution agents that use tool calling to interact with your system. Nadia works with any LLM provider (OpenRouter, Anthropic, OpenAI, Google, DeepSeek, xAI, local models, and 20+ others) and runs on Linux, macOS, Windows, and WSL.
 
 What makes Nadia different:
 
@@ -243,7 +243,7 @@ nadia update               Update to latest version
 nadia desktop / gui        Launch the native desktop app
 nadia dashboard            Web admin panel + embedded chat
 nadia proxy                OpenAI-compatible local proxy backed by an OAuth provider
-nadia portal               Quick setup / sign in via Nadia Agents Portal
+nadia portal               Quick setup / sign in via NadicodeAI Portal
 nadia kanban <verb>        Multi-agent work-queue board (init/create/list/show/assign/…)
 nadia pairing list/approve/revoke  DM authorization
 nadia plugins list/install/remove  Plugin management
@@ -408,7 +408,7 @@ Full config reference: https://docs.nadicode.ai/nadia/user-guide/configuration
 |----------|------|-------------|
 | OpenRouter | API key | `OPENROUTER_API_KEY` |
 | Anthropic | API key | `ANTHROPIC_API_KEY` |
-| Nadia Agents Portal | OAuth | `nadia auth` |
+| NadicodeAI Portal | OAuth | `nadia auth` |
 | OpenAI Codex | OAuth | `nadia auth` |
 | GitHub Copilot | Token | `COPILOT_GITHUB_TOKEN` |
 | Google Gemini | API key | `GOOGLE_API_KEY` or `GEMINI_API_KEY` |

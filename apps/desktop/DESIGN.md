@@ -113,7 +113,8 @@ Notes:
 
 - **`Codicon`** is the icon set. No mixing icon libraries inline.
 - **`BrandMark`** (`src/components/brand-mark.tsx`) is the brand glyph — the
-  `nadia-girl` mark on a white tile, softly rounded, identical in light/dark.
+  Nadia face badge on a subtle hairline tile, softly rounded, identical in
+  light/dark.
   It replaced scattered Sparkles glyphs in updates / onboarding / about. Use it
   for hero/brand moments; don't reintroduce decorative star/sparkle icons.
 

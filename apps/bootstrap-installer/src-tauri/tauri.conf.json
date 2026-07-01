@@ -44,11 +44,11 @@
       "appimage"
     ],
     "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
+      "icons/nadia-32x32.png",
+      "icons/nadia-128x128.png",
+      "icons/nadia-128x128@2x.png",
+      "icons/nadia-icon.icns",
+      "icons/nadia-icon.ico"
     ],
     "windows": {
       "webviewInstallMode": {

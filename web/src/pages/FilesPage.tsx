@@ -16,9 +16,9 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Card, CardContent } from "@nous-research/ui/ui/components/card";
+import { Badge } from "@/nadicodeai-ui";
+import { Button } from "@/nadicodeai-ui";
+import { Card, CardContent } from "@/nadicodeai-ui";
 import {
   Dialog,
   DialogContent,
@@ -26,11 +26,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@nous-research/ui/ui/components/dialog";
-import { Input } from "@nous-research/ui/ui/components/input";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
-import { Toast } from "@nous-research/ui/ui/components/toast";
-import { useToast } from "@nous-research/ui/hooks/use-toast";
+} from "@/nadicodeai-ui";
+import { Input } from "@/nadicodeai-ui";
+import { Spinner } from "@/nadicodeai-ui";
+import { Toast } from "@/nadicodeai-ui";
+import { useToast } from "@/nadicodeai-ui";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { api } from "@/lib/api";

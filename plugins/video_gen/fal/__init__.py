@@ -315,7 +315,7 @@ def _load_fal_client() -> Any:
 
 
 # ---------------------------------------------------------------------------
-# Managed FAL gateway (Nadia Subscription)
+# Managed FAL gateway (NadicodeAI Subscription)
 # ---------------------------------------------------------------------------
 
 _managed_fal_video_client: Any = None
@@ -382,9 +382,9 @@ def _submit_fal_video_request(endpoint: str, arguments: Dict[str, Any]):
         status = _extract_http_status(exc)
         if status is not None and 400 <= status < 500:
             raise ValueError(
-                f"Nadia Subscription gateway rejected endpoint '{endpoint}' "
+                f"NadicodeAI Subscription gateway rejected endpoint '{endpoint}' "
                 f"(HTTP {status}). This model may not yet be enabled on "
-                f"the Nadia Agents Portal's FAL proxy. Either:\n"
+                f"the NadicodeAI Portal's FAL proxy. Either:\n"
                 f"  • Set FAL_KEY in your environment to use FAL.ai directly, or\n"
                 f"  • Pick a different model via `nadia tools` → Video Generation."
             ) from exc

@@ -818,7 +818,7 @@ export const ja = defineLocale({
         'このツールセットにはプロバイダーのオプションがありません。有効にすれば現在の設定で動作します。',
       noProviders: '現在このツールセットに利用可能なプロバイダーがありません。',
       ready: '準備完了',
-      nadiaIncluded: 'Nadia サブスクリプションに含まれています。有効にするには Nadia Agents Portal にサインインしてください。',
+      nadiaIncluded: 'NadicodeAI サブスクリプションに含まれています。有効にするには NadicodeAI Portal にサインインしてください。',
       noApiKeyRequired: 'API キーは不要です。',
       postSetupHint: step =>
         `このバックエンドは一度だけインストールが必要です (${step})。このマシン上で実行され、数分かかる場合があります。`,
@@ -1875,7 +1875,7 @@ export const ja = defineLocale({
     loadFailed: 'モデルを読み込めませんでした',
     noAuthenticatedProviders: '認証済みプロバイダーがありません。',
     pro: 'Pro',
-    proNeedsSubscription: 'Pro モデルには有料の Nadia サブスクリプションが必要です。',
+    proNeedsSubscription: 'Pro モデルには有料の NadicodeAI サブスクリプションが必要です。',
     free: '無料',
     freeTier: '無料プラン',
     priceTitle: '100 万トークンあたりの入力/出力価格'

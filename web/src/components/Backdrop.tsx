@@ -1,30 +1,25 @@
-import { useGpuTier } from "@nous-research/ui/hooks/use-gpu-tier";
+import { useGpuTier } from "@/nadicodeai-ui";
 
-import fillerBgUrl from "@nous-research/ui/assets/filler-bg0.webp";
+const fillerBgUrl =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop stop-color='%230f3d34' stop-opacity='.28'/%3E%3Cstop offset='1' stop-color='%230a0f0d' stop-opacity='.08'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' fill='url(%23g)'/%3E%3C/svg%3E";
 
 /**
  * Replicates the visual layer stack of `<Overlays dark />` from
- * `@nous-research/ui` without pulling in its leva / gsap / three peer deps.
+ * the old package overlay without pulling in its leva / gsap / three peer deps.
  *
  * See `design-language/src/ui/components/overlays/index.tsx` for the source of
- * truth. Defaults match LENS_0 (the Nadia teal dark preset); the deep canvas
- * and the warm vignette both read theme-switchable CSS custom properties so
- * `ThemeProvider` can repaint the stack without remounting.
+ * truth. The deep canvas and warm vignette read static shell CSS custom
+ * properties.
  *
  *   z-1   bg = `var(--background-base)`, mix-blend-mode driven by
  *         `--component-backdrop-bg-blend-mode` (default `difference`).
- *         Both LENS_0-style dark themes and the LENS_5I-style Nadia Blue
- *         light theme keep `difference` here — the canvas is flipped by
- *         the z-200 FG inversion layer, not by changing this blend mode.
- *         The CSS var is exposed as a hook so future presets can override
- *         it (e.g. `multiply` to paint the bg as-is before inversion)
- *         without touching this component.
+ *         Light and dark modes keep `difference` here — the canvas is flipped
+ *         by the z-200 FG inversion layer, not by changing this blend mode.
  *   z-2   bundled filler-bg WebP, inverted, opacity 0.033, difference
  *   z-99  warm top-left vignette (`var(--warm-glow)`), opacity 0.22, lighten
- *   z-200 FG inversion = `var(--foreground)` (opaque white in LENS_5I,
- *         alpha-0 in LENS_0), mix-blend-mode: difference. This is the
- *         layer that flips the dashboard into "light mode" for inverted
- *         themes; for normal dark themes its alpha is 0 so it's a no-op.
+ *   z-200 FG inversion = `var(--foreground)`, mix-blend-mode: difference.
+ *         This layer keeps the static dashboard backdrop compatible with
+ *         both light and dark modes.
  *         Deliberately placed above every UI overlay z-index (modals,
  *         tooltips, and dropUp dropdowns all sit at z-[100]) so portaled
  *         elements get inverted along with the rest of the page instead
@@ -94,13 +89,9 @@ export function Backdrop() {
         }}
       />
 
-      {/* Foreground inversion layer. Source-of-truth: LENS_5I.Lens.fgOpacity
-          + fgBlend: 'difference' in `design-language/src/ui/components/
-          overlays/lens.ts`. With `--foreground-alpha: 0` (LENS_0 dark default)
-          the layer is fully transparent and contributes nothing; with
-          alpha 1 + opaque white it inverts the entire stack below it,
-          producing the LENS_5I "light mode" look without altering any
-          downstream component code.
+      {/* Foreground inversion layer. With `--foreground-alpha: 0` the layer is
+          fully transparent and contributes nothing; with alpha 1 + opaque
+          white it inverts the entire stack below it.
 
           z-200 (not 100) so it sits above every portaled UI overlay —
           sidebar tooltips, dropUp dropdowns, and modal dialogs all use

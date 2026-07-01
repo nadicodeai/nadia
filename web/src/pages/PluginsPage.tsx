@@ -4,18 +4,18 @@ import type { Translations } from "@/i18n/types";
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import type { HubAgentPluginRow, PluginsHubResponse } from "@/lib/api";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Select, SelectOption } from "@nous-research/ui/ui/components/select";
-import { Switch } from "@nous-research/ui/ui/components/switch";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
-import { CommandBlock } from "@nous-research/ui/ui/components/command-block";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
-import { ConfirmDialog } from "@nous-research/ui/ui/components/confirm-dialog";
-import { Input } from "@nous-research/ui/ui/components/input";
-import { Label } from "@nous-research/ui/ui/components/label";
-import { useToast } from "@nous-research/ui/hooks/use-toast";
-import { Toast } from "@nous-research/ui/ui/components/toast";
+import { Button } from "@/nadicodeai-ui";
+import { Badge } from "@/nadicodeai-ui";
+import { Select, SelectOption } from "@/nadicodeai-ui";
+import { Switch } from "@/nadicodeai-ui";
+import { Spinner } from "@/nadicodeai-ui";
+import { CommandBlock } from "@/nadicodeai-ui";
+import { Card, CardContent, CardHeader, CardTitle } from "@/nadicodeai-ui";
+import { ConfirmDialog } from "@/nadicodeai-ui";
+import { Input } from "@/nadicodeai-ui";
+import { Label } from "@/nadicodeai-ui";
+import { useToast } from "@/nadicodeai-ui";
+import { Toast } from "@/nadicodeai-ui";
 import { useI18n } from "@/i18n";
 import { PluginSlot } from "@/plugins";
 import { cn } from "@/lib/utils";
@@ -291,7 +291,7 @@ export default function PluginsPage() {
 
         <div className="flex flex-col gap-3">
 
-          <h3 className="font-mondwest text-display text-xs tracking-[0.12em] text-text-secondary">
+          <h3 className="text-display-sm text-xs tracking-[0.12em] text-text-secondary">
             {t.pluginsPage.pluginListHeading}
           </h3>
 
@@ -329,7 +329,7 @@ export default function PluginsPage() {
 
           <div className="flex flex-col gap-3 opacity-95">
 
-            <h3 className="font-mondwest text-display text-xs tracking-[0.12em] text-text-secondary">
+            <h3 className="text-display-sm text-xs tracking-[0.12em] text-text-secondary">
               {t.pluginsPage.orphanHeading}
             </h3>
 
@@ -467,7 +467,7 @@ function PluginRowCard(props: PluginRowCardProps) {
                 className={cn(
                   "inline-flex items-center rounded-none px-3 py-1.5",
                   "border border-current/25 hover:bg-current/10",
-                  "font-mondwest text-display text-xs tracking-[0.1em]",
+                  "text-display-sm text-xs tracking-[0.1em]",
                 )}
                 to={tabPath}
               >

@@ -4,7 +4,7 @@ The Chronos provider speaks ONLY to NAS — it names no scheduler vendor and
 holds no scheduler credentials. NAS owns the external scheduler (an internal
 implementation detail) and that scheduler's account; the agent just asks NAS to
 "arm a one-shot at time T" / "cancel" / "list", authenticated with the agent's
-existing Nadia Agents Portal access token (the same token it already uses to call the
+existing NadicodeAI Portal access token (the same token it already uses to call the
 portal — no new secret).
 
 Wire contract: ``docs/chronos-managed-cron-contract.md``.
@@ -41,7 +41,7 @@ class NasCronClient:
     # -- auth -------------------------------------------------------------
 
     def _access_token(self) -> str:
-        """The agent's existing Nadia Agents Portal access token (refresh-aware)."""
+        """The agent's existing NadicodeAI Portal access token (refresh-aware)."""
         from nadia_cli.auth import resolve_nous_access_token
         return resolve_nous_access_token()
 

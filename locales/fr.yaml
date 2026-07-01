@@ -339,7 +339,7 @@ Future messages in this room will use that transcript until `/reset` or another 
     no_data:                  "Aucune donnée d'utilisation disponible pour cette session."
 
   credits:
-    not_logged_in:            "Non connecté à Nadia Agents Portal. Connecte-toi pour voir ton solde de crédits et recharger."
+    not_logged_in:            "Non connecté à NadicodeAI Portal. Connecte-toi pour voir ton solde de crédits et recharger."
 
   verbose:
     not_enabled:           "La commande `/verbose` n'est pas activée pour les plateformes de messagerie.\n\nActivez-la dans `config.yaml` :\n```yaml\ndisplay:\n  tool_progress_command: true\n```"

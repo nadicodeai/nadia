@@ -11,7 +11,7 @@ Chat with Nadia from Telegram, Discord, Slack, WhatsApp, Signal, SMS, Email, Hom
 For the full voice feature set — including CLI microphone mode, spoken replies in messaging, and Discord voice-channel conversations — see [Voice Mode](/user-guide/features/voice-mode) and [Use Voice Mode with Nadia](/guides/use-voice-mode-with-nadia).
 
 :::tip
-Bots need both a model provider and tool providers (TTS, web). A [Nadia Agents Portal](/integrations/nadia-portal) subscription bundles all of them.
+Bots need both a model provider and tool providers (TTS, web). A [NadicodeAI Portal](/integrations/nadia-portal) subscription bundles all of them.
 :::
 
 ## Platform Comparison

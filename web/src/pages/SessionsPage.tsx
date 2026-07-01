@@ -41,17 +41,17 @@ import type {
 import { timeAgo } from "@/lib/utils";
 import { Markdown } from "@/components/Markdown";
 import { PlatformsCard } from "@/components/PlatformsCard";
-import { Toast } from "@nous-research/ui/ui/components/toast";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Checkbox } from "@nous-research/ui/ui/components/checkbox";
-import { ListItem } from "@nous-research/ui/ui/components/list-item";
-import { Segmented } from "@nous-research/ui/ui/components/segmented";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
-import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
+import { Toast } from "@/nadicodeai-ui";
+import { Button } from "@/nadicodeai-ui";
+import { Checkbox } from "@/nadicodeai-ui";
+import { ListItem } from "@/nadicodeai-ui";
+import { Segmented } from "@/nadicodeai-ui";
+import { Spinner } from "@/nadicodeai-ui";
+import { Badge } from "@/nadicodeai-ui";
+import { Card, CardContent, CardHeader, CardTitle } from "@/nadicodeai-ui";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
-import { useConfirmDelete } from "@nous-research/ui/hooks/use-confirm-delete";
-import { Input } from "@nous-research/ui/ui/components/input";
+import { useConfirmDelete } from "@/nadicodeai-ui";
+import { Input } from "@/nadicodeai-ui";
 import {
   Dialog,
   DialogContent,
@@ -59,9 +59,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@nous-research/ui/ui/components/dialog";
+} from "@/nadicodeai-ui";
 import { useSystemActions } from "@/contexts/useSystemActions";
-import { useToast } from "@nous-research/ui/hooks/use-toast";
+import { useToast } from "@/nadicodeai-ui";
 import { useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { PluginSlot } from "@/plugins";
@@ -100,7 +100,7 @@ function SnippetHighlight({ snippet }: { snippet: string }) {
     parts.push(snippet.slice(last));
   }
   return (
-    <p className="font-mondwest normal-case mt-0.5 min-w-0 max-w-full truncate text-xs text-text-secondary">
+    <p className="normal-case mt-0.5 min-w-0 max-w-full truncate text-xs text-text-secondary">
       {parts}
     </p>
   );
@@ -588,7 +588,7 @@ function SessionRow({
                   </div>
                 ) : (
                   <span
-                    className={`font-mondwest normal-case min-w-0 flex-1 truncate text-sm ${hasTitle ? "font-medium" : "text-muted-foreground italic"}`}
+                    className={`normal-case min-w-0 flex-1 truncate text-sm ${hasTitle ? "font-medium" : "text-muted-foreground italic"}`}
                   >
                     {hasTitle
                       ? session.title
@@ -1418,7 +1418,7 @@ export default function SessionsPage() {
                 <Spinner className="shrink-0 text-[0.875rem] text-muted-foreground" />
               )}
 
-              <span className="text-xs font-mondwest tracking-[0.12em] truncate">
+              <span className="text-xs tracking-[0.12em] truncate">
                 {activeAction === "restart"
                   ? t.status.restartGateway
                   : t.status.updateNadia}
@@ -1522,7 +1522,7 @@ export default function SessionsPage() {
                 title={t.sessions.deleteEmpty}
                 prefix={<Eraser />}
               >
-                <span className="font-mondwest normal-case text-xs">
+                <span className="normal-case text-xs">
                   {t.sessions.deleteEmpty} ({emptyCount})
                 </span>
               </Button>
@@ -1550,7 +1550,7 @@ export default function SessionsPage() {
             String(selectedIds.size),
           )}
         >
-          <span className="font-mondwest normal-case text-xs text-primary tabular-nums">
+          <span className="normal-case text-xs text-primary tabular-nums">
             {t.sessions.selectedCount.replace(
               "{count}",
               String(selectedIds.size),
@@ -1564,7 +1564,7 @@ export default function SessionsPage() {
               aria-label={t.sessions.selectAllOnPage}
               title={t.sessions.selectAllOnPage}
             >
-              <span className="font-mondwest normal-case text-xs">
+              <span className="normal-case text-xs">
                 {t.sessions.selectAllOnPage}
               </span>
             </Button>
@@ -1576,7 +1576,7 @@ export default function SessionsPage() {
             aria-label={t.sessions.clearSelection}
             title={t.sessions.clearSelection}
           >
-            <span className="font-mondwest normal-case text-xs">
+            <span className="normal-case text-xs">
               {t.sessions.clearSelection}
             </span>
           </Button>
@@ -1596,7 +1596,7 @@ export default function SessionsPage() {
             )}
             prefix={<Trash2 />}
           >
-            <span className="font-mondwest normal-case text-xs">
+            <span className="normal-case text-xs">
               {t.sessions.deleteSelected.replace(
                 "{count}",
                 String(selectedIds.size),
@@ -1677,7 +1677,7 @@ export default function SessionsPage() {
                     className="flex min-w-0 max-w-full flex-col gap-2 border border-border p-3 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="flex min-w-0 flex-1 flex-col gap-1">
-                      <span className="font-mondwest normal-case min-w-0 truncate text-sm font-medium">
+                      <span className="normal-case min-w-0 truncate text-sm font-medium">
                         {s.title ?? t.common.untitled}
                       </span>
 
@@ -1690,7 +1690,7 @@ export default function SessionsPage() {
                       </span>
 
                       {s.preview && (
-                        <p className="font-mondwest normal-case min-w-0 max-w-full text-xs leading-snug text-text-tertiary [overflow-wrap:anywhere]">
+                        <p className="normal-case min-w-0 max-w-full text-xs leading-snug text-text-tertiary [overflow-wrap:anywhere]">
                           {s.preview}
                         </p>
                       )}

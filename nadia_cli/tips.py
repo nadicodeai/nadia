@@ -371,7 +371,7 @@ TIPS = [
     # --- Credential Pools & Routing ---
     'nadia auth reset <provider> clears all cooldowns and exhaustion flags on a credential pool.',
     'credential_pool_strategies.<provider>: round_robin cycles keys evenly instead of the fill_first default.',
-    'use_gateway: true per-tool routes web, image, tts, or browser through your Nadia subscription — no extra keys.',
+    'use_gateway: true per-tool routes web, image, tts, or browser through your NadicodeAI subscription — no extra keys.',
     'provider_routing.data_collection: deny excludes data-storing providers on OpenRouter.',
     'provider_routing.require_parameters: true only routes to providers that support every param in your request.',
 
@@ -382,9 +382,8 @@ TIPS = [
     'The TUI renders LaTeX inline — $E=mc^2$ becomes Unicode math instead of raw TeX.',
     'nadia dashboard launches a local web UI at 127.0.0.1:9119 — zero data leaves localhost.',
     'nadia dashboard embeds the full Nadia TUI in your browser via xterm.js and a WebSocket PTY.',
-    'Drop a YAML in ~/.nadia/dashboard-themes/ with two palette colors to reskin the entire dashboard.',
+    'The dashboard follows your system color preference, with light, dark, and system modes in the sidebar.',
     'Dashboard plugins are drop-in: manifest.json + JS bundle in ~/.nadia/dashboard-plugins/ — no npm build required.',
-    'layoutVariant: cockpit in a dashboard theme adds a 260px left rail that plugins can populate via the sidebar slot.',
 
     # --- Env Vars & Config Gates ---
     "display.tool_progress_command: true exposes /verbose on messaging platforms; it's CLI-only by default.",

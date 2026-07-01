@@ -13,7 +13,7 @@ If you haven't installed Nadia Agent yet, begin with the [Installation guide](/g
 :::
 
 :::tip First-time provider setup
-First-time users almost always want `nadia setup --portal` — one OAuth covers a model plus the four Tool Gateway tools (search/image/TTS/browser). See [Nadia Agents Portal](/integrations/nadia-portal).
+First-time users almost always want `nadia setup --portal` — one OAuth covers a model plus the four Tool Gateway tools (search/image/TTS/browser). See [NadicodeAI Portal](/integrations/nadia-portal).
 :::
 
 ## How to Use This Page

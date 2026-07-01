@@ -3,11 +3,11 @@
 <p align="center">
   <a href="https://github.com/nadicodeai/nadia/releases"><img src="https://img.shields.io/badge/Download-macOS%20%C2%B7%20Windows%20%C2%B7%20Linux-FFD700?style=for-the-badge" alt="Download"></a>
   <a href="https://docs.nadicode.ai/nadia/"><img src="https://img.shields.io/badge/Docs-docs.nadicode.ai%2Fnadia-FFD700?style=for-the-badge" alt="Documentation"></a>
-  <a href="https://discord.gg/NadicodeAI"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
+  <a href="https://github.com/nadicodeai/nadia/issues"><img src="https://img.shields.io/badge/Issues-nadicodeai%2Fnadia-007a5e?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Issues"></a>
   <a href="https://github.com/nadicodeai/nadia/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
 </p>
 
-**The native desktop app for [Nadia Agent](../../README.md), the NadicodeAI-maintained agent based on NadicodeAI's Nadia Agent.** Same agent, same skills, same memory as the CLI and gateway, in a polished native window: chat with streaming tool output, side-by-side previews, a file browser, voice, and settings, no terminal required. Available for **macOS, Windows, and Linux**.
+**The NadicodeAI-maintained desktop app for [Nadia Agent](../../README.md).** Same agent, same skills, same memory as the CLI and gateway, in a polished native window: chat with streaming tool output, side-by-side previews, a file browser, voice, and settings, no terminal required. Available for **macOS, Windows, and Linux**.
 
 <table>
 <tr><td><b>Chat with the full agent</b></td><td>Streaming responses, live tool activity, structured tool summaries, and the same conversation history as every other Nadia surface.</td></tr>
@@ -128,7 +128,6 @@ Remove-Item -Recurse -Force "$env:LOCALAPPDATA\nadia\nadia-agent\venv"
 
 ## Community
 
-- 💬 [Discord](https://discord.gg/NadicodeAI)
 - 📖 [Documentation](https://docs.nadicode.ai/nadia/)
 - 🐛 [Issues](https://github.com/nadicodeai/nadia/issues)
 
@@ -138,4 +137,4 @@ Remove-Item -Recurse -Force "$env:LOCALAPPDATA\nadia\nadia-agent\venv"
 
 MIT — see [LICENSE](../../LICENSE).
 
-Maintained by NadicodeAI. Based on [Nadia Agent](https://github.com/nadicodeai/nadia) by [NadicodeAI](https://nadicode.ai).
+Maintained by NadicodeAI. Based on upstream source from [nadicodeai/nadia](https://github.com/nadicodeai/nadia).

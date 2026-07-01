@@ -27,18 +27,18 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
-import { H2 } from "@nous-research/ui/ui/components/typography/h2";
-import { Card, CardContent } from "@nous-research/ui/ui/components/card";
-import { Input } from "@nous-research/ui/ui/components/input";
-import { Label } from "@nous-research/ui/ui/components/label";
-import { Select, SelectOption } from "@nous-research/ui/ui/components/select";
-import { Toast } from "@nous-research/ui/ui/components/toast";
-import { useToast } from "@nous-research/ui/hooks/use-toast";
-import { useConfirmDelete } from "@nous-research/ui/hooks/use-confirm-delete";
-import { ConfirmDialog } from "@nous-research/ui/ui/components/confirm-dialog";
+import { Badge } from "@/nadicodeai-ui";
+import { Button } from "@/nadicodeai-ui";
+import { Spinner } from "@/nadicodeai-ui";
+import { H2 } from "@/nadicodeai-ui";
+import { Card, CardContent } from "@/nadicodeai-ui";
+import { Input } from "@/nadicodeai-ui";
+import { Label } from "@/nadicodeai-ui";
+import { Select, SelectOption } from "@/nadicodeai-ui";
+import { Toast } from "@/nadicodeai-ui";
+import { useToast } from "@/nadicodeai-ui";
+import { useConfirmDelete } from "@/nadicodeai-ui";
+import { ConfirmDialog } from "@/nadicodeai-ui";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { cn, themedBody } from "@/lib/utils";
@@ -700,7 +700,7 @@ export default function SystemPage() {
               <X />
             </Button>
             <header className="p-5 pb-3 border-b border-border">
-              <h2 className="font-mondwest text-display text-base tracking-wider">
+              <h2 className="text-display-sm text-base tracking-wider">
                 New shell hook
               </h2>
             </header>
@@ -924,7 +924,7 @@ export default function SystemPage() {
       {/* ── Portal ────────────────────────────────────────────────── */}
       <section className="flex flex-col gap-3">
         <H2 variant="sm" className="flex items-center gap-2 text-muted-foreground">
-          <Globe className="h-4 w-4" /> Nadia Agents Portal
+          <Globe className="h-4 w-4" /> NadicodeAI Portal
         </H2>
         <Card>
           <CardContent className="flex flex-col gap-3 py-4">
@@ -938,7 +938,7 @@ export default function SystemPage() {
                 </span>
               )}
               <a
-                href={portal?.subscription_url || "https://portal.nadicode.ai/manage-subscription"}
+                href={portal?.subscription_url || "https://portal.nadicodeai.com/manage-subscription"}
                 target="_blank"
                 rel="noreferrer"
                 className="ml-auto text-xs text-primary underline"

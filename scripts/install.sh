@@ -212,7 +212,7 @@ print_banner() {
     echo "┌─────────────────────────────────────────────────────────┐"
     echo "│             ⚕ Nadia Agent Installer                    │"
     echo "├─────────────────────────────────────────────────────────┤"
-    echo "│  An open source AI agent by NadicodeAI.              │"
+    echo "│  An open source AI agent by NadicodeAI.                 │"
     echo "└─────────────────────────────────────────────────────────┘"
     echo -e "${NC}"
 }

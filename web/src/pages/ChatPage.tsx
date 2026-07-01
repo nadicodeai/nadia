@@ -22,8 +22,8 @@ import { WebLinksAddon } from "@xterm/addon-web-links";
 import { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Typography } from "@nous-research/ui/ui/components/typography/index";
+import { Button } from "@/nadicodeai-ui";
+import { Typography } from "@/nadicodeai-ui";
 import { cn } from "@/lib/utils";
 import { Copy, PanelRight, RotateCcw, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -37,7 +37,6 @@ import { useI18n } from "@/i18n";
 import { api } from "@/lib/api";
 import { normalizeSessionTitle } from "@/lib/chat-title";
 import { PluginSlot } from "@/plugins";
-import { useTheme } from "@/themes";
 import { useProfileScope } from "@/contexts/useProfileScope";
 
 // Channel id ties this chat tab's PTY child (publisher) to its sidebar
@@ -54,18 +53,16 @@ function generateChannelId(scope?: string): string {
   )}`;
 }
 
-// Colors for the terminal body.  Matches the dashboard's dark teal canvas
-// with cream foreground — we intentionally don't pick monokai or a loud
-// theme, because the TUI's skin engine already paints the content; the
-// terminal chrome just needs to sit quietly inside the dashboard.
-// `background` is omitted here — it's supplied dynamically from the active
-// theme's `terminalBackground` field so users can control it via YAML themes.
+// Colors for the terminal body.  The TUI's skin engine already paints the
+// content; the terminal chrome just needs to sit quietly inside the dashboard.
+// Keep the terminal canvas black in both light and dark dashboard modes.
 const TERMINAL_THEME_STATIC = {
   foreground: "#f0e6d2",
   cursor: "#f0e6d2",
   cursorAccent: "#0d2626",
   selectionBackground: "#f0e6d244",
 };
+const TERMINAL_BACKGROUND = "#000000";
 
 /**
  * CSS width for xterm font tiers.
@@ -192,11 +189,9 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
       : false,
   );
 
-  const { theme } = useTheme();
-  const terminalBg = theme.terminalBackground ?? "#000000";
   const terminalTheme = useMemo(
-    () => ({ ...TERMINAL_THEME_STATIC, background: terminalBg }),
-    [terminalBg],
+    () => ({ ...TERMINAL_THEME_STATIC, background: TERMINAL_BACKGROUND }),
+    [],
   );
 
   // The dashboard keeps ChatPage mounted persistently so the PTY survives tab
@@ -896,13 +891,15 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
     };
   }, [isActive]);
 
-  // Keep the live xterm theme in sync when the active theme's terminal
-  // background changes (e.g. user switches to a custom YAML theme mid-session).
+  // Re-assert the terminal palette if xterm recreates its renderer.
   useEffect(() => {
     const term = termRef.current;
     if (!term) return;
-    term.options.theme = { ...TERMINAL_THEME_STATIC, background: terminalBg };
-  }, [terminalBg]);
+    term.options.theme = {
+      ...TERMINAL_THEME_STATIC,
+      background: TERMINAL_BACKGROUND,
+    };
+  }, []);
 
   // Layout:
   //   outer flex column — sits inside the dashboard's content area
@@ -942,7 +939,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
           role="complementary"
           aria-label={modelToolsLabel}
           className={cn(
-            "font-mondwest fixed top-0 right-0 z-[60] flex h-dvh max-h-dvh w-64 min-w-0 flex-col antialiased",
+            "fixed top-0 right-0 z-[60] flex h-dvh max-h-dvh w-64 min-w-0 flex-col antialiased",
             "border-l border-current/20 text-midground",
             "bg-background-base/95 backdrop-blur-sm",
             "transition-transform duration-200 ease-out",
@@ -961,7 +958,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
           >
             <Typography
               mondwest
-              className="text-display font-bold text-[1.125rem] leading-[0.95] tracking-[0.0525rem] text-midground"
+              className="text-display-sm font-bold text-[1.125rem] leading-[0.95] tracking-[0.0525rem] text-midground"
               style={{ mixBlendMode: "plus-lighter" }}
             >
               {t.app.modelToolsSheetTitle}
@@ -1024,7 +1021,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
             "p-2 sm:p-3",
           )}
           style={{
-            backgroundColor: terminalBg,
+            backgroundColor: TERMINAL_BACKGROUND,
             boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)",
           }}
         >

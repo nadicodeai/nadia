@@ -891,7 +891,7 @@ export const zh: Translations = {
       noProviderOptions: '此工具集没有提供方选项；启用后即可使用当前配置。',
       noProviders: '此工具集当前没有可用提供方。',
       ready: '就绪',
-      nadiaIncluded: '包含在 Nadia 订阅中；登录 Nadia Agents Portal 即可激活。',
+      nadiaIncluded: '包含在 NadicodeAI 订阅中；登录 NadicodeAI Portal 即可激活。',
       noApiKeyRequired: '不需要 API 密钥。',
       postSetupHint: step => `此后端需要一次性安装 (${step})。将在此机器上执行，可能需要几分钟。`,
       postSetupRun: '运行设置',
@@ -1926,7 +1926,7 @@ export const zh: Translations = {
     loadFailed: '无法加载模型',
     noAuthenticatedProviders: '没有已认证的提供方。',
     pro: 'Pro',
-    proNeedsSubscription: 'Pro 模型需要付费 Nadia 订阅。',
+    proNeedsSubscription: 'Pro 模型需要付费 NadicodeAI 订阅。',
     free: '免费',
     freeTier: '免费层',
     priceTitle: '每百万 token 的输入/输出价格'

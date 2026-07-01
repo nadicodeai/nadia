@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Check } from "lucide-react";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { BottomSheet } from "@nous-research/ui/ui/components/bottom-sheet";
-import { Typography } from "@nous-research/ui/ui/components/typography/index";
-import { useBelowBreakpoint } from "@nous-research/ui/hooks/use-below-breakpoint";
+import { Button } from "@/nadicodeai-ui";
+import { BottomSheet } from "@/nadicodeai-ui";
+import { Typography } from "@/nadicodeai-ui";
+import { useBelowBreakpoint } from "@/nadicodeai-ui";
 import { useI18n } from "@/i18n/context";
 import { LOCALE_META } from "@/i18n";
 import type { Locale } from "@/i18n";
@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
  * inevitably create political mismappings (e.g. Mandarin variants ≠ any single
  * jurisdiction, English ≠ GB, Portuguese ≠ PT). Endonyms are unambiguous.
  *
- * When placed at the bottom of the sidebar (next to ThemeSwitcher), pass
+ * When placed at the bottom of the sidebar next to other controls, pass
  * `dropUp` so the list opens above the trigger and avoids clipping below the
  * viewport / overflow ancestors. Below the `sm` breakpoint, `dropUp` uses a
  * bottom sheet portaled to `document.body` instead of an anchored dropdown.
@@ -79,7 +79,7 @@ export function LanguageSwitcher({ collapsed = false, dropUp = false }: Language
         <span className="inline-flex items-center gap-1.5">
           <Typography
             mondwest
-            className="hidden sm:inline text-display tracking-wide text-xs"
+            className="hidden sm:inline text-display-sm tracking-wide text-xs"
           >
             {locale === "en" ? "EN" : current.name}
           </Typography>
@@ -151,7 +151,7 @@ function LanguageSwitcherOptions({
             aria-selected={selected}
             className={cn(
               "w-full text-left px-3 py-1.5 flex items-center gap-2 cursor-pointer",
-              "font-mondwest text-display text-xs tracking-[0.08em]",
+              "text-display-sm text-xs tracking-[0.08em]",
               "hover:bg-accent hover:text-accent-foreground transition-colors",
               selected ? "font-semibold text-foreground" : "text-muted-foreground",
             )}

@@ -180,7 +180,7 @@ def _firecrawl_backend_help_suffix() -> str:
     if not _wt.managed_nous_tools_enabled():
         return ""
     return (
-        ", or use the Nadia Tool Gateway via your subscription "
+        ", or use the NadicodeAI Tool Gateway via your subscription "
         "(FIRECRAWL_GATEWAY_URL or TOOL_GATEWAY_DOMAIN)"
     )
 
@@ -196,8 +196,8 @@ def _raise_web_backend_configuration_error() -> None:
     )
     if _wt.managed_nous_tools_enabled():
         message += (
-            " With your Nadia subscription you can also use the Tool Gateway. "
-            "run `nadia tools` and select Nadia Subscription as the web provider."
+            " With your NadicodeAI subscription you can also use the Tool Gateway. "
+            "run `nadia tools` and select NadicodeAI Subscription as the web provider."
         )
     else:
         message += " " + _wt.nous_tool_gateway_unavailable_message(

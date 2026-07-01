@@ -818,7 +818,7 @@ export interface StaleAuxAssignment {
 export interface ModelAssignmentResponse {
   /** Persisted endpoint URL for custom/local providers (echoed back). */
   base_url?: string
-  /** Toolset keys auto-routed through the Nadia Tool Gateway as a result of
+  /** Toolset keys auto-routed through the NadicodeAI Tool Gateway as a result of
    *  switching the main provider to Nadia. Empty unless provider === 'nous'
    *  and the user is a paid subscriber with unconfigured tools. */
   gateway_tools?: string[]

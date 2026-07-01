@@ -19,15 +19,15 @@ import React, {
 } from "react";
 import { api, fetchJSON, authedFetch, buildWsUrl, buildWsAuthParam } from "@/lib/api";
 import { cn, timeAgo, isoTimeAgo } from "@/lib/utils";
-import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Checkbox } from "@nous-research/ui/ui/components/checkbox";
-import { Select, SelectOption } from "@nous-research/ui/ui/components/select";
-import { Card, CardHeader, CardTitle, CardContent } from "@nous-research/ui/ui/components/card";
-import { Input } from "@nous-research/ui/ui/components/input";
-import { Label } from "@nous-research/ui/ui/components/label";
-import { Separator } from "@nous-research/ui/ui/components/separator";
-import { Tabs, TabsList, TabsTrigger } from "@nous-research/ui/ui/components/tabs";
+import { Badge } from "@/nadicodeai-ui";
+import { Button } from "@/nadicodeai-ui";
+import { Checkbox } from "@/nadicodeai-ui";
+import { Select, SelectOption } from "@/nadicodeai-ui";
+import { Card, CardHeader, CardTitle, CardContent } from "@/nadicodeai-ui";
+import { Input } from "@/nadicodeai-ui";
+import { Label } from "@/nadicodeai-ui";
+import { Separator } from "@/nadicodeai-ui";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/nadicodeai-ui";
 import { useI18n } from "@/i18n";
 import { registerSlot, PluginSlot } from "./slots";
 
@@ -139,7 +139,7 @@ export function exposePluginSDK() {
     // plugins that need to build the WS URL themselves.
     buildWsAuthParam,
 
-    // UI components — Nadia DS where available, shadcn/ui primitives elsewhere.
+    // UI components — NadicodeAI UI where available, shadcn/ui primitives elsewhere.
     components: {
       Card,
       CardHeader,
@@ -154,6 +154,7 @@ export function exposePluginSDK() {
       SelectOption,
       Separator,
       Tabs,
+      TabsContent,
       TabsList,
       TabsTrigger,
       PluginSlot,

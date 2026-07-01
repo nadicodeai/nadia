@@ -89,7 +89,7 @@ describe('buildToolView browser_navigate title', () => {
     )
 
     expect(view.status).toBe('error')
-    expect(view.title).toBe('Failed to open nadia-agent.nadicode.ai')
+    expect(view.title).toBe('Failed to open docs.nadicode.ai/nadia')
   })
 
   it('shows opened title on success', () => {
@@ -103,7 +103,7 @@ describe('buildToolView browser_navigate title', () => {
     )
 
     expect(view.status).toBe('success')
-    expect(view.title).toBe('Opened nadia-agent.nadicode.ai')
+    expect(view.title).toBe('Opened docs.nadicode.ai/nadia')
   })
 })
 

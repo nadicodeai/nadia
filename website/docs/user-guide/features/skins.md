@@ -212,54 +212,11 @@ branding:
 tool_prefix: "▏"
 ```
 
-## Nadia Mod — Visual Skin Editor
+## Visual Skin Editing
 
-[Nadia Mod](https://github.com/cocktailpeanut/hermes-mod) is a community-built web UI for creating and managing skins visually. Instead of writing YAML by hand, you get a point-and-click editor with live preview.
+Nadia skins are plain YAML, so you can edit them in any text editor and preview the result immediately with `/skin`.
 
-![Nadia Mod skin editor](https://raw.githubusercontent.com/cocktailpeanut/hermes-mod/master/nadia.png)
-
-**What it does:**
-
-- Lists all built-in and custom skins
-- Opens any skin into a visual editor with all Nadia skin fields (colors, spinner, branding, tool prefix, tool emojis)
-- Generates `banner_logo` text art from a text prompt
-- Converts uploaded images (PNG, JPG, GIF, WEBP) into `banner_hero` ASCII art with multiple render styles (braille, ASCII ramp, blocks, dots)
-- Saves directly to `~/.nadia/skins/`
-- Activates a skin by updating `~/.nadia/config.yaml`
-- Shows the generated YAML and a live preview
-
-### Install
-
-**Option 1 — Pinokio (1-click):**
-
-Find it on [pinokio.computer](https://pinokio.computer) and install with one click.
-
-**Option 2 — npx (quickest from terminal):**
-
-```bash
-npx -y hermes-mod
-```
-
-**Option 3 — Manual:**
-
-```bash
-git clone https://github.com/cocktailpeanut/hermes-mod.git
-cd hermes-mod/app
-npm install
-npm start
-```
-
-### Usage
-
-1. Start the app (via Pinokio or terminal).
-2. Open **Skin Studio**.
-3. Choose a built-in or custom skin to edit.
-4. Generate a logo from text and/or upload an image for hero art. Pick a render style and width.
-5. Edit colors, spinner, branding, and other fields.
-6. Click **Save** to write the skin YAML to `~/.nadia/skins/`.
-7. Click **Activate** to set it as the current skin (updates `display.skin` in `config.yaml`).
-
-Nadia Mod respects the `NADIA_HOME` environment variable, so it works with [profiles](/user-guide/profiles) too.
+Custom skins live under `~/.nadia/skins/` and take precedence over built-in skins with the same name. To make a skin permanent, set `display.skin` in `~/.nadia/config.yaml`.
 
 ## Operational notes
 

@@ -21,7 +21,7 @@ Configure and use Honcho memory with Nadia -- cross-session user modeling, multi
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `Honcho`, `Memory`, `Profiles`, `Observation`, `Dialectic`, `User-Modeling`, `Session-Summary` |
-| Related skills | [`nadia-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-nadia-agent) |
+| Related skills | [`nadia-agent`](/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-nadia-agent) |
 
 ## Reference: full SKILL.md
 

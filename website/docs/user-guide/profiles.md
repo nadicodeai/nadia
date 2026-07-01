@@ -25,7 +25,7 @@ That's it. `coder` is now its own Nadia profile with its own config, memory, and
 ## Creating a profile
 
 :::tip
-Quickest setup: run `nadia setup --portal` inside the new profile to wire up models + tools at once. See [Nadia Agents Portal](/integrations/nadia-portal).
+Quickest setup: run `nadia setup --portal` inside the new profile to wire up models + tools at once. See [NadicodeAI Portal](/integrations/nadia-portal).
 :::
 
 ### Blank profile

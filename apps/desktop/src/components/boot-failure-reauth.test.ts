@@ -58,20 +58,20 @@ describe('deriveProviderShape', () => {
   })
 
   it('OAuth shape when the provider is a redirect IDP', () => {
-    expect(deriveProviderShape([{ name: 'nous', displayName: 'NadicodeAI', supportsPassword: false }])).toEqual({
+    expect(deriveProviderShape([{ name: 'nous', displayName: 'NadicodeAI Portal', supportsPassword: false }])).toEqual({
       isPassword: false,
-      providerLabel: 'NadicodeAI'
+      providerLabel: 'NadicodeAI Portal'
     })
   })
 
   it('mixed deployment keeps generic OAuth copy (not every provider is password)', () => {
     const shape = deriveProviderShape([
       { name: 'basic', displayName: 'Username & Password', supportsPassword: true },
-      { name: 'nous', displayName: 'NadicodeAI', supportsPassword: false }
+      { name: 'nous', displayName: 'NadicodeAI Portal', supportsPassword: false }
     ])
 
     expect(shape.isPassword).toBe(false)
-    expect(shape.providerLabel).toBe('Username & Password / NadicodeAI')
+    expect(shape.providerLabel).toBe('Username & Password / NadicodeAI Portal')
   })
 
   it('falls back to name when displayName is empty', () => {
@@ -89,8 +89,8 @@ describe('signInLabel', () => {
   })
 
   it('OAuth gateway names the provider', () => {
-    expect(signInLabel({ url: 'x', isPassword: false, providerLabel: 'NadicodeAI' })).toBe(
-      'Sign in with NadicodeAI'
+    expect(signInLabel({ url: 'x', isPassword: false, providerLabel: 'NadicodeAI Portal' })).toBe(
+      'Sign in with NadicodeAI Portal'
     )
   })
 

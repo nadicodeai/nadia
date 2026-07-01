@@ -1,7 +1,7 @@
 ---
 sidebar_position: 15
 title: "Subscription Proxy"
-description: "Use your Nadia Agents Portal subscription (or other OAuth provider) as an OpenAI-compatible endpoint for external apps"
+description: "Use your NadicodeAI Portal subscription (or other OAuth provider) as an OpenAI-compatible endpoint for external apps"
 ---
 
 # Subscription Proxy
@@ -32,7 +32,7 @@ proxy when you just want **the model** through your subscription.
 nadia portal
 ```
 
-This opens your browser for the Nadia Agents Portal OAuth flow. Nadia stores
+This opens your browser for the NadicodeAI Portal OAuth flow. Nadia stores
 the refresh token in `~/.nadia/auth.json` — the same place all Nadia
 provider logins live.
 
@@ -43,7 +43,7 @@ nadia proxy start
 ```
 
 ```
-Starting Nadia proxy for Nadia Agents Portal
+Starting Nadia proxy for NadicodeAI Portal
   Listening on:  http://127.0.0.1:8645/v1
   Forwarding to: (resolved per-request from your subscription)
   Use any bearer token in the client — the proxy attaches your real credential.
@@ -72,7 +72,7 @@ automatically when the bearer approaches expiry.
 nadia proxy providers
 ```
 
-Currently shipped: `nous` (Nadia Agents Portal) and `xai` (xAI / Grok). More
+Currently shipped: `nous` (NadicodeAI Portal) and `xai` (xAI / Grok). More
 OAuth providers can be added by implementing the `UpstreamAdapter`
 interface in `nadia_cli/proxy/adapters/`.
 
@@ -85,7 +85,7 @@ nadia proxy status
 ```
 Nadia proxy upstream adapters
 
-  [nadia    ] Nadia Agents Portal — ready (bearer expires 2026-05-15T06:43:21Z)
+  [nadia    ] NadicodeAI Portal — ready (bearer expires 2026-05-15T06:43:21Z)
 ```
 
 If you see `not logged in`, run `nadia portal`. If you see
@@ -95,7 +95,7 @@ happens if you signed out from the Portal web UI) — just re-run
 
 ## Allowed paths
 
-The proxy only forwards paths the upstream actually serves. For Nadia
+The proxy only forwards paths the upstream actually serves. For NadicodeAI
 Portal:
 
 | Path | Purpose |
@@ -142,7 +142,7 @@ openviking-server
 OpenViking's VLM calls now flow through your Portal subscription. The
 embedding model side still needs its own provider — Portal does serve
 `/v1/embeddings` but the model selection depends on what your tier
-supports; check `portal.nadicode.ai/models`.
+supports; check `portal.nadicodeai.com/models`.
 
 ## Configuring Karakeep (or any bookmark/summarizer app)
 
@@ -178,7 +178,7 @@ this beyond your trusted network.
 Your Portal tier's RPM/TPM limits apply across the whole proxy. The
 proxy doesn't fan out or pool — it's a single bearer with your full
 subscription quota. Monitor usage at
-[portal.nadicode.ai](https://portal.nadicode.ai).
+[portal.nadicodeai.com](https://portal.nadicodeai.com).
 
 ## Architecture
 

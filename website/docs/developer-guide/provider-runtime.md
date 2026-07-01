@@ -43,7 +43,7 @@ That ordering matters because Nadia treats the saved model/provider choice as th
 Current provider families include (see `plugins/model-providers/` for the complete bundled set):
 
 - OpenRouter
-- Nadia Agents Portal
+- NadicodeAI Portal
 - OpenAI Codex
 - Copilot / Copilot ACP
 - Anthropic (native)

@@ -15,7 +15,7 @@ platform-gated features are supported), see **[Platform Support](./platform-supp
 
 ## Quick Install
 ### With the Nadia Desktop installer on macOS or Windows (recommended)
-To easily install the command-line and desktop applications, [download the Nadia Desktop installer](https://docs.nadicode.ai/nadia/) from our website and run it.
+To easily install the command-line and desktop applications, [download the Nadia Desktop installer](https://github.com/nadicodeai/nadia/releases/latest) from the Nadia releases page and run it.
 
 ### Without Nadia Desktop:
 For a command-line only install without Nadia Desktop, run:
@@ -71,14 +71,14 @@ nadia config set     # Set individual config values
 nadia setup          # Or run the full setup wizard to configure everything at once
 ```
 
-:::tip Fastest path: Nadia Agents Portal
+:::tip Fastest path: NadicodeAI Portal
 One subscription covers 300+ models plus the [Tool Gateway](/user-guide/features/tool-gateway) (web search, image generation, TTS, cloud browser). Skip the per-tool key juggling:
 
 ```bash
 nadia setup --portal
 ```
 
-That logs you in, sets Nadia as your provider, and turns on the Tool Gateway in one command.
+That logs you in, sets NadicodeAI Portal as your provider, and turns on the Tool Gateway in one command.
 :::
 
 ---

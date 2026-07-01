@@ -1,12 +1,12 @@
 ---
 sidebar_position: 11
 title: Model Catalog
-description: Remotely-hosted manifest driving curated model picker lists for OpenRouter and Nadia Agents Portal.
+description: Remotely-hosted manifest driving curated model picker lists for OpenRouter and NadicodeAI Portal.
 ---
 
 # Model Catalog
 
-Nadia fetches curated model lists for **OpenRouter** and **Nadia Agents Portal** from a JSON manifest hosted alongside the docs site. This lets maintainers update picker lists without shipping a new `nadia-agent` release.
+Nadia fetches curated model lists for **OpenRouter** and **NadicodeAI Portal** from a JSON manifest hosted alongside the docs site. This lets maintainers update picker lists without shipping a new `nadia-agent` release.
 
 When the manifest is unreachable (offline, network blocked, hosting failure), Nadia silently falls back to the in-repo snapshot that ships with the CLI. The manifest never breaks the picker — worst case you see whatever list was bundled with your installed version.
 
@@ -48,7 +48,7 @@ Field notes:
 
 - **`version`** — integer schema version. Future schemas bump this; Nadia refuses manifests with versions it doesn't understand and falls back to the hardcoded snapshot.
 - **`metadata`** — free-form dict at the manifest, provider, and model level. Any keys. Nadia ignores unknown fields, so you can annotate entries (`"tier": "paid"`, `"tags": [...]`, etc.) without coordinating a schema change.
-- **`description`** — OpenRouter-only. Drives picker badge text (`"recommended"`, `"free"`, or empty). Nadia Agents Portal doesn't use this — free-tier gating is determined live from the Portal's pricing endpoint.
+- **`description`** — OpenRouter-only. Drives picker badge text (`"recommended"`, `"free"`, or empty). NadicodeAI Portal doesn't use this — free-tier gating is determined live from the Portal's pricing endpoint.
 - **Pricing and context length** are NOT in the manifest. Those come from live provider APIs (`/v1/models` endpoints, models.dev) at fetch time.
 
 ## Fetch behavior

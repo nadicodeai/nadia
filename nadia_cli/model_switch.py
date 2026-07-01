@@ -74,13 +74,13 @@ def _bare_custom_provider_def(current_base_url: str) -> Optional[ProviderDef]:
 # ---------------------------------------------------------------------------
 
 _NOUS_MODEL_FAMILY_WARNING = (
-    "NadicodeAI Hermes 3 & 4 models are NOT agentic and are not designed "
+    "Hermes 3 & 4 chat models are NOT agentic and are not designed "
     "for use with Nadia Agent. They lack the tool-calling capabilities "
     "required for agent workflows. Consider using an agentic model instead "
     "(Claude, GPT, Gemini, DeepSeek, etc.)."
 )
 
-# Match only the real NadicodeAI Hermes 3 / Hermes 4 chat families.
+# Match only the real Hermes 3 / Hermes 4 chat families.
 # The previous bare-family substring check false-positived on
 # unrelated local model tags that were not Nadia Hermes 3/4 chat models.
 #

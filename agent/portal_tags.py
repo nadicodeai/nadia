@@ -1,6 +1,6 @@
-"""Centralized Nadia Agents Portal request tags.
+"""Centralized NadicodeAI Portal request tags.
 
-Every Nadia request that hits the Nadia Agents Portal — main agent loop, auxiliary
+Every Nadia request that hits the NadicodeAI Portal — main agent loop, auxiliary
 client (compression / titles / vision / web_extract / session_search / etc.),
 and any future code path — must carry the same product-attribution tags so
 Nadia can attribute usage to Nadia Agent and bucket it by client release.
@@ -48,7 +48,7 @@ def _nadia_version() -> str:
 
 
 def nadia_client_tag() -> str:
-    """Return the ``client=...`` tag for Nadia Agents Portal requests.
+    """Return the ``client=...`` tag for NadicodeAI Portal requests.
 
     Format: ``client=hermes-client-v<MAJOR>.<MINOR>.<PATCH>``.
     """
@@ -56,7 +56,7 @@ def nadia_client_tag() -> str:
 
 
 def nous_portal_tags() -> List[str]:
-    """Return the canonical list of Nadia Agents Portal product tags.
+    """Return the canonical list of NadicodeAI Portal product tags.
 
     Always returns a fresh list so callers can mutate it freely
     (e.g. ``merged_extra.setdefault("tags", []).extend(nous_portal_tags())``).

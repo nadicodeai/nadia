@@ -106,9 +106,9 @@ function cachedScriptPath(nadiaHome, commit) {
 }
 
 function downloadInstallScript(commit, destPath) {
-  // Fetch from the public install branch. The stamped desktop commit identifies
-  // the source revision that produced this app; scripts/install.sh and
-  // scripts/install.ps1 install from the public customer tree.
+  // Fetch from the public install branch. In this fork the stamped desktop
+  // commit is the workshop/source commit, while scripts/install.sh and
+  // scripts/install.ps1 live in the public customer tree.
   const scriptName = installScriptName()
   const url = `https://raw.githubusercontent.com/nadicodeai/nadia/${DESKTOP_INSTALL_BRANCH}/scripts/${scriptName}`
   return new Promise((resolve, reject) => {

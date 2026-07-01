@@ -5,7 +5,7 @@ customer-managed and internet-exposed). This command is the gateway half of the
 zero-touch enrollment in the connector repo's
 ``docs/connector-gateway-auth-design.md``:
 
-  1. Resolve a fresh Nadia Agents Portal access token from the existing login
+  1. Resolve a fresh NadicodeAI Portal access token from the existing login
      (``~/.nadia/auth.json``) — the same path ``nadia dashboard register``
      uses (``resolve_nous_access_token``). This proves *which Nadia org (tenant)*
      the caller owns; the connector derives the authoritative tenant from it via
@@ -122,7 +122,7 @@ def _post_enroll(
             pass
         if exc.code == 401:
             raise RuntimeError(
-                "Connector rejected the caller identity (401). Your Nadia Agents Portal "
+                "Connector rejected the caller identity (401). Your NadicodeAI Portal "
                 "token could not be verified — try `nadia auth add nous` and retry."
             ) from exc
         if exc.code == 403:
@@ -184,13 +184,13 @@ def cmd_gateway_enroll(args) -> None:
         access_token = resolve_nous_access_token()
     except AuthError as exc:
         if getattr(exc, "relogin_required", False):
-            print("✗ You're not logged into Nadia Agents Portal.")
+            print("✗ You're not logged into NadicodeAI Portal.")
             print("  Run `nadia setup` (or `nadia auth add nous`) first, then retry.")
         else:
-            print(f"✗ Could not resolve a Nadia Agents Portal access token: {exc}")
+            print(f"✗ Could not resolve a NadicodeAI Portal access token: {exc}")
         sys.exit(1)
     except Exception as exc:
-        print(f"✗ Could not resolve a Nadia Agents Portal access token: {exc}")
+        print(f"✗ Could not resolve a NadicodeAI Portal access token: {exc}")
         sys.exit(1)
 
     # 2-3. Redeem the enrollment token at the connector.

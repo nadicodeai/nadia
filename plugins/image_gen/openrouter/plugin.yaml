@@ -1,6 +1,6 @@
 name: openrouter
 version: 1.0.0
-description: "OpenRouter + Nadia Agents Portal image generation (chat-completions image output; reference-grounded). Text-to-image and image-to-image."
+description: "OpenRouter + NadicodeAI Portal image generation (chat-completions image output; reference-grounded). Text-to-image and image-to-image."
 author: Nadia Agent
 kind: backend
 requires_env:

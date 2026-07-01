@@ -18,9 +18,9 @@
  * keeps the chat context focused on switching conversations quickly.
  */
 
-import { Button } from "@nous-research/ui/ui/components/button";
-import { ListItem } from "@nous-research/ui/ui/components/list-item";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
+import { Button } from "@/nadicodeai-ui";
+import { ListItem } from "@/nadicodeai-ui";
+import { Spinner } from "@/nadicodeai-ui";
 import { AlertCircle, MessageSquarePlus, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -227,7 +227,7 @@ export function ChatSessionList({
       )}
     >
       <div className="flex items-center justify-between gap-2 px-2 pb-2">
-        <span className="text-display text-xs tracking-wider text-text-tertiary">
+        <span className="text-display-sm text-xs tracking-wider text-text-tertiary">
           {t.sessions.title}
         </span>
         <Button

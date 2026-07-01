@@ -274,7 +274,7 @@ def _web_requires_env() -> list[str]:
     used by the tool registry to light up the tool when the variable is
     set.  Gating them on ``managed_nous_tools_enabled()`` only saved
     string noise in the metadata list, but cost a synchronous HTTP
-    refresh against the Nadia Agents Portal on every CLI startup (invoked at
+    refresh against the NadicodeAI Portal on every CLI startup (invoked at
     tool-registration time).  The behavioral contract is: if the env var
     is set, the tool sees it; if not, it doesn't.  Not-logged-in users
     simply don't have the vars set, so the extra entries are harmless.
@@ -308,7 +308,7 @@ def _web_requires_env() -> list[str]:
 DEFAULT_MIN_LENGTH_FOR_SUMMARIZATION = 5000
 
 def _is_nous_auxiliary_client(client: Any) -> bool:
-    """Return True when the resolved auxiliary backend is Nadia Agents Portal."""
+    """Return True when the resolved auxiliary backend is NadicodeAI Portal."""
     from urllib.parse import urlparse
 
     base_url = str(getattr(client, "base_url", "") or "")
@@ -1248,7 +1248,7 @@ if __name__ == "__main__":
 
     if not nous_available:
         print("❌ No auxiliary model available for LLM content processing")
-        print("Set OPENROUTER_API_KEY, configure Nadia Agents Portal, or set OPENAI_BASE_URL + OPENAI_API_KEY")
+        print("Set OPENROUTER_API_KEY, configure NadicodeAI Portal, or set OPENAI_BASE_URL + OPENAI_API_KEY")
         print("⚠️  Without an auxiliary model, LLM content processing will be disabled")
     else:
         print(f"✅ Auxiliary model available: {default_summarizer_model}")

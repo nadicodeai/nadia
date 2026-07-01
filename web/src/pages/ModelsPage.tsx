@@ -23,11 +23,11 @@ import type {
 } from "@/lib/api";
 import { timeAgo, cn, themedBody } from "@/lib/utils";
 import { formatTokenCount } from "@/lib/format";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
-import { Stats } from "@nous-research/ui/ui/components/stats";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
-import { Badge } from "@nous-research/ui/ui/components/badge";
+import { Button } from "@/nadicodeai-ui";
+import { Spinner } from "@/nadicodeai-ui";
+import { Stats } from "@/nadicodeai-ui";
+import { Card, CardContent, CardHeader, CardTitle } from "@/nadicodeai-ui";
+import { Badge } from "@/nadicodeai-ui";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
 import { usePageHeader } from "@/contexts/usePageHeader";
@@ -100,7 +100,7 @@ function TokenBar({
 
   // Segments carry a CSS color value (hex or `var(--token)`) rather than
   // a Tailwind class so the input/output series can pick up the active
-  // theme's `--series-*-token` vars — see `themes/types.ts`
+  // dashboard's `--series-*-token` vars
   // `ThemeSeriesColors`. The /60–/70 fade on the bar is applied via
   // color-mix on the same value so themes don't need to ship two
   // separate hex literals.
@@ -292,13 +292,13 @@ function UseAsMenu({
               Main model
             </span>
             {isMain && (
-              <span className="text-display text-xs tracking-wider text-primary">
+              <span className="text-display-sm text-xs tracking-wider text-primary">
                 current
               </span>
             )}
           </button>
 
-          <div className="border-t border-border/50 px-3 py-1.5 text-display text-xs tracking-wider text-text-tertiary">
+          <div className="border-t border-border/50 px-3 py-1.5 text-display-sm text-xs tracking-wider text-text-tertiary">
             Auxiliary task
           </div>
 
@@ -321,7 +321,7 @@ function UseAsMenu({
             >
               <span>{t.label}</span>
               {mainAuxTask === t.key && (
-                <span className="text-display text-xs tracking-wider text-primary">
+                <span className="text-display-sm text-xs tracking-wider text-primary">
                   current
                 </span>
               )}
@@ -405,12 +405,12 @@ function ModelCard({
                 {shortModelName(entry.model)}
               </CardTitle>
               {isMain && (
-                <span className="inline-flex items-center gap-0.5 bg-primary/15 px-1.5 py-0.5 text-display text-xs font-medium tracking-wider text-primary">
+                <span className="inline-flex items-center gap-0.5 bg-primary/15 px-1.5 py-0.5 text-display-sm text-xs font-medium tracking-wider text-primary">
                   <Star className="h-2.5 w-2.5" /> main
                 </span>
               )}
               {mainAuxTask && (
-                <span className="inline-flex items-center bg-purple-500/10 px-1.5 py-0.5 text-display text-xs font-medium tracking-wider text-purple-600 dark:text-purple-400">
+                <span className="inline-flex items-center bg-purple-500/10 px-1.5 py-0.5 text-display-sm text-xs font-medium tracking-wider text-purple-600 dark:text-purple-400">
                   aux · {mainAuxTask}
                 </span>
               )}
@@ -596,7 +596,7 @@ function AuxiliaryTasksModal({
           <div className="flex items-center justify-between gap-3 pr-8">
             <h2
               id="aux-modal-title"
-              className="font-mondwest text-display text-base tracking-wider"
+              className="text-display-sm text-base tracking-wider"
             >
               Auxiliary Tasks
             </h2>
@@ -813,7 +813,7 @@ function MoaModelsModal({
           </div>
 
           <div className="space-y-2">
-            <div className="text-display text-xs font-medium tracking-wider">Reference models</div>
+            <div className="text-display-sm text-xs font-medium tracking-wider">Reference models</div>
             {preset.reference_models.map((slot, index) => (
               <div key={`${selected}-${slot.provider}-${slot.model}-${index}`} className="flex items-center gap-2 border border-border/50 bg-muted/20 px-3 py-2">
                 <div className="min-w-0 flex-1 truncate font-mono text-xs text-text-secondary">{slotLabel(slot)}</div>
@@ -825,7 +825,7 @@ function MoaModelsModal({
           </div>
 
           <div className="space-y-2">
-            <div className="text-display text-xs font-medium tracking-wider">Aggregator</div>
+            <div className="text-display-sm text-xs font-medium tracking-wider">Aggregator</div>
             <div className="flex items-center gap-2 border border-border/50 bg-muted/20 px-3 py-2">
               <div className="min-w-0 flex-1 truncate font-mono text-xs text-text-secondary">{slotLabel(preset.aggregator)}</div>
               <Button size="sm" outlined onClick={() => setPicker({ kind: "aggregator" })}>Change</Button>
@@ -937,7 +937,7 @@ function ModelSettingsPanel({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-0.5">
               <Star className="h-3 w-3 text-primary" />
-              <span className="text-display text-xs font-medium tracking-wider">
+              <span className="text-display-sm text-xs font-medium tracking-wider">
                 Main model
               </span>
             </div>
@@ -961,7 +961,7 @@ function ModelSettingsPanel({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-0.5">
               <Cpu className="h-3 w-3 text-text-tertiary" />
-              <span className="text-display text-xs font-medium tracking-wider">
+              <span className="text-display-sm text-xs font-medium tracking-wider">
                 Auxiliary tasks
               </span>
             </div>
@@ -985,7 +985,7 @@ function ModelSettingsPanel({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-0.5">
               <Brain className="h-3 w-3 text-text-tertiary" />
-              <span className="text-display text-xs font-medium tracking-wider">
+              <span className="text-display-sm text-xs font-medium tracking-wider">
                 Mixture of Agents
               </span>
             </div>

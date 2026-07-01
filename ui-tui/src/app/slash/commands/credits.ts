@@ -13,7 +13,7 @@ export const creditsCommands: SlashCommand[] = [
         .then(
           ctx.guarded<CreditsViewResponse>(view => {
             if (!view.logged_in) {
-              ctx.transcript.sys('💳 Not logged into Nadia Agents Portal — run /portal to log in.')
+              ctx.transcript.sys('💳 Not logged into NadicodeAI Portal — run /portal to log in.')
 
               return
             }

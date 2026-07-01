@@ -373,7 +373,7 @@ nadia config set stt.use_gateway true
 nadia gateway restart
 ```
 
-This uses your Nadia Agents Portal access token instead of needing a separate OpenAI key.
+This uses your NadicodeAI Portal access token instead of needing a separate OpenAI key.
 
 ---
 

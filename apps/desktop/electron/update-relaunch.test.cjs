@@ -202,7 +202,12 @@ test('buildRelaunchScript embeds pid/exec/args/env/cwd and is valid bash', () =>
   assert.match(script, /export NADIA_HOME='\/home\/u\/\.nadia'/)
   assert.match(script, /export NADIA_DESKTOP_REMOTE_URL='http:\/\/box:9119'/)
   assert.match(script, /cd '\/home\/u\/work dir'/)
-  assert.match(script, /exec '.*\/linux-unpacked\/Nadia's 'nadia:\/\/open\/agent\/42' '--note=it'\\''s fine'/)
+  const execPattern = new RegExp(
+    "exec '.*\\/linux-unpacked\\/" +
+      "Nadia" +
+      "' 'nadia:\\/\\/open\\/agent\\/42' '--note=it'\\\\''s fine'"
+  )
+  assert.match(script, execPattern)
 
   // It must be syntactically valid bash (`bash -n`). Write to a temp file and lint.
   const tmp = path.join(os.tmpdir(), `nadia-relaunch-test-${Date.now()}.sh`)

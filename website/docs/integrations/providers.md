@@ -14,7 +14,7 @@ You need at least one way to connect to an LLM. Use `nadia model` to switch prov
 
 | Provider | Setup |
 |----------|-------|
-| **Nadia Agents Portal** | `nadia model` (OAuth, subscription-based) |
+| **NadicodeAI Portal** | `nadia model` (OAuth, subscription-based) |
 | **OpenAI Codex** | `nadia model` (ChatGPT OAuth, uses Codex models) |
 | **GitHub Copilot** | `nadia model` (OAuth device code flow, `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `gh auth token`) |
 | **GitHub Copilot ACP** | `nadia model` (spawns local `copilot --acp --stdio`) |
@@ -58,19 +58,19 @@ In the `model:` config section, you can use either `default:` or `model:` as the
 :::
 
 
-### Nadia Agents Portal
+### NadicodeAI Portal
 
-[Nadia Agents Portal](https://portal.nadicode.ai) is NadicodeAI's unified subscription gateway and **the recommended way to run Nadia Agent**. One OAuth login covers 300+ frontier agentic models (Claude, GPT, Gemini, DeepSeek, Qwen, Kimi, GLM, MiniMax, Grok, ...) plus the [Tool Gateway](/user-guide/features/tool-gateway) (web search, image generation, TTS, browser automation) plus [Nadia Chat](https://chat.nadicode.ai) — billed against your Nadia subscription instead of separate per-provider accounts.
+[NadicodeAI Portal](https://portal.nadicodeai.com) is NadicodeAI's unified subscription gateway and **the recommended way to run Nadia Agent**. One OAuth login covers 300+ frontier agentic models (Claude, GPT, Gemini, DeepSeek, Qwen, Kimi, GLM, MiniMax, Grok, ...) plus the [Tool Gateway](/user-guide/features/tool-gateway) (web search, image generation, TTS, browser automation) plus hosted chat access — billed against your NadicodeAI subscription instead of separate per-provider accounts.
 
 ```bash
 nadia setup --portal     # fresh install — OAuth + provider + gateway in one command
-nadia model              # existing install — pick "Nadia Agents Portal" from the list
+nadia model              # existing install — pick "NadicodeAI Portal" from the list
 nadia portal info        # inspect login + routing at any time
 ```
 
-Don't have a subscription yet? Get one at [portal.nadicode.ai/manage-subscription](https://portal.nadicode.ai/manage-subscription).
+Don't have a subscription yet? Get one at [portal.nadicodeai.com/manage-subscription](https://portal.nadicodeai.com/manage-subscription).
 
-**For full details:** see the dedicated [Nadia Agents Portal integration page](/integrations/nadia-portal) (what's in the subscription, model catalog, troubleshooting) and the step-by-step [Run Nadia Agent with Nadia Agents Portal guide](/guides/run-nadia-with-nadia-portal).
+**For full details:** see the dedicated [NadicodeAI Portal integration page](/integrations/nadia-portal) (what's in the subscription, model catalog, troubleshooting) and the step-by-step [Run Nadia Agent with NadicodeAI Portal guide](/guides/run-nadia-with-nadia-portal).
 
 **Client identification.** Every Portal request from Nadia Agent carries a `client=hermes-client-v<version>` tag (e.g. `client=hermes-client-v0.13.0`) auto-aligned to your installed release. This is sent on all Portal pathways — main chat loop, auxiliary calls, compression summarizer, web extraction — and lets Portal-side telemetry distinguish Nadia traffic from other clients. No config required; the tag updates automatically when you `nadia update`.
 
@@ -84,11 +84,11 @@ If a token refresh fails with a terminal error (HTTP 4xx, `invalid_grant`, revok
 :::
 
 :::warning
-Even when using Nadia Agents Portal, Codex, or a custom endpoint, some tools (vision, web summarization, MoA) use a separate "auxiliary" model. By default (`auxiliary.*.provider: "auto"`), Nadia routes these tasks to your **main chat model** — the same model you picked in `nadia model`. You can override each task individually to route it to a cheaper/faster model (e.g. Gemini Flash on OpenRouter) — see [Auxiliary Models](/user-guide/configuration#auxiliary-models).
+Even when using NadicodeAI Portal, Codex, or a custom endpoint, some tools (vision, web summarization, MoA) use a separate "auxiliary" model. By default (`auxiliary.*.provider: "auto"`), Nadia routes these tasks to your **main chat model** — the same model you picked in `nadia model`. You can override each task individually to route it to a cheaper/faster model (e.g. Gemini Flash on OpenRouter) — see [Auxiliary Models](/user-guide/configuration#auxiliary-models).
 :::
 
-:::tip Nadia Tool Gateway
-Paid Nadia Agents Portal subscribers also get access to the **[Tool Gateway](/user-guide/features/tool-gateway)** — web search, image generation, TTS, and browser automation routed through your subscription. No extra API keys needed. On a fresh install, `nadia setup --portal` logs you in, sets Nadia as your provider, and turns the gateway on in one command. Existing users can enable it from `nadia model` or per-tool from `nadia tools`. Inspect routing at any time with `nadia portal info`.
+:::tip NadicodeAI Tool Gateway
+Paid NadicodeAI Portal subscribers also get access to the **[Tool Gateway](/user-guide/features/tool-gateway)** — web search, image generation, TTS, and browser automation routed through your subscription. No extra API keys needed. On a fresh install, `nadia setup --portal` logs you in, sets NadicodeAI Portal as your provider, and turns the gateway on in one command. Existing users can enable it from `nadia model` or per-tool from `nadia tools`. Inspect routing at any time with `nadia portal info`.
 :::
 
 ### Two Commands for Model Management
@@ -1111,7 +1111,7 @@ Nadia uses a multi-source resolution chain to detect the correct context window 
 4. **Endpoint `/models`** — queries your server's API (local/custom endpoints)
 5. **Anthropic `/v1/models`** — queries Anthropic's API for `max_input_tokens` (API-key users only)
 6. **OpenRouter API** — live model metadata from OpenRouter
-7. **Nadia Agents Portal** — suffix-matches Nadia model IDs against OpenRouter metadata
+7. **NadicodeAI Portal** — suffix-matches Nadia model IDs against OpenRouter metadata
 8. **[models.dev](https://models.dev)** — community-maintained registry with provider-specific context lengths for 3800+ models across 100+ providers
 9. **Fallback defaults** — broad model family patterns (128K default)
 
@@ -1333,7 +1333,7 @@ model:
 
 | Use Case | Recommended |
 |----------|-------------|
-| **Just want it to work** | OpenRouter (default) or Nadia Agents Portal |
+| **Just want it to work** | OpenRouter (default) or NadicodeAI Portal |
 | **Local models, easy setup** | Ollama |
 | **Production GPU serving** | vLLM or SGLang |
 | **Mac / no GPU** | Ollama or llama.cpp |

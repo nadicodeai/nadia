@@ -48,7 +48,7 @@ Each entry requires both `provider` and `model`. Entries missing either field ar
 | Provider | Value | Requirements |
 |----------|-------|-------------|
 | OpenRouter | `openrouter` | `OPENROUTER_API_KEY` |
-| Nadia Agents Portal | `nous` | `nadia setup --portal` (fresh) or `nadia auth add nous` (OAuth) |
+| NadicodeAI Portal | `nous` | `nadia setup --portal` (fresh) or `nadia auth add nous` (OAuth) |
 | OpenAI Codex | `openai-codex` | `nadia model` (ChatGPT OAuth) |
 | GitHub Copilot | `copilot` | `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `GITHUB_TOKEN` |
 | GitHub Copilot ACP | `copilot-acp` | External process (editor integration) |
@@ -132,7 +132,7 @@ fallback_providers:
     model: anthropic/claude-sonnet-4
 ```
 
-**Nadia Agents Portal as fallback for OpenRouter:**
+**NadicodeAI Portal as fallback for OpenRouter:**
 ```yaml
 model:
   provider: openrouter
@@ -206,14 +206,14 @@ The task-specific chain is most precise and wins when present. The top-level `fa
 **Built-in text discovery chain (compression, web extract, title generation, etc.):**
 
 ```text
-OpenRouter → Nadia Agents Portal → Custom endpoint → Codex OAuth →
+OpenRouter → NadicodeAI Portal → Custom endpoint → Codex OAuth →
 API-key providers (z.ai, Kimi, MiniMax, Xiaomi MiMo, Hugging Face, Anthropic) → give up
 ```
 
 **Built-in vision discovery chain:**
 
 ```text
-Main provider (if vision-capable) → OpenRouter → Nadia Agents Portal →
+Main provider (if vision-capable) → OpenRouter → NadicodeAI Portal →
 Codex OAuth → Anthropic → Custom endpoint → give up
 ```
 
@@ -282,7 +282,7 @@ These options apply to `auxiliary:`, `compression:`, and `fallback_providers:` e
 |----------|-------------|-------------|
 | `"auto"` | Try providers in order until one works (default) | At least one provider configured |
 | `"openrouter"` | Force OpenRouter | `OPENROUTER_API_KEY` |
-| `"nadia"` | Force Nadia Agents Portal | `nadia auth` |
+| `"nadia"` | Force NadicodeAI Portal | `nadia auth` |
 | `"codex"` | Force Codex OAuth | `nadia model` → Codex |
 | `"main"` | Use whatever provider the main agent uses (auxiliary tasks only) | Active main provider configured |
 | `"anthropic"` | Force Anthropic native | `ANTHROPIC_API_KEY` or Claude Code credentials |

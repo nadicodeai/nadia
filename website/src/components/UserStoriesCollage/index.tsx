@@ -301,9 +301,9 @@ export default function UserStoriesCollage(): JSX.Element {
         >
           Add your story to this page
         </a>{' '}
-        by editing <code>userStories.json</code>, or post it in the{' '}
-        <a href="https://discord.gg/NadicodeAI" target="_blank" rel="noopener noreferrer">
-          NadicodeAI Discord
+        by editing <code>userStories.json</code>, or open a request in{' '}
+        <a href="https://github.com/nadicodeai/nadia/issues" target="_blank" rel="noopener noreferrer">
+          GitHub Issues
         </a>{' '}
         and we&apos;ll pick it up.
       </div>

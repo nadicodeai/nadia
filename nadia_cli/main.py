@@ -848,7 +848,7 @@ def _has_any_provider_configured() -> bool:
     except Exception:
         pass
 
-    # Check for Nadia Agents Portal OAuth credentials
+    # Check for NadicodeAI Portal OAuth credentials
     auth_file = get_nadia_home() / "auth.json"
     if auth_file.exists():
         try:
@@ -3329,7 +3329,7 @@ def _aux_config_menu() -> None:
         print("  Side tasks (vision, compression, web extraction, etc.) default")
         print('  to your main chat model.  "auto" means "use my main model" —')
         print("  Nadia only falls back to a lightweight backend (OpenRouter,")
-        print("  Nadia Agents Portal) if the main model is unavailable.  Override a")
+        print("  NadicodeAI Portal) if the main model is unavailable.  Override a")
         print("  task below if you want it pinned to a specific provider/model.")
         print()
 
@@ -11237,7 +11237,7 @@ def _maybe_setup_dashboard_auth_interactively(args) -> None:
     print()
     print("  How do you want to authenticate the dashboard?")
     print("    [1] Username & password (quickest; for a trusted LAN / VPN)")
-    print("    [2] OAuth via Nadia Agents Portal (run `nadia dashboard register`)")
+    print("    [2] OAuth via NadicodeAI Portal (run `nadia dashboard register`)")
     print("    [3] Cancel")
     print()
 
@@ -11253,7 +11253,7 @@ def _maybe_setup_dashboard_auth_interactively(args) -> None:
             "  Run this on the host where the dashboard lives, then start "
             "the dashboard again:\n"
             "    nadia dashboard register\n"
-            "  It provisions a Nadia Agents Portal OAuth client and writes "
+            "  It provisions a NadicodeAI Portal OAuth client and writes "
             "NADIA_DASHBOARD_OAUTH_CLIENT_ID into ~/.nadia/.env for you.\n"
             "  Docs: https://docs.nadicode.ai/nadia/"
             "user-guide/features/web-dashboard#authentication-gated-mode"
@@ -11539,7 +11539,7 @@ def cmd_dashboard(args):
 
 
 def cmd_dashboard_register(args):
-    """Register a self-hosted dashboard OAuth client with Nadia Agents Portal."""
+    """Register a self-hosted dashboard OAuth client with NadicodeAI Portal."""
     from nadia_cli.dashboard_register import cmd_dashboard_register as _impl
 
     _impl(args)
@@ -12365,7 +12365,7 @@ def main():
     build_webhook_parser(subparsers, cmd_webhook=cmd_webhook)
 
     # =========================================================================
-    # portal command — Nadia Agents Portal status + Tool Gateway routing
+    # portal command — NadicodeAI Portal status + Tool Gateway routing
     # =========================================================================
     from nadia_cli.portal_cli import add_parser as _add_portal_parser
     _add_portal_parser(subparsers)

@@ -679,12 +679,12 @@ app.setName(APP_NAME)
 // Windows toast notifications silently no-op unless an AppUserModelID is set:
 // `new Notification().show()` returns without error and nothing appears. The
 // AUMID must match the installed Start Menu shortcut's AUMID, which
-// electron-builder derives from the build `appId` (com.nadicode.nadia) —
+// electron-builder derives from the build `appId` (ai.nadicode.nadia) —
 // keep this string in sync with package.json `build.appId`. macOS/Linux don't
 // need this, so gate it on Windows. (Fixes: desktop approval/turn notifications
 // never firing on Windows.)
 if (IS_WINDOWS) {
-  app.setAppUserModelId('com.nadicode.nadia')
+  app.setAppUserModelId('ai.nadicode.nadia')
 }
 // Seed the native About panel with the live Nadia version. This is refreshed
 // on every open via the explicit "About" menu handler (refreshAboutPanel), so
@@ -4308,7 +4308,7 @@ function installMediaPermissions() {
 //   * WebSocket upgrades require a single-use ``?ticket=`` minted at
 //     ``POST /api/auth/ws-ticket`` (cookie-authed). The legacy ``?token=``
 //     path is unconditionally rejected by gated gateways.
-//   * Nadia Agents Portal now issues a 24h ROTATING, reuse-detected refresh token
+//   * NadicodeAI Portal now issues a 24h ROTATING, reuse-detected refresh token
 //     alongside the ~15-min access token (Portal NAS #293 / nadia #37247).
 //     Both are set as HttpOnly cookies (``nadia_session_at`` ~15 min,
 //     ``nadia_session_rt`` 24h). When the AT cookie lapses but the RT cookie

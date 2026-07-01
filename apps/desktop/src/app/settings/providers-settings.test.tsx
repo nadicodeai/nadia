@@ -28,7 +28,7 @@ function provider(id: string, loggedIn: boolean, patch: Partial<OAuthProvider> =
     docs_url: '',
     flow: 'device_code',
     id,
-    name: id === 'nous' ? 'Nadia Agents Portal' : 'MiniMax',
+    name: id === 'nous' ? 'NadicodeAI Portal' : 'MiniMax',
     status: {
       logged_in: loggedIn
     },
@@ -81,7 +81,7 @@ describe('ProvidersSettings', () => {
   it('disconnects a connected provider account and refreshes the accounts list', async () => {
     await renderProvidersSettings()
 
-    const remove = await screen.findByRole('button', { name: 'Remove Nadia Agents Portal' })
+    const remove = await screen.findByRole('button', { name: 'Remove NadicodeAI Portal' })
     fireEvent.click(remove)
 
     await waitFor(() => expect(disconnectOAuthProvider).toHaveBeenCalledWith('nous'))
@@ -91,7 +91,7 @@ describe('ProvidersSettings', () => {
   it('keeps provider selection separate from account removal', async () => {
     await renderProvidersSettings()
 
-    fireEvent.click(await screen.findByText('Nadia Agents Portal'))
+    fireEvent.click(await screen.findByText('NadicodeAI Portal'))
 
     expect(startManualProviderOAuth).toHaveBeenCalledWith('nous')
     expect(disconnectOAuthProvider).not.toHaveBeenCalled()

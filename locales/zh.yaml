@@ -339,7 +339,7 @@ Future messages in this room will use that transcript until `/reset` or another 
     no_data:                  "此会话暂无使用数据。"
 
   credits:
-    not_logged_in:            "未登录 Nadia Agents Portal。登录后即可查看额度余额并充值。"
+    not_logged_in:            "未登录 NadicodeAI Portal。登录后即可查看额度余额并充值。"
 
   verbose:
     not_enabled:           "`/verbose` 命令未在消息平台启用。\n\n请在 `config.yaml` 中启用：\n```yaml\ndisplay:\n  tool_progress_command: true\n```"

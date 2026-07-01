@@ -221,11 +221,11 @@ def show_status(args):
     if nous_logged_in:
         nous_label = "logged in"
     elif nous_inference_present:
-        nous_label = "not logged in (Nadia inference key configured)"
+        nous_label = "not logged in (NadicodeAI inference key configured)"
     else:
         nous_label = "not logged in (run: nadia portal)"
     print(
-        f"  {'Nadia Agents Portal':<12}  {check_mark(nous_logged_in)} "
+        f"  {'NadicodeAI Portal':<18}  {check_mark(nous_logged_in)} "
         f"{nous_label}"
     )
     portal_url = nous_status.get("portal_base_url") or "(unknown)"
@@ -314,19 +314,19 @@ def show_status(args):
         print(f"    Error:      {xai_oauth_status.get('error')}")
 
     # =========================================================================
-    # Nadia Subscription Features
+    # NadicodeAI Subscription Features
     # =========================================================================
     if managed_nous_tools_enabled():
         features = get_nous_subscription_features(config)
         print()
-        print(color("◆ Nadia Tool Gateway", Colors.CYAN, Colors.BOLD))
+        print(color("◆ NadicodeAI Tool Gateway", Colors.CYAN, Colors.BOLD))
         if not features.nous_auth_present:
-            print("  Nadia Agents Portal   ✗ not logged in")
+            print("  NadicodeAI Portal   ✗ not logged in")
         else:
-            print("  Nadia Agents Portal   ✓ managed tools available")
+            print("  NadicodeAI Portal   ✓ managed tools available")
         for feature in features.items():
             if feature.managed_by_nous:
-                state = "active via Nadia subscription"
+                state = "active via NadicodeAI subscription"
             elif feature.active:
                 current = feature.current_provider or "configured provider"
                 state = f"active via {current}"
@@ -341,7 +341,7 @@ def show_status(args):
         # Nadia OAuth without entitlement, or an opaque inference key without
         # Portal account information, cannot enable the Tool Gateway.
         print()
-        print(color("◆ Nadia Tool Gateway", Colors.CYAN, Colors.BOLD))
+        print(color("◆ NadicodeAI Tool Gateway", Colors.CYAN, Colors.BOLD))
         message = format_nous_portal_entitlement_message(
             nous_account_info,
             capability="managed web, image, TTS, STT, browser, and Modal tools",

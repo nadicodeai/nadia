@@ -7,7 +7,7 @@ import Success from './routes/success'
 import Failure from './routes/failure'
 
 /*
- * App shell — Nadia Setup.
+ * App shell - Nadia Setup.
  *
  * No header chrome (the OS title bar already says "Nadia Setup"; an
  * in-window repeat of the H mark + words was redundant slop).

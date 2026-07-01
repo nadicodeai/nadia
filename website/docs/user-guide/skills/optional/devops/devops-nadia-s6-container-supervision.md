@@ -21,7 +21,7 @@ Modify, debug, or extend the s6-overlay supervision tree inside the Nadia Agent 
 | License | MIT |
 | Platforms | linux |
 | Tags | `docker`, `s6`, `supervision`, `gateway`, `profiles` |
-| Related skills | [`nadia-agent`](/docs/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-nadia-agent), `nadia-agent-dev` |
+| Related skills | [`nadia-agent`](/user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-nadia-agent), `nadia-agent-dev` |
 
 ## Reference: full SKILL.md
 

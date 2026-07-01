@@ -317,7 +317,7 @@ export const billingCommands: SlashCommand[] = [
         .then(
           ctx.guarded<BillingStateResponse>(s => {
             if (!s.logged_in) {
-              sys('💳 Not logged into Nadia Agents Portal — run /portal to log in, then /billing.')
+              sys('💳 Not logged into NadicodeAI Portal — run /portal to log in, then /billing.')
 
               return
             }

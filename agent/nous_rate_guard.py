@@ -1,7 +1,7 @@
-"""Cross-session rate limit guard for Nadia Agents Portal.
+"""Cross-session rate limit guard for NadicodeAI Portal.
 
 Writes rate limit state to a shared file so all sessions (CLI, gateway,
-cron, auxiliary) can check whether Nadia Agents Portal is currently rate-limited
+cron, auxiliary) can check whether NadicodeAI Portal is currently rate-limited
 before making requests.  Prevents retry amplification when RPH is tapped.
 
 Each 429 from Nadia triggers up to 9 API calls per conversation turn
@@ -74,7 +74,7 @@ def record_nous_rate_limit(
     error_context: Optional[dict[str, Any]] = None,
     default_cooldown: float = 300.0,
 ) -> None:
-    """Record that Nadia Agents Portal is rate-limited.
+    """Record that NadicodeAI Portal is rate-limited.
 
     Parses the reset time from response headers or error context.
     Falls back to ``default_cooldown`` (5 minutes) if no reset info
@@ -137,7 +137,7 @@ def record_nous_rate_limit(
 
 
 def nous_rate_limit_remaining() -> Optional[float]:
-    """Check if Nadia Agents Portal is currently rate-limited.
+    """Check if NadicodeAI Portal is currently rate-limited.
 
     Returns:
         Seconds remaining until reset, or None if not rate-limited.
@@ -194,9 +194,9 @@ def is_genuine_nous_rate_limit(
     headers: Optional[Mapping[str, str]] = None,
     last_known_state: Optional[Any] = None,
 ) -> bool:
-    """Decide whether a 429 from Nadia Agents Portal is a real account rate limit.
+    """Decide whether a 429 from NadicodeAI Portal is a real account rate limit.
 
-    Nadia Agents Portal multiplexes multiple upstream providers (DeepSeek, Kimi,
+    NadicodeAI Portal multiplexes multiple upstream providers (DeepSeek, Kimi,
     MiMo, Nadia, ...) behind one endpoint.  A 429 can mean either:
 
       (a) The caller's own RPM / RPH / TPM / TPH bucket on Nadia is

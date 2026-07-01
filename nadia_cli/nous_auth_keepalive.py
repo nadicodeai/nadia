@@ -1,4 +1,4 @@
-"""Background keepalive for long-lived Nadia Agents Portal sessions."""
+"""Background keepalive for long-lived NadicodeAI Portal sessions."""
 
 from __future__ import annotations
 

@@ -1,7 +1,7 @@
 """
 Multi-provider authentication system for Nadia Agent.
 
-Supports OAuth device code flows (Nadia Agents Portal, future: OpenAI Codex) and
+Supports OAuth device code flows (NadicodeAI Portal, future: OpenAI Codex) and
 traditional API key providers (OpenRouter, custom endpoints). Auth state
 is persisted in ~/.nadia/auth.json with cross-process file locking.
 
@@ -66,8 +66,8 @@ except Exception:
 AUTH_STORE_VERSION = 1
 AUTH_LOCK_TIMEOUT_SECONDS = 15.0
 
-# Nadia Agents Portal defaults
-DEFAULT_NOUS_PORTAL_URL = "https://portal.nadicode.ai"
+# NadicodeAI Portal defaults
+DEFAULT_NOUS_PORTAL_URL = "https://portal.nadicodeai.com"
 DEFAULT_NOUS_INFERENCE_URL = "https://inference-api.nadicode.ai/v1"
 DEFAULT_NOUS_CLIENT_ID = "nadia-cli"
 NADIA_INFERENCE_INVOKE_SCOPE = "inference:invoke"
@@ -169,7 +169,7 @@ class ProviderConfig:
 PROVIDER_REGISTRY: Dict[str, ProviderConfig] = {
     "nous": ProviderConfig(
         id="nous",
-        name="Nadia Agents Portal",
+        name="NadicodeAI Portal",
         auth_type="oauth_device_code",
         portal_base_url=DEFAULT_NOUS_PORTAL_URL,
         inference_base_url=DEFAULT_NOUS_INFERENCE_URL,
@@ -832,7 +832,7 @@ def _format_nous_entitlement_auth_error(error: AuthError) -> str:
             return message
     except Exception:
         pass
-    return f"{error} Check credits or billing in Nadia Agents Portal, then retry."
+    return f"{error} Check credits or billing in NadicodeAI Portal, then retry."
 
 
 def _token_fingerprint(token: Any) -> Optional[str]:
@@ -1772,7 +1772,7 @@ def _optional_base_url(value: Any) -> Optional[str]:
     return cleaned if cleaned else None
 
 
-# Allowlist of hosts the Nadia Agents Portal proxy is willing to forward inference
+# Allowlist of hosts the NadicodeAI Portal proxy is willing to forward inference
 # JWTs to. Sending a bearer anywhere else would leak it.
 #
 # This is consulted only for URLs coming from the NETWORK side (Portal
@@ -1935,7 +1935,7 @@ def _assert_nous_inference_jwt_usable(
     if reason is None:
         return
     raise AuthError(
-        "Nadia Agents Portal access token is not a usable inference JWT "
+        "NadicodeAI Portal access token is not a usable inference JWT "
         f"({reason}). Re-authenticate with: nadia auth add nous",
         provider="nous",
         code=reason,
@@ -4721,7 +4721,7 @@ def _poll_for_token(
 
 
 # =============================================================================
-# Nadia Agents Portal — token refresh and model discovery
+# NadicodeAI Portal — token refresh and model discovery
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -5186,7 +5186,7 @@ def _refresh_access_token(
     description = str(error_payload.get("error_description") or "Refresh token exchange failed")
     relogin = code in {"invalid_grant", "invalid_token", "refresh_token_reused"}
 
-    # Detect the OAuth 2.1 "refresh token reuse" signal from the Nadia Agents Portal
+    # Detect the OAuth 2.1 "refresh token reuse" signal from the NadicodeAI Portal
     # server and surface an actionable message.  This fires when an external
     # process (health-check script, monitoring tool, custom self-heal hook)
     # called POST /api/oauth/token with Nadia's refresh_token without
@@ -5196,7 +5196,7 @@ def _refresh_access_token(
     lowered = description.lower()
     if code == "refresh_token_reused" or "reuse" in lowered or "reuse detected" in lowered:
         description = (
-            "Nadia Agents Portal detected refresh-token reuse and revoked this session.\n"
+            "NadicodeAI Portal detected refresh-token reuse and revoked this session.\n"
             "This usually means an external process (monitoring script, "
             "custom self-heal hook, or another Nadia install sharing "
             "~/.nadia/auth.json) called POST /api/oauth/token with Nadia's "
@@ -5287,14 +5287,14 @@ def resolve_nous_access_token(
     ca_bundle: Optional[str] = None,
     refresh_skew_seconds: int = ACCESS_TOKEN_REFRESH_SKEW_SECONDS,
 ) -> str:
-    """Resolve a refresh-aware Nadia Agents Portal access token for managed tool gateways."""
+    """Resolve a refresh-aware NadicodeAI Portal access token for managed tool gateways."""
     with _auth_store_lock():
         auth_store = _load_auth_store()
         state = _load_provider_state(auth_store, "nous")
 
         if not state:
             raise AuthError(
-                "Nadia is not logged into Nadia Agents Portal.",
+                "Nadia is not logged into NadicodeAI Portal.",
                 provider="nous",
                 relogin_required=True,
             )
@@ -5314,7 +5314,7 @@ def resolve_nous_access_token(
             refresh_token = state.get("refresh_token")
             if not isinstance(access_token, str) or not access_token:
                 raise AuthError(
-                    "No access token found for Nadia Agents Portal login.",
+                    "No access token found for NadicodeAI Portal login.",
                     provider="nous",
                     relogin_required=True,
                 )
@@ -5441,7 +5441,7 @@ def refresh_nous_oauth_pure(
             if not isinstance(refresh_token_value, str) or not refresh_token_value:
                 if current_invoke_jwt_status is not None:
                     raise AuthError(
-                        "Nadia Agents Portal access token is not a usable inference JWT "
+                        "NadicodeAI Portal access token is not a usable inference JWT "
                         f"({current_invoke_jwt_status}) and no refresh token is available. "
                         "Re-authenticate with: nadia auth add nous",
                         provider="nous",
@@ -5449,7 +5449,7 @@ def refresh_nous_oauth_pure(
                         relogin_required=True,
                     )
                 raise AuthError(
-                    "No refresh token is available for Nadia Agents Portal.",
+                    "No refresh token is available for NadicodeAI Portal.",
                     provider="nous",
                     relogin_required=True,
                 )
@@ -5609,7 +5609,7 @@ def resolve_nous_runtime_credentials(
         state = _load_provider_state(auth_store, "nous")
 
         if not state:
-            raise AuthError("Nadia is not logged into Nadia Agents Portal.",
+            raise AuthError("Nadia is not logged into NadicodeAI Portal.",
                             provider="nous", relogin_required=True)
 
         persisted_state = dict(state)
@@ -5694,7 +5694,7 @@ def resolve_nous_runtime_credentials(
             refresh_token = state.get("refresh_token")
 
             if not isinstance(access_token, str) or not access_token:
-                raise AuthError("No access token found for Nadia Agents Portal login.",
+                raise AuthError("No access token found for NadicodeAI Portal login.",
                                 provider="nous", relogin_required=True)
 
             invoke_jwt_status = _nous_invoke_jwt_status(
@@ -5718,7 +5718,7 @@ def resolve_nous_runtime_credentials(
                         if not isinstance(refresh_token, str) or not refresh_token:
                             reason = invoke_jwt_status or "force_refresh"
                             raise AuthError(
-                                "Nadia Agents Portal access token is not a usable inference JWT "
+                                "NadicodeAI Portal access token is not a usable inference JWT "
                                 f"({reason}) and no refresh token is available. "
                                 "Re-authenticate with: nadia auth add nous",
                                 provider="nous",
@@ -5918,7 +5918,7 @@ def _snapshot_nous_pool_status() -> Dict[str, Any]:
 
 # ── Process-level memo for get_nous_auth_status() ──
 # get_nous_auth_status() validates state by calling resolve_nous_runtime_credentials(),
-# which does a synchronous OAuth refresh POST to portal.nadicode.ai. That can take
+# which does a synchronous OAuth refresh POST to portal.nadicodeai.com. That can take
 # ~350ms even on the failure path, and read-only UI surfaces (`nadia tools`, status panels,
 # subscription-feature checks) call it many times per render — `nadia tools` → "All Platforms"
 # was firing the refresh ~31× during one menu paint, racking up >13s of HTTP and burning
@@ -8145,7 +8145,7 @@ def step_up_nous_billing_scope(
 
 
 def _login_nous(args, pconfig: ProviderConfig) -> None:
-    """Nadia Agents Portal device authorization flow."""
+    """NadicodeAI Portal device authorization flow."""
     timeout_seconds = getattr(args, "timeout", None) or 15.0
     insecure = bool(getattr(args, "insecure", False))
     ca_bundle = (
@@ -8304,7 +8304,7 @@ def _login_nous(args, pconfig: ProviderConfig) -> None:
                 print("No free models currently available.")
                 print(unavailable_message or f"Upgrade at {_url} to access paid models.")
             else:
-                print("No curated models available for Nadia Agents Portal.")
+                print("No curated models available for NadicodeAI Portal.")
         except Exception as exc:
             message = format_auth_error(exc) if isinstance(exc, AuthError) else str(exc)
             print()
@@ -8329,7 +8329,7 @@ def _login_nous(args, pconfig: ProviderConfig) -> None:
                 _save_auth_store(auth_store)
             print()
             print("No provider change. Nadia credentials saved for future use.")
-            print("  Run `nadia model` again to switch to Nadia Agents Portal.")
+            print("  Run `nadia model` again to switch to NadicodeAI Portal.")
             return
 
         config_path = _update_config_for_provider(

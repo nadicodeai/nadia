@@ -10,7 +10,7 @@ upstream credential to the forwarded request. The credential is refreshed
 automatically when it approaches expiry.
 
 First-class adapter:
-  - ``nous`` — Nadia Agents Portal (https://inference-api.nadicode.ai/v1)
+  - ``nous`` — NadicodeAI Portal (https://inference-api.nadicode.ai/v1)
 
 Future adapters can plug in by implementing ``UpstreamAdapter``.
 """

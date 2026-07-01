@@ -23,24 +23,24 @@ import {
   X,
 } from "lucide-react";
 import spinners from "unicode-animations";
-import { H2 } from "@nous-research/ui/ui/components/typography/h2";
+import { H2 } from "@/nadicodeai-ui";
 import { api } from "@/lib/api";
 import type { ActiveProfileInfo, ProfileInfo } from "@/lib/api";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
-import { useToast } from "@nous-research/ui/hooks/use-toast";
-import { useConfirmDelete } from "@nous-research/ui/hooks/use-confirm-delete";
+import { useToast } from "@/nadicodeai-ui";
+import { useConfirmDelete } from "@/nadicodeai-ui";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
-import { Toast } from "@nous-research/ui/ui/components/toast";
-import { Card, CardContent } from "@nous-research/ui/ui/components/card";
-import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { Input } from "@nous-research/ui/ui/components/input";
-import { Label } from "@nous-research/ui/ui/components/label";
+import { Toast } from "@/nadicodeai-ui";
+import { Card, CardContent } from "@/nadicodeai-ui";
+import { Badge } from "@/nadicodeai-ui";
+import { Button } from "@/nadicodeai-ui";
+import { Input } from "@/nadicodeai-ui";
+import { Label } from "@/nadicodeai-ui";
 import {
   Select,
   SelectOption,
-} from "@nous-research/ui/ui/components/select";
-import { Checkbox } from "@nous-research/ui/ui/components/checkbox";
+} from "@/nadicodeai-ui";
+import { Checkbox } from "@/nadicodeai-ui";
 import { useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { cn, themedBody } from "@/lib/utils";
@@ -831,7 +831,7 @@ export default function ProfilesPage() {
             <header className="p-5 pb-3 border-b border-border">
               <h2
                 id="create-profile-title"
-                className="font-mondwest text-display text-base tracking-wider"
+                className="text-display-sm text-base tracking-wider"
               >
                 {t.profiles.newProfile}
               </h2>
@@ -924,7 +924,7 @@ export default function ProfilesPage() {
               </div>
 
               <fieldset className="grid gap-3 border-t border-border pt-4">
-                <legend className="font-mondwest text-display text-xs tracking-wider text-muted-foreground">
+                <legend className="text-display-sm text-xs tracking-wider text-muted-foreground">
                   {L.advancedOptions}
                 </legend>
 
@@ -938,7 +938,7 @@ export default function ProfilesPage() {
 
                   <Label
                     className={cn(
-                      "font-mondwest normal-case tracking-normal text-sm cursor-pointer",
+                      "normal-case tracking-normal text-sm cursor-pointer",
                       !cloning && "opacity-50",
                     )}
                     htmlFor="clone-all"
@@ -957,7 +957,7 @@ export default function ProfilesPage() {
 
                   <Label
                     className={cn(
-                      "font-mondwest normal-case tracking-normal text-sm cursor-pointer",
+                      "normal-case tracking-normal text-sm cursor-pointer",
                       cloning && "opacity-50",
                     )}
                     htmlFor="no-skills"
@@ -1256,7 +1256,7 @@ export default function ProfilesPage() {
             <header className="p-5 pb-3 border-b border-border">
               <h2
                 id="profile-editor-title"
-                className="font-mondwest text-display text-base tracking-wider"
+                className="text-display-sm text-base tracking-wider"
               >
                 {editorKind === "model"
                   ? L.editModel
@@ -1321,7 +1321,7 @@ export default function ProfilesPage() {
                   <div className="flex items-center justify-between gap-2">
                     <Label
                       htmlFor="profile-desc-editor"
-                      className="font-mondwest text-display text-xs tracking-wider text-muted-foreground"
+                      className="text-display-sm text-xs tracking-wider text-muted-foreground"
                     >
                       {L.description}
                     </Label>
@@ -1363,7 +1363,7 @@ export default function ProfilesPage() {
                 <>
                   <Label
                     htmlFor="profile-soul-editor"
-                    className="font-mondwest text-display text-xs tracking-wider text-muted-foreground"
+                    className="text-display-sm text-xs tracking-wider text-muted-foreground"
                   >
                     {t.profiles.soulSection}
                   </Label>

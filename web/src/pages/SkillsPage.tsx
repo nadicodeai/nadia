@@ -42,23 +42,23 @@ import type {
 import { useProfileScope } from "@/contexts/useProfileScope";
 import { ToolsetConfigDrawer } from "@/components/ToolsetConfigDrawer";
 import { SkillEditorDialog } from "@/components/SkillEditorDialog";
-import { useToast } from "@nous-research/ui/hooks/use-toast";
-import { Toast } from "@nous-research/ui/ui/components/toast";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
-import { Badge } from "@nous-research/ui/ui/components/badge";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { ListItem } from "@nous-research/ui/ui/components/list-item";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
-import { Switch } from "@nous-research/ui/ui/components/switch";
+import { useToast } from "@/nadicodeai-ui";
+import { Toast } from "@/nadicodeai-ui";
+import { Card, CardContent, CardHeader, CardTitle } from "@/nadicodeai-ui";
+import { Badge } from "@/nadicodeai-ui";
+import { Button } from "@/nadicodeai-ui";
+import { ListItem } from "@/nadicodeai-ui";
+import { Spinner } from "@/nadicodeai-ui";
+import { Switch } from "@/nadicodeai-ui";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@nous-research/ui/ui/components/dialog";
+} from "@/nadicodeai-ui";
 import { cn } from "@/lib/utils";
-import { Input } from "@nous-research/ui/ui/components/input";
+import { Input } from "@/nadicodeai-ui";
 import { useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { PluginSlot } from "@/plugins";
@@ -388,7 +388,7 @@ export default function SkillsPage() {
             <div className="flex flex-col rounded-none border border-border bg-muted/20">
               <div className="hidden sm:flex items-center gap-2 px-3 py-2 border-b border-border">
                 <Filter className="h-3 w-3 text-text-tertiary" />
-                <span className="font-mondwest text-display text-xs tracking-[0.12em] text-text-secondary">
+                <span className="text-display-sm text-xs tracking-[0.12em] text-text-secondary">
                   {t.skills.filters}
                 </span>
               </div>
@@ -428,7 +428,7 @@ export default function SkillsPage() {
                 !isSearching &&
                 allCategories.length > 0 && (
                   <div className="hidden sm:flex flex-col border-t border-border">
-                    <div className="px-3 pt-2 pb-1 font-mondwest text-display text-xs tracking-[0.12em] text-text-tertiary">
+                    <div className="px-3 pt-2 pb-1 text-display-sm text-xs tracking-[0.12em] text-text-tertiary">
                       {t.skills.categories}
                     </div>
                     <div className="flex flex-col p-2 pt-1 gap-px max-h-[calc(100vh-340px)] overflow-y-auto">
@@ -784,7 +784,7 @@ function PanelItem({ active, icon: Icon, label, onClick }: PanelItemProps) {
       onClick={onClick}
       className={cn(
         "rounded-none whitespace-nowrap px-2.5 py-1.5",
-        "font-mondwest text-[0.7rem] tracking-[0.08em] uppercase",
+        "text-[0.7rem] tracking-[0.08em] uppercase",
         active && "bg-foreground/90 text-background hover:text-background",
       )}
     >
@@ -1082,7 +1082,7 @@ function HubBrowser({
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2 px-1">
                 <Sparkles className="h-3.5 w-3.5 text-primary" />
-                <span className="font-mondwest text-display text-xs tracking-[0.12em] text-text-secondary uppercase">
+                <span className="text-display-sm text-xs tracking-[0.12em] text-text-secondary uppercase">
                   Featured skills
                 </span>
                 <span className="text-xs text-text-tertiary">
@@ -1491,7 +1491,7 @@ function SkillDetailDialog({
                 )}
                 {preview.files.length > 0 && (
                   <div className="text-xs text-text-tertiary">
-                    <span className="font-mondwest tracking-[0.1em] uppercase">
+                    <span className="tracking-[0.1em] uppercase">
                       Files:{" "}
                     </span>
                     <span className="font-mono">{preview.files.join("  ")}</span>

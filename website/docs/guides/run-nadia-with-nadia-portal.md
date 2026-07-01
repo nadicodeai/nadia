@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
-title: "Run Nadia Agent with Nadia Agents Portal"
+title: "Run Nadia Agent with NadicodeAI Portal"
 description: "Start-to-finish walkthrough: subscribe, set up, switch models, enable gateway tools, and verify routing"
 ---
 
-# Run Nadia Agent with Nadia Agents Portal
+# Run Nadia Agent with NadicodeAI Portal
 
-This guide walks you through running Nadia Agent on a [Nadia Agents Portal](https://portal.nadicode.ai) subscription end to end — from signing up to verifying that every tool routes correctly. If you just want the overview of what the Portal is and what's in the subscription, see the [Nadia Agents Portal integration page](/integrations/nadia-portal). This page is the task script.
+This guide walks you through running Nadia Agent on a [NadicodeAI Portal](https://portal.nadicodeai.com) subscription end to end — from signing up to verifying that every tool routes correctly. If you just want the overview of what the Portal is and what's in the subscription, see the [NadicodeAI Portal integration page](/integrations/nadia-portal). This page is the task script.
 
 ## Prerequisites
 
@@ -18,7 +18,7 @@ You do **not** need: an OpenAI key, an Anthropic key, a Firecrawl account, a FAL
 
 ## 1. Get a subscription
 
-Open [portal.nadicode.ai/manage-subscription](https://portal.nadicode.ai/manage-subscription), sign up, and pick a plan.
+Open [portal.nadicodeai.com/manage-subscription](https://portal.nadicodeai.com/manage-subscription), sign up, and pick a plan.
 
 Already subscribed? Skip to step 2.
 
@@ -30,7 +30,7 @@ nadia setup --portal
 
 This single command does five things:
 
-1. Opens your browser to portal.nadicode.ai for OAuth login
+1. Opens your browser to portal.nadicodeai.com for OAuth login
 2. Stores the refresh token at `~/.nadia/auth.json`
 3. Sets `model.provider: nous` in `~/.nadia/config.yaml`
 4. Picks a default agentic model (`anthropic/claude-sonnet-4.6` or similar)
@@ -63,21 +63,21 @@ nadia portal info
 You should see:
 
 ```
-  Nadia Agents Portal
+  NadicodeAI Portal
   ───────────
   Auth:    ✓ logged in
-  Portal:  https://portal.nadicode.ai
-  Model:   ✓ using Nadia as inference provider
+  Portal:  https://portal.nadicodeai.com
+  Model:   ✓ using NadicodeAI Portal as inference provider
 
   Tool Gateway
   ────────────
-  Web search & extract  via Nadia Agents Portal
-  Image generation      via Nadia Agents Portal
-  Text-to-speech        via Nadia Agents Portal
-  Browser automation    via Nadia Agents Portal
+  Web search & extract  via NadicodeAI Portal
+  Image generation      via NadicodeAI Portal
+  Text-to-speech        via NadicodeAI Portal
+  Browser automation    via NadicodeAI Portal
 ```
 
-If any line shows something other than "via Nadia Agents Portal" or the auth line says "not logged in", jump to [Troubleshooting](#troubleshooting) below.
+If any line shows something other than "via NadicodeAI Portal" or the auth line says "not logged in", jump to [Troubleshooting](#troubleshooting) below.
 
 ## 4. Run your first conversation
 
@@ -120,23 +120,23 @@ nadia config set model.default anthropic/claude-sonnet-4.6
 
 ### Don't pick Hermes-4 for agent work
 
-Hermes-4-70B and Hermes-4-405B are available on the Portal at deep discounts, but they're **chat/reasoning models**, not tool-call-tuned. They will struggle with multi-step agent loops. Use them via [Nadia Chat](https://chat.nadicode.ai) for conversation/research work, or through the [subscription proxy](/user-guide/features/subscription-proxy) from non-agent tools. For Nadia Agent itself, stick to the frontier agentic models above.
+Hermes-4-70B and Hermes-4-405B are available on the Portal at deep discounts, but they're **chat/reasoning models**, not tool-call-tuned. They will struggle with multi-step agent loops. Use them for hosted chat through NadicodeAI Portal, for research workflows, or through the [subscription proxy](/user-guide/features/subscription-proxy) from non-agent tools. For Nadia Agent itself, stick to the frontier agentic models above.
 
-The Portal's own [info page](https://portal.nadicode.ai/info) carries this warning too — it's the official Nadia guidance, not just a Nadia-side opinion.
+The Portal's own [info page](https://portal.nadicodeai.com/info) carries this warning too — it's the official Portal guidance, not just a Nadia-side opinion.
 
 ## 6. (Optional) Customize Tool Gateway routing
 
-The gateway is opt-in per tool, not all-or-nothing. If you already have a Browserbase account and want to keep using it while routing web search and image generation through Nadia, that's supported:
+The gateway is opt-in per tool, not all-or-nothing. If you already have a Browserbase account and want to keep using it while routing web search and image generation through NadicodeAI Portal, that's supported:
 
 ```bash
 nadia tools
-# → Web search       → "Nadia Subscription"     (recommended)
-# → Image generation → "Nadia Subscription"     (recommended)
+# → Web search       → "NadicodeAI Subscription"     (recommended)
+# → Image generation → "NadicodeAI Subscription"     (recommended)
 # → Browser          → "Browserbase"           (your existing key)
-# → TTS              → "Nadia Subscription"     (recommended)
+# → TTS              → "NadicodeAI Subscription"     (recommended)
 ```
 
-These rows appear in `nadia tools` even before you've logged into Nadia Agents Portal — if you pick "Nadia Subscription" without an active session, Nadia runs the Portal login inline (without changing your inference provider or your other tools).
+These rows appear in `nadia tools` even before you've logged into NadicodeAI Portal — if you pick "NadicodeAI Subscription" without an active session, Nadia runs the Portal login inline (without changing your inference provider or your other tools).
 
 Verify your mix with:
 
@@ -144,7 +144,7 @@ Verify your mix with:
 nadia portal tools
 ```
 
-You'll see per-tool routing — `via Nadia Agents Portal` for the ones routed through the subscription, and the partner name (`browserbase`, `firecrawl`, etc.) for the ones using your own keys.
+You'll see per-tool routing — `via NadicodeAI Portal` for the ones routed through the subscription, and the partner name (`browserbase`, `firecrawl`, etc.) for the ones using your own keys.
 
 ## 7. (Optional) Enable voice mode
 
@@ -152,7 +152,7 @@ Because the Tool Gateway includes OpenAI TTS, [voice mode](/user-guide/features/
 
 ```bash
 nadia setup voice
-# → pick "Nadia Subscription" for TTS
+# → pick "NadicodeAI Subscription" for TTS
 # → pick a speech-to-text backend (local faster-whisper is free, no setup)
 ```
 
@@ -188,7 +188,7 @@ nadia portal
 
 If your browser doesn't open or the callback fails, you're likely on a remote/headless host — see [OAuth over SSH](/guides/oauth-over-ssh) for the port-forwarding and manual-paste workarounds.
 
-### "Model: currently openrouter" (or some other provider) instead of "using Nadia as inference provider"
+### "Model: currently openrouter" (or some other provider) instead of "using NadicodeAI Portal as inference provider"
 
 Your local config drifted. The OAuth worked but `model.provider` is still pointing at a different provider. Fix:
 
@@ -200,21 +200,21 @@ Or interactively:
 
 ```bash
 nadia model
-# pick Nadia Agents Portal
+# pick NadicodeAI Portal
 ```
 
 Re-verify with `nadia portal info`.
 
-### Tool Gateway tools showing partner names instead of "via Nadia Agents Portal"
+### Tool Gateway tools showing partner names instead of "via NadicodeAI Portal"
 
 Per-tool config is overriding the gateway. Run:
 
 ```bash
 nadia tools
-# pick "Nadia Subscription" for any tool you want gateway-routed
+# pick "NadicodeAI Subscription" for any tool you want gateway-routed
 ```
 
-Some users intentionally mix — e.g. routing web through Nadia but using their own Browserbase key for browser. If that's intentional, leave it alone. If not, this command fixes it.
+Some users intentionally mix — e.g. routing web through NadicodeAI Portal but using their own Browserbase key for browser. If that's intentional, leave it alone. If not, this command fixes it.
 
 ### "Re-authentication required" mid-session
 
@@ -268,7 +268,7 @@ That's the deal. If you're using more than two of those backends anyway, the sub
 
 ## See also
 
-- **[Nadia Agents Portal integration page](/integrations/nadia-portal)** — Overview of what's in the subscription
+- **[NadicodeAI Portal integration page](/integrations/nadia-portal)** — Overview of what's in the subscription
 - **[Tool Gateway](/user-guide/features/tool-gateway)** — Full details on every gateway-routed tool
 - **[Subscription proxy](/user-guide/features/subscription-proxy)** — Use your Portal subscription from non-Nadia tools
 - **[Voice mode](/user-guide/features/voice-mode)** — Set up voice conversations on the Portal subscription

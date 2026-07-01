@@ -339,7 +339,7 @@ Future messages in this room will use that transcript until `/reset` or another 
     no_data:                  "Geen gebruiksdata beskikbaar vir hierdie sessie nie."
 
   credits:
-    not_logged_in:            "Nie by Nadia Agents Portal aangemeld nie. Meld aan om jou kredietsaldo te sien en op te laai."
+    not_logged_in:            "Nie by NadicodeAI Portal aangemeld nie. Meld aan om jou kredietsaldo te sien en op te laai."
 
   verbose:
     not_enabled:           "Die `/verbose`-opdrag is nie vir boodskapplatforms geaktiveer nie.\n\nAktiveer dit in `config.yaml`:\n```yaml\ndisplay:\n  tool_progress_command: true\n```"

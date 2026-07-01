@@ -1803,7 +1803,7 @@ DEFAULT_CONFIG = {
 
     # Web dashboard settings
     "dashboard": {
-        "theme": "default",  # Dashboard visual theme: "default", "midnight", "ember", "mono", "cyberpunk", "rose"
+        "theme": "default",  # Legacy dashboard theme value retained for config compatibility.
         # Hide the token/cost analytics surfaces (Analytics page, token bars and
         # cost figures on the Models page) by default.  The numbers shown there
         # are a local debug estimate: they only count successful main-agent
@@ -1820,7 +1820,7 @@ DEFAULT_CONFIG = {
         # that the numbers are a local lower-bound estimate, not billing.
         "show_token_analytics": False,
         # OAuth gate configuration (engaged when ``--host`` is set and
-        # ``--insecure`` is not). The bundled Nadia Agents Portal plugin reads
+        # ``--insecure`` is not). The bundled NadicodeAI Portal plugin reads
         # both keys at startup; they are the canonical surface for these
         # settings. Each can be overridden by an environment variable —
         # ``NADIA_DASHBOARD_OAUTH_CLIENT_ID`` and
@@ -1831,7 +1831,7 @@ DEFAULT_CONFIG = {
         # touch config.yaml. Local dev / non-Fly deploys can set either
         # surface; missing values fall through to the plugin's defaults
         # (no provider registered when ``client_id`` is empty;
-        # ``portal_url`` defaults to https://portal.nadicode.ai).
+        # ``portal_url`` defaults to https://portal.nadicodeai.com).
         "oauth": {
             "client_id": "",  # agent:{instance_id} — Portal provisions this
             "portal_url": "",  # blank → use plugin default (production Portal)
@@ -2451,11 +2451,11 @@ DEFAULT_CONFIG = {
         # provider == "chronos". All non-secret (URLs + the JWT audience): the
         # agent holds NO external-scheduler credentials. For hosted agents, NAS
         # sets these at provision time. The outbound provision call reuses the
-        # agent's existing Nadia Agents Portal token — there is no token key here.
+        # agent's existing NadicodeAI Portal token — there is no token key here.
         "chronos": {
             # NAS / portal base URL the agent calls to arm/cancel one-shots
             # and that mints the inbound fire JWT (used as the expected issuer).
-            "portal_url": "https://portal.nadicode.ai",
+            "portal_url": "https://portal.nadicodeai.com",
             # The agent's OWN publicly-reachable base URL for NAS→agent fires
             # (NAS POSTs {callback_url}/api/cron/fire). Empty → Chronos is
             # unavailable and the resolver falls back to the built-in ticker.
@@ -2617,7 +2617,7 @@ DEFAULT_CONFIG = {
     },
 
     # Remotely-hosted model catalog manifest.  When enabled, the CLI fetches
-    # curated model lists for OpenRouter and Nadia Agents Portal from this URL,
+    # curated model lists for OpenRouter and NadicodeAI Portal from this URL,
     # falling back to the in-repo snapshot on network failure.  Lets us
     # update model picker lists without shipping a nadia-agent release.
     # The default URL is served by the docs site GitHub Pages deploy.
@@ -3033,7 +3033,7 @@ ENV_VARS_BY_VERSION: Dict[int, List[str]] = {
 
 # Required environment variables with metadata for migration prompts.
 # LLM provider is required but handled in the setup wizard's provider
-# selection step (Nadia Agents Portal / OpenRouter / Custom endpoint), so this
+# selection step (NadicodeAI Portal / OpenRouter / Custom endpoint), so this
 # dict is intentionally empty — no single env var is universally required.
 REQUIRED_ENV_VARS = {}
 
@@ -3041,8 +3041,8 @@ REQUIRED_ENV_VARS = {}
 OPTIONAL_ENV_VARS = {
     # ── Provider (handled in provider selection, not shown in checklists) ──
     "NOUS_BASE_URL": {
-        "description": "Nadia Agents Portal base URL override",
-        "prompt": "Nadia Agents Portal base URL (leave empty for default)",
+        "description": "NadicodeAI Portal base URL override",
+        "prompt": "NadicodeAI Portal base URL (leave empty for default)",
         "url": None,
         "password": False,
         "category": "provider",
@@ -6388,7 +6388,7 @@ _FALLBACK_COMMENT = """
 # Supported providers:
 #   openrouter   (OPENROUTER_API_KEY)  — routes to any model
 #   openai-codex (OAuth — nadia auth) — OpenAI Codex
-#   nadia         (OAuth — nadia auth) — Nadia Agents Portal
+#   nadia         (OAuth — nadia auth) — NadicodeAI Portal
 #   zai          (ZAI_API_KEY)         — Z.AI / GLM
 #   kimi-coding  (KIMI_API_KEY)        — Kimi / Moonshot
 #   kimi-coding-cn (KIMI_CN_API_KEY)   — Kimi / Moonshot (China)
@@ -6420,7 +6420,7 @@ _COMMENTED_SECTIONS = """
 # Supported providers:
 #   openrouter   (OPENROUTER_API_KEY)  — routes to any model
 #   openai-codex (OAuth — nadia auth) — OpenAI Codex
-#   nadia         (OAuth — nadia auth) — Nadia Agents Portal
+#   nadia         (OAuth — nadia auth) — NadicodeAI Portal
 #   zai          (ZAI_API_KEY)         — Z.AI / GLM
 #   kimi-coding  (KIMI_API_KEY)        — Kimi / Moonshot
 #   kimi-coding-cn (KIMI_CN_API_KEY)   — Kimi / Moonshot (China)

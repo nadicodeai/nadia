@@ -1,4 +1,4 @@
-"""NousDashboardAuthProvider — Nadia Agents Portal OAuth (authorization-code + PKCE).
+"""NousDashboardAuthProvider — NadicodeAI Portal OAuth (authorization-code + PKCE).
 
 Implements ``nadia-account-service/docs/agent-dashboard-oauth-contract.md``
 (PR #180). The plugin auto-loads (bundled, kind=backend) but only registers
@@ -20,7 +20,7 @@ Configuration surfaces (env wins over config.yaml when set non-empty):
 
       NADIA_DASHBOARD_OAUTH_CLIENT_ID  — shape ``agent:{agent_instance_id}``
       NADIA_DASHBOARD_PORTAL_URL       — defaults to
-                                          ``https://portal.nadicode.ai``
+                                          ``https://portal.nadicodeai.com``
                                           (production Portal). Override only
                                           for staging (``portal.rewbs.uk``)
                                           or a custom deployment.
@@ -98,7 +98,7 @@ logger = logging.getLogger(__name__)
 # Production Portal URL. Override via NADIA_DASHBOARD_PORTAL_URL for
 # staging (portal.rewbs.uk) or a custom deployment. Contract docs name
 # this as the production issuer.
-_DEFAULT_PORTAL_URL = "https://portal.nadicode.ai"
+_DEFAULT_PORTAL_URL = "https://portal.nadicodeai.com"
 
 
 # ---------------------------------------------------------------------------
@@ -151,10 +151,10 @@ def _b64url_no_pad(raw: bytes) -> str:
 
 
 class NousDashboardAuthProvider(DashboardAuthProvider):
-    """Nadia Agents Portal OAuth via authorization-code + PKCE (S256)."""
+    """NadicodeAI Portal OAuth via authorization-code + PKCE (S256)."""
 
     name = "nous"
-    display_name = "NadicodeAI"
+    display_name = "NadicodeAI Portal"
 
     def __init__(self, *, client_id: str, portal_url: str) -> None:
         if not client_id.startswith("agent:"):
@@ -214,7 +214,7 @@ class NousDashboardAuthProvider(DashboardAuthProvider):
     ) -> Session:
         # ``state`` is verified by the auth-route layer before this call
         # (it checks the cookie-stashed state matches the query-param state);
-        # we just receive it for symmetry with the protocol. Nadia Agents Portal
+        # we just receive it for symmetry with the protocol. NadicodeAI Portal
         # doesn't re-check state at the token endpoint, so we ignore it here.
         _ = state
 
@@ -499,7 +499,7 @@ class NousDashboardAuthProvider(DashboardAuthProvider):
         contract_version = claims.get("oauth_contract_version")
         if contract_version is None:
             logger.warning(
-                "Nadia Agents Portal token missing oauth_contract_version claim "
+                "NadicodeAI Portal token missing oauth_contract_version claim "
                 "(contract says it should be %d); proceeding anyway.",
                 _EXPECTED_CONTRACT_VERSION,
             )
@@ -630,7 +630,7 @@ def register(ctx) -> None:
         LAST_SKIP_REASON = (
             "NADIA_DASHBOARD_OAUTH_CLIENT_ID is not set (and "
             "dashboard.oauth.client_id in config.yaml is empty). The "
-            "Nadia Agents Portal provisions this env var (shape "
+            "NadicodeAI Portal provisions this env var (shape "
             "'agent:{instance_id}') when it deploys a Nadia Agent "
             "instance — set it to your provisioned client id (either "
             "as an env var or under dashboard.oauth.client_id in "
@@ -643,7 +643,7 @@ def register(ctx) -> None:
     if not client_id.startswith("agent:"):
         LAST_SKIP_REASON = (
             f"NADIA_DASHBOARD_OAUTH_CLIENT_ID={client_id!r} doesn't match "
-            f"the contract shape 'agent:{{instance_id}}'. The Nadia Agents Portal "
+            f"the contract shape 'agent:{{instance_id}}'. The NadicodeAI Portal "
             f"provisions this value at deploy time; check your Fly app's "
             f"secrets or override with the value from the Portal admin UI."
         )

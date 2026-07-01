@@ -29,9 +29,9 @@ export const CONTROL_TEXT = 'text-xs'
 export const PROVIDER_GROUPS: ProviderPrefix[] = [
   {
     prefix: 'NOUS_',
-    name: 'Nadia Agents Portal',
+    name: 'NadicodeAI Portal',
     description: 'Hosted Nadia & Nadia-trained models',
-    docsUrl: 'https://portal.nadicode.ai',
+    docsUrl: 'https://portal.nadicodeai.com',
     priority: 0
   },
   {

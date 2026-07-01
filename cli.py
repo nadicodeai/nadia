@@ -5961,7 +5961,7 @@ class NadiaCLI(CLIAgentSetupMixin, CLICommandsMixin):
         if is_nous_model_family_non_agentic(model_name):
             self._console_print()
             self._console_print(
-                "[bold yellow]⚠  NadicodeAI Hermes 3 & 4 models are NOT agentic and are not "
+                "[bold yellow]⚠  Hermes 3 & 4 chat models are NOT agentic and are not "
                 "designed for use with Nadia Agent.[/]"
             )
             self._console_print(
@@ -9325,7 +9325,7 @@ class NadiaCLI(CLIAgentSetupMixin, CLICommandsMixin):
 
         if not view.logged_in:
             print()
-            _cprint(f"  💳 {_d('Not logged into Nadia Agents Portal.')}")
+            _cprint(f"  💳 {_d('Not logged into NadicodeAI Portal.')}")
             print("  Run `nadia portal` to log in, then /credits.")
             return
 
@@ -9414,7 +9414,7 @@ class NadiaCLI(CLIAgentSetupMixin, CLICommandsMixin):
                 _msg = f"Couldn't load billing: {state.error}"
                 _cprint(f"  💳 {_d(_msg)}")
             else:
-                _cprint(f"  💳 {_d('Not logged into Nadia Agents Portal.')}")
+                _cprint(f"  💳 {_d('Not logged into NadicodeAI Portal.')}")
                 print("  Run `nadia portal` to log in, then /billing.")
             return
 

@@ -54,15 +54,15 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { SelectionSwitcher } from "@nous-research/ui/ui/components/selection-switcher";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
-import { Typography } from "@nous-research/ui/ui/components/typography/index";
+import { ThemeModeSwitcher, Toaster } from "@nadicodeai/ui";
+import { Button } from "@/nadicodeai-ui";
+import { Spinner } from "@/nadicodeai-ui";
+import { Typography } from "@/nadicodeai-ui";
 import { cn } from "@/lib/utils";
 import { Backdrop } from "@/components/Backdrop";
 import { SidebarFooter } from "@/components/SidebarFooter";
 import { SidebarStatusStrip, gatewayLine } from "@/components/SidebarStatusStrip";
-import { useBelowBreakpoint } from "@nous-research/ui/hooks/use-below-breakpoint";
+import { useBelowBreakpoint } from "@/nadicodeai-ui";
 import { useSidebarStatus } from "@/hooks/useSidebarStatus";
 import { AuthWidget } from "@/components/AuthWidget";
 import { PageHeaderProvider } from "@/contexts/PageHeaderProvider";
@@ -92,12 +92,11 @@ import WebhooksPage from "@/pages/WebhooksPage";
 import SystemPage from "@/pages/SystemPage";
 import ChatPage from "@/pages/ChatPage";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { useThemeMode } from "@/contexts/ThemeModeProvider";
 import { useI18n } from "@/i18n";
 import type { Translations } from "@/i18n/types";
 import { PluginPage, PluginSlot, usePlugins } from "@/plugins";
 import type { PluginManifest } from "@/plugins";
-import { useTheme } from "@/themes";
 import { isDashboardEmbeddedChatEnabled } from "@/lib/dashboard-flags";
 import { api } from "@/lib/api";
 import type { StatusResponse } from "@/lib/api";
@@ -345,12 +344,17 @@ function buildRoutes(
 }
 
 const SIDEBAR_COLLAPSED_KEY = "nadia-sidebar-collapsed";
+const THEME_MODE_LABELS = {
+  light: "Light",
+  dark: "Dark",
+  system: "System",
+};
 
 export default function App() {
   const { t } = useI18n();
   const { pathname } = useLocation();
   const { manifests, loading: pluginsLoading } = usePlugins();
-  const { theme } = useTheme();
+  const { mode, resolvedMode, setMode } = useThemeMode();
   const [mobileOpen, setMobileOpen] = useState(false);
   const closeMobile = useCallback(() => setMobileOpen(false), []);
 
@@ -454,7 +458,7 @@ export default function App() {
     [manifests],
   );
 
-  const layoutVariant = theme.layoutVariant ?? "standard";
+  const layoutVariant = "standard";
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -483,10 +487,10 @@ export default function App() {
     <ProfileProvider>
     <div
       data-layout-variant={layoutVariant}
-      className="flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden bg-black text-text-primary antialiased"
+      className="flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden bg-background text-text-primary antialiased"
     >
-      <SelectionSwitcher />
       <Backdrop />
+      <Toaster theme={resolvedMode} />
       <PluginSlot name="backdrop" />
 
       <header
@@ -638,7 +642,7 @@ export default function App() {
                   <span
                     className={cn(
                       "px-5 pt-2.5 pb-1",
-                      "font-mondwest text-display text-xs tracking-[0.12em] text-text-tertiary",
+                      "text-display-sm text-xs tracking-[0.12em] text-text-tertiary",
                       isDesktopCollapsed && "lg:hidden",
                     )}
                     id="nadia-sidebar-plugin-nav-heading"
@@ -692,7 +696,22 @@ export default function App() {
                   label={t.theme?.switchTheme ?? "Switch theme"}
                   tooltipWarmRef={tooltipWarmRef}
                 >
-                  <ThemeSwitcher collapsed={isDesktopCollapsed} dropUp />
+                  <ThemeModeSwitcher
+                    aria-label={t.theme?.switchTheme ?? "Switch theme"}
+                    className={cn(
+                      "shrink-0",
+                      isDesktopCollapsed ? "lg:flex-col" : "max-w-[11.5rem]",
+                    )}
+                    compact
+                    itemClassName={cn(
+                      isDesktopCollapsed
+                        ? "lg:h-8 lg:w-8 lg:px-0 lg:[&>span]:sr-only"
+                        : "px-2 text-[11px]",
+                    )}
+                    labels={THEME_MODE_LABELS}
+                    onValueChange={setMode}
+                    value={mode}
+                  />
                 </SidebarIconWithTooltip>
 
                 <SidebarIconWithTooltip
@@ -845,7 +864,7 @@ function SidebarNavLink({
           cn(
             "group/nav relative flex items-center gap-3",
             "px-5 py-2.5",
-            "font-mondwest text-display uppercase text-sm tracking-[0.12em]",
+            "text-display-sm uppercase text-sm tracking-[0.12em]",
             "whitespace-nowrap transition-colors cursor-pointer",
             "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-midground",
             isActive
@@ -942,7 +961,7 @@ function SidebarSystemActions({
       <span
         className={cn(
           "px-5 pt-0.5 pb-0.5",
-          "font-mondwest text-display text-xs tracking-[0.12em] text-text-tertiary",
+          "text-display-sm text-xs tracking-[0.12em] text-text-tertiary",
           collapsed && "lg:hidden",
         )}
       >
@@ -1012,7 +1031,7 @@ function SystemActionButton({
         className={cn(
           "group/action relative flex w-full items-center gap-3",
           "px-5 py-2.5",
-          "font-mondwest text-display text-xs tracking-[0.1em]",
+          "text-display-sm text-xs tracking-[0.1em]",
           "whitespace-nowrap transition-colors cursor-pointer",
           "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-midground",
           busy
@@ -1187,7 +1206,7 @@ function SidebarTooltip({ anchor, label, warmRef }: SidebarTooltipProps) {
         "fixed z-[100] pointer-events-none",
         "px-2 py-1",
         "bg-background-base/95 border border-current/20 backdrop-blur-sm shadow-lg",
-        "font-mondwest text-display text-xs tracking-[0.1em] text-midground uppercase",
+        "text-display-sm text-xs tracking-[0.1em] text-midground uppercase",
       )}
       style={{
         top: rect.top + rect.height / 2,

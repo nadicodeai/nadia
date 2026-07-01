@@ -22,8 +22,8 @@ Before using voice features, make sure you have:
 The `~/.nadia/` directory and default `config.yaml` are created automatically the first time you run `nadia`. You only need to create `~/.nadia/.env` manually for API keys.
 :::
 
-:::tip Nadia Agents Portal covers both
-A paid [Nadia Agents Portal](/user-guide/features/tool-gateway) subscription supplies the LLM (step 2) **and** OpenAI TTS via the Tool Gateway — no separate OpenAI key needed. On a fresh install, `nadia setup --portal` wires both up at once.
+:::tip NadicodeAI Portal covers both
+A paid [NadicodeAI Portal](/user-guide/features/tool-gateway) subscription supplies the LLM (step 2) **and** OpenAI TTS via the Tool Gateway — no separate OpenAI key needed. On a fresh install, `nadia setup --portal` wires both up at once.
 :::
 
 ## Overview

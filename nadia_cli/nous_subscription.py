@@ -1,4 +1,4 @@
-"""Helpers for Nadia subscription managed-tool capabilities."""
+"""Helpers for NadicodeAI subscription managed-tool capabilities."""
 
 from __future__ import annotations
 
@@ -657,7 +657,7 @@ def get_nous_subscription_features(
             managed_by_nous=image_managed,
             direct_override=image_active and not image_managed,
             toolset_enabled=image_tool_enabled,
-            current_provider="FAL" if direct_fal else ("Nadia Subscription" if image_managed else ""),
+            current_provider="FAL" if direct_fal else ("NadicodeAI Subscription" if image_managed else ""),
             explicit_configured=direct_fal,
         ),
         "video_gen": NousFeatureState(
@@ -669,7 +669,7 @@ def get_nous_subscription_features(
             managed_by_nous=video_managed,
             direct_override=video_active and not video_managed,
             toolset_enabled=video_tool_enabled,
-            current_provider="FAL" if direct_fal_video else ("Nadia Subscription" if video_managed else ""),
+            current_provider="FAL" if direct_fal_video else ("NadicodeAI Subscription" if video_managed else ""),
             explicit_configured=direct_fal_video,
         ),
         "tts": NousFeatureState(
@@ -1089,7 +1089,7 @@ def prompt_enable_tool_gateway(
         and account_info.tool_access is not None
         and account_info.tool_access.enabled
     )
-    source_label = "free tool pool" if pool_only else "Nadia subscription"
+    source_label = "free tool pool" if pool_only else "NadicodeAI subscription"
 
     # Per-tool checklist: unconfigured tools first (pre-checked for new users),
     # then tools where the user already has their own key (left unchecked so we
@@ -1106,7 +1106,7 @@ def prompt_enable_tool_gateway(
         title = "Your free Nadia tool pool — pick the tools to enable:"
     else:
         title = (
-            "Your Nadia subscription includes the Tool Gateway — "
+            "Your NadicodeAI subscription includes the Tool Gateway — "
             "pick the tools to enable:"
         )
 
@@ -1131,27 +1131,27 @@ def prompt_enable_tool_gateway(
 
 
 # ---------------------------------------------------------------------------
-# Inline Nadia Agents Portal login for the Tool Gateway picker (`nadia tools`)
+# Inline NadicodeAI Portal login for the Tool Gateway picker (`nadia tools`)
 # ---------------------------------------------------------------------------
 
 
 def ensure_nous_portal_access(
     *,
-    capability: str = "the Nadia Tool Gateway",
+    capability: str = "the NadicodeAI Tool Gateway",
     coverage_category: Optional[str] = None,
 ) -> bool:
-    """Make sure the user is entitled to the Nadia Tool Gateway, logging in if
+    """Make sure the user is entitled to the NadicodeAI Tool Gateway, logging in if
     needed.
 
     Used by ``nadia tools`` when a user selects a Nadia-managed Tool Gateway
-    backend (e.g. "Firecrawl (Nadia Agents Portal)").  Unlike ``nadia model``'s Nadia
+    backend (e.g. "Firecrawl (NadicodeAI Portal)").  Unlike ``nadia model``'s Nadia
     login, this:
 
     - does NOT change the inference provider (``model.provider`` is untouched),
     - does NOT run model selection, and
     - does NOT offer the bulk "enable for all tools" Tool Gateway prompt.
 
-    It only performs the Nadia Agents Portal device-code OAuth (when the user isn't
+    It only performs the NadicodeAI Portal device-code OAuth (when the user isn't
     already logged in) and refreshes entitlement, so the caller can enable the
     single tool the user picked.
 
@@ -1204,7 +1204,7 @@ def ensure_nous_portal_access(
 
 
 def _run_nous_portal_login_only(*, capability: str) -> bool:
-    """Run the Nadia Agents Portal device-code OAuth and persist credentials only.
+    """Run the NadicodeAI Portal device-code OAuth and persist credentials only.
 
     No model selection, no provider switch, no Tool Gateway bulk prompt.
     Returns ``True`` on a successful login, ``False`` if the user declined or
@@ -1223,18 +1223,18 @@ def _run_nous_portal_login_only(*, capability: str) -> bool:
             _write_shared_nous_state,
         )
     except Exception as exc:  # pragma: no cover - defensive
-        print(f"  Could not start Nadia Agents Portal login: {exc}")
+        print(f"  Could not start NadicodeAI Portal login: {exc}")
         return False
 
     print()
-    print(f"  {capability} requires a Nadia Agents Portal login.")
+    print(f"  {capability} requires a NadicodeAI Portal login.")
     try:
-        proceed = input("  Log in to Nadia Agents Portal now? [Y/n]: ").strip().lower()
+        proceed = input("  Log in to NadicodeAI Portal now? [Y/n]: ").strip().lower()
     except (EOFError, KeyboardInterrupt):
         print()
         return False
     if proceed not in {"", "y", "yes"}:
-        print("  Skipped Nadia Agents Portal login.")
+        print("  Skipped NadicodeAI Portal login.")
         return False
 
     try:
@@ -1271,7 +1271,7 @@ def _run_nous_portal_login_only(*, capability: str) -> bool:
 
         _write_shared_nous_state(auth_state)
         _sync_nous_pool_from_auth_store()
-        print("  Nadia Agents Portal login successful.")
+        print("  NadicodeAI Portal login successful.")
         return True
     except KeyboardInterrupt:
         print("\n  Login cancelled.")
@@ -1281,5 +1281,5 @@ def _run_nous_portal_login_only(*, capability: str) -> bool:
         # it already printed billing guidance.
         return False
     except Exception as exc:
-        print(f"  Nadia Agents Portal login failed: {exc}")
+        print(f"  NadicodeAI Portal login failed: {exc}")
         return False

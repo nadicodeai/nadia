@@ -74,7 +74,7 @@ class ChronosCronScheduler(CronScheduler):
         return self._have_nous_token()
 
     def _have_nous_token(self) -> bool:
-        """True if the agent has a Nadia Agents Portal login (no network call).
+        """True if the agent has a NadicodeAI Portal login (no network call).
 
         Checks the stored auth state for a Nadia access token — does NOT refresh
         or hit the network (is_available must stay offline). The actual

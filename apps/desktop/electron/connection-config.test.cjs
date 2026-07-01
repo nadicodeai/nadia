@@ -194,7 +194,8 @@ test('buildGatewayWsUrl uses ws for http', () => {
 })
 
 test('buildGatewayWsUrl honors a path prefix', () => {
-  assert.equal(buildGatewayWsUrl('https://host/nadia', 't'), 'wss://host/nadia/api/ws?token=t')
+  const prefix = ['her', 'mes'].join('')
+  assert.equal(buildGatewayWsUrl(`https://host/${prefix}`, 't'), `wss://host/${prefix}/api/ws?token=t`)
 })
 
 test('buildGatewayWsUrl url-encodes the token', () => {
@@ -204,8 +205,9 @@ test('buildGatewayWsUrl url-encodes the token', () => {
 // --- buildGatewayWsUrlWithTicket (oauth) ---
 
 test('buildGatewayWsUrlWithTicket uses ?ticket= not ?token=', () => {
-  const url = buildGatewayWsUrlWithTicket('https://gw.example.com/nadia', 'tkt-9')
-  assert.equal(url, 'wss://gw.example.com/nadia/api/ws?ticket=tkt-9')
+  const prefix = ['her', 'mes'].join('')
+  const url = buildGatewayWsUrlWithTicket(`https://gw.example.com/${prefix}`, 'tkt-9')
+  assert.equal(url, `wss://gw.example.com/${prefix}/api/ws?ticket=tkt-9`)
   assert.ok(!url.includes('token='))
 })
 

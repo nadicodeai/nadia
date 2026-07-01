@@ -22,10 +22,6 @@ In WSL2 there are effectively two computers in play: your Windows host, and a Li
 
 This guide covers the parts of that split that specifically affect Nadia: installing WSL2, getting files back and forth between Windows and Linux, networking in both directions, and the pitfalls people actually hit.
 
-:::info 简体中文
-A Chinese-language walkthrough of the minimum install path is maintained on this same page — switch via the **language** menu (top right) and select **简体中文**.
-:::
-
 ## Why WSL2 (vs. native Windows)
 
 The native Windows install runs in Windows directly: your Windows terminal (PowerShell, Windows Terminal, etc.), Windows filesystem paths (`C:\Users\…`), and Windows processes.  Nadia uses Git Bash to run shell commands, which is how Claude Code and other agents handle Windows today — it sidesteps the POSIX-vs-Windows gap without a full rewrite.

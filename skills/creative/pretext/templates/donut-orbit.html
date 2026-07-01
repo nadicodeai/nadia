@@ -147,8 +147,8 @@
   }
 
   @font-face {
-    font-family: "Mondwest";
-    src: url("https://esm.sh/@nous-research/ui@0.4.0/dist/fonts/Mondwest-Regular.woff2") format("woff2");
+    font-family: "Geist";
+    src: url("https://cdn.jsdelivr.net/npm/@fontsource/geist-sans@5.2.5/files/geist-sans-latin-400-normal.woff2") format("woff2");
     font-weight: 400; font-style: normal; font-display: block;
   }
   @font-face {
@@ -162,7 +162,7 @@
     font-weight: 400; font-style: normal; font-display: block;
   }
 
-  .font-primer { position: fixed; left: -9999px; top: -9999px; font: 400 26px "Mondwest", serif; }
+  .font-primer { position: fixed; left: -9999px; top: -9999px; font: 400 26px "Geist", sans-serif; }
 </style>
 </head>
 <body>
@@ -1448,8 +1448,7 @@ function draw(time) {
 }
 
 resize();
-const DS_CDN = "https://esm.sh/@nous-research/ui@0.4.0/dist/fonts";
-const FACES = [new FontFace("Mondwest", `url(${DS_CDN}/Mondwest-Regular.woff2) format("woff2")`, { weight: "400", display: "block" })];
+const FACES = [new FontFace("Geist", 'url("https://cdn.jsdelivr.net/npm/@fontsource/geist-sans@5.2.5/files/geist-sans-latin-400-normal.woff2") format("woff2")', { weight: "400", display: "block" })];
 (async () => {
   try {
     const loaded = await Promise.all(FACES.map(f => f.load()));

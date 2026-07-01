@@ -43,8 +43,7 @@ PUBLIC_API_PATHS: frozenset[str] = frozenset({
     # Read-only model metadata (context windows, etc.) — same shape as
     # provider catalogs already exposed on the public internet.
     "/api/model/info",
-    # Read-only theme + plugin manifests for the dashboard skin engine.
-    "/api/dashboard/themes",
+    # Read-only plugin manifests for the dashboard plugin loader.
     "/api/dashboard/plugins",
     # Chronos managed-cron fire webhook (NAS -> agent). NOT cookie-gated: it
     # carries its own short-lived NAS-minted JWT (purpose=cron_fire), which the

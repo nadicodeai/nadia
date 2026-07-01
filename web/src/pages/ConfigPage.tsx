@@ -38,16 +38,16 @@ import {
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { getNestedValue, setNestedValue } from "@/lib/nested";
-import { useToast } from "@nous-research/ui/hooks/use-toast";
-import { Toast } from "@nous-research/ui/ui/components/toast";
+import { useToast } from "@/nadicodeai-ui";
+import { Toast } from "@/nadicodeai-ui";
 import { AutoField } from "@/components/AutoField";
-import { Button } from "@nous-research/ui/ui/components/button";
-import { ListItem } from "@nous-research/ui/ui/components/list-item";
-import { Spinner } from "@nous-research/ui/ui/components/spinner";
-import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
-import { ConfirmDialog } from "@nous-research/ui/ui/components/confirm-dialog";
-import { Input } from "@nous-research/ui/ui/components/input";
-import { Badge } from "@nous-research/ui/ui/components/badge";
+import { Button } from "@/nadicodeai-ui";
+import { ListItem } from "@/nadicodeai-ui";
+import { Spinner } from "@/nadicodeai-ui";
+import { Card, CardContent, CardHeader, CardTitle } from "@/nadicodeai-ui";
+import { ConfirmDialog } from "@/nadicodeai-ui";
+import { Input } from "@/nadicodeai-ui";
+import { Badge } from "@/nadicodeai-ui";
 import { useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { PluginSlot } from "@/plugins";
@@ -394,7 +394,7 @@ export default function ConfigPage() {
                 category={cat}
                 className="h-4 w-4 text-muted-foreground"
               />
-              <span className="font-mondwest text-display text-xs font-semibold tracking-wider text-muted-foreground">
+              <span className="text-display-sm text-xs font-semibold tracking-wider text-muted-foreground">
                 {prettyCategoryName(cat)}
               </span>
               <div className="flex-1 border-t border-border" />
@@ -402,7 +402,7 @@ export default function ConfigPage() {
           )}
           {showSection && (
             <div className="flex items-center gap-2 pt-4 pb-2 first:pt-0">
-              <span className="font-mondwest text-display text-xs font-semibold tracking-wider text-muted-foreground">
+              <span className="text-display-sm text-xs font-semibold tracking-wider text-muted-foreground">
                 {section.replace(/_/g, " ")}
               </span>
               <div className="flex-1 border-t border-border" />
@@ -544,12 +544,12 @@ export default function ConfigPage() {
               <div className="flex flex-col border border-border bg-muted/20">
                 <div className="hidden sm:flex items-center gap-2 px-3 py-2 border-b border-border">
                   <Filter className="h-3 w-3 text-text-tertiary" />
-                  <span className="font-mondwest text-display text-xs tracking-[0.12em] text-text-secondary">
+                  <span className="text-display-sm text-xs tracking-[0.12em] text-text-secondary">
                     {t.config.filters}
                   </span>
                 </div>
 
-                <div className="hidden sm:block px-3 pt-2 pb-1 font-mondwest text-display text-xs tracking-[0.12em] text-text-tertiary">
+                <div className="hidden sm:block px-3 pt-2 pb-1 text-display-sm text-xs tracking-[0.12em] text-text-tertiary">
                   {t.config.sections}
                 </div>
 

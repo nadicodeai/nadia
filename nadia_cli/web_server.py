@@ -579,8 +579,8 @@ _SCHEMA_OVERRIDES: Dict[str, Dict[str, Any]] = {
     },
     "dashboard.theme": {
         "type": "select",
-        "description": "Web dashboard visual theme",
-        "options": ["default", "midnight", "ember", "mono", "cyberpunk", "rose"],
+        "description": "Legacy web dashboard theme",
+        "options": ["default"],
     },
     "display.resume_display": {
         "type": "select",
@@ -2461,7 +2461,7 @@ def _safe_call(mod, fn_name: str, default):
 
 
 # ---------------------------------------------------------------------------
-# Portal endpoint — Nadia Agents Portal auth + Tool Gateway routing status (read-only).
+# Portal endpoint — NadicodeAI Portal auth + Tool Gateway routing status (read-only).
 # ---------------------------------------------------------------------------
 
 
@@ -2484,7 +2484,7 @@ async def get_portal_status():
         if feats is not None:
             for feat in feats.items():
                 if getattr(feat, "managed_by_nous", False):
-                    state = "via Nadia Agents Portal"
+                    state = "via NadicodeAI Portal"
                 elif getattr(feat, "active", False) and getattr(feat, "current_provider", None):
                     state = feat.current_provider
                 elif getattr(feat, "active", False):
@@ -2501,7 +2501,7 @@ async def get_portal_status():
         "portal_url": auth.get("portal_base_url"),
         "inference_url": auth.get("inference_base_url"),
         "provider": str((model_cfg or {}).get("provider") or ""),
-        "subscription_url": "https://portal.nadicode.ai/manage-subscription",
+        "subscription_url": "https://portal.nadicodeai.com/manage-subscription",
         "features": features,
     }
 
@@ -4334,7 +4334,7 @@ def _apply_model_assignment_sync(
         # When switching the main provider to Nadia, mirror the CLI's
         # post-model-selection behaviour (nadia_cli/main.py
         # prompt_enable_tool_gateway / tools_config apply_nous_managed_defaults):
-        # auto-route any *unconfigured* tools through the Nadia Tool Gateway.
+        # auto-route any *unconfigured* tools through the NadicodeAI Tool Gateway.
         # This is purely additive — apply_nous_managed_defaults skips every
         # tool where the user already has a direct key (FIRECRAWL_API_KEY,
         # FAL_KEY, etc.) or an explicit backend/provider in config, so it
@@ -6273,10 +6273,10 @@ def _copilot_acp_status() -> Dict[str, Any]:
 _OAUTH_PROVIDER_CATALOG: tuple[Dict[str, Any], ...] = (
     {
         "id": "nous",
-        "name": "Nadia Agents Portal",
+        "name": "NadicodeAI Portal",
         "flow": "device_code",
         "cli_command": "nadia auth add nous",
-        "docs_url": "https://portal.nadicode.ai",
+        "docs_url": "https://portal.nadicodeai.com",
         "status_fn": None,  # dispatched via auth.get_nous_auth_status
     },
     {
@@ -6363,7 +6363,7 @@ def _resolve_provider_status(provider_id: str, status_fn) -> Dict[str, Any]:
             return {
                 "logged_in": bool(raw.get("logged_in")),
                 "source": "nous_portal",
-                "source_label": raw.get("portal_base_url") or "Nadia Agents Portal",
+                "source_label": raw.get("portal_base_url") or "NadicodeAI Portal",
                 "token_preview": _truncate_token(raw.get("access_token")),
                 "expires_at": raw.get("access_expires_at"),
                 "has_refresh_token": bool(raw.get("has_refresh_token")),
@@ -12875,352 +12875,6 @@ def mount_spa(application: FastAPI):
 
 
 # ---------------------------------------------------------------------------
-# Dashboard theme endpoints
-# ---------------------------------------------------------------------------
-
-# Built-in dashboard themes — label + description only.  The actual color
-# definitions live in the frontend (web/src/themes/presets.ts).
-_BUILTIN_DASHBOARD_THEMES = [
-    {"name": "default",       "label": "Nadia Teal",         "description": "Classic dark teal — the canonical Nadia look"},
-    {"name": "default-large", "label": "Nadia Teal (Large)", "description": "Nadia Teal with bigger fonts and roomier spacing"},
-    {"name": "nadia-blue",     "label": "Nadia Blue",           "description": "Light mode — vivid Nadia-blue accents on cream canvas"},
-    {"name": "midnight",      "label": "Midnight",            "description": "Deep blue-violet with cool accents"},
-    {"name": "ember",     "label": "Ember",          "description": "Warm crimson and bronze — forge vibes"},
-    {"name": "mono",      "label": "Mono",           "description": "Clean grayscale — minimal and focused"},
-    {"name": "cyberpunk", "label": "Cyberpunk",      "description": "Neon green on black — matrix terminal"},
-    {"name": "rose",      "label": "Rosé",           "description": "Soft pink and warm ivory — easy on the eyes"},
-]
-
-
-def _parse_theme_layer(value: Any, default_hex: str, default_alpha: float = 1.0) -> Optional[Dict[str, Any]]:
-    """Normalise a theme layer spec from YAML into `{hex, alpha}` form.
-
-    Accepts shorthand (a bare hex string) or full dict form.  Returns
-    ``None`` on garbage input so the caller can fall back to a built-in
-    default rather than blowing up.
-    """
-    if value is None:
-        return {"hex": default_hex, "alpha": default_alpha}
-    if isinstance(value, str):
-        return {"hex": value, "alpha": default_alpha}
-    if isinstance(value, dict):
-        hex_val = value.get("hex", default_hex)
-        alpha_val = value.get("alpha", default_alpha)
-        if not isinstance(hex_val, str):
-            return None
-        try:
-            alpha_f = float(alpha_val)
-        except (TypeError, ValueError):
-            alpha_f = default_alpha
-        return {"hex": hex_val, "alpha": max(0.0, min(1.0, alpha_f))}
-    return None
-
-
-_THEME_DEFAULT_TYPOGRAPHY: Dict[str, str] = {
-    "fontSans": 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-    "fontMono": 'ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace',
-    "baseSize": "15px",
-    "lineHeight": "1.55",
-    "letterSpacing": "0",
-}
-
-_THEME_DEFAULT_LAYOUT: Dict[str, str] = {
-    "radius": "0.5rem",
-    "density": "comfortable",
-}
-
-_THEME_OVERRIDE_KEYS = {
-    "card", "cardForeground", "popover", "popoverForeground",
-    "primary", "primaryForeground", "secondary", "secondaryForeground",
-    "muted", "mutedForeground", "accent", "accentForeground",
-    "destructive", "destructiveForeground", "success", "warning",
-    "border", "input", "ring",
-}
-
-# Well-known named asset slots themes can populate.  Any other keys under
-# ``assets.custom`` are exposed as ``--theme-asset-custom-<key>`` CSS vars
-# for plugin/shell use.
-_THEME_NAMED_ASSET_KEYS = {"bg", "hero", "logo", "crest", "sidebar", "header"}
-
-# Component-style buckets themes can override.  The value under each bucket
-# is a mapping from camelCase property name to CSS string; each pair emits
-# ``--component-<bucket>-<kebab-property>`` on :root.  The frontend's shell
-# components (Card, App header, Backdrop, etc.) consume these vars so themes
-# can restyle chrome (clip-path, border-image, segmented progress, etc.)
-# without shipping their own CSS.
-_THEME_COMPONENT_BUCKETS = {
-    "card", "header", "footer", "sidebar", "tab",
-    "progress", "badge", "backdrop", "page",
-}
-
-_THEME_LAYOUT_VARIANTS = {"standard", "cockpit", "tiled"}
-
-# Cap on customCSS length so a malformed/oversized theme YAML can't blow up
-# the response payload or the <style> tag.  32 KiB is plenty for every
-# practical reskin (the Strike Freedom demo is ~2 KiB).
-_THEME_CUSTOM_CSS_MAX = 32 * 1024
-
-
-def _normalise_theme_definition(data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """Normalise a user theme YAML into the wire format `ThemeProvider`
-    expects.  Returns ``None`` if the theme is unusable.
-
-    Accepts both the full schema (palette/typography/layout) and a loose
-    form with bare hex strings, so hand-written YAMLs stay friendly.
-    """
-    if not isinstance(data, dict):
-        return None
-    name = data.get("name")
-    if not isinstance(name, str) or not name.strip():
-        return None
-
-    # Palette
-    palette_src = data.get("palette", {}) if isinstance(data.get("palette"), dict) else {}
-    # Allow top-level `colors.background` as a shorthand too.
-    colors_src = data.get("colors", {}) if isinstance(data.get("colors"), dict) else {}
-
-    def _layer(key: str, default_hex: str, default_alpha: float = 1.0) -> Dict[str, Any]:
-        spec = palette_src.get(key, colors_src.get(key))
-        parsed = _parse_theme_layer(spec, default_hex, default_alpha)
-        return parsed if parsed is not None else {"hex": default_hex, "alpha": default_alpha}
-
-    palette = {
-        "background": _layer("background", "#041c1c", 1.0),
-        "midground": _layer("midground", "#ffe6cb", 1.0),
-        "foreground": _layer("foreground", "#ffffff", 0.0),
-        "warmGlow": palette_src.get("warmGlow") or data.get("warmGlow") or "rgba(255, 189, 56, 0.35)",
-        "noiseOpacity": 1.0,
-    }
-    raw_noise = palette_src.get("noiseOpacity", data.get("noiseOpacity"))
-    try:
-        palette["noiseOpacity"] = float(raw_noise) if raw_noise is not None else 1.0
-    except (TypeError, ValueError):
-        palette["noiseOpacity"] = 1.0
-
-    # Typography
-    typo_src = data.get("typography", {}) if isinstance(data.get("typography"), dict) else {}
-    typography = dict(_THEME_DEFAULT_TYPOGRAPHY)
-    for key in ("fontSans", "fontMono", "fontDisplay", "fontUrl", "baseSize", "lineHeight", "letterSpacing"):
-        val = typo_src.get(key)
-        if isinstance(val, str) and val.strip():
-            typography[key] = val
-
-    # Layout
-    layout_src = data.get("layout", {}) if isinstance(data.get("layout"), dict) else {}
-    layout = dict(_THEME_DEFAULT_LAYOUT)
-    radius = layout_src.get("radius")
-    if isinstance(radius, str) and radius.strip():
-        layout["radius"] = radius
-    density = layout_src.get("density")
-    if isinstance(density, str) and density in {"compact", "comfortable", "spacious"}:
-        layout["density"] = density
-
-    # Color overrides — keep only valid keys with string values.
-    overrides_src = data.get("colorOverrides", {})
-    color_overrides: Dict[str, str] = {}
-    if isinstance(overrides_src, dict):
-        for key, val in overrides_src.items():
-            if key in _THEME_OVERRIDE_KEYS and isinstance(val, str) and val.strip():
-                color_overrides[key] = val
-
-    # Assets — named slots + arbitrary user-defined keys.  Values must be
-    # strings (URLs or CSS ``url(...)``/``linear-gradient(...)`` expressions).
-    # We don't fetch remote assets here; the frontend just injects them as
-    # CSS vars.  Empty values are dropped so a theme can explicitly clear a
-    # slot by setting ``hero: ""``.
-    assets_out: Dict[str, Any] = {}
-    assets_src = data.get("assets", {}) if isinstance(data.get("assets"), dict) else {}
-    for key in _THEME_NAMED_ASSET_KEYS:
-        val = assets_src.get(key)
-        if isinstance(val, str) and val.strip():
-            assets_out[key] = val
-    custom_assets_src = assets_src.get("custom")
-    if isinstance(custom_assets_src, dict):
-        custom_assets: Dict[str, str] = {}
-        for key, val in custom_assets_src.items():
-            if (
-                isinstance(key, str)
-                and key.replace("-", "").replace("_", "").isalnum()
-                and isinstance(val, str)
-                and val.strip()
-            ):
-                custom_assets[key] = val
-        if custom_assets:
-            assets_out["custom"] = custom_assets
-
-    # Custom CSS — raw CSS text the frontend injects as a scoped <style>
-    # tag on theme apply.  Clipped to _THEME_CUSTOM_CSS_MAX to keep the
-    # payload bounded.  We intentionally do NOT parse/sanitise the CSS
-    # here — the dashboard is localhost-only and themes are user-authored
-    # YAML in ~/.nadia/, same trust level as the config file itself.
-    custom_css_val = data.get("customCSS")
-    custom_css: Optional[str] = None
-    if isinstance(custom_css_val, str) and custom_css_val.strip():
-        custom_css = custom_css_val[:_THEME_CUSTOM_CSS_MAX]
-
-    # Component style overrides — per-bucket dicts of camelCase CSS
-    # property -> CSS string.  The frontend converts these into CSS vars
-    # that shell components (Card, App header, Backdrop) consume.
-    component_styles_src = data.get("componentStyles", {})
-    component_styles: Dict[str, Dict[str, str]] = {}
-    if isinstance(component_styles_src, dict):
-        for bucket, props in component_styles_src.items():
-            if bucket not in _THEME_COMPONENT_BUCKETS or not isinstance(props, dict):
-                continue
-            clean: Dict[str, str] = {}
-            for prop, value in props.items():
-                if (
-                    isinstance(prop, str)
-                    and prop.replace("-", "").replace("_", "").isalnum()
-                    and isinstance(value, (str, int, float))
-                    and str(value).strip()
-                ):
-                    clean[prop] = str(value)
-            if clean:
-                component_styles[bucket] = clean
-
-    layout_variant_src = data.get("layoutVariant")
-    layout_variant = (
-        layout_variant_src
-        if isinstance(layout_variant_src, str) and layout_variant_src in _THEME_LAYOUT_VARIANTS
-        else "standard"
-    )
-
-    result: Dict[str, Any] = {
-        "name": name,
-        "label": data.get("label") or name,
-        "description": data.get("description", ""),
-        "palette": palette,
-        "typography": typography,
-        "layout": layout,
-        "layoutVariant": layout_variant,
-    }
-    if color_overrides:
-        result["colorOverrides"] = color_overrides
-    if assets_out:
-        result["assets"] = assets_out
-    if custom_css is not None:
-        result["customCSS"] = custom_css
-    if component_styles:
-        result["componentStyles"] = component_styles
-    return result
-
-
-def _discover_user_themes() -> list:
-    """Scan ~/.nadia/dashboard-themes/*.yaml for user-created themes.
-
-    Returns a list of fully-normalised theme definitions ready to ship
-    to the frontend, so the client can apply them without a secondary
-    round-trip or a built-in stub.
-    """
-    themes_dir = get_nadia_home() / "dashboard-themes"
-    if not themes_dir.is_dir():
-        return []
-    result = []
-    for f in sorted(themes_dir.glob("*.yaml")):
-        try:
-            data = yaml.safe_load(f.read_text(encoding="utf-8"))
-        except Exception:
-            continue
-        normalised = _normalise_theme_definition(data)
-        if normalised is not None:
-            result.append(normalised)
-    return result
-
-
-@app.get("/api/dashboard/themes")
-async def get_dashboard_themes():
-    """Return available themes and the currently active one.
-
-    Built-in entries ship name/label/description only (the frontend owns
-    their full definitions in `web/src/themes/presets.ts`).  User themes
-    from `~/.nadia/dashboard-themes/*.yaml` ship with their full
-    normalised definition under `definition`, so the client can apply
-    them without a stub.
-    """
-    config = load_config()
-    active = cfg_get(config, "dashboard", "theme", default="default")
-    user_themes = _discover_user_themes()
-    seen = set()
-    themes = []
-    for t in _BUILTIN_DASHBOARD_THEMES:
-        seen.add(t["name"])
-        themes.append(t)
-    for t in user_themes:
-        if t["name"] in seen:
-            continue
-        themes.append({
-            "name": t["name"],
-            "label": t["label"],
-            "description": t["description"],
-            "definition": t,
-        })
-        seen.add(t["name"])
-    return {"themes": themes, "active": active}
-
-
-class ThemeSetBody(BaseModel):
-    name: str
-
-
-@app.put("/api/dashboard/theme")
-async def set_dashboard_theme(body: ThemeSetBody):
-    """Set the active dashboard theme (persists to config.yaml)."""
-    config = load_config()
-    if "dashboard" not in config:
-        config["dashboard"] = {}
-    config["dashboard"]["theme"] = body.name
-    save_config(config)
-    return {"ok": True, "theme": body.name}
-
-
-# Curated font-override ids. Kept in sync with FONT_CHOICES in
-# web/src/themes/fonts.ts — the frontend owns the stacks + webfont URLs;
-# the backend only needs the id allow-list so it can reject anything not
-# in the vetted catalog (the font's webfont URL is injected as a <link>,
-# so we never accept an arbitrary user-supplied id/URL here).
-_FONT_DEFAULT_ID = "theme"
-_FONT_CHOICES = frozenset({
-    "system-sans", "system-serif", "system-mono",
-    "inter", "ibm-plex-sans", "work-sans", "atkinson-hyperlegible", "dm-sans",
-    "spectral", "fraunces", "source-serif",
-    "jetbrains-mono", "ibm-plex-mono", "space-mono",
-})
-
-
-@app.get("/api/dashboard/font")
-async def get_dashboard_font():
-    """Return the active font override (``"theme"`` = use the theme's font)."""
-    config = load_config()
-    font = cfg_get(config, "dashboard", "font", default=_FONT_DEFAULT_ID)
-    if font not in _FONT_CHOICES:
-        font = _FONT_DEFAULT_ID
-    return {"font": font}
-
-
-class FontSetBody(BaseModel):
-    font: str
-
-
-@app.put("/api/dashboard/font")
-async def set_dashboard_font(body: FontSetBody):
-    """Set the dashboard font override (persists to config.yaml).
-
-    Accepts any id in the curated catalog, or ``"theme"`` to clear the
-    override and fall back to the active theme's own font. Unknown ids are
-    coerced to ``"theme"`` rather than 400'd so a stale client can't wedge
-    the picker.
-    """
-    font = body.font if body.font in _FONT_CHOICES else _FONT_DEFAULT_ID
-    config = load_config()
-    if "dashboard" not in config:
-        config["dashboard"] = {}
-    config["dashboard"]["font"] = font
-    save_config(config)
-    return {"ok": True, "font": font}
-
-
-# ---------------------------------------------------------------------------
 # Dashboard plugin system
 # ---------------------------------------------------------------------------
 
@@ -13992,7 +13646,7 @@ def start_server(
                 "    (hash with: python -c \"from "
                 "plugins.dashboard_auth.basic import hash_password; "
                 "print(hash_password('your-password'))\")\n"
-                "  • OAuth: run `nadia dashboard register` (Nadia Agents Portal) or "
+                "  • OAuth: run `nadia dashboard register` (NadicodeAI Portal) or "
                 "install a DashboardAuthProvider plugin.\n"
                 "There is no unauthenticated public-bind option — to keep it "
                 "local, bind 127.0.0.1 and tunnel in (SSH / Tailscale)."

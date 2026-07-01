@@ -1461,7 +1461,7 @@ def _create_environment(env_type: str, image: str, cwd: str, timeout: int,
             if modal_state["managed_mode_blocked"]:
                 raise ValueError(
                     "Modal backend is configured for managed mode, but "
-                    "Nadia Tool Gateway access is not currently available and no direct "
+                    "NadicodeAI Tool Gateway access is not currently available and no direct "
                     "Modal credentials/config were found. "
                     + nous_tool_gateway_unavailable_message(
                         "managed Modal execution",
@@ -2789,7 +2789,7 @@ def check_terminal_requirements() -> bool:
                 if modal_state["managed_mode_blocked"]:
                     logger.error(
                         "Modal backend selected with TERMINAL_MODAL_MODE=managed, but "
-                        "Nadia Tool Gateway access is not currently available and no direct "
+                        "NadicodeAI Tool Gateway access is not currently available and no direct "
                         "Modal credentials/config were found. %s Choose "
                         "TERMINAL_MODAL_MODE=direct/auto to use direct Modal credentials.",
                         nous_tool_gateway_unavailable_message(

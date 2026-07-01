@@ -77,7 +77,7 @@ nadia [global-options] <command> [subcommand/options]
 | `nadia acp` | Run Nadia as an ACP server for editor integration. |
 | `nadia mcp` | Manage MCP server configurations and run Nadia as an MCP server. |
 | `nadia plugins` | Manage Nadia Agent plugins (install, enable, disable, remove). |
-| `nadia portal` | Nadia Agents Portal status, subscription link, and Tool Gateway routing. See [Tool Gateway](../user-guide/features/tool-gateway.md). |
+| `nadia portal` | NadicodeAI Portal status, subscription link, and Tool Gateway routing. See [Tool Gateway](../user-guide/features/tool-gateway.md). |
 | `nadia tools` | Configure enabled tools per platform. |
 | `nadia computer-use` | Install or check the cua-driver backend (macOS Computer Use). |
 | `nadia pets` | Browse, install, and select [petdex](../user-guide/features/pets.md) animated pets shown across the CLI, TUI, and desktop app. Subcommands: `list`, `install`, `select`, `show`, `off`, `scale`, `remove`, `doctor`. |
@@ -171,7 +171,7 @@ nadia model
 
 Use this when you want to:
 - **add a new provider** (OpenRouter, Anthropic, Copilot, DeepSeek, custom, etc.)
-- log into OAuth-backed providers (Anthropic, Copilot, Codex, Nadia Agents Portal)
+- log into OAuth-backed providers (Anthropic, Copilot, Codex, NadicodeAI Portal)
 - enter or update API keys
 - pick from provider-specific model lists
 - configure a custom/self-hosted endpoint
@@ -279,7 +279,7 @@ the full guide, supported languages, and configuration knobs.
 nadia setup [model|tts|terminal|gateway|tools|agent] [--non-interactive] [--reset] [--quick] [--reconfigure] [--portal]
 ```
 
-**Easiest path:** `nadia setup --portal` — OAuth into Nadia Agents Portal and opt into the [Tool Gateway](../user-guide/features/tool-gateway.md) in one shot.
+**Easiest path:** `nadia setup --portal` — OAuth into NadicodeAI Portal and opt into the [Tool Gateway](../user-guide/features/tool-gateway.md) in one shot.
 
 **First run:** launches the first-time wizard.
 
@@ -303,7 +303,7 @@ Options:
 | `--non-interactive` | Use defaults / environment values without prompts. |
 | `--reset` | Reset configuration to defaults before setup. |
 | `--reconfigure` | Backwards-compat alias — bare `nadia setup` on an existing install now does this by default. |
-| `--portal` | One-shot Nadia Agents Portal setup: log in via OAuth, set Nadia as the inference provider, and opt into the [Tool Gateway](../user-guide/features/tool-gateway.md). Skips the rest of the wizard. |
+| `--portal` | One-shot NadicodeAI Portal setup: log in via OAuth, set NadicodeAI Portal as the inference provider, and opt into the [Tool Gateway](../user-guide/features/tool-gateway.md). Skips the rest of the wizard. |
 
 ## `nadia portal`
 
@@ -311,12 +311,12 @@ Options:
 nadia portal [status|open|tools]
 ```
 
-Inspect Nadia Agents Portal auth, Tool Gateway routing, and reach the subscription page. Subcommand-less invocation runs `status`.
+Inspect NadicodeAI Portal auth, Tool Gateway routing, and reach the subscription page. Subcommand-less invocation runs `status`.
 
 | Subcommand | Description |
 |------------|-------------|
 | `status` (default) | Portal auth state + per-tool Tool Gateway routing summary. Also shown when no subcommand is given. |
-| `open` | Open `portal.nadicode.ai/manage-subscription` in your default browser. |
+| `open` | Open `portal.nadicodeai.com/manage-subscription` in your default browser. |
 | `tools` | List every Tool Gateway partner (Firecrawl, FAL, OpenAI TTS, Browser Use, Modal) and which are routed via Nadia. |
 
 For configuration of the gateway itself, see [Tool Gateway](../user-guide/features/tool-gateway.md). For the one-shot setup path, see `nadia setup --portal` above.
@@ -456,7 +456,7 @@ Common flags for migration subcommands:
 nadia proxy <subcommand>
 ```
 
-Run a local OpenAI-compatible HTTP server that forwards requests to an OAuth-authenticated upstream provider (e.g. Nadia Agents Portal, xAI). External apps can point at the proxy with any bearer token; the proxy attaches your real OAuth credentials on the way out. See [Subscription Proxy](../user-guide/features/subscription-proxy.md) for the full guide.
+Run a local OpenAI-compatible HTTP server that forwards requests to an OAuth-authenticated upstream provider (e.g. NadicodeAI Portal, xAI). External apps can point at the proxy with any bearer token; the proxy attaches your real OAuth credentials on the way out. See [Subscription Proxy](../user-guide/features/subscription-proxy.md) for the full guide.
 
 | Subcommand | Description |
 |------------|-------------|
@@ -1456,13 +1456,13 @@ Launch the web dashboard — a browser-based UI for managing configuration, API 
 
 ### `nadia dashboard register`
 
-Register this install as a self-hosted dashboard with your Nadia Agents Portal account. Creates an OAuth client, writes `NADIA_DASHBOARD_OAUTH_CLIENT_ID` into `~/.nadia/.env`, and prints how to engage the login gate. Requires being logged in (`nadia setup`).
+Register this install as a self-hosted dashboard with your NadicodeAI Portal account. Creates an OAuth client, writes `NADIA_DASHBOARD_OAUTH_CLIENT_ID` into `~/.nadia/.env`, and prints how to engage the login gate. Requires being logged in (`nadia setup`).
 
 | Option | Description |
 |--------|-------------|
 | `--name` | Human-readable label for the dashboard (default: auto-generated). |
 | `--redirect-uri` | Public HTTPS OAuth redirect URI (e.g. `https://nadia.example.com/auth/callback`). Omit for localhost-only use. |
-| `--portal-url` | Override the Nadia Agents Portal base URL for registration (default: the portal you logged into). Also settable via `NADIA_DASHBOARD_PORTAL_URL`. |
+| `--portal-url` | Override the NadicodeAI Portal base URL for registration (default: the portal you logged into). Also settable via `NADIA_DASHBOARD_PORTAL_URL`. |
 
 ```bash
 # Default — opens browser to http://127.0.0.1:9119

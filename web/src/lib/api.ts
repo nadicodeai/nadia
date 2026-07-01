@@ -19,8 +19,6 @@ function readBasePath(): string {
 export const NADIA_BASE_PATH = readBasePath();
 const BASE = NADIA_BASE_PATH;
 
-import type { DashboardTheme } from "@/themes/types";
-
 // Ephemeral session token for protected endpoints.
 // Injected into index.html by the server — never fetched via API.
 declare global {
@@ -923,24 +921,6 @@ export const api = {
       },
     ),
 
-  // Dashboard themes
-  getThemes: () =>
-    fetchJSON<DashboardThemesResponse>("/api/dashboard/themes"),
-  setTheme: (name: string) =>
-    fetchJSON<{ ok: boolean; theme: string }>("/api/dashboard/theme", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    }),
-  getFontPref: () =>
-    fetchJSON<DashboardFontResponse>("/api/dashboard/font"),
-  setFontPref: (font: string) =>
-    fetchJSON<{ ok: boolean; font: string }>("/api/dashboard/font", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ font }),
-    }),
-
   // ── Admin: MCP servers ──────────────────────────────────────────────
   getMcpServers: () => fetchJSON<{ servers: McpServer[] }>("/api/mcp/servers"),
   addMcpServer: (body: McpServerCreate) =>
@@ -1197,7 +1177,7 @@ export const api = {
  *
  * Returned by the dashboard's gated middleware when a valid session cookie
  * is attached. ``email`` and ``display_name`` are empty strings under the
- * Nadia Agents Portal contract V1 (the access token has no email/name claims —
+ * NadicodeAI Portal contract V1 (the access token has no email/name claims —
  * see Contract Anchor C4 in the plan). The AuthWidget surfaces a
  * truncated ``user_id`` instead.
  */
@@ -2237,27 +2217,6 @@ export interface OAuthPollResponse {
   status: "pending" | "approved" | "denied" | "expired" | "error";
   error_message?: string | null;
   expires_at?: number | null;
-}
-
-// ── Dashboard theme types ──────────────────────────────────────────────
-
-export interface DashboardThemeSummary {
-  description: string;
-  label: string;
-  name: string;
-  /** Full theme definition for user themes; undefined for built-ins
-   *  (which the frontend already has locally). */
-  definition?: DashboardTheme;
-}
-
-export interface DashboardThemesResponse {
-  active: string;
-  themes: DashboardThemeSummary[];
-}
-
-export interface DashboardFontResponse {
-  /** Active font-override id, or "theme" when no override is set. */
-  font: string;
 }
 
 // ── Dashboard plugin types ─────────────────────────────────────────────

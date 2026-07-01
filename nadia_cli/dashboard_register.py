@@ -1,12 +1,12 @@
 """``nadia dashboard register`` — register a self-hosted dashboard OAuth client.
 
-Automates what a user otherwise does by hand: open the Nadia Agents Portal
+Automates what a user otherwise does by hand: open the NadicodeAI Portal
 ``/local-dashboards`` page in a browser, click "register", copy the
 resulting ``agent:{id}`` OAuth client ID, and paste it into ``~/.nadia/.env``
 as ``NADIA_DASHBOARD_OAUTH_CLIENT_ID``.
 
 This command:
-  1. Resolves a fresh Nadia Agents Portal access token from the existing login
+  1. Resolves a fresh NadicodeAI Portal access token from the existing login
      (``~/.nadia/auth.json``), refreshing it if needed. Fails fast with a
      "run `nadia setup`" hint when the user isn't logged in.
   2. POSTs to ``{portal}/api/oauth/self-hosted-client`` with that bearer
@@ -87,7 +87,7 @@ def _resolve_portal_base_url(override: Optional[str] = None) -> str:
             return base.rstrip("/")
         return str(DEFAULT_NOUS_PORTAL_URL).rstrip("/")
     except Exception:
-        return "https://portal.nadicode.ai"
+        return "https://portal.nadicodeai.com"
 
 
 def _register_self_hosted_client(
@@ -154,7 +154,7 @@ def _register_self_hosted_client(
             pass
         if exc.code == 401:
             raise RuntimeError(
-                "Nadia Agents Portal rejected the access token (401). "
+                "NadicodeAI Portal rejected the access token (401). "
                 "Try `nadia auth add nous` to re-authenticate."
             ) from exc
         if exc.code == 403:
@@ -168,7 +168,7 @@ def _register_self_hosted_client(
         ) from exc
     except urllib.error.URLError as exc:
         raise RuntimeError(
-            f"Could not reach Nadia Agents Portal at {portal_base_url}: {exc.reason}"
+            f"Could not reach NadicodeAI Portal at {portal_base_url}: {exc.reason}"
         ) from exc
 
     if not isinstance(payload, dict) or not payload.get("client_id"):
@@ -228,7 +228,7 @@ def _print_post_register_hint(
 
 
 def cmd_dashboard_register(args) -> None:
-    """Register a self-hosted dashboard OAuth client with Nadia Agents Portal."""
+    """Register a self-hosted dashboard OAuth client with NadicodeAI Portal."""
     from nadia_cli.auth import AuthError, resolve_nous_access_token
     from nadia_cli.config import get_env_value, is_managed, save_env_value
 
@@ -250,13 +250,13 @@ def cmd_dashboard_register(args) -> None:
         access_token = resolve_nous_access_token()
     except AuthError as exc:
         if getattr(exc, "relogin_required", False):
-            print("✗ You're not logged into Nadia Agents Portal.")
+            print("✗ You're not logged into NadicodeAI Portal.")
             print("  Run `nadia setup` (or `nadia auth add nous`) first, then retry.")
         else:
-            print(f"✗ Could not resolve a Nadia Agents Portal access token: {exc}")
+            print(f"✗ Could not resolve a NadicodeAI Portal access token: {exc}")
         sys.exit(1)
     except Exception as exc:
-        print(f"✗ Could not resolve a Nadia Agents Portal access token: {exc}")
+        print(f"✗ Could not resolve a NadicodeAI Portal access token: {exc}")
         sys.exit(1)
 
     # Portal override: explicit --portal-url flag wins, else the
@@ -352,7 +352,7 @@ def cmd_dashboard_register(args) -> None:
     #      don't clutter .env for the common production case and don't alter an
     #      existing entry unexpectedly.
     wrote_portal_url = False
-    default_portal = "https://portal.nadicode.ai"
+    default_portal = "https://portal.nadicodeai.com"
     existing_portal = None
     try:
         existing_portal = get_env_value("NADIA_DASHBOARD_PORTAL_URL")

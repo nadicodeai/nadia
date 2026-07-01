@@ -666,7 +666,7 @@ class ChatCompletionsTransport(ProviderTransport):
         # OpenAI structured-refusal field. When a model declines, the SDK
         # populates ``message.refusal`` with the explanation and leaves
         # ``content`` empty. OpenAI-compatible proxies that front Anthropic /
-        # Bedrock (e.g. Nadia Agents Portal) surface a Claude refusal this way — or via
+        # Bedrock (e.g. NadicodeAI Portal) surface a Claude refusal this way — or via
         # ``finish_reason="content_filter"`` — instead of the native
         # ``stop_reason="refusal"``. Without capturing it the refusal looks
         # like an empty response, so the agent loop retries a deterministic

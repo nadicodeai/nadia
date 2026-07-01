@@ -1,12 +1,12 @@
 ---
 sidebar_position: 0
 title: "Run Nemotron 3 Ultra free in Nadia Agent"
-description: "Try NVIDIA Nemotron 3 Ultra on Nadia Agents Portal — free June 4–18 — with day 0 support in Nadia Agent"
+description: "Try NVIDIA Nemotron 3 Ultra on NadicodeAI Portal — free June 4–18 — with day 0 support in Nadia Agent"
 ---
 
 # Run Nemotron 3 Ultra free in Nadia Agent
 
-NadicodeAI has been inducted into the **Nemotron Coalition** of leading AI labs working with **NVIDIA** to advance open frontier foundation models. In honor of this, we've partnered with **Nebius** to provide **Nemotron 3 Ultra** free on [Nadia Agents Portal](https://portal.nadicode.ai) for two weeks (**June 4th – June 18th**). Follow the instructions below to try the model in your Nadia Agent today.
+NadicodeAI Portal periodically offers hosted model promotions, including Nemotron 3 Ultra availability when that model is listed in the portal catalog. Follow the instructions below to try the model in your Nadia Agent.
 
 :::info Limited-time offer
 The `nvidia/nemotron-3-ultra:free` tier is available from **June 4th to June 18th**. The `:free` tag is what keeps it on the no-cost plan — pick that exact variant.
@@ -20,11 +20,11 @@ The simplest path: a one-click installer with a guided, point-and-click setup. N
 
 ### 1. Download and install
 
-[Download the Nadia Desktop installer](https://docs.nadicode.ai/nadia/) for macOS or Windows, then open it. On first launch it finishes setting itself up (usually under a minute).
+[Download the Nadia Desktop installer](https://github.com/nadicodeai/nadia/releases/latest) for macOS or Windows, then open it. On first launch it finishes setting itself up (usually under a minute).
 
-### 2. Connect Nadia Agents Portal
+### 2. Connect NadicodeAI Portal
 
-When the app opens, you'll see a "Let's get you set up" screen. Click **Nadia Agents Portal** (marked **Recommended**). Your browser opens — create a [Nadia Agents Portal](https://portal.nadicode.ai) account (or sign in), choose the **Free** plan, and authorize Nadia. The app connects automatically.
+When the app opens, you'll see a "Let's get you set up" screen. Click **NadicodeAI Portal** (marked **Recommended**). Your browser opens — create a [NadicodeAI Portal](https://portal.nadicodeai.com) account (or sign in), choose the **Free** plan, and authorize Nadia. The app connects automatically.
 
 ### 3. Pick the free Nemotron 3 Ultra model
 
@@ -74,9 +74,9 @@ nadia setup
 
 Select **Quick Setup**. Nadia opens a browser tab and waits for you to finish the next steps.
 
-### 3. Create a Nadia Agents Portal account
+### 3. Create a NadicodeAI Portal account
 
-In the browser, create a [Nadia Agents Portal](https://portal.nadicode.ai) account (or sign in) and choose the **Free** plan.
+In the browser, create a [NadicodeAI Portal](https://portal.nadicodeai.com) account (or sign in) and choose the **Free** plan.
 
 ### 4. Connect your account
 
@@ -111,13 +111,13 @@ Already set up with another model?
 
 ## Troubleshooting
 
-- **Don't see the model in the list?** Make sure you finished the Nadia Agents Portal connection and that you're on the **Free** plan. In the CLI, `nadia portal info` confirms you're logged in and routing through Nadia.
+- **Don't see the model in the list?** Make sure you finished the NadicodeAI Portal connection and that you're on the **Free** plan. In the CLI, `nadia portal info` confirms you're logged in and routing through NadicodeAI Portal.
 - **Picked the wrong variant?** Re-select `nvidia/nemotron-3-ultra:free` — the `:free` suffix is required to stay on the no-cost tier.
 - **Browser didn't open / you're on a remote host (CLI)?** See [OAuth over SSH / Remote Hosts](/guides/oauth-over-ssh) for port-forwarding and manual-paste workarounds.
 
 ## See also
 
 - **[Desktop App](/user-guide/desktop)** — The native one-click app (macOS, Windows, Linux)
-- **[Run Nadia Agent with Nadia Agents Portal](/guides/run-nadia-with-nadia-portal)** — Full Portal walkthrough: models, Tool Gateway, and verification
-- **[Nadia Agents Portal integration](/integrations/nadia-portal)** — What's in the subscription
+- **[Run Nadia Agent with NadicodeAI Portal](/guides/run-nadia-with-nadia-portal)** — Full Portal walkthrough: models, Tool Gateway, and verification
+- **[NadicodeAI Portal integration](/integrations/nadia-portal)** — What's in the subscription
 - **[Quickstart](/getting-started/quickstart)** — Install-to-chat in under 5 minutes

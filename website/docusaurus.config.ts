@@ -3,15 +3,15 @@ import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
-  title: 'Nadia Agent',
+  title: 'Nadia',
   tagline: 'The self-improving AI agent',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/nadia-favicon.ico',
 
   url: process.env.DOCS_URL ?? 'https://docs.nadicode.ai',
   baseUrl: process.env.DOCS_BASE_URL ?? '/nadia/',
 
   organizationName: 'nadicodeai',
-  projectName: 'nadia-agent',
+  projectName: 'nadia',
 
   onBrokenLinks: 'warn',
 
@@ -24,14 +24,10 @@ const config: Config = {
 
   i18n: {
     defaultLocale: 'en',
-    locales: ['en', 'zh-Hans'],
+    locales: ['en'],
     localeConfigs: {
       en: {
         label: 'English',
-      },
-      'zh-Hans': {
-        label: '简体中文',
-        htmlLang: 'zh-Hans',
       },
     },
   },
@@ -43,7 +39,7 @@ const config: Config = {
       /** @type {import("@easyops-cn/docusaurus-search-local").PluginOptions} */
       ({
         hashed: true,
-        language: ['en', 'zh'],
+        language: ['en'],
         indexBlog: false,
         docsRouteBasePath: '/',
         // Disabled: appends ?_highlight=... to URLs (before the #anchor),
@@ -70,8 +66,15 @@ const config: Config = {
     [
       '@docusaurus/plugin-client-redirects',
       {
-        // Static-host redirects for renamed doc pages (GitHub Pages can't
-        // do server-side redirects). Paths are relative to baseUrl (/docs/).
+        // Static-host redirects for renamed doc pages and the legacy /docs
+        // prefix. Nadia publishes docs at baseUrl /nadia/ with docs routed at
+        // the site root, while upstream absolute links used /docs/... paths.
+        createRedirects(existingPath) {
+          if (existingPath === '/') {
+            return ['/docs'];
+          }
+          return [`/docs${existingPath}`];
+        },
         redirects: [
           {
             // Renamed in #44470 (Automation Blueprints terminology rebrand)
@@ -113,10 +116,11 @@ const config: Config = {
       },
     },
     navbar: {
-      title: 'Nadia Agent',
+      title: 'Nadia',
       logo: {
-        alt: 'Nadia Agent',
-        src: 'img/logo.png',
+        alt: 'Nadia',
+        src: 'img/nadia-logo.png',
+        srcDark: 'img/nadia-logo-dark.png',
       },
       items: [
         {
@@ -131,13 +135,9 @@ const config: Config = {
           position: 'left',
         },
         {
-          href: 'https://docs.nadicode.ai/nadia/',
+          href: 'https://github.com/nadicodeai/nadia/releases/latest',
           label: 'Download',
           position: 'left',
-        },
-        {
-          type: 'localeDropdown',
-          position: 'right',
         },
         {
           href: 'https://docs.nadicode.ai/nadia',
@@ -150,8 +150,8 @@ const config: Config = {
           position: 'right',
         },
         {
-          href: 'https://discord.gg/NadicodeAI',
-          label: 'Discord',
+          href: 'https://nadicode.ai',
+          label: 'NadicodeAI',
           position: 'right',
         },
       ],
@@ -171,7 +171,7 @@ const config: Config = {
         {
           title: 'Community',
           items: [
-            { label: 'Discord', href: 'https://discord.gg/NadicodeAI' },
+            { label: 'NadicodeAI', href: 'https://nadicode.ai' },
             { label: 'GitHub Issues', href: 'https://github.com/nadicodeai/nadia/issues' },
             { label: 'Skills Hub', href: 'https://agentskills.io' },
           ],
@@ -179,13 +179,13 @@ const config: Config = {
         {
           title: 'More',
           items: [
-            { label: 'Desktop Download', href: 'https://docs.nadicode.ai/nadia/' },
+            { label: 'Desktop Download', href: 'https://github.com/nadicodeai/nadia/releases/latest' },
             { label: 'GitHub', href: 'https://github.com/nadicodeai/nadia' },
             { label: 'NadicodeAI', href: 'https://nadicode.ai' },
           ],
         },
       ],
-      copyright: `Built by <a href="https://nadicode.ai">NadicodeAI</a> · MIT License · ${new Date().getFullYear()}`,
+      copyright: `Built by <a href="https://nadicode.ai">NadicodeAI</a> - MIT License - ${new Date().getFullYear()}`,
     },
     prism: {
       theme: prismThemes.github,

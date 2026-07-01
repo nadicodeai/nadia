@@ -4971,7 +4971,7 @@ class AIAgent:
 
         OpenRouter forwards unknown extra_body fields to upstream providers.
         Some providers/routes reject `reasoning` with 400s, so gate it to
-        known reasoning-capable model families and direct Nadia Agents Portal.
+        known reasoning-capable model families and direct NadicodeAI Portal.
         """
         if base_url_host_matches(self._base_url_lower, "nadicode.ai"):
             return True

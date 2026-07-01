@@ -253,7 +253,7 @@ TOOL_CATEGORIES = {
                 "tts_provider": "edge",
             },
             {
-                "name": "Nadia Subscription",
+                "name": "NadicodeAI Subscription",
                 "badge": "subscription",
                 "tag": "Managed OpenAI TTS billed to your subscription",
                 "env_vars": [],
@@ -333,14 +333,14 @@ TOOL_CATEGORIES = {
         # plugins.web.<vendor>.provider via _plugin_web_search_providers()
         # in _visible_providers(). Only non-provider UX setup-flow rows
         # for the firecrawl backend are listed here:
-        #   - "Nadia Subscription" — managed Firecrawl billed via Nadia
+        #   - "NadicodeAI Subscription" — managed Firecrawl billed via Nadia
         #     subscription (requires_nous_auth + override_env_vars).
         #   - "Firecrawl Self-Hosted" — points firecrawl at a private
         #     Docker instance via FIRECRAWL_API_URL only.
         # See PR #25182 for the migration rationale.
         "providers": [
             {
-                "name": "Nadia Subscription",
+                "name": "NadicodeAI Subscription",
                 "badge": "subscription",
                 "tag": "Managed Firecrawl billed to your subscription",
                 "web_backend": "firecrawl",
@@ -368,14 +368,14 @@ TOOL_CATEGORIES = {
         # ``plugins.image_gen.<vendor>`` package via
         # ``_plugin_image_gen_providers()`` in ``_visible_providers``.
         # Only non-provider UX setup-flow rows remain here:
-        #   - "Nadia Subscription" — managed FAL billed via the Nadia
+        #   - "NadicodeAI Subscription" — managed FAL billed via the Nadia
         #     subscription (requires_nous_auth + override_env_vars).
         #     Uses the fal plugin as the underlying backend but has a
         #     distinct setup UX.
         # Mirrors the shape browser/video_gen ship today.
         "providers": [
             {
-                "name": "Nadia Subscription",
+                "name": "NadicodeAI Subscription",
                 "badge": "subscription",
                 "tag": "Managed FAL image generation billed to your subscription",
                 "env_vars": [],
@@ -389,13 +389,13 @@ TOOL_CATEGORIES = {
     "video_gen": {
         "name": "Video Generation",
         "icon": "🎬",
-        # "Nadia Subscription" row mirrors the image_gen pattern — managed
-        # FAL video generation billed via the Nadia Agents Portal.  Plugin-backed
+        # "NadicodeAI Subscription" row mirrors the image_gen pattern — managed
+        # FAL video generation billed via the NadicodeAI Portal.  Plugin-backed
         # provider rows (FAL BYOK, xAI, …) are injected at runtime by
         # ``_plugin_video_gen_providers()`` in ``_visible_providers``.
         "providers": [
             {
-                "name": "Nadia Subscription",
+                "name": "NadicodeAI Subscription",
                 "badge": "subscription",
                 "tag": "Managed FAL video generation billed to your subscription",
                 "env_vars": [],
@@ -403,7 +403,7 @@ TOOL_CATEGORIES = {
                 "managed_nous_feature": "video_gen",
                 "override_env_vars": ["FAL_KEY"],
                 # The underlying plugin backend — when the user picks
-                # "Nadia Subscription" we set video_gen.provider = "fal"
+                # "NadicodeAI Subscription" we set video_gen.provider = "fal"
                 # and video_gen.use_gateway = True so the FAL plugin
                 # routes through the managed queue gateway.
                 "video_gen_plugin_name": "fal",
@@ -452,10 +452,10 @@ TOOL_CATEGORIES = {
         # non-provider UX setup-flow rows remain here. "Local Browser" is
         # listed FIRST so it is the default-highlighted (index 0) choice on a
         # fresh install — pressing Enter must land on the free, no-key local
-        # backend, never on the paid Nadia Subscription gateway row:
+        # backend, never on the paid NadicodeAI Subscription gateway row:
         #   - "Local Browser" — non-cloud option, no CloudBrowserProvider.
-        #   - "Nadia Subscription (Browser Use cloud)" — managed Browser Use
-        #     billed via Nadia subscription (requires_nous_auth +
+        #   - "NadicodeAI Subscription (Browser Use cloud)" — managed Browser Use
+        #     billed via NadicodeAI subscription (requires_nous_auth +
         #     override_env_vars). Uses the browser-use plugin as the
         #     underlying backend but has a distinct setup UX.
         #   - "Camofox" — anti-detection local Firefox; short-circuits the
@@ -470,7 +470,7 @@ TOOL_CATEGORIES = {
                 "post_setup": "agent_browser",
             },
             {
-                "name": "Nadia Subscription (Browser Use cloud)",
+                "name": "NadicodeAI Subscription (Browser Use cloud)",
                 "badge": "subscription",
                 "tag": "Managed Browser Use billed to your subscription",
                 "env_vars": [],
@@ -2032,7 +2032,7 @@ def _plugin_video_gen_providers() -> list[dict]:
 # PR #25182 — this helper is the sole source of truth for the category's
 # provider rows. The hardcoded entries that used to drive the category
 # were deleted in the same PR; only the two non-provider UX rows
-# ("Nadia Subscription" managed-gateway entry, "Firecrawl Self-Hosted")
+# ("NadicodeAI Subscription" managed-gateway entry, "Firecrawl Self-Hosted")
 # remain in TOOL_CATEGORIES because they describe alternative *setup
 # flows* for the firecrawl backend rather than distinct providers.
 def _plugin_web_search_providers() -> list[dict]:
@@ -2089,7 +2089,7 @@ def _plugin_web_search_providers() -> list[dict]:
 # for those three in the "Browser Automation" picker. The hardcoded
 # ``TOOL_CATEGORIES["browser"]`` entries that drove the category before
 # were deleted in the same PR; only non-provider UX setup-flow rows remain
-# ("Nadia Subscription", "Local Browser", "Camofox") — see the comment block
+# ("NadicodeAI Subscription", "Local Browser", "Camofox") — see the comment block
 # in ``TOOL_CATEGORIES["browser"]`` for why each one stays hardcoded.
 def _plugin_browser_providers() -> list[dict]:
     """Build picker-row dicts from plugin-registered cloud browser providers.
@@ -2204,7 +2204,7 @@ def _visible_providers(
 
     Nadia-managed Tool Gateway rows (``managed_nous_feature``) are always
     shown — even to logged-out / unentitled users — so the picker advertises
-    that the capability exists.  Selecting one drives an inline Nadia Agents Portal
+    that the capability exists.  Selecting one drives an inline NadicodeAI Portal
     login + entitlement check (see ``_configure_provider``); the row only
     *activates* the gateway once paid access is confirmed.
     """
@@ -2244,7 +2244,7 @@ def _visible_providers(
         visible.append(provider)
 
     # Inject plugin-registered image_gen backends (OpenAI today, more
-    # later) so the picker lists them alongside FAL / Nadia Subscription.
+    # later) so the picker lists them alongside FAL / NadicodeAI Subscription.
     if cat.get("name") == "Image Generation":
         visible.extend(_plugin_image_gen_providers())
 
@@ -2256,14 +2256,14 @@ def _visible_providers(
     # Inject plugin-registered web search backends. After PR #25182, this
     # is the SOLE source of provider rows for the Web Search & Extract
     # category — the per-provider hardcoded entries were deleted. The two
-    # remaining hardcoded rows ("Nadia Subscription", "Firecrawl
+    # remaining hardcoded rows ("NadicodeAI Subscription", "Firecrawl
     # Self-Hosted") are non-provider UX setup-flow rows for firecrawl.
     if cat.get("name") == "Web Search & Extract":
         visible.extend(_plugin_web_search_providers())
 
     # Inject plugin-registered cloud browser backends. After PR #25214,
     # Browserbase / Browser Use / Firecrawl are the plugin-supplied rows;
-    # the hardcoded "Nadia Subscription" / "Local Browser" / "Camofox" rows
+    # the hardcoded "NadicodeAI Subscription" / "Local Browser" / "Camofox" rows
     # stay because they're non-provider UX setup flows (subscription auth,
     # local fallback, and the REST-API anti-detection backend respectively).
     if cat.get("name") == "Browser Automation":
@@ -2285,7 +2285,7 @@ def _hidden_nous_gateway_message(
     *,
     force_fresh: bool = False,
 ) -> str:
-    """Deprecated: Nadia Tool Gateway rows are no longer hidden.
+    """Deprecated: NadicodeAI Tool Gateway rows are no longer hidden.
 
     Previously this returned a "log in / upgrade" banner shown above a
     category when its Nadia-managed rows were filtered out for unentitled
@@ -2411,7 +2411,7 @@ def _configure_tool_category(
     hidden_nous_message = _hidden_nous_gateway_message(
         cat,
         config,
-        f"the Nadia Subscription provider for {name}",
+        f"the NadicodeAI Subscription provider for {name}",
         force_fresh=force_fresh,
     )
 
@@ -2479,16 +2479,16 @@ def _configure_tool_category(
                 else:
                     configured = " [configured]"
             # Mark Nadia-managed entries. Logged-in paid subscribers get the
-            # "included" star; everyone else gets a "via Nadia Agents Portal" hint so
+            # "included" star; everyone else gets a "via NadicodeAI Portal" hint so
             # it's clear selecting the row triggers a Portal login. The rows
             # are always shown now (see _visible_providers) — selecting one
             # drives an inline login + entitlement check.
             sub_marker = ""
             if p.get("managed_nous_feature"):
                 if _nous_logged_in:
-                    sub_marker = "  ★ Included with your Nadia subscription"
+                    sub_marker = "  ★ Included with your NadicodeAI subscription"
                 else:
-                    sub_marker = "  ★ via Nadia Agents Portal (login on select)"
+                    sub_marker = "  ★ via NadicodeAI Portal (login on select)"
             provider_choices.append(f"{p['name']}{badge}{tag}{configured}{sub_marker}")
 
         # Add skip option
@@ -2949,7 +2949,7 @@ def apply_provider_selection(ts_key: str, provider_name: str, config: dict) -> N
     rows the GUI/CLI picker shows via :func:`_visible_providers`) and writes
     the corresponding backend/provider config keys. Unlike
     :func:`_configure_provider`, this does NOT prompt for API keys, run
-    post-setup hooks, gate on Nadia Agents Portal auth, or run interactive model
+    post-setup hooks, gate on NadicodeAI Portal auth, or run interactive model
     pickers — those are handled separately (env endpoints, post-setup
     endpoints, the model picker) in the desktop GUI.
 
@@ -3020,11 +3020,11 @@ def _configure_provider(
         )
 
         if not ensure_nous_portal_access(
-            capability=f"{provider.get('name', 'the Nadia Tool Gateway')}",
+            capability=f"{provider.get('name', 'the NadicodeAI Tool Gateway')}",
             coverage_category=MANAGED_FEATURE_COVERAGE_CATEGORY.get(managed_feature),
         ):
             _print_warning(
-                "  Not enabled — Nadia Agents Portal access is required for this backend."
+                "  Not enabled — NadicodeAI Portal access is required for this backend."
             )
             return
 
@@ -3039,10 +3039,10 @@ def _configure_provider(
         if not features.nous_auth_present or not entitled:
             message = format_nous_portal_entitlement_message(
                 features.account_info,
-                capability=f"{provider.get('name', 'Nadia Subscription')}",
+                capability=f"{provider.get('name', 'NadicodeAI Subscription')}",
             )
             _print_warning(
-                f"  {message or 'Nadia Subscription is only available after logging into Nadia Agents Portal.'}"
+                f"  {message or 'NadicodeAI Subscription is only available after logging into NadicodeAI Portal.'}"
             )
             return
 
@@ -3074,7 +3074,7 @@ def _configure_provider(
             _run_post_setup(provider["post_setup"])
         _print_success(f"  {provider['name']} - no configuration needed!")
         if managed_feature:
-            _print_info("  Requests for this tool will be billed to your Nadia subscription.")
+            _print_info("  Requests for this tool will be billed to your NadicodeAI subscription.")
         # Plugin-registered image_gen provider: write image_gen.provider
         # and route model selection to the plugin's own catalog.
         plugin_name = provider.get("image_gen_plugin_name")
@@ -3126,7 +3126,7 @@ def _configure_provider(
             _show_portal_hint = False
 
     if _show_portal_hint:
-        _print_info("  Available through Nadia Agents Portal subscription.")
+        _print_info("  Available through NadicodeAI Portal subscription.")
 
     for var in env_vars:
         existing = get_env_value(var["key"])
@@ -3433,7 +3433,7 @@ def _configure_tool_category_for_reconfig(
     hidden_nous_message = _hidden_nous_gateway_message(
         cat,
         config,
-        f"the Nadia Subscription provider for {name}",
+        f"the NadicodeAI Subscription provider for {name}",
         force_fresh=force_fresh,
     )
 
@@ -3492,7 +3492,7 @@ def _reconfigure_provider(
     env_vars = provider.get("env_vars", [])
     managed_feature = provider.get("managed_nous_feature")
 
-    # Same inline Nadia Agents Portal login + entitlement gate as _configure_provider:
+    # Same inline NadicodeAI Portal login + entitlement gate as _configure_provider:
     # managed Tool Gateway backends only activate with paid Portal access.
     if managed_feature:
         from nadia_cli.nous_subscription import (
@@ -3501,11 +3501,11 @@ def _reconfigure_provider(
         )
 
         if not ensure_nous_portal_access(
-            capability=f"{provider.get('name', 'the Nadia Tool Gateway')}",
+            capability=f"{provider.get('name', 'the NadicodeAI Tool Gateway')}",
             coverage_category=MANAGED_FEATURE_COVERAGE_CATEGORY.get(managed_feature),
         ):
             _print_warning(
-                "  Not enabled — Nadia Agents Portal access is required for this backend."
+                "  Not enabled — NadicodeAI Portal access is required for this backend."
             )
             return
 
@@ -3519,10 +3519,10 @@ def _reconfigure_provider(
         if not features.nous_auth_present or not entitled:
             message = format_nous_portal_entitlement_message(
                 features.account_info,
-                capability=f"{provider.get('name', 'Nadia Subscription')}",
+                capability=f"{provider.get('name', 'NadicodeAI Subscription')}",
             )
             _print_warning(
-                f"  {message or 'Nadia Subscription is only available after logging into Nadia Agents Portal.'}"
+                f"  {message or 'NadicodeAI Subscription is only available after logging into NadicodeAI Portal.'}"
             )
             return
 
@@ -3569,7 +3569,7 @@ def _reconfigure_provider(
             _run_post_setup(provider["post_setup"])
         _print_success(f"  {provider['name']} - no configuration needed!")
         if managed_feature:
-            _print_info("  Requests for this tool will be billed to your Nadia subscription.")
+            _print_info("  Requests for this tool will be billed to your NadicodeAI subscription.")
         plugin_name = provider.get("image_gen_plugin_name")
         if plugin_name:
             _select_plugin_image_gen_provider(plugin_name, config)
@@ -3742,7 +3742,7 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
             )
             for ts_key in sorted(auto_configured):
                 label = next((l for k, l, _ in CONFIGURABLE_TOOLSETS if k == ts_key), ts_key)
-                print(color(f"  ✓ {label}: using your Nadia subscription defaults", Colors.GREEN))
+                print(color(f"  ✓ {label}: using your NadicodeAI subscription defaults", Colors.GREEN))
 
             # Walk through ALL selected tools that have provider options or
             # need API keys.  This ensures browser (Local vs Browserbase),

@@ -30,6 +30,7 @@ import { fileURLToPath } from "node:url";
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const websiteDir = resolve(scriptDir, "..");
 const extractScript = join(scriptDir, "extract-skills.py");
+const generateSkillDocsScript = join(scriptDir, "generate-skill-docs.py");
 const llmsScript = join(scriptDir, "generate-llms-txt.py");
 const cronBlueprintsScript = join(scriptDir, "extract-automation-blueprints.py");
 const outputFile = join(websiteDir, "static", "api", "skills.json");
@@ -122,7 +123,10 @@ async function ensureUnifiedIndex() {
 // 0) Pull unified index if we don't have a fresh one.
 await ensureUnifiedIndex();
 
-// 1) skills.json — required for the Skills Hub page.
+// 1) Generated skill docs and catalogs — required for Docusaurus link validation.
+runPython(generateSkillDocsScript, "generate-skill-docs.py");
+
+// 2) skills.json — required for the Skills Hub page.
 if (!existsSync(extractScript)) {
   writeEmptyFallback("extract script missing");
 } else {
