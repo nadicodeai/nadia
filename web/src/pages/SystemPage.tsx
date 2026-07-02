@@ -27,18 +27,18 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { Badge } from "@/nadicodeai-ui";
-import { Button } from "@/nadicodeai-ui";
-import { Spinner } from "@/nadicodeai-ui";
-import { H2 } from "@/nadicodeai-ui";
-import { Card, CardContent } from "@/nadicodeai-ui";
-import { Input } from "@/nadicodeai-ui";
-import { Label } from "@/nadicodeai-ui";
-import { Select, SelectOption } from "@/nadicodeai-ui";
-import { Toast } from "@/nadicodeai-ui";
-import { useToast } from "@/nadicodeai-ui";
-import { useConfirmDelete } from "@/nadicodeai-ui";
-import { ConfirmDialog } from "@/nadicodeai-ui";
+import { Badge } from "@/nadicodeai-ui-compat";
+import { Button } from "@/nadicodeai-ui-compat";
+import { Spinner } from "@/nadicodeai-ui-compat";
+import { H2 } from "@/nadicodeai-ui-compat";
+import { Card, CardContent } from "@/nadicodeai-ui-compat";
+import { Input } from "@/nadicodeai-ui-compat";
+import { Label } from "@/nadicodeai-ui-compat";
+import { Select, SelectOption } from "@/nadicodeai-ui-compat";
+import { Toast } from "@/nadicodeai-ui-compat";
+import { useToast } from "@/nadicodeai-ui-compat";
+import { useConfirmDelete } from "@/nadicodeai-ui-compat";
+import { ConfirmDialog } from "@/nadicodeai-ui-compat";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { cn, themedBody } from "@/lib/utils";

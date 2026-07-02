@@ -42,23 +42,23 @@ import type {
 import { useProfileScope } from "@/contexts/useProfileScope";
 import { ToolsetConfigDrawer } from "@/components/ToolsetConfigDrawer";
 import { SkillEditorDialog } from "@/components/SkillEditorDialog";
-import { useToast } from "@/nadicodeai-ui";
-import { Toast } from "@/nadicodeai-ui";
-import { Card, CardContent, CardHeader, CardTitle } from "@/nadicodeai-ui";
-import { Badge } from "@/nadicodeai-ui";
-import { Button } from "@/nadicodeai-ui";
-import { ListItem } from "@/nadicodeai-ui";
-import { Spinner } from "@/nadicodeai-ui";
-import { Switch } from "@/nadicodeai-ui";
+import { useToast } from "@/nadicodeai-ui-compat";
+import { Toast } from "@/nadicodeai-ui-compat";
+import { Card, CardContent, CardHeader, CardTitle } from "@/nadicodeai-ui-compat";
+import { Badge } from "@/nadicodeai-ui-compat";
+import { Button } from "@/nadicodeai-ui-compat";
+import { ListItem } from "@/nadicodeai-ui-compat";
+import { Spinner } from "@/nadicodeai-ui-compat";
+import { Switch } from "@/nadicodeai-ui-compat";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/nadicodeai-ui";
+} from "@/nadicodeai-ui-compat";
 import { cn } from "@/lib/utils";
-import { Input } from "@/nadicodeai-ui";
+import { Input } from "@/nadicodeai-ui-compat";
 import { useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { PluginSlot } from "@/plugins";

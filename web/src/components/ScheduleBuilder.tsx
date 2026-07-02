@@ -1,8 +1,8 @@
 import { useCallback } from "react";
-import { Input } from "@/nadicodeai-ui";
-import { Label } from "@/nadicodeai-ui";
-import { Select, SelectOption } from "@/nadicodeai-ui";
-import { Button } from "@/nadicodeai-ui";
+import { Input } from "@/nadicodeai-ui-compat";
+import { Label } from "@/nadicodeai-ui-compat";
+import { Select, SelectOption } from "@/nadicodeai-ui-compat";
+import { Button } from "@/nadicodeai-ui-compat";
 import { useI18n } from "@/i18n";
 import {
   buildScheduleString,

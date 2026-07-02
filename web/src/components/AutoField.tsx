@@ -1,7 +1,7 @@
-import { Select, SelectOption } from "@/nadicodeai-ui";
-import { Switch } from "@/nadicodeai-ui";
-import { Input } from "@/nadicodeai-ui";
-import { Label } from "@/nadicodeai-ui";
+import { Select, SelectOption } from "@/nadicodeai-ui-compat";
+import { Switch } from "@/nadicodeai-ui-compat";
+import { Input } from "@/nadicodeai-ui-compat";
+import { Label } from "@/nadicodeai-ui-compat";
 
 function FieldHint({ schema, schemaKey }: { schema: Record<string, unknown>; schemaKey: string }) {
   const keyPath = schemaKey.includes(".") ? schemaKey : "";

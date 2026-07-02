@@ -305,7 +305,7 @@ const buildOverlayCtx = (ctx: SlashRunCtx, sys: Sys, s: BillingStateResponse): B
 
 export const billingCommands: SlashCommand[] = [
   {
-    help: 'Manage Nadia terminal billing — buy credits, auto-reload, limits',
+    help: 'Manage NadicodeAI terminal billing — buy credits, auto-reload, limits',
     name: 'billing',
     // ZERO sub-commands (plan §0.4): any arg is ignored. Bare `/billing`
     // fetches state and opens the interactive overlay (CLI/TUI parity).

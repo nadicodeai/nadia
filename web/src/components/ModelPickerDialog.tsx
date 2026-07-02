@@ -1,9 +1,9 @@
-import { Button } from "@/nadicodeai-ui";
-import { Checkbox } from "@/nadicodeai-ui";
-import { ListItem } from "@/nadicodeai-ui";
-import { Spinner } from "@/nadicodeai-ui";
-import { Input } from "@/nadicodeai-ui";
-import { Label } from "@/nadicodeai-ui";
+import { Button } from "@/nadicodeai-ui-compat";
+import { Checkbox } from "@/nadicodeai-ui-compat";
+import { ListItem } from "@/nadicodeai-ui-compat";
+import { Spinner } from "@/nadicodeai-ui-compat";
+import { Input } from "@/nadicodeai-ui-compat";
+import { Label } from "@/nadicodeai-ui-compat";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type { GatewayClient } from "@/lib/gatewayClient";
 import { Check, Search, X } from "lucide-react";

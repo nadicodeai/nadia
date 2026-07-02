@@ -1,5 +1,5 @@
 import type { GatewayClient } from "@/lib/gatewayClient";
-import { ListItem } from "@/nadicodeai-ui";
+import { ListItem } from "@/nadicodeai-ui-compat";
 import { ChevronRight } from "lucide-react";
 import {
   forwardRef,

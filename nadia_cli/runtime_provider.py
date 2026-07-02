@@ -1444,6 +1444,15 @@ def resolve_runtime_provider(
     """
     requested_provider = resolve_requested_provider(requested)
 
+    from nadia_cli.portal_activation import maybe_resolve_portal_runtime
+    _portal_runtime = maybe_resolve_portal_runtime(
+        requested_provider=requested_provider,
+        explicit_api_key=explicit_api_key,
+        explicit_base_url=explicit_base_url,
+    )
+    if _portal_runtime is not None:
+        return _portal_runtime
+
     if requested_provider == "moa":
         return {
             "provider": "moa",

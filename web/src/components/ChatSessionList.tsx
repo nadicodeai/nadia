@@ -18,9 +18,9 @@
  * keeps the chat context focused on switching conversations quickly.
  */
 
-import { Button } from "@/nadicodeai-ui";
-import { ListItem } from "@/nadicodeai-ui";
-import { Spinner } from "@/nadicodeai-ui";
+import { Button } from "@/nadicodeai-ui-compat";
+import { ListItem } from "@/nadicodeai-ui-compat";
+import { Spinner } from "@/nadicodeai-ui-compat";
 import { AlertCircle, MessageSquarePlus, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";

@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { Clock, Pause, Pencil, Play, Trash2, X, Zap } from "lucide-react";
-import { Badge } from "@/nadicodeai-ui";
-import { Button } from "@/nadicodeai-ui";
-import { Select, SelectOption } from "@/nadicodeai-ui";
-import { Spinner } from "@/nadicodeai-ui";
-import { H2 } from "@/nadicodeai-ui";
+import { Badge } from "@/nadicodeai-ui-compat";
+import { Button } from "@/nadicodeai-ui-compat";
+import { Select, SelectOption } from "@/nadicodeai-ui-compat";
+import { Spinner } from "@/nadicodeai-ui-compat";
+import { H2 } from "@/nadicodeai-ui-compat";
 import { api } from "@/lib/api";
 import type {
   CronJob,
@@ -33,17 +33,17 @@ import {
   type ScheduleBuilderState,
   type ScheduleDescribeStrings,
 } from "@/lib/schedule";
-import { useToast } from "@/nadicodeai-ui";
-import { useConfirmDelete } from "@/nadicodeai-ui";
+import { useToast } from "@/nadicodeai-ui-compat";
+import { useConfirmDelete } from "@/nadicodeai-ui-compat";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
-import { Toast } from "@/nadicodeai-ui";
-import { Card, CardContent } from "@/nadicodeai-ui";
-import { Input } from "@/nadicodeai-ui";
-import { Label } from "@/nadicodeai-ui";
+import { Toast } from "@/nadicodeai-ui-compat";
+import { Card, CardContent } from "@/nadicodeai-ui-compat";
+import { Input } from "@/nadicodeai-ui-compat";
+import { Label } from "@/nadicodeai-ui-compat";
 import { useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { PluginSlot } from "@/plugins";
-import { Segmented } from "@/nadicodeai-ui";
+import { Segmented } from "@/nadicodeai-ui-compat";
 import { AutomationBlueprints } from "@/components/AutomationBlueprints";
 import { cn, themedBody } from "@/lib/utils";
 

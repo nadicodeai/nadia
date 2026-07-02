@@ -18,23 +18,23 @@ import {
 import { api } from "@/lib/api";
 import type { EnvVarInfo } from "@/lib/api";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
-import { Toast } from "@/nadicodeai-ui";
-import { useConfirmDelete } from "@/nadicodeai-ui";
-import { useToast } from "@/nadicodeai-ui";
+import { Toast } from "@/nadicodeai-ui-compat";
+import { useConfirmDelete } from "@/nadicodeai-ui-compat";
+import { useToast } from "@/nadicodeai-ui-compat";
 import { OAuthProvidersCard } from "@/components/OAuthProvidersCard";
-import { Button } from "@/nadicodeai-ui";
-import { ListItem } from "@/nadicodeai-ui";
-import { Spinner } from "@/nadicodeai-ui";
+import { Button } from "@/nadicodeai-ui-compat";
+import { ListItem } from "@/nadicodeai-ui-compat";
+import { Spinner } from "@/nadicodeai-ui-compat";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/nadicodeai-ui";
-import { Badge } from "@/nadicodeai-ui";
-import { Input } from "@/nadicodeai-ui";
-import { Label } from "@/nadicodeai-ui";
+} from "@/nadicodeai-ui-compat";
+import { Badge } from "@/nadicodeai-ui-compat";
+import { Input } from "@/nadicodeai-ui-compat";
+import { Label } from "@/nadicodeai-ui-compat";
 import { useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { PluginSlot } from "@/plugins";

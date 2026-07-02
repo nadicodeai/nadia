@@ -56,6 +56,12 @@ export interface Theme {
   brand: ThemeBrand
   bannerLogo: string
   bannerHero: string
+  // True only for the legacy 'default' (upstream Nadia) skin. When the
+  // banner has no custom logo/hero, the block-letter wordmark and caduceus
+  // art (banner.ts) render only if this is true; Nadia skins with an empty
+  // banner render nothing instead of the old Nadia glyphs. Mirrors the
+  // Python CLI's `_skin_name == "default"` fallback gate.
+  legacyWordmark: boolean
 }
 
 // ── Color math ───────────────────────────────────────────────────────
@@ -256,7 +262,8 @@ export const DARK_THEME: Theme = {
   brand: BRAND,
 
   bannerLogo: NADIA_BANNER_LOGO,
-  bannerHero: NADIA_BANNER_HERO
+  bannerHero: NADIA_BANNER_HERO,
+  legacyWordmark: false
 }
 
 // Same shape as DARK_THEME so `fromSkin` still layers on top cleanly (#11300).
@@ -266,7 +273,8 @@ export const LIGHT_THEME: Theme = {
   brand: BRAND,
 
   bannerLogo: NADIA_BANNER_LOGO,
-  bannerHero: NADIA_BANNER_HERO
+  bannerHero: NADIA_BANNER_HERO,
+  legacyWordmark: false
 }
 
 const TRUE_RE = /^(?:1|true|yes|on)$/
@@ -439,7 +447,12 @@ export function fromSkin(
   bannerLogo = '',
   bannerHero = '',
   toolPrefix = '',
-  helpHeader = ''
+  helpHeader = '',
+  // Skin identity from the gateway. Absent → 'default', mirroring the Python
+  // CLI's getattr(skin, "name", "default"), so an unnamed skin keeps the
+  // legacy wordmark fallback and only explicitly-named non-default skins
+  // (e.g. 'nadia') suppress it.
+  skinName = 'default'
 ): Theme {
   const d = DEFAULT_THEME
   const c = (k: string) => colors[k]
@@ -508,7 +521,8 @@ export function fromSkin(
       },
 
       bannerLogo,
-      bannerHero
+      bannerHero,
+      legacyWordmark: skinName === 'default'
     },
     process.env,
     DEFAULT_LIGHT_MODE

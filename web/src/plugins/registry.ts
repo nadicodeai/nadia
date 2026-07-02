@@ -19,15 +19,15 @@ import React, {
 } from "react";
 import { api, fetchJSON, authedFetch, buildWsUrl, buildWsAuthParam } from "@/lib/api";
 import { cn, timeAgo, isoTimeAgo } from "@/lib/utils";
-import { Badge } from "@/nadicodeai-ui";
-import { Button } from "@/nadicodeai-ui";
-import { Checkbox } from "@/nadicodeai-ui";
-import { Select, SelectOption } from "@/nadicodeai-ui";
-import { Card, CardHeader, CardTitle, CardContent } from "@/nadicodeai-ui";
-import { Input } from "@/nadicodeai-ui";
-import { Label } from "@/nadicodeai-ui";
-import { Separator } from "@/nadicodeai-ui";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/nadicodeai-ui";
+import { Badge } from "@/nadicodeai-ui-compat";
+import { Button } from "@/nadicodeai-ui-compat";
+import { Checkbox } from "@/nadicodeai-ui-compat";
+import { Select, SelectOption } from "@/nadicodeai-ui-compat";
+import { Card, CardHeader, CardTitle, CardContent } from "@/nadicodeai-ui-compat";
+import { Input } from "@/nadicodeai-ui-compat";
+import { Label } from "@/nadicodeai-ui-compat";
+import { Separator } from "@/nadicodeai-ui-compat";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/nadicodeai-ui-compat";
 import { useI18n } from "@/i18n";
 import { registerSlot, PluginSlot } from "./slots";
 

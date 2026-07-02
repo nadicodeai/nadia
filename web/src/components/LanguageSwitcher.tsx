@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Check } from "lucide-react";
-import { Button } from "@/nadicodeai-ui";
-import { BottomSheet } from "@/nadicodeai-ui";
-import { Typography } from "@/nadicodeai-ui";
-import { useBelowBreakpoint } from "@/nadicodeai-ui";
+import { Button } from "@/nadicodeai-ui-compat";
+import { BottomSheet } from "@/nadicodeai-ui-compat";
+import { Typography } from "@/nadicodeai-ui-compat";
+import { useBelowBreakpoint } from "@/nadicodeai-ui-compat";
 import { useI18n } from "@/i18n/context";
 import { LOCALE_META } from "@/i18n";
 import type { Locale } from "@/i18n";

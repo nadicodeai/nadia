@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { Check, ShieldCheck, Trash2, Users, X } from "lucide-react";
-import { Badge } from "@/nadicodeai-ui";
-import { Button } from "@/nadicodeai-ui";
-import { Spinner } from "@/nadicodeai-ui";
-import { H2 } from "@/nadicodeai-ui";
+import { Badge } from "@/nadicodeai-ui-compat";
+import { Button } from "@/nadicodeai-ui-compat";
+import { Spinner } from "@/nadicodeai-ui-compat";
+import { H2 } from "@/nadicodeai-ui-compat";
 import { api } from "@/lib/api";
 import type { PairingResponse, PairingUser } from "@/lib/api";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
-import { useToast } from "@/nadicodeai-ui";
-import { useConfirmDelete } from "@/nadicodeai-ui";
-import { Toast } from "@/nadicodeai-ui";
-import { Card, CardContent } from "@/nadicodeai-ui";
+import { useToast } from "@/nadicodeai-ui-compat";
+import { useConfirmDelete } from "@/nadicodeai-ui-compat";
+import { Toast } from "@/nadicodeai-ui-compat";
+import { Card, CardContent } from "@/nadicodeai-ui-compat";
 import { usePageHeader } from "@/contexts/usePageHeader";
 
 function getUserKey(user: PairingUser): string {

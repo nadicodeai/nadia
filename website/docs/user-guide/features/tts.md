@@ -8,7 +8,7 @@ description: "Text-to-speech and voice message transcription across all platform
 
 Nadia Agent supports both text-to-speech output and voice message transcription across all messaging platforms.
 
-:::tip Nadia Subscribers
+:::tip NadicodeAI Subscribers
 If you have a paid [NadicodeAI Portal](https://portal.nadicodeai.com) subscription, OpenAI TTS is available through the **[Tool Gateway](tool-gateway.md)** without a separate OpenAI API key. New installs can run `nadia setup --portal` to log in and turn on every gateway tool at once; existing installs can pick **NadicodeAI Subscription** for just TTS via `nadia model` or `nadia tools`.
 :::
 

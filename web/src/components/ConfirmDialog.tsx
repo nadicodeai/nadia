@@ -1,4 +1,4 @@
-import { Button } from "@/nadicodeai-ui";
+import { Button } from "@/nadicodeai-ui-compat";
 import { AlertTriangle } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";

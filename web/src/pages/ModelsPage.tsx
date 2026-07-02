@@ -23,11 +23,11 @@ import type {
 } from "@/lib/api";
 import { timeAgo, cn, themedBody } from "@/lib/utils";
 import { formatTokenCount } from "@/lib/format";
-import { Button } from "@/nadicodeai-ui";
-import { Spinner } from "@/nadicodeai-ui";
-import { Stats } from "@/nadicodeai-ui";
-import { Card, CardContent, CardHeader, CardTitle } from "@/nadicodeai-ui";
-import { Badge } from "@/nadicodeai-ui";
+import { Button } from "@/nadicodeai-ui-compat";
+import { Spinner } from "@/nadicodeai-ui-compat";
+import { Stats } from "@/nadicodeai-ui-compat";
+import { Card, CardContent, CardHeader, CardTitle } from "@/nadicodeai-ui-compat";
+import { Badge } from "@/nadicodeai-ui-compat";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
 import { usePageHeader } from "@/contexts/usePageHeader";
@@ -98,15 +98,14 @@ function TokenBar({
   const total = input + output + cacheRead + reasoning;
   if (total === 0) return null;
 
-  // Segments carry a CSS color value (hex or `var(--token)`) rather than
-  // a Tailwind class so the input/output series can pick up the active
-  // dashboard's `--series-*-token` vars
-  // `ThemeSeriesColors`. The /60–/70 fade on the bar is applied via
+  // Segments carry a CSS color value (`var(--token)`) rather than a Tailwind
+  // class so each series picks up the active dashboard's `--series-*-token`
+  // vars. The /60–/70 fade on the bar is applied via
   // color-mix on the same value so themes don't need to ship two
   // separate hex literals.
   const segments: Array<{ color: string; label: string; value: number }> = [
-    { value: cacheRead, color: "#60a5fa", label: "Cache Read" }, // tailwind blue-400
-    { value: reasoning, color: "#c084fc", label: "Reasoning" }, // tailwind purple-400
+    { value: cacheRead, color: "var(--series-cache-token)", label: "Cache Read" },
+    { value: reasoning, color: "var(--series-reasoning-token)", label: "Reasoning" },
     { value: input, color: "var(--series-input-token)", label: "Input" },
     { value: output, color: "var(--series-output-token)", label: "Output" },
   ].filter((s) => s.value > 0);

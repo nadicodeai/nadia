@@ -22,8 +22,8 @@ import { WebLinksAddon } from "@xterm/addon-web-links";
 import { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
-import { Button } from "@/nadicodeai-ui";
-import { Typography } from "@/nadicodeai-ui";
+import { Button } from "@/nadicodeai-ui-compat";
+import { Typography } from "@/nadicodeai-ui-compat";
 import { cn } from "@/lib/utils";
 import { Copy, PanelRight, RotateCcw, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -55,14 +55,45 @@ function generateChannelId(scope?: string): string {
 
 // Colors for the terminal body.  The TUI's skin engine already paints the
 // content; the terminal chrome just needs to sit quietly inside the dashboard.
-// Keep the terminal canvas black in both light and dark dashboard modes.
-const TERMINAL_THEME_STATIC = {
-  foreground: "#f0e6d2",
-  cursor: "#f0e6d2",
-  cursorAccent: "#0d2626",
-  selectionBackground: "#f0e6d244",
-};
+// The canvas stays black in both light and dark dashboard modes, so the
+// foreground/cursor read light-on-black — we source them from the design
+// system's dark-surface ink/canvas tokens at runtime rather than hardcoding a
+// palette.  xterm's `theme` wants concrete color strings (not `var(...)`), so
+// the fallbacks below are used before the stylesheet resolves (SSR / tests).
 const TERMINAL_BACKGROUND = "#000000";
+const TERMINAL_THEME_FALLBACK = {
+  foreground: "#f5f7f4",
+  cursor: "#f5f7f4",
+  cursorAccent: "#101414",
+  selectionBackground: "#f5f7f444",
+};
+
+// Resolve the xterm palette from the design-system CSS custom properties on the
+// document root.  `--nc-dark-ink` / `--nc-dark-canvas` are the ink+canvas used
+// on dark surfaces, which is what the always-black terminal needs; the
+// selection highlight is that foreground at ~27% alpha (`…44`).  Re-reading on
+// demand lets a light/dark mode change pick up any token change the same way
+// `TERMINAL_BACKGROUND` is re-applied.
+function resolveTerminalTheme() {
+  if (typeof window === "undefined") {
+    return { ...TERMINAL_THEME_FALLBACK, background: TERMINAL_BACKGROUND };
+  }
+  const styles = getComputedStyle(document.documentElement);
+  const read = (name: string, fallback: string) =>
+    styles.getPropertyValue(name).trim() || fallback;
+  const foreground = read("--nc-dark-ink", TERMINAL_THEME_FALLBACK.foreground);
+  const cursorAccent = read(
+    "--nc-dark-canvas",
+    TERMINAL_THEME_FALLBACK.cursorAccent,
+  );
+  return {
+    foreground,
+    cursor: foreground,
+    cursorAccent,
+    selectionBackground: `${foreground}44`,
+    background: TERMINAL_BACKGROUND,
+  };
+}
 
 /**
  * CSS width for xterm font tiers.
@@ -189,10 +220,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
       : false,
   );
 
-  const terminalTheme = useMemo(
-    () => ({ ...TERMINAL_THEME_STATIC, background: TERMINAL_BACKGROUND }),
-    [],
-  );
+  const terminalTheme = useMemo(() => resolveTerminalTheme(), []);
 
   // The dashboard keeps ChatPage mounted persistently so the PTY survives tab
   // switches. That is great for ordinary /chat navigation, but it means query
@@ -895,11 +923,8 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
   useEffect(() => {
     const term = termRef.current;
     if (!term) return;
-    term.options.theme = {
-      ...TERMINAL_THEME_STATIC,
-      background: TERMINAL_BACKGROUND,
-    };
-  }, []);
+    term.options.theme = terminalTheme;
+  }, [terminalTheme]);
 
   // Layout:
   //   outer flex column — sits inside the dashboard's content area
@@ -1063,7 +1088,7 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
               "bottom-2 right-2 px-2 py-1 text-xs sm:bottom-3 sm:right-3 sm:px-2.5 sm:py-1.5",
               "lg:bottom-4 lg:right-4",
             )}
-            style={{ color: TERMINAL_THEME_STATIC.foreground }}
+            style={{ color: terminalTheme.foreground }}
           >
             <span className="inline-flex items-center gap-1.5">
               <Copy className="h-3 w-3 shrink-0" />

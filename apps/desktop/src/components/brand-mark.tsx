@@ -13,6 +13,14 @@ export function BrandMark({ className, ...props }: React.ComponentProps<'span'>)
       )}
       {...props}
     >
+      {/* Provenance (see apps/desktop/DESIGN.md "BrandMark provenance" for the
+         full re-derive recipe): public/nadia-face-badge.jpg is a hand-derived
+         head-and-shoulders, center-cropped, 256x256 JPEG re-encode of
+         @nadicodeai/design-system's `./assets/nadia` export
+         (src/assets/nadia.png, 1086x1448, sha256
+         31bfe2d2615069924484b63785223c6b37d6c0b2e845192ead3cdb4fe6c574d8 as of
+         design-system@0.2.0). Re-derive by hand whenever that source asset or
+         DS version changes; this crop is not auto-generated from it. */}
       <img
         alt="Nadia"
         className="size-full object-cover"

@@ -7,18 +7,18 @@ import {
   Terminal,
 } from "lucide-react";
 import { api, type OAuthProvider } from "@/lib/api";
-import { Button } from "@/nadicodeai-ui";
-import { CopyButton } from "@/nadicodeai-ui";
-import { Spinner } from "@/nadicodeai-ui";
+import { Button } from "@/nadicodeai-ui-compat";
+import { CopyButton } from "@/nadicodeai-ui-compat";
+import { Spinner } from "@/nadicodeai-ui-compat";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/nadicodeai-ui";
-import { Badge } from "@/nadicodeai-ui";
-import { ConfirmDialog } from "@/nadicodeai-ui";
+} from "@/nadicodeai-ui-compat";
+import { Badge } from "@/nadicodeai-ui-compat";
+import { ConfirmDialog } from "@/nadicodeai-ui-compat";
 import { OAuthLoginModal } from "@/components/OAuthLoginModal";
 import { useI18n } from "@/i18n";
 

@@ -1,3 +1,86 @@
+/**
+ * nadicodeai-ui-compat — legacy web UI compatibility adapter (R15).
+ * ==================================================================
+ *
+ * This is NOT the canonical `@nadicodeai/ui` package (R16). It is a local,
+ * surface-owned compatibility barrel that lets the migrated web dashboard keep
+ * compiling against the OLD `nous-research/ui` call-site contract while the app
+ * moves onto the public `@nadicodeai/ui` surface. Import it as
+ * `@/nadicodeai-ui-compat`; never treat it as a shadow Nadia UI package.
+ *
+ * Old contract it adapts
+ * ----------------------
+ * (The old package is written here as `nous-research/ui` without its npm `@`
+ * scope on purpose: `tools/check_no_nous_npm.py` fails the build on the
+ * `@`-scoped literal in any shipped file. Do not re-add the `@`.)
+ * Upstream imported concrete primitives and their prop shapes from
+ * `nous-research/ui`, including deep paths such as
+ * `nous-research/ui/ui/components/select`. Those call sites passed legacy props
+ * (`tone`, boolean `ghost/outlined/destructive`, `onCheckedChange`, native
+ * `<select>` option children, `mondwest`, ...). This file reconciles those old
+ * prop shapes onto the public `@nadicodeai/ui` surface. It does not fabricate
+ * unavailable package APIs and does not deep-import `@nadicodeai/ui` internals.
+ *
+ * Per-export classification (R15 — classify by shape, not by name)
+ * ----------------------------------------------------------------
+ * (1) MIGRATABLE DUPLICATE — a same-shaped `@nadicodeai/ui` export exists.
+ *     Exit: migrate call sites to the package export, then delete the local one.
+ *       Spinner                                     -> Spinner
+ *       Card/CardHeader/CardContent/CardTitle/
+ *         CardDescription                           -> Card family (package superset:
+ *                                                      CardFooter, CardAction, ...)
+ *       Input                                       -> Input
+ *       Label                                       -> Label
+ *       Separator                                   -> Separator
+ *       Tabs/TabsList/TabsTrigger/TabsContent       -> Tabs family
+ *       Dialog/DialogContent/DialogHeader/
+ *         DialogTitle/DialogDescription/DialogFooter -> Dialog family (package superset:
+ *                                                      DialogClose/Overlay/Portal/Trigger)
+ *
+ * (2) PROP-SHAPE ADAPTER — a `@nadicodeai/ui` equivalent exists but with an
+ *     incompatible contract. Exit: delete when all call sites adopt the native API.
+ *       Badge (tone)                                -> Badge / badgeVariants (variant)
+ *       Button (ghost/outlined/destructive booleans) -> Button / buttonVariants (variant)
+ *       Checkbox (onCheckedChange)                  -> Checkbox
+ *       Switch (onCheckedChange)                    -> Switch
+ *       Select (native <select>, onValueChange)     -> NativeSelect (NativeSelectOption,
+ *                                                      NativeSelectOptGroup)
+ *       Segmented/SegmentedOption                   -> ToggleGroup / ToggleGroupItem
+ *       ListItem                                    -> Item family (Item, ItemMedia,
+ *                                                      ItemContent, ...)
+ *       Stats                                       -> StatBlock/StatBlockFigure/
+ *                                                      StatBlockLabel + StatsBand
+ *       ConfirmDialog                               -> AlertDialog (alert-dialog)
+ *       BottomSheet                                 -> Sheet / Drawer
+ *       Toast/useToast/ToastState                   -> Toaster (sonner)
+ *
+ * (3) SURFACE-OWNED LOCAL — no `@nadicodeai/ui` target. No exit path:
+ *     surface-owned (R4). Promotion to the package only via R3, never deletion.
+ *       Typography         (legacy no-op `mondwest` prop — see below)
+ *       H2                 (legacy no-op `mondwest`/`variant` props — see below)
+ *       FilterGroup
+ *       CopyButton
+ *       CommandBlock
+ *       useConfirmDelete   (hook)
+ *       useBelowBreakpoint (hook)
+ *       useGpuTier         (hook)
+ *
+ * Durable plugin-SDK commitment (NOT a migratable duplicate)
+ * ----------------------------------------------------------
+ * `SelectOption` and its `SelectItem` alias share a name with package exports
+ * but wrap an INCOMPATIBLE native-`<option>` API, so they are not migratable
+ * duplicates. They are load-bearing on the `window.__NADIA_PLUGIN_SDK__`
+ * global: `web/src/plugins/registry.ts` publishes `SelectOption` on it for
+ * third-party plugins. This alias contract MUST NEVER be dropped; it has no
+ * exit path.
+ *
+ * Intentionally-ignored legacy props
+ * ----------------------------------
+ * `Typography`'s `mondwest` prop and `H2`'s `mondwest`/`variant` props are dead
+ * no-ops, kept only so old `nous-research/ui` call sites still type-check. They
+ * are deliberately ignored (destructured to `_mondwest`/`_variant`), NOT
+ * removed — deleting them would break those call sites.
+ */
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { Check, Copy, LoaderCircle, X } from "lucide-react";

@@ -1,4 +1,4 @@
-import { Typography } from "@/nadicodeai-ui";
+import { Typography } from "@/nadicodeai-ui-compat";
 import type { StatusResponse } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n";

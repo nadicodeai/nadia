@@ -91,10 +91,13 @@ export function Banner({ maxWidth, t }: { maxWidth?: number; t: Theme }) {
     return null
   }
 
-  const logoLines = logo(t.color, t.bannerLogo || undefined)
+  const logoLines = logo(t.color, t.bannerLogo || undefined, t.legacyWordmark)
   const logoW = t.bannerLogo ? artWidth(logoLines) : LOGO_WIDTH
 
-  if (cols >= logoW + 2) {
+  // Only take the wide art layout when there is actually art to draw. A Nadia
+  // skin with an empty bannerLogo yields no lines (legacyWordmark false), so
+  // fall through to the compact brand-name banner instead of the old wordmark.
+  if (logoLines.length > 0 && cols >= logoW + 2) {
     return (
       <Box flexDirection="column" marginBottom={1}>
         <ArtLines lines={logoLines} />
@@ -161,9 +164,12 @@ const TOOLSETS_MAX = 8
 export function SessionPanel({ info, maxWidth, sid, t }: SessionPanelProps) {
   const term = useStdout().stdout?.columns ?? 100
   const cols = Math.max(20, Math.min(term, maxWidth ?? term))
-  const heroLines = caduceus(t.color, t.bannerHero || undefined)
+  const heroLines = caduceus(t.color, t.bannerHero || undefined, t.legacyWordmark)
   const leftW = Math.min((artWidth(heroLines) || CADUCEUS_WIDTH) + 4, Math.floor(cols * 0.4))
-  const wide = cols >= 90 && leftW + 40 < cols
+  // Drop the hero column entirely when there is no hero art (a Nadia skin with
+  // an empty bannerHero and legacyWordmark false), rather than reserving an
+  // empty caduceus-width gutter.
+  const wide = heroLines.length > 0 && cols >= 90 && leftW + 40 < cols
   const w = Math.max(20, wide ? cols - leftW - 14 : cols - 12)
   const lineBudget = Math.max(12, w - 2)
   const strip = (s: string) => (s.endsWith('_tools') ? s.slice(0, -6) : s)

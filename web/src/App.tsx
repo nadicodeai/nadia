@@ -55,14 +55,14 @@ import {
   Zap,
 } from "lucide-react";
 import { ThemeModeSwitcher, Toaster } from "@nadicodeai/ui";
-import { Button } from "@/nadicodeai-ui";
-import { Spinner } from "@/nadicodeai-ui";
-import { Typography } from "@/nadicodeai-ui";
+import { Button } from "@/nadicodeai-ui-compat";
+import { Spinner } from "@/nadicodeai-ui-compat";
+import { Typography } from "@/nadicodeai-ui-compat";
 import { cn } from "@/lib/utils";
 import { Backdrop } from "@/components/Backdrop";
 import { SidebarFooter } from "@/components/SidebarFooter";
 import { SidebarStatusStrip, gatewayLine } from "@/components/SidebarStatusStrip";
-import { useBelowBreakpoint } from "@/nadicodeai-ui";
+import { useBelowBreakpoint } from "@/nadicodeai-ui-compat";
 import { useSidebarStatus } from "@/hooks/useSidebarStatus";
 import { AuthWidget } from "@/components/AuthWidget";
 import { PageHeaderProvider } from "@/contexts/PageHeaderProvider";

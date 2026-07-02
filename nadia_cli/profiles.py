@@ -123,6 +123,7 @@ _CLONE_ALL_HISTORY_EXCLUDE_ROOT: frozenset[str] = frozenset({
     "backups",
     "state-snapshots",
     "checkpoints",
+    "portal-activation",  # NadicodeAI portal identity/credentials (never clone)
 })
 
 # Marker file written by `nadia profile create --no-skills`.  When present in
@@ -221,6 +222,7 @@ _DEFAULT_EXPORT_EXCLUDE_ROOT = frozenset({
     "image_cache", "audio_cache", "document_cache",
     "browser_screenshots", "checkpoints",
     "sandboxes",
+    "portal-activation",  # NadicodeAI portal identity/credentials (never export)
     "logs",                 # gateway logs
 })
 

@@ -1,4 +1,4 @@
-import { useGpuTier } from "@/nadicodeai-ui";
+import { useGpuTier } from "@/nadicodeai-ui-compat";
 
 const fillerBgUrl =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop stop-color='%230f3d34' stop-opacity='.28'/%3E%3Cstop offset='1' stop-color='%230a0f0d' stop-opacity='.08'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' fill='url(%23g)'/%3E%3C/svg%3E";

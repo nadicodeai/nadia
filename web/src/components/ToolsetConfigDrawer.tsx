@@ -7,14 +7,14 @@ import type {
   ToolsetInfo,
   ToolsetProvider,
 } from "@/lib/api";
-import { useToast } from "@/nadicodeai-ui";
-import { Button } from "@/nadicodeai-ui";
-import { Input } from "@/nadicodeai-ui";
-import { Label } from "@/nadicodeai-ui";
-import { Badge } from "@/nadicodeai-ui";
-import { Switch } from "@/nadicodeai-ui";
-import { Spinner } from "@/nadicodeai-ui";
-import { Toast } from "@/nadicodeai-ui";
+import { useToast } from "@/nadicodeai-ui-compat";
+import { Button } from "@/nadicodeai-ui-compat";
+import { Input } from "@/nadicodeai-ui-compat";
+import { Label } from "@/nadicodeai-ui-compat";
+import { Badge } from "@/nadicodeai-ui-compat";
+import { Switch } from "@/nadicodeai-ui-compat";
+import { Spinner } from "@/nadicodeai-ui-compat";
+import { Toast } from "@/nadicodeai-ui-compat";
 import { cn, themedBody } from "@/lib/utils";
 
 interface Props {

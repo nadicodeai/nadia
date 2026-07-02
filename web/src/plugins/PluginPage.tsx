@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { Spinner } from "@/nadicodeai-ui";
+import { Spinner } from "@/nadicodeai-ui-compat";
 import {
   getPluginComponent,
   getPluginLoadError,

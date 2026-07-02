@@ -5,7 +5,7 @@ import type { SlashCommand } from '../types.js'
 
 export const creditsCommands: SlashCommand[] = [
   {
-    help: 'Show Nadia credit balance and top up',
+    help: 'Show NadicodeAI credit balance and top up',
     name: 'credits',
     run: (_arg, ctx) => {
       ctx.gateway
@@ -18,7 +18,7 @@ export const creditsCommands: SlashCommand[] = [
               return
             }
 
-            const lines = ['💳 Nadia credits', ...view.balance_lines]
+            const lines = ['💳 NadicodeAI credits', ...view.balance_lines]
 
             if (view.identity_line) {
               lines.push('', view.identity_line)

@@ -1,8 +1,8 @@
 import { AlertTriangle, PowerOff, Radio, Wifi, WifiOff } from "lucide-react";
 import type { PlatformStatus } from "@/lib/api";
 import { isoTimeAgo } from "@/lib/utils";
-import { Badge } from "@/nadicodeai-ui";
-import { Card, CardContent, CardHeader, CardTitle } from "@/nadicodeai-ui";
+import { Badge } from "@/nadicodeai-ui-compat";
+import { Card, CardContent, CardHeader, CardTitle } from "@/nadicodeai-ui-compat";
 import { useI18n } from "@/i18n";
 
 export function PlatformsCard({ platforms }: PlatformsCardProps) {

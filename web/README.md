@@ -81,20 +81,20 @@ Read before adding or editing UI styles. These rules keep the dashboard legible 
 
 ### Fonts
 
-Typography is **opt-in per surface**, not global on layout shells — the app shell and page header keep their original theme/expanded fonts; Mondwest applies only where explicitly set.
+The dashboard ships the **Geist** type family — `--theme-font-sans` resolves to Geist (Inter / system fallbacks) and `--theme-font-mono` to Geist Mono (JetBrains Mono fallback), both declared in `index.css`. Typography is **opt-in per surface**, not global on layout shells — the app shell and page header keep the theme sans / `font-expanded` fonts; brand chrome and themed body are applied per component through the `themed*` helpers in `@/lib/utils`.
 
 | Tier | Classes | Use for |
 |------|---------|---------|
-| Brand chrome | `font-mondwest text-display` (or `themedChrome`) | Sidebar nav, card section headers (`CardTitle`), Segmented filter buttons, filter panel headings |
-| Themed body | `font-mondwest normal-case` (or `themedBody`) | Card content (`Card`, `CardDescription`), session/platform rows, analytics tables — **scoped to the component** |
+| Brand chrome | `themedChrome` (= `text-display-sm`) | Sidebar nav, card section headers (`CardTitle`), Segmented filter buttons, filter panel headings |
+| Themed body | `themedBody` (= `normal-case`) | Card content (`Card`, `CardDescription`), session/platform rows, analytics tables — **scoped to the component** |
 | Page chrome | `font-expanded` | Page header h1 (`PageHeaderProvider`) — sentence case, not `text-display` |
-| Wordmark | `Typography` + size/tracking only | Sidebar/mobile “Nadia Agent” — mixed case, no Mondwest, no `text-display` |
+| Wordmark | `Typography` + size/tracking only | Sidebar/mobile “Nadia Agent” — mixed case, no `text-display` |
 | Technical | `font-mono-ui` / `font-mono` / `font-courier` | Model slugs, env keys, schedules, YAML, repo URLs |
 
 - Do **not** put `themedBody` or `themedFont` on `<main>`, `App`, or other layout wrappers — it overrides component-scoped styles.
 - **`Card`** applies `themedBody`; **`CardTitle`** uses `text-display` (uppercase chrome); **`CardDescription`** uses `themedBody`.
 - **`NouiTypography`** defaults to `font-sans` unless a font prop is passed.
-- Do **not** use raw `font-sans` or `font-display` (theme sans variable) on new dashboard UI — prefer Mondwest tiers above where brand-appropriate.
+- Do **not** use raw `font-sans` or `font-display` (theme sans variable) on new dashboard UI — prefer the `themed*` chrome/body helpers above where brand-appropriate.
 
 ### Color tokens
 

@@ -23,9 +23,9 @@
  * terminal pane keeps working unimpaired.
  */
 
-import { Button } from "@/nadicodeai-ui";
-import { Badge } from "@/nadicodeai-ui";
-import { Card } from "@/nadicodeai-ui";
+import { Button } from "@/nadicodeai-ui-compat";
+import { Badge } from "@/nadicodeai-ui-compat";
+import { Card } from "@/nadicodeai-ui-compat";
 
 import { ModelPickerDialog } from "@/components/ModelPickerDialog";
 import { ModelReloadConfirm } from "@/components/ModelReloadConfirm";

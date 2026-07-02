@@ -1,4 +1,4 @@
-import { ConfirmDialog } from "@/nadicodeai-ui";
+import { ConfirmDialog } from "@/nadicodeai-ui-compat";
 import { useI18n } from "@/i18n";
 
 export function DeleteConfirmDialog({

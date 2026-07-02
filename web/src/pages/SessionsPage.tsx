@@ -41,17 +41,17 @@ import type {
 import { timeAgo } from "@/lib/utils";
 import { Markdown } from "@/components/Markdown";
 import { PlatformsCard } from "@/components/PlatformsCard";
-import { Toast } from "@/nadicodeai-ui";
-import { Button } from "@/nadicodeai-ui";
-import { Checkbox } from "@/nadicodeai-ui";
-import { ListItem } from "@/nadicodeai-ui";
-import { Segmented } from "@/nadicodeai-ui";
-import { Spinner } from "@/nadicodeai-ui";
-import { Badge } from "@/nadicodeai-ui";
-import { Card, CardContent, CardHeader, CardTitle } from "@/nadicodeai-ui";
+import { Toast } from "@/nadicodeai-ui-compat";
+import { Button } from "@/nadicodeai-ui-compat";
+import { Checkbox } from "@/nadicodeai-ui-compat";
+import { ListItem } from "@/nadicodeai-ui-compat";
+import { Segmented } from "@/nadicodeai-ui-compat";
+import { Spinner } from "@/nadicodeai-ui-compat";
+import { Badge } from "@/nadicodeai-ui-compat";
+import { Card, CardContent, CardHeader, CardTitle } from "@/nadicodeai-ui-compat";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
-import { useConfirmDelete } from "@/nadicodeai-ui";
-import { Input } from "@/nadicodeai-ui";
+import { useConfirmDelete } from "@/nadicodeai-ui-compat";
+import { Input } from "@/nadicodeai-ui-compat";
 import {
   Dialog,
   DialogContent,
@@ -59,9 +59,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/nadicodeai-ui";
+} from "@/nadicodeai-ui-compat";
 import { useSystemActions } from "@/contexts/useSystemActions";
-import { useToast } from "@/nadicodeai-ui";
+import { useToast } from "@/nadicodeai-ui-compat";
 import { useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { PluginSlot } from "@/plugins";

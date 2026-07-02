@@ -29,7 +29,7 @@ Prices are FAL's pricing at time of writing; check [fal.ai](https://fal.ai/) for
 
 ## Setup
 
-:::tip Nadia Subscribers
+:::tip NadicodeAI Subscribers
 If you have a paid [NadicodeAI Portal](https://portal.nadicodeai.com) subscription, you can use image generation through the **[Tool Gateway](tool-gateway.md)** without a FAL API key. Your model selection persists across both paths. New installs can run `nadia setup --portal` to log in and turn on every gateway tool at once; existing installs can pick **NadicodeAI Subscription** as the image-gen backend via `nadia tools`.
 
 If the managed gateway returns `HTTP 4xx` for a specific model, that model isn't yet proxied on the portal side — the agent will tell you so, with remediation steps (set `FAL_KEY` for direct access, or pick a different model).
@@ -165,7 +165,7 @@ If upscaling fails (network issue, rate limit), the original image is returned a
 
 1. **Model resolution** — `_resolve_fal_model()` reads `image_gen.model` from `config.yaml`, falls back to the `FAL_IMAGE_MODEL` env var, then to `fal-ai/flux-2/klein/9b`.
 2. **Payload building** — `_build_fal_payload()` translates your `aspect_ratio` into the model's native format (preset enum, aspect-ratio enum, or GPT literal), merges the model's default params, applies any caller overrides, then filters to the model's `supports` whitelist so unsupported keys are never sent.
-3. **Submission** — `_submit_fal_request()` routes via direct FAL credentials or the managed Nadia gateway.
+3. **Submission** — `_submit_fal_request()` routes via direct FAL credentials or the managed NadicodeAI gateway.
 4. **Upscaling** — runs only if the model's metadata has `upscale: True`.
 5. **Delivery** — final image URL returned to the agent, which emits a `MEDIA:<url>` tag that platform adapters convert to native media.
 

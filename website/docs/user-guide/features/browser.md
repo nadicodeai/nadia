@@ -33,7 +33,7 @@ Key capabilities:
 
 ## Setup
 
-:::tip Nadia Subscribers
+:::tip NadicodeAI Subscribers
 If you have a paid [NadicodeAI Portal](https://portal.nadicodeai.com) subscription, you can use browser automation through the **[Tool Gateway](tool-gateway.md)** without any separate API keys. New installs can run `nadia setup --portal` to log in and turn on every gateway tool at once; existing installs can pick **NadicodeAI Subscription** as the browser provider via `nadia model` or `nadia tools`.
 :::
 

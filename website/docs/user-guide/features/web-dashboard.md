@@ -310,7 +310,7 @@ block in `config.yaml` that `nadia mcp` reads from.
 - **Remove** — delete a server from the config
 - Secret-shaped env values are redacted in the list view
 
-**Catalog:** browse the Nadia-approved MCP servers (the bundled `optional-mcps/`
+**Catalog:** browse the curated MCP servers (the bundled `optional-mcps/`
 catalog) and install any of them with one click. Entries that need API keys
 prompt for them inline; the values go to `.env`. This is the same catalog
 `nadia mcp catalog` / `nadia mcp install` use.
@@ -518,7 +518,7 @@ same auth gate as the rest of `/api/`.
 | `POST /api/mcp/servers/{name}/test` | Connect, list tools, disconnect |
 | `PUT /api/mcp/servers/{name}/enabled` | Enable / disable a server |
 | `DELETE /api/mcp/servers/{name}` | Remove a server |
-| `GET /api/mcp/catalog` | Browse the Nadia-approved MCP catalog |
+| `GET /api/mcp/catalog` | Browse the curated MCP catalog |
 | `POST /api/mcp/catalog/install` | Install a catalog entry (with required env) |
 | `GET /api/messaging/platforms` | List every messaging channel with status + per-platform setup fields |
 | `PUT /api/messaging/platforms/{id}` | Configure a channel. Body: `{enabled?, env?, clear_env?}` (env writes to `.env`, enabled to `config.yaml`) |
@@ -583,7 +583,7 @@ The gate is on if and only if:
 
 ### Fail-closed semantics
 
-If the gate would engage but **no** `DashboardAuthProvider` is registered (no Nadia plugin, no custom plugin), `nadia dashboard` refuses to bind with an explicit error message. There is no "default-deny but accept everything" fallback — a misconfigured gated dashboard never starts.
+If the gate would engage but **no** `DashboardAuthProvider` is registered (no NadicodeAI Portal plugin, no custom plugin), `nadia dashboard` refuses to bind with an explicit error message. There is no "default-deny but accept everything" fallback — a misconfigured gated dashboard never starts.
 
 When you run `nadia dashboard --host 0.0.0.0` **interactively** (a real terminal) and no provider is configured yet, Nadia doesn't just fail — it offers to set one up on the spot: pick **username & password** (writes `dashboard.basic_auth` to `config.yaml` and you're running in seconds) or **OAuth** (points you at `nadia dashboard register`). Non-interactive callers — Docker/s6, CI, piped runs — skip the prompt and hit the fail-closed error above, so an unattended deploy still never starts without auth.
 
@@ -591,13 +591,13 @@ When you run `nadia dashboard --host 0.0.0.0` **interactively** (a real terminal
 
 The bundled `plugins/dashboard_auth/nadia` plugin is **always installed** and auto-loaded. It auto-registers a `DashboardAuthProvider` named `nous` when a client ID is configured.
 
-Because every login is verified against NadicodeAI Portal and protected by your NadicodeAI account, **the Nadia provider is the one suitable for exposing a dashboard to the public internet.**
+Because every login is verified against NadicodeAI Portal and protected by your NadicodeAI account, **the NadicodeAI Portal provider is the one suitable for exposing a dashboard to the public internet.**
 
 #### Registering a dashboard
 
-To use the Nadia provider you need an OAuth client ID (shape `agent:{id}`). There are two ways to get one:
+To use the NadicodeAI Portal provider you need an OAuth client ID (shape `agent:{id}`). There are two ways to get one:
 
-- **CLI — `nadia dashboard register`.** Run it on the host where the dashboard lives. It resolves your existing Nadia login (run `nadia setup` first if you're not logged in), registers a self-hosted OAuth client with the Portal, and writes `NADIA_DASHBOARD_OAUTH_CLIENT_ID` into `~/.nadia/.env` for you. Optional flags: `--name` (a human-readable label, otherwise auto-generated) and `--redirect-uri` (a public HTTPS callback URL for an internet-facing host).
+- **CLI — `nadia dashboard register`.** Run it on the host where the dashboard lives. It resolves your existing NadicodeAI Portal login (run `nadia setup` first if you're not logged in), registers a self-hosted OAuth client with the Portal, and writes `NADIA_DASHBOARD_OAUTH_CLIENT_ID` into `~/.nadia/.env` for you. Optional flags: `--name` (a human-readable label, otherwise auto-generated) and `--redirect-uri` (a public HTTPS callback URL for an internet-facing host).
 
   ```bash
   nadia dashboard register
@@ -649,9 +649,9 @@ networks).
 
 #### Worked example: NadicodeAI Portal
 
-From a logged-in Nadia install to a Nadia-gated dashboard in three steps.
+From a logged-in Nadia install to a NadicodeAI Portal-gated dashboard in three steps.
 
-**1. Log in and register the dashboard.** `nadia dashboard register` uses your existing Nadia login to provision an OAuth client and writes `NADIA_DASHBOARD_OAUTH_CLIENT_ID` into `~/.nadia/.env` for you:
+**1. Log in and register the dashboard.** `nadia dashboard register` uses your existing NadicodeAI Portal login to provision an OAuth client and writes `NADIA_DASHBOARD_OAUTH_CLIENT_ID` into `~/.nadia/.env` for you:
 
 ```bash
 nadia setup            # if you're not already logged into NadicodeAI Portal
@@ -688,7 +688,7 @@ The username/password provider is intended for self-hosted / on-prem / homelab d
 
 #### Configuration
 
-Like the Nadia provider, it reads from `config.yaml` (canonical) with environment variables winning when set non-empty. It activates only when `username` plus either `password_hash` (preferred) or `password` are configured — otherwise it's a no-op, so OAuth users and loopback/`--insecure` operators are unaffected.
+Like the NadicodeAI Portal provider, it reads from `config.yaml` (canonical) with environment variables winning when set non-empty. It activates only when `username` plus either `password_hash` (preferred) or `password` are configured — otherwise it's a no-op, so OAuth users and loopback/`--insecure` operators are unaffected.
 
 **`config.yaml`:**
 
@@ -765,7 +765,7 @@ If you run your own identity provider, the bundled `plugins/dashboard_auth/self_
 
 > **Authentik · Keycloak · Zitadel · Authelia · Auth0 · Okta · Google · …**
 
-Like the Nadia provider, it auto-loads and only registers itself once it's configured, so it's a no-op for loopback / `--insecure` dashboards.
+Like the NadicodeAI Portal provider, it auto-loads and only registers itself once it's configured, so it's a no-op for loopback / `--insecure` dashboards.
 
 #### Configuration
 

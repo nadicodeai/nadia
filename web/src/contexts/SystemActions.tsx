@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import type { ActionStatusResponse } from "@/lib/api";
-import { Toast } from "@/nadicodeai-ui";
+import { Toast } from "@/nadicodeai-ui-compat";
 import { useI18n } from "@/i18n";
 import {
   SystemActionsContext,

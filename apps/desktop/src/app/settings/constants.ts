@@ -30,7 +30,7 @@ export const PROVIDER_GROUPS: ProviderPrefix[] = [
   {
     prefix: 'NOUS_',
     name: 'NadicodeAI Portal',
-    description: 'Hosted Nadia & Nadia-trained models',
+    description: 'Hosted Nadia & NadicodeAI-trained models',
     docsUrl: 'https://portal.nadicodeai.com',
     priority: 0
   },

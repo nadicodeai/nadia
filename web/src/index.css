@@ -74,6 +74,11 @@
      legend swatches). */
   --series-input-token: var(--nc-link);
   --series-output-token: var(--nc-cyan-deep);
+  /* Cache-read + reasoning series have no design-system semantic hue yet, so
+     these are pipeline-local placeholders (NOT @nadicodeai/design-system
+     tokens) — identical in light and dark until the DS ships a chart palette. */
+  --series-cache-token: #60a5fa;
+  --series-reasoning-token: #c084fc;
   --dashboard-text-secondary: var(--nc-body);
   --dashboard-text-tertiary: var(--nc-muted);
   --dashboard-success: var(--nc-success);
@@ -91,6 +96,8 @@
   --noise-opacity-mul: 0.35;
   --series-input-token: var(--nc-dark-link);
   --series-output-token: var(--nc-dark-cyan);
+  --series-cache-token: #60a5fa;
+  --series-reasoning-token: #c084fc;
   --dashboard-text-secondary: var(--nc-dark-body);
   --dashboard-text-tertiary: var(--nc-dark-muted);
   --dashboard-success: var(--nc-dark-link);

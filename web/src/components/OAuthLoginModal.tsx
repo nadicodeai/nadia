@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { ExternalLink, X, Check } from "lucide-react";
-import { Button } from "@/nadicodeai-ui";
-import { CopyButton } from "@/nadicodeai-ui";
-import { Spinner } from "@/nadicodeai-ui";
-import { H2 } from "@/nadicodeai-ui";
+import { Button } from "@/nadicodeai-ui-compat";
+import { CopyButton } from "@/nadicodeai-ui-compat";
+import { Spinner } from "@/nadicodeai-ui-compat";
+import { H2 } from "@/nadicodeai-ui-compat";
 import { api, type OAuthProvider, type OAuthStartResponse } from "@/lib/api";
-import { Input } from "@/nadicodeai-ui";
+import { Input } from "@/nadicodeai-ui-compat";
 import { useI18n } from "@/i18n";
 import { cn, themedBody } from "@/lib/utils";
 

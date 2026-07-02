@@ -20,7 +20,7 @@
  * badge reads from — so this writes the profile the sidebar is showing.
  */
 
-import { Select, SelectOption } from "@/nadicodeai-ui";
+import { Select, SelectOption } from "@/nadicodeai-ui-compat";
 import { Brain } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 

@@ -6,6 +6,11 @@ export interface GatewaySkin {
   branding?: Record<string, string>
   colors?: Record<string, string>
   help_header?: string
+  // Skin identity from the gateway (`resolve_skin()` → gateway.ready /
+  // skin.changed). Absent on older gateways → treated as the legacy
+  // 'default' skin, mirroring the Python CLI's getattr(skin, "name",
+  // "default"). Drives the legacy-wordmark banner fallback in theme.ts.
+  name?: string
   tool_prefix?: string
 }
 

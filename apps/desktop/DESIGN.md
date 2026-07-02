@@ -118,6 +118,18 @@ Notes:
   It replaced scattered Sparkles glyphs in updates / onboarding / about. Use it
   for hero/brand moments; don't reintroduce decorative star/sparkle icons.
 
+  **BrandMark provenance.** `public/nadia-face-badge.jpg` is *not* generated
+  at build time — it's a hand-derived, checked-in crop of
+  `@nadicodeai/design-system`'s canonical `./assets/nadia` export
+  (`src/assets/nadia.png`, 1086x1448). Re-derive recipe: take the DS's
+  `assets/nadia.png`, center-crop to a square head-and-shoulders framing,
+  resize to 256x256, and re-encode as JPEG. Last derived from
+  `src/assets/nadia.png` sha256
+  `31bfe2d2615069924484b63785223c6b37d6c0b2e845192ead3cdb4fe6c574d8`
+  (`@nadicodeai/design-system@0.2.0`). If the DS bumps that asset or version,
+  re-derive the crop by hand and update this hash/version pair — there is no
+  automated link between the two.
+
 ## Motion
 
 - Quick, functional transitions (~100ms on controls). Respect

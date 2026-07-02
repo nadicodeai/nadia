@@ -1246,8 +1246,8 @@ Manage MCP (Model Context Protocol) server configurations and run Nadia as an MC
 
 | Subcommand | Description |
 |------------|-------------|
-| *(none)* or `picker` | Interactive catalog picker — browse Nadia-approved MCPs and install/enable/disable. |
-| `catalog` | List Nadia-approved MCPs (plain text, scriptable). |
+| *(none)* or `picker` | Interactive catalog picker — browse curated MCPs and install/enable/disable. |
+| `catalog` | List curated MCPs (plain text, scriptable). |
 | `install <name>` | Install a catalog entry (e.g. `nadia mcp install n8n`). |
 | `serve [-v\|--verbose]` | Run Nadia as an MCP server — expose conversations to other agents. |
 | `add <name> [--url URL] [--command CMD] [--auth oauth\|header] [--args ...]` | Add a custom MCP server with automatic tool discovery. `--args` passes the remaining argv to the stdio command, so put it last. |

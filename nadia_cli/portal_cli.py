@@ -201,6 +201,9 @@ def portal_command(args) -> int:
         return _cmd_status(args)
     if sub == "open":
         return _cmd_open(args)
+    if sub == "connect":
+        from nadia_cli.portal_activation import portal_connect_command
+        return portal_connect_command(args)
     if sub == "tools":
         return _cmd_tools(args)
     print(f"Unknown portal subcommand: {sub}", file=sys.stderr)
@@ -241,5 +244,8 @@ def add_parser(subparsers) -> None:
         "tools",
         help="List Tool Gateway tools and which are routed via Nadia",
     )
+
+    from nadia_cli.portal_activation import add_connect_parser
+    add_connect_parser(portal_sub)
 
     portal_parser.set_defaults(func=portal_command)

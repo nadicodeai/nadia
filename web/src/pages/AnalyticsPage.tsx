@@ -17,10 +17,10 @@ import type {
   AnalyticsSkillEntry,
 } from "@/lib/api";
 import { timeAgo } from "@/lib/utils";
-import { Button } from "@/nadicodeai-ui";
-import { Spinner } from "@/nadicodeai-ui";
-import { Stats } from "@/nadicodeai-ui";
-import { Card, CardContent, CardHeader, CardTitle } from "@/nadicodeai-ui";
+import { Button } from "@/nadicodeai-ui-compat";
+import { Spinner } from "@/nadicodeai-ui-compat";
+import { Stats } from "@/nadicodeai-ui-compat";
+import { Card, CardContent, CardHeader, CardTitle } from "@/nadicodeai-ui-compat";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { useI18n } from "@/i18n";
 import { PluginSlot } from "@/plugins";
