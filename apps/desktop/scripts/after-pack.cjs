@@ -8,10 +8,19 @@
  * to the stock "Electron" icon/name (the bug when the stamp lived only in
  * install.ps1, which the update path doesn't use).
  *
- * Windows-only: rcedit edits PE resources, irrelevant on macOS/Linux where the
- * app identity comes from the bundle Info.plist / desktop entry. Best-effort:
- * a stamp failure must never fail an otherwise-good build (worst case is the
- * stock icon, not a broken app), so we log and resolve rather than throw.
+ * macOS: unsigned release DMGs still need a coherent bundle signature. The
+ * Electron binary carries an inherited ad-hoc signature, but the assembled app
+ * bundle has no sealed resources. When the app is launched with quarantine,
+ * LaunchServices reports it as damaged. If no real signing identity is
+ * configured, apply a fresh deep ad-hoc signature to the completed .app before
+ * electron-builder creates the DMG/zip. This mirrors the installer/self-update
+ * relaunch fixup and is skipped for real signed builds.
+ *
+ * Windows: rcedit edits PE resources.
+ *
+ * Best-effort: a cosmetic Windows stamp failure must never fail an otherwise
+ * good build, but a macOS ad-hoc signature failure must fail because it creates
+ * an unusable customer artifact.
  *
  * electron-builder passes a context with:
  *   - electronPlatformName: 'win32' | 'darwin' | 'linux'
@@ -20,10 +29,44 @@
  */
 
 const path = require('node:path')
+const { execFile } = require('node:child_process')
 
 const { stampExeIdentity } = require('./set-exe-identity.cjs')
 
+function run(command, args) {
+  return new Promise((resolve, reject) => {
+    execFile(command, args, (error, stdout, stderr) => {
+      if (error) {
+        const detail = stderr?.trim() || stdout?.trim() || error.message
+        reject(new Error(`${command} ${args.join(' ')} failed: ${detail}`))
+        return
+      }
+      resolve()
+    })
+  })
+}
+
+function hasRealMacSigningConfig() {
+  return Boolean(process.env.CSC_LINK || process.env.APPLE_SIGNING_IDENTITY)
+}
+
+async function signMacAppAdHoc(context) {
+  const productName = context.packager?.appInfo?.productFilename || 'Nadia'
+  const app = path.join(context.appOutDir, `${productName}.app`)
+
+  await run('xattr', ['-cr', app])
+  await run('codesign', ['--force', '--deep', '--sign', '-', app])
+}
+
 exports.default = async function afterPack(context) {
+  if (context.electronPlatformName === 'darwin') {
+    if (!hasRealMacSigningConfig()) {
+      await signMacAppAdHoc(context)
+      console.log('[after-pack] applied macOS deep ad-hoc app signature')
+    }
+    return
+  }
+
   if (context.electronPlatformName !== 'win32') {
     return
   }
