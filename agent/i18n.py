@@ -17,19 +17,21 @@ Usage::
     from agent.i18n import t
     print(t("approval.choose_long"))                       # current lang
     print(t("gateway.draining", count=3))                  # {count} formatted
-    print(t("approval.choose_long", lang="zh"))            # explicit override
+    print(t("approval.choose_long", lang="it"))            # explicit override
 
 Language resolution order:
     1. Explicit ``lang=`` argument passed to :func:`t`
     2. ``NADIA_LANGUAGE`` environment variable (for tests / quick override)
     3. ``display.language`` from config.yaml
-    4. ``"en"`` (baseline)
+    4. Italian system locale, when no explicit language is configured
+    5. ``"en"`` (baseline)
 
-Supported languages: en, zh, ja, de, es, fr, tr, uk.  Unknown values fall back to en.
+Supported languages: en, it.  Unknown values fall back to en.
 """
 
 from __future__ import annotations
 
+import locale
 import logging
 import os
 import sysconfig
@@ -41,44 +43,16 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 SUPPORTED_LANGUAGES: tuple[str, ...] = (
-    "en", "zh", "zh-hant", "ja", "de", "es", "fr", "tr", "uk",
-    "af", "ko", "it", "ga", "pt", "ru", "hu",
+    "en",
+    "it",
 )
 DEFAULT_LANGUAGE = "en"
 
-# Accept a few natural aliases so users who type "chinese" / "zh-CN" / "jp"
-# get the right catalog instead of silently falling back to English.
+# Accept a few natural aliases so users who type "italiano" / "it-IT" get the
+# right catalog instead of silently falling back to English.
 _LANGUAGE_ALIASES: dict[str, str] = {
     "english": "en", "en-us": "en", "en-gb": "en",
-    # Simplified Chinese — explicit codes route here; bare "chinese" / "mandarin"
-    # also default to Simplified since that's the larger user base.
-    "chinese": "zh", "mandarin": "zh", "zh-cn": "zh", "zh-hans": "zh", "zh-sg": "zh",
-    # Traditional Chinese — distinct catalog.  Cover Taiwan / Hong Kong / Macau
-    # locale tags plus the common "traditional" alias.
-    "traditional-chinese": "zh-hant", "traditional_chinese": "zh-hant",
-    "zh-tw": "zh-hant", "zh-hk": "zh-hant", "zh-mo": "zh-hant",
-    "japanese": "ja", "jp": "ja", "ja-jp": "ja",
-    "german": "de", "deutsch": "de", "de-de": "de", "de-at": "de", "de-ch": "de",
-    "spanish": "es", "español": "es", "espanol": "es", "es-es": "es", "es-mx": "es", "es-ar": "es",
-    "french": "fr", "français": "fr", "france": "fr", "fr-fr": "fr", "fr-be": "fr", "fr-ca": "fr", "fr-ch": "fr",
-    "ukrainian": "uk", "ukrainisch": "uk", "українська": "uk", "uk-ua": "uk", "ua": "uk",
-    "turkish": "tr", "türkçe": "tr", "tr-tr": "tr",
-    # Afrikaans — South African Dutch-derived language; "af-ZA" is the common BCP-47 tag.
-    "afrikaans": "af", "af-za": "af",
-    # Korean
-    "korean": "ko", "한국어": "ko", "ko-kr": "ko",
-    # Italian
     "italian": "it", "italiano": "it", "it-it": "it", "it-ch": "it",
-    # Irish (Gaeilge) — ga is the BCP-47 code
-    "irish": "ga", "gaeilge": "ga", "ga-ie": "ga",
-    # Portuguese — bare "portuguese" routes to European Portuguese; pt-br
-    # is in the same family but rendered identically here (no separate br catalog).
-    "portuguese": "pt", "português": "pt", "portugues": "pt",
-    "pt-pt": "pt", "pt-br": "pt", "brazilian": "pt", "brasileiro": "pt",
-    # Russian
-    "russian": "ru", "русский": "ru", "ru-ru": "ru",
-    # Hungarian
-    "hungarian": "hu", "magyar": "hu", "hu-hu": "hu",
 }
 
 _catalog_cache: dict[str, dict[str, str]] = {}
@@ -138,28 +112,32 @@ def _locales_dir() -> Path:
     return source_dir
 
 
-def _normalize_lang(value: Any) -> str:
-    """Normalize a user-supplied language value to a supported code.
-
-    Accepts supported codes directly, common aliases (``chinese`` -> ``zh``),
-    and case-insensitive regional tags (``zh-CN`` -> ``zh``).  Returns the
-    default language for unknown values.
-    """
+def _normalize_supported_lang(value: Any) -> str | None:
+    """Normalize a user-supplied language value to a supported code, if any."""
     if not isinstance(value, str):
-        return DEFAULT_LANGUAGE
-    key = value.strip().lower()
+        return None
+    key = value.strip().lower().replace("_", "-")
     if not key:
-        return DEFAULT_LANGUAGE
+        return None
+    key = key.split(".", 1)[0].split("@", 1)[0]
     if key in SUPPORTED_LANGUAGES:
         return key
     if key in _LANGUAGE_ALIASES:
         return _LANGUAGE_ALIASES[key]
-    # Try stripping a region suffix (e.g. "pt-br" -> "pt" won't be supported,
-    # but "zh-CN" -> "zh" will).
     base = key.split("-", 1)[0]
     if base in SUPPORTED_LANGUAGES:
         return base
-    return DEFAULT_LANGUAGE
+    return None
+
+
+def _normalize_lang(value: Any) -> str:
+    """Normalize a user-supplied language value to a supported code.
+
+    Accepts supported codes directly, common aliases (``italiano`` -> ``it``),
+    and case-insensitive regional tags (``it-IT`` -> ``it``).  Returns the
+    default language for unknown or removed values.
+    """
+    return _normalize_supported_lang(value) or DEFAULT_LANGUAGE
 
 
 def _load_catalog(lang: str) -> dict[str, str]:
@@ -219,11 +197,35 @@ def _config_language_cached() -> str | None:
     try:
         from nadia_cli.config import load_config
         cfg = load_config()
-        lang = (cfg.get("display") or {}).get("language")
-        if lang:
+        display = cfg.get("display") or {}
+        if isinstance(display, dict) and "language" in display:
+            lang = display.get("language")
             return _normalize_lang(lang)
     except Exception as exc:
         logger.debug("Could not read display.language from config: %s", exc)
+    return None
+
+
+@lru_cache(maxsize=1)
+def _system_language_cached() -> str | None:
+    """Auto-select Italian for first-run users on an Italian system locale."""
+    candidates: list[str | None] = [
+        os.environ.get("LC_ALL"),
+        os.environ.get("LC_MESSAGES"),
+        os.environ.get("LANG"),
+    ]
+
+    for category in (getattr(locale, "LC_MESSAGES", None), locale.LC_CTYPE):
+        if category is None:
+            continue
+        try:
+            candidates.append(locale.getlocale(category)[0])
+        except Exception as exc:
+            logger.debug("Could not read system locale category %r: %s", category, exc)
+
+    for candidate in candidates:
+        if _normalize_supported_lang(candidate) == "it":
+            return "it"
     return None
 
 
@@ -234,6 +236,7 @@ def reset_language_cache() -> None:
     needs to pick up a changed ``display.language`` without restart.
     """
     _config_language_cached.cache_clear()
+    _system_language_cached.cache_clear()
     with _catalog_lock:
         _catalog_cache.clear()
 
@@ -241,11 +244,14 @@ def reset_language_cache() -> None:
 def get_language() -> str:
     """Resolve the active language using env > config > default order."""
     env_lang = os.environ.get("NADIA_LANGUAGE")
-    if env_lang:
+    if "NADIA_LANGUAGE" in os.environ:
         return _normalize_lang(env_lang)
     cfg_lang = _config_language_cached()
     if cfg_lang:
         return cfg_lang
+    system_lang = _system_language_cached()
+    if system_lang:
+        return system_lang
     return DEFAULT_LANGUAGE
 
 
@@ -267,7 +273,7 @@ def t(key: str, lang: str | None = None, **format_kwargs: Any) -> str:
     The translated string, or the English fallback if the key is missing in
     the target language, or the bare key if English is also missing.
     """
-    target = _normalize_lang(lang) if lang else get_language()
+    target = _normalize_lang(lang) if lang is not None else get_language()
     catalog = _load_catalog(target)
     value = catalog.get(key)
 

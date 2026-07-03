@@ -308,7 +308,7 @@ describe('buildToolView title actions', () => {
   })
 
   it('uses the runtime locale for title text and action placement', () => {
-    setRuntimeI18nLocale('ja')
+    setRuntimeI18nLocale('it')
 
     const read = buildToolView(part({ args: { path: '/tmp/demo.txt' }, result: undefined, toolName: 'read_file' }), '')
 
@@ -317,10 +317,10 @@ describe('buildToolView title actions', () => {
       ''
     )
 
-    expect(read.title).toBe('demo.txt を読み取り中')
-    expect(read.titleAction).toEqual({ prefix: 'demo.txt を', text: '読み取り中', suffix: '' })
-    expect(web.title).toBe('example.com/docs を読み取り中')
-    expect(web.titleAction).toEqual({ prefix: 'example.com/docs を', text: '読み取り中', suffix: '' })
+    expect(read.title).toBe('Lettura demo.txt')
+    expect(read.titleAction).toEqual({ prefix: '', text: 'Lettura', suffix: ' demo.txt' })
+    expect(web.title).toBe('Lettura example.com/docs')
+    expect(web.titleAction).toEqual({ prefix: '', text: 'Lettura', suffix: ' example.com/docs' })
   })
 })
 

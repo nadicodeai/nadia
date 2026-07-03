@@ -97,7 +97,7 @@ The app also surfaces the broader Nadia management surface so you don't have to 
 - **Command palette** — press **Cmd+K** (Ctrl+K on Windows/Linux) to jump to actions and navigate the app from the keyboard.
 - **Rebindable shortcuts** — a shortcuts panel in Settings lets you remap the app's keyboard shortcuts to your own keys.
 - **Custom zoom shortcuts** — zoom the interface in half-step increments for finer control over text size.
-- **UI language switcher** — change the app's interface language in-app for the shipped locale set.
+- **UI language switcher** — change the app's interface language in-app for English and Italian.
 
 ### Sessions & profiles
 

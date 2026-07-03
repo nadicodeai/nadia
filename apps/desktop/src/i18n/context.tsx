@@ -3,7 +3,13 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useM
 import { getNadiaConfigRecord, type NadiaConfigRecord, saveNadiaConfig } from '@/nadia'
 
 import { TRANSLATIONS } from './catalog'
-import { DEFAULT_LOCALE, localeConfigValue, normalizeLocale } from './languages'
+import {
+  DEFAULT_LOCALE,
+  detectSystemLocale,
+  localeConfigValue,
+  normalizeLocale,
+  supportedLocaleFromValue
+} from './languages'
 import { setRuntimeI18nLocale } from './runtime'
 import type { Locale, Translations } from './types'
 
@@ -37,6 +43,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export function getConfigDisplayLanguage(config: NadiaConfigRecord): unknown {
   return isRecord(config.display) ? config.display.language : undefined
+}
+
+function hasConfigDisplayLanguage(config: NadiaConfigRecord): boolean {
+  return isRecord(config.display) && Object.prototype.hasOwnProperty.call(config.display, 'language')
 }
 
 export function withConfigDisplayLanguage(config: NadiaConfigRecord, locale: Locale): NadiaConfigRecord {
@@ -81,8 +91,18 @@ export interface I18nProviderProps {
   initialLocale?: unknown
 }
 
+function initialLocaleFrom(value: unknown): Locale {
+  const supported = supportedLocaleFromValue(value)
+
+  if (supported) {
+    return supported
+  }
+
+  return value == null ? detectSystemLocale() : DEFAULT_LOCALE
+}
+
 export function I18nProvider({ children, configClient = defaultConfigClient, initialLocale }: I18nProviderProps) {
-  const [locale, setLocaleState] = useState<Locale>(() => normalizeLocale(initialLocale))
+  const [locale, setLocaleState] = useState<Locale>(() => initialLocaleFrom(initialLocale))
   const [isLoadingConfig, setIsLoadingConfig] = useState(false)
   const [isSavingLocale, setIsSavingLocale] = useState(false)
   const [configLoadError, setConfigLoadError] = useState<Error | null>(null)
@@ -108,7 +128,9 @@ export function I18nProvider({ children, configClient = defaultConfigClient, ini
       .getConfig()
       .then(config => {
         if (!cancelled) {
-          setLocaleState(normalizeLocale(getConfigDisplayLanguage(config)))
+          setLocaleState(
+            hasConfigDisplayLanguage(config) ? normalizeLocale(getConfigDisplayLanguage(config)) : detectSystemLocale()
+          )
         }
       })
       .catch(error => {

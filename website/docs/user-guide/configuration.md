@@ -1455,9 +1455,14 @@ Set `file_mutation_verifier: false` (or `NADIA_FILE_MUTATION_VERIFIER=0`) to sup
 
 The `display.language` setting translates a small set of static user-facing messages — the CLI approval prompt, a handful of gateway slash-command replies (e.g. restart-drain notices, "approval expired", "goal cleared"). It does **not** translate agent responses, log lines, tool output, error tracebacks, or slash-command descriptions — those stay in English. If you want the agent itself to reply in another language, just tell it in your prompt or system message.
 
-Supported values: `en` (default), `ja` (Japanese), `de` (German), `es` (Spanish), `fr` (French), `tr` (Turkish), `uk` (Ukrainian), `af` (Afrikaans), `ko` (Korean), `it` (Italian), `ga` (Irish), `pt` (Portuguese), `ru` (Russian), `hu` (Hungarian). Unknown values fall back to English.
+Supported values: `en` (default) and `it` (Italian). Unknown or removed values fall back to English.
 
 You can also set this per-session with the `NADIA_LANGUAGE` env var, which overrides the config value.
+
+```yaml
+display:
+  language: it   # CLI approval prompts appear in Italian
+```
 
 | Mode | What you see |
 |------|-------------|

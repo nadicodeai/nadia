@@ -6,7 +6,7 @@ import type { NadiaConfigRecord } from '@/nadia'
 import { type I18nConfigClient, I18nProvider, useI18n } from './context'
 import type { Locale } from './types'
 
-function LanguageProbe({ target = 'zh' }: { target?: Locale }) {
+function LanguageProbe({ target = 'it' }: { target?: Locale }) {
   const { isLoadingConfig, isSavingLocale, locale, saveError, setLocale, t } = useI18n()
 
   return (
@@ -41,15 +41,15 @@ describe('I18nProvider', () => {
     expect(screen.getByTestId('label').textContent).toBe('Language')
   })
 
-  it('normalizes an initial locale alias and switches translations', async () => {
+  it('normalizes an initial Italian locale alias and switches translations', async () => {
     render(
-      <I18nProvider configClient={null} initialLocale="zh-CN">
+      <I18nProvider configClient={null} initialLocale="it-IT">
         <LanguageProbe target="en" />
       </I18nProvider>
     )
 
-    expect(screen.getByTestId('locale').textContent).toBe('zh')
-    expect(screen.getByTestId('label').textContent).toBe('语言')
+    expect(screen.getByTestId('locale').textContent).toBe('it')
+    expect(screen.getByTestId('label').textContent).toBe('Lingua')
 
     fireEvent.click(screen.getByRole('button', { name: 'switch' }))
 
@@ -59,7 +59,7 @@ describe('I18nProvider', () => {
 
   it('loads the initial locale from display.language config', async () => {
     const configClient: I18nConfigClient = {
-      getConfig: vi.fn().mockResolvedValue({ display: { language: 'zh-Hans' } }),
+      getConfig: vi.fn().mockResolvedValue({ display: { language: 'it-IT' } }),
       saveConfig: vi.fn()
     }
 
@@ -71,8 +71,40 @@ describe('I18nProvider', () => {
 
     await waitFor(() => expect(screen.getByTestId('loading').textContent).toBe('false'))
 
-    expect(screen.getByTestId('locale').textContent).toBe('zh')
-    expect(screen.getByTestId('label').textContent).toBe('语言')
+    expect(screen.getByTestId('locale').textContent).toBe('it')
+    expect(screen.getByTestId('label').textContent).toBe('Lingua')
+    expect(configClient.saveConfig).not.toHaveBeenCalled()
+  })
+
+  it('auto-selects Italian from system locale when config has no saved language', async () => {
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: globalThis.navigator ?? {}
+    })
+    Object.defineProperty(globalThis.navigator, 'languages', {
+      configurable: true,
+      value: ['it-IT', 'en-US']
+    })
+    Object.defineProperty(globalThis.navigator, 'language', {
+      configurable: true,
+      value: 'it-IT'
+    })
+
+    const configClient: I18nConfigClient = {
+      getConfig: vi.fn().mockResolvedValue({ display: { skin: 'mono' } }),
+      saveConfig: vi.fn()
+    }
+
+    render(
+      <I18nProvider configClient={configClient}>
+        <LanguageProbe />
+      </I18nProvider>
+    )
+
+    await waitFor(() => expect(screen.getByTestId('loading').textContent).toBe('false'))
+
+    expect(screen.getByTestId('locale').textContent).toBe('it')
+    expect(screen.getByTestId('label').textContent).toBe('Lingua')
     expect(configClient.saveConfig).not.toHaveBeenCalled()
   })
 
@@ -95,26 +127,26 @@ describe('I18nProvider', () => {
     expect(configClient.saveConfig).not.toHaveBeenCalled()
   })
 
-  it('loads zh-hant from display.language config', async () => {
+  it('falls back to English for removed Chinese display.language config values', async () => {
     const configClient: I18nConfigClient = {
       getConfig: vi.fn().mockResolvedValue({ display: { language: 'zh-TW' } }),
       saveConfig: vi.fn()
     }
 
     render(
-      <I18nProvider configClient={configClient} initialLocale="zh">
+      <I18nProvider configClient={configClient} initialLocale="it">
         <LanguageProbe />
       </I18nProvider>
     )
 
     await waitFor(() => expect(screen.getByTestId('loading').textContent).toBe('false'))
 
-    expect(screen.getByTestId('locale').textContent).toBe('zh-hant')
-    expect(screen.getByTestId('save').textContent).toBe('儲存')
+    expect(screen.getByTestId('locale').textContent).toBe('en')
+    expect(screen.getByTestId('save').textContent).toBe('Save')
     expect(configClient.saveConfig).not.toHaveBeenCalled()
   })
 
-  it('loads ja from display.language config', async () => {
+  it('falls back to English for removed Japanese display.language config values', async () => {
     const configClient: I18nConfigClient = {
       getConfig: vi.fn().mockResolvedValue({ display: { language: 'ja-JP' } }),
       saveConfig: vi.fn()
@@ -128,8 +160,8 @@ describe('I18nProvider', () => {
 
     await waitFor(() => expect(screen.getByTestId('loading').textContent).toBe('false'))
 
-    expect(screen.getByTestId('locale').textContent).toBe('ja')
-    expect(screen.getByTestId('save').textContent).toBe('保存')
+    expect(screen.getByTestId('locale').textContent).toBe('en')
+    expect(screen.getByTestId('save').textContent).toBe('Save')
     expect(configClient.saveConfig).not.toHaveBeenCalled()
   })
 
@@ -140,7 +172,7 @@ describe('I18nProvider', () => {
     }
 
     render(
-      <I18nProvider configClient={configClient} initialLocale="zh">
+      <I18nProvider configClient={configClient} initialLocale="it">
         <LanguageProbe />
       </I18nProvider>
     )
@@ -179,7 +211,7 @@ describe('I18nProvider', () => {
 
     await waitFor(() => expect(saveConfig).toHaveBeenCalledTimes(1))
     expect(saveConfig).toHaveBeenCalledWith({
-      display: { language: 'zh', skin: 'slate' },
+      display: { language: 'it', skin: 'slate' },
       terminal: { cwd: '/new' }
     })
   })
@@ -197,7 +229,7 @@ describe('I18nProvider', () => {
 
     render(
       <I18nProvider configClient={configClient}>
-        <LanguageProbe target="ja" />
+        <LanguageProbe target="it" />
       </I18nProvider>
     )
 
@@ -205,8 +237,8 @@ describe('I18nProvider', () => {
     fireEvent.click(screen.getByRole('button', { name: 'switch' }))
 
     await waitFor(() => expect(saveConfig).toHaveBeenCalledTimes(1))
-    expect(saveConfig).toHaveBeenCalledWith({ display: { language: 'ja', skin: 'mono' } })
-    expect(screen.getByTestId('locale').textContent).toBe('ja')
+    expect(saveConfig).toHaveBeenCalledWith({ display: { language: 'it', skin: 'mono' } })
+    expect(screen.getByTestId('locale').textContent).toBe('it')
   })
 
   it('rolls back the visible locale when saving fails', async () => {

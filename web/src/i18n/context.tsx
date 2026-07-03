@@ -1,39 +1,17 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  type ReactNode,
+} from "react";
 import type { Locale, Translations } from "./types";
 import { en } from "./en";
-import { zh } from "./zh";
-import { zhHant } from "./zh-hant";
-import { ja } from "./ja";
-import { de } from "./de";
-import { es } from "./es";
-import { fr } from "./fr";
-import { tr } from "./tr";
-import { uk } from "./uk";
-import { af } from "./af";
-import { ko } from "./ko";
 import { it } from "./it";
-import { ga } from "./ga";
-import { pt } from "./pt";
-import { ru } from "./ru";
-import { hu } from "./hu";
 
 const TRANSLATIONS: Record<Locale, Translations> = {
   en,
-  zh,
-  "zh-hant": zhHant,
-  ja,
-  de,
-  es,
-  fr,
-  tr,
-  uk,
-  af,
-  ko,
   it,
-  ga,
-  pt,
-  ru,
-  hu,
 };
 
 // Display metadata for the language picker — endonym (native name) so users
@@ -47,38 +25,42 @@ const TRANSLATIONS: Record<Locale, Translations> = {
 // mismapping that flag pairings inevitably create.
 export const LOCALE_META: Record<Locale, { name: string }> = {
   en: { name: "English" },
-  zh: { name: "简体中文" },
-  "zh-hant": { name: "繁體中文" },
-  ja: { name: "日本語" },
-  de: { name: "Deutsch" },
-  es: { name: "Español" },
-  fr: { name: "Français" },
-  tr: { name: "Türkçe" },
-  uk: { name: "Українська" },
-  af: { name: "Afrikaans" },
-  ko: { name: "한국어" },
   it: { name: "Italiano" },
-  ga: { name: "Gaeilge" },
-  pt: { name: "Português" },
-  ru: { name: "Русский" },
-  hu: { name: "Magyar" },
 };
 
 const SUPPORTED_LOCALES = Object.keys(TRANSLATIONS) as Locale[];
 const STORAGE_KEY = "nadia-locale";
 
-function isLocale(value: string): value is Locale {
-  return (SUPPORTED_LOCALES as string[]).includes(value);
+function normalizeLocale(value: unknown): Locale | null {
+  if (typeof value !== "string") return null;
+  const key = value.trim().toLowerCase().replace(/_/g, "-").split(".", 1)[0];
+  if (!key) return null;
+  if ((SUPPORTED_LOCALES as string[]).includes(key)) return key as Locale;
+  const base = key.split("-", 1)[0];
+  return (SUPPORTED_LOCALES as string[]).includes(base)
+    ? (base as Locale)
+    : null;
 }
 
-function getInitialLocale(): Locale {
+function browserLocale(): Locale {
+  const candidates =
+    typeof navigator === "undefined"
+      ? []
+      : [...(navigator.languages ?? []), navigator.language].filter(Boolean);
+
+  return candidates.some((candidate) => normalizeLocale(candidate) === "it")
+    ? "it"
+    : "en";
+}
+
+export function getInitialLocale(): Locale {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored && isLocale(stored)) return stored;
+    if (stored !== null) return normalizeLocale(stored) ?? "en";
   } catch {
     // SSR or privacy mode
   }
-  return "en";
+  return browserLocale();
 }
 
 interface I18nContextValue {
@@ -111,11 +93,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     t: TRANSLATIONS[locale],
   };
 
-  return (
-    <I18nContext.Provider value={value}>
-      {children}
-    </I18nContext.Provider>
-  );
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 
 export function useI18n() {
