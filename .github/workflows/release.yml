@@ -103,9 +103,24 @@ jobs:
           ditto "${dmg_app}" "${installed}"
           xattr -w com.apple.quarantine "0081;$(printf '%x' "$(date +%s)");GitHubActions;https://github.com/nadicodeai/nadia/releases" "${installed}"
           codesign --verify --deep --strict --verbose=2 "${installed}"
-          open -n "${installed}"
-          sleep 8
-          pids="$(pgrep -f "${installed}/Contents/MacOS/Nadia Agent|AppTranslocation.*/Nadia Agent.app/Contents/MacOS/Nadia Agent" || true)"
+          launch_regex="${installed}/Contents/MacOS/Nadia Agent|AppTranslocation.*/Nadia Agent.app/Contents/MacOS/Nadia Agent"
+          open -n "${installed}" &
+          open_pid="$!"
+          pids=""
+          for _ in $(seq 1 40); do
+            pids="$(pgrep -f "${launch_regex}" || true)"
+            if [ -n "${pids}" ]; then
+              break
+            fi
+            if ! kill -0 "${open_pid}" >/dev/null 2>&1; then
+              wait "${open_pid}" || true
+            fi
+            sleep 1
+          done
+          if kill -0 "${open_pid}" >/dev/null 2>&1; then
+            kill "${open_pid}" >/dev/null 2>&1 || true
+            wait "${open_pid}" || true
+          fi
           if [ -z "${pids}" ]; then
             echo "macOS app did not launch from a quarantined copy; refusing to publish the DMG." >&2
             pgrep -fl "CoreServicesUIAgent|Nadia Agent" || true
