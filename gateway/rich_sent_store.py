@@ -25,8 +25,11 @@ _MAX_TEXT_CHARS = 2000
 
 
 def _store_path() -> str:
-    home = os.environ.get("NADIA_HOME") or os.path.expanduser("~/.nadia")
-    return os.path.join(home, "state", "rich_sent_index.json")
+    # Resolve via get_nadia_home() so the active profile override is honored.
+    from nadia_constants import get_nadia_home
+
+    home = get_nadia_home()
+    return os.path.join(str(home), "state", "rich_sent_index.json")
 
 
 def _key(chat_id, message_id) -> str:

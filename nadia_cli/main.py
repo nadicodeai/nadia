@@ -616,6 +616,7 @@ from nadia_cli.model_setup_flows import (
     _model_flow_stepfun,
     _model_flow_bedrock_api_key,
     _model_flow_bedrock,
+    _model_flow_vertex,
     _model_flow_api_key_provider,
     _model_flow_anthropic,
     _model_flow_moa,
@@ -3109,6 +3110,8 @@ def select_provider_and_model(args=None):
         _model_flow_stepfun(config, current_model)
     elif selected_provider == "bedrock":
         _model_flow_bedrock(config, current_model)
+    elif selected_provider == "vertex":
+        _model_flow_vertex(config, current_model)
     elif selected_provider == "azure-foundry":
         _model_flow_azure_foundry(config, current_model)
     elif selected_provider in {
@@ -4274,7 +4277,21 @@ def cmd_hooks(args):
 
 
 def cmd_doctor(args):
-    """Check configuration and dependencies."""
+    """Check configuration and dependencies.
+
+    Registered via argparse in build_parser (single-function handler, not class-based).
+    """
+    # Let an enabled plugin fully claim this invocation (e.g. the brand-leakage
+    # doctor's `--static` / `--live` scan) before the built-in checks run. The
+    # plugin returns a process exit code to short-circuit, or None to fall
+    # through. First non-None wins (fail-closed). Contributed flags come from
+    # apply_plugin_arguments("doctor", ...) in the doctor parser.
+    from nadia_cli.plugins import has_hook, invoke_hook_first
+    if has_hook("cli_command_dispatch"):
+        rc = invoke_hook_first("cli_command_dispatch", command="doctor", args=args)
+        if rc is not None:
+            raise SystemExit(rc)
+
     from nadia_cli.doctor import run_doctor
 
     run_doctor(args)
@@ -11602,7 +11619,7 @@ def _build_provider_choices() -> list[str]:
         # Fallback: static list guarantees the CLI always works
         return [
             "auto", "openrouter", "nous", "openai-codex", "xai-oauth", "copilot-acp", "copilot",
-            "anthropic", "gemini", "xai", "bedrock", "azure-foundry",
+            "anthropic", "gemini", "vertex", "xai", "bedrock", "azure-foundry",
             "ollama-cloud", "huggingface", "zai", "kimi-coding", "kimi-coding-cn",
             "stepfun", "minimax", "minimax-cn", "kilocode", "novita", "xiaomi", "arcee",
             "nvidia", "deepseek", "alibaba", "qwen-oauth", "opencode-zen", "opencode-go",
@@ -11625,6 +11642,7 @@ _BUILTIN_SUBCOMMANDS = frozenset(
         "config", "cron", "curator", "dashboard", "serve", "debug", "doctor",
         "dump", "fallback", "gateway", "hooks", "import", "insights",
         "gui", "desktop", "kanban", "login", "logout", "logs", "lsp", "mcp", "memory", "migrate", "moa",
+        "journey", "memory-graph", "learning",
         "model", "pairing", "pets", "plugins", "portal", "postinstall", "profile",
         "project", "proxy",
         "prompt-size",
@@ -12560,6 +12578,27 @@ def main():
         _register_pets_cli(pets_parser)
     except Exception as _exc:
         logging.getLogger(__name__).debug("pets CLI wiring failed: %s", _exc)
+
+    # =========================================================================
+    # journey command — learned skills + memories over time, in the terminal
+    # =========================================================================
+    journey_parser = subparsers.add_parser(
+        "journey",
+        aliases=["learning", "memory-graph"],
+        help="Timeline of learned skills + memories over time",
+        description=(
+            "A terminal rendition of the desktop Star Map / Memory Graph: a "
+            "timeline bar chart of learned skills and memories over time "
+            "(oldest at top, newest at bottom) plus a playable constellation "
+            "scrubber. Mirrors the TUI `/journey` overlay and the desktop panel."
+        ),
+    )
+    try:
+        from nadia_cli.journey import register_cli as _register_journey_cli
+
+        _register_journey_cli(journey_parser)
+    except Exception as _exc:
+        logging.getLogger(__name__).debug("journey CLI wiring failed: %s", _exc)
 
     # =========================================================================
     # memory command  (parser built in nadia_cli/subcommands/memory.py)

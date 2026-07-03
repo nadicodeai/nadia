@@ -74,6 +74,29 @@ test('desktop backend launches console python so child consoles are inherited, n
   requireHiddenChildOptions(source, /nadiaProcess = spawn\(\s*backend\.command,\s*backend\.args/)
 })
 
+test('desktop backend teardown tree-kills Windows backend descendants', () => {
+  const source = readElectronFile('main.cjs')
+
+  const helperIndex = source.indexOf('function stopBackendChild(child)')
+  assert.notEqual(helperIndex, -1, 'missing backend teardown helper')
+  const helperSnippet = source.slice(helperIndex, helperIndex + 500)
+  assert.match(helperSnippet, /IS_WINDOWS && Number\.isInteger\(child\.pid\)/)
+  assert.match(helperSnippet, /forceKillProcessTree\(child\.pid\)/)
+  assert.match(helperSnippet, /child\.kill\('SIGTERM'\)/)
+
+  const resetIndex = source.indexOf('function resetNadiaConnection()')
+  assert.notEqual(resetIndex, -1, 'missing resetNadiaConnection')
+  const resetSnippet = source.slice(resetIndex, resetIndex + 300)
+  assert.match(resetSnippet, /stopBackendChild\(nadiaProcess\)/)
+  assert.doesNotMatch(resetSnippet, /nadiaProcess\.kill\('SIGTERM'\)/)
+
+  const quitIndex = source.indexOf("app.on('before-quit'")
+  assert.notEqual(quitIndex, -1, 'missing before-quit handler')
+  const quitSnippet = source.slice(quitIndex, quitIndex + 900)
+  assert.match(quitSnippet, /stopBackendChild\(nadiaProcess\)/)
+  assert.doesNotMatch(quitSnippet, /nadiaProcess\.kill\('SIGTERM'\)/)
+})
+
 test('intentional or interactive desktop child processes stay documented', () => {
   const source = readElectronFile('main.cjs')
 

@@ -121,6 +121,9 @@ export const en: Translations = {
     platformError: "error",
     recentSessions: "Recent Sessions",
     restartGateway: "Restart Gateway",
+    restartGatewayConfirmMessage:
+      "This restarts the Nadia gateway process. Connected channels and active sessions will reconnect afterward.",
+    restartGatewayConfirmTitle: "Restart gateway?",
     restartingGateway: "Restarting gateway…",
     running: "Running",
     runningRemote: "Running (remote)",
@@ -129,6 +132,10 @@ export const en: Translations = {
     startedInBackground: "Started in background — check logs for progress",
     stopped: "Stopped",
     updateNadia: "Update Nadia",
+    updateNadiaConfirmMessage:
+      "This runs nadia update and restarts the gateway when it finishes. Active sessions keep their prompt cache until then.",
+    updateNadiaConfirmNow: "Update now",
+    updateNadiaConfirmTitle: "Update Nadia?",
     updatingNadia: "Updating Nadia…",
     waitingForOutput: "Waiting for output…",
   },

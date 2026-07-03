@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 import type { Locale, Translations } from "./types";
 import { en } from "./en";
 import { it } from "./it";
@@ -93,7 +87,11 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     t: TRANSLATIONS[locale],
   };
 
-  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+  return (
+    <I18nContext.Provider value={value}>
+      {children}
+    </I18nContext.Provider>
+  );
 }
 
 export function useI18n() {

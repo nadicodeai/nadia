@@ -123,6 +123,8 @@ export interface Translations {
     activeSessions: string;
     recentSessions: string;
     restartGateway: string;
+    restartGatewayConfirmMessage?: string;
+    restartGatewayConfirmTitle?: string;
     restartingGateway: string;
     running: string;
     runningRemote: string;
@@ -131,6 +133,9 @@ export interface Translations {
     startedInBackground: string;
     stopped: string;
     updateNadia: string;
+    updateNadiaConfirmMessage?: string;
+    updateNadiaConfirmNow?: string;
+    updateNadiaConfirmTitle?: string;
     updatingNadia: string;
     waitingForOutput: string;
   };

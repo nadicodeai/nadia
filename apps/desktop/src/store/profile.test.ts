@@ -7,6 +7,7 @@ import type { NadiaConnection } from '@/global'
 // the REST query client must not run for real in a unit test.
 const ensureGatewayForProfile = vi.fn(async () => undefined)
 const $gateway = atom<unknown>({ id: 'live-socket' })
+const resetStarmapGraph = vi.fn()
 
 vi.mock('@/store/gateway', () => ({ $gateway, ensureGatewayForProfile }))
 vi.mock('@/nadia', () => ({
@@ -14,9 +15,11 @@ vi.mock('@/nadia', () => ({
   setApiRequestProfile: vi.fn()
 }))
 vi.mock('@/lib/query-client', () => ({ queryClient: { invalidateQueries: vi.fn() } }))
+vi.mock('@/store/starmap', () => ({ resetStarmapGraph }))
 
 const { $activeGatewayProfile, ensureGatewayProfile } = await import('./profile')
 const { $connection } = await import('./session')
+const { queryClient } = await import('@/lib/query-client')
 
 const remoteConn = (over: Partial<NadiaConnection> = {}): NadiaConnection =>
   ({ baseUrl: 'https://nadia-roy.tail.ts.net', mode: 'remote', profile: 'vps-remote', ...over }) as NadiaConnection
@@ -33,6 +36,8 @@ beforeEach(() => {
   $activeGatewayProfile.set('default')
   $connection.set(localConn())
   vi.stubGlobal('window', { nadiaDesktop: { getConnection } })
+  vi.mocked(queryClient.invalidateQueries).mockClear()
+  resetStarmapGraph.mockClear()
 })
 
 afterEach(() => {
@@ -85,5 +90,14 @@ describe('ensureGatewayProfile → $connection sync (#46651)', () => {
     expect(getConnection).not.toHaveBeenCalled()
     expect(ensureGatewayForProfile).not.toHaveBeenCalled()
     expect($connection.get()?.mode).toBe('remote')
+  })
+})
+
+describe('profile-scoped cache invalidation', () => {
+  it('drops the memory graph cache when the active gateway profile changes', () => {
+    $activeGatewayProfile.set('coder')
+
+    expect(queryClient.invalidateQueries).toHaveBeenCalled()
+    expect(resetStarmapGraph).toHaveBeenCalledTimes(1)
   })
 })

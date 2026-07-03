@@ -69,6 +69,13 @@ try:
 except ImportError:  # pragma: no cover – yaml is optional at import time
     yaml = None  # type: ignore[assignment]
 
+
+class PluginToolOverrideError(PermissionError):
+    """Raised when a plugin attempts to override a built-in tool without
+    operator opt-in via ``plugins.entries.<plugin_id>.allow_tool_override``.
+    """
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -136,6 +143,17 @@ VALID_HOOKS: Set[str] = {
     "transform_llm_output",
     "pre_llm_call",
     "post_llm_call",
+    # Verification-loop gate. Fired once per turn when the agent has edited code
+    # and is about to verify/finish (after the verify-on-stop guard). A callback
+    # may keep the agent going — run a check, defer it, tidy the diff — instead
+    # of stopping by returning:
+    #   {"action": "continue", "message": "<follow-up instruction>"}
+    # The Claude-Code Stop shape {"decision": "block", "reason": "..."} (block
+    # the stop == keep going) is accepted too. Anything else lets the turn
+    # finish. Nadia's shipped guidance lives in the evidence-based
+    # verification-stop nudge; this hook is for user/plugin policy and is
+    # bounded by agent.max_verify_nudges.
+    "pre_verify",
     "pre_api_request",
     "post_api_request",
     "api_request_error",
@@ -192,6 +210,42 @@ VALID_HOOKS: Set[str] = {
     "kanban_task_claimed",
     "kanban_task_completed",
     "kanban_task_blocked",
+    # Resolver-style hook: a plugin fully resolves the runtime credential for a
+    # requested provider, returning a runtime dict
+    # ({provider, api_mode, base_url, api_key, source, ...}) or None to fall
+    # through to the built-in resolution chain. Invoked via invoke_hook_first
+    # (first non-None wins) so a plugin that OWNS a provider but cannot produce
+    # a credential may raise to fail the request closed instead of silently
+    # falling back. Only enabled plugins register hooks, so this carries the
+    # same trust boundary as the tool-override gate (_tool_override_allowed).
+    # Kwargs: requested_provider: str, explicit_api_key: str|None,
+    #   explicit_base_url: str|None.
+    "resolve_runtime_provider",
+    # Contribution hooks: a plugin returns an iterable of root-level names (or a
+    # single name string) to add to the profile clone / export exclusion sets,
+    # so plugin-owned per-profile state (identity, credentials) never carries
+    # into a cloned or exported profile. All callbacks' contributions are
+    # unioned. Kwargs: none.
+    "profile_clone_exclusions",
+    "profile_export_exclusions",
+    # Resolver-style hook: a plugin fully drives the OAuth "start" step for a
+    # provider, returning the device-code start response dict the renderer
+    # expects, or None to let the built-in flow run. Invoked via
+    # invoke_hook_first (first non-None wins). Kwargs: provider_id: str,
+    #   profile: str|None, plus the shared OAuth session primitives
+    #   (new_session, sessions, sessions_lock, config_profile_scope) so the
+    #   plugin drives the ceremony over the same session registry the poll and
+    #   cancel endpoints already read.
+    "oauth_provider_dispatch",
+    # Resolver-style hook: a plugin fully handles an already-parsed built-in CLI
+    # command, returning a process exit code (int) to short-circuit the built-in
+    # handler, or None to let it run. Invoked via invoke_hook_first (first
+    # non-None wins) so a plugin that claims a command can fail it closed. The
+    # built-in handler consults this before its own logic; the plugin gates on
+    # the ``command`` name (and typically on a flag it contributed via
+    # register_cli_arguments) so unclaimed invocations fall straight through.
+    # Kwargs: command: str, args: argparse.Namespace.
+    "cli_command_dispatch",
 }
 
 ENTRY_POINTS_GROUP = "nadia_agent.plugins"
@@ -387,7 +441,24 @@ class PluginContext:
         same name (e.g. swap the default ``browser_navigate`` for a custom
         CDP-backed implementation). Without it, attempting to register a name
         already claimed by a different toolset is rejected.
+
+        ``override=True`` against a built-in tool requires the operator to
+        opt in via ``plugins.entries.<plugin_id>.allow_tool_override: true``
+        in config.yaml — mirrors the trust gate pattern used for
+        ``ctx.llm`` provider/model overrides (#23194). Without that gate,
+        any enabled plugin could silently replace a privileged built-in
+        like ``shell_exec`` or ``write_file`` and exfiltrate everything
+        the model invokes through it.
         """
+        if override and not self._tool_override_allowed(name):
+            plugin_id = self.manifest.key or self.manifest.name
+            raise PluginToolOverrideError(
+                f"Plugin {self.manifest.name!r} cannot override built-in tool "
+                f"{name!r}. Set "
+                f"plugins.entries.{plugin_id}.allow_tool_override: true "
+                f"in config.yaml to allow this plugin to replace built-in tools."
+            )
+
         from tools.registry import registry
 
         registry.register(
@@ -407,6 +478,32 @@ class PluginContext:
             "Plugin %s registered tool: %s%s",
             self.manifest.name, name, " (override)" if override else "",
         )
+
+    # -- override trust gate ------------------------------------------------
+
+    def _tool_override_allowed(self, tool_name: str) -> bool:
+        """Return True if this plugin is configured to override built-in tools.
+
+        Bundled plugins (shipped with Nadia core) are trusted by default —
+        an override there is a deliberate maintainer choice, not a third-party
+        plugin trying to elevate privilege. For every other source, require
+        ``allow_tool_override: true`` under
+        ``plugins.entries.<plugin_id>`` in config.yaml.
+        """
+        source = getattr(self.manifest, "source", "") or ""
+        if source == "bundled":
+            return True
+        try:
+            from nadia_cli.config import load_config
+            cfg = load_config() or {}
+        except Exception:
+            # If we can't load config, fail closed — better to break the
+            # override than silently grant it.
+            return False
+        plugin_id = self.manifest.key or self.manifest.name
+        entries = (cfg.get("plugins") or {}).get("entries") or {}
+        entry = entries.get(plugin_id) or {}
+        return bool(entry.get("allow_tool_override", False))
 
     # -- message injection --------------------------------------------------
 
@@ -445,13 +542,23 @@ class PluginContext:
         setup_fn: Callable,
         handler_fn: Callable | None = None,
         description: str = "",
+        parent: str | None = None,
     ) -> None:
         """Register a CLI subcommand (e.g. ``nadia honcho ...``).
 
         The *setup_fn* receives an argparse subparser and should add any
         arguments/sub-subparsers.  If *handler_fn* is provided it is set
-        as the default dispatch function via ``set_defaults(func=...)``."""
-        self._manager._cli_commands[name] = {
+        as the default dispatch function via ``set_defaults(func=...)``.
+
+        When *parent* is given, the command is registered as a NESTED
+        subcommand under that existing command group (e.g. ``parent="portal"``
+        yields ``<cli> portal <name>``) instead of a top-level command. The
+        parent group's parser must opt in by calling
+        ``apply_plugin_subcommands(parent, subparsers)`` while building its
+        own subparsers; unclaimed nested registrations are simply never
+        materialized. *setup_fn* receives the created leaf subparser exactly
+        as for a top-level command."""
+        info = {
             "name": name,
             "help": help,
             "description": description,
@@ -459,7 +566,34 @@ class PluginContext:
             "handler_fn": handler_fn,
             "plugin": self.manifest.name,
         }
+        if parent:
+            self._manager._cli_subcommands.setdefault(parent, []).append(info)
+            logger.debug(
+                "Plugin %s registered nested CLI command: %s %s",
+                self.manifest.name, parent, name,
+            )
+            return
+        self._manager._cli_commands[name] = info
         logger.debug("Plugin %s registered CLI command: %s", self.manifest.name, name)
+
+    def register_cli_arguments(self, command: str, setup_fn: Callable) -> None:
+        """Contribute extra arguments onto an EXISTING built-in command's parser.
+
+        Unlike ``register_cli_command`` (which creates a new top-level or nested
+        subcommand), this adds flags/positionals to a command the host already
+        defines (e.g. ``doctor --static``). The host command opts in by calling
+        ``apply_plugin_arguments(<command>, parser)`` while building its parser;
+        *setup_fn* then receives that parser and calls ``add_argument(...)`` on
+        it. Generic: any built-in command can offer its parser this way. A
+        plugin that adds arguments typically also claims the invocation via the
+        ``cli_command_dispatch`` hook, gated on a flag it added here."""
+        self._manager._cli_arguments.setdefault(command, []).append(
+            {"setup_fn": setup_fn, "plugin": self.manifest.name}
+        )
+        logger.debug(
+            "Plugin %s registered CLI arguments for command: %s",
+            self.manifest.name, command,
+        )
 
     # -- slash command registration -------------------------------------------
 
@@ -1145,6 +1279,14 @@ class PluginManager:
         self._plugin_tool_names: Set[str] = set()
         self._plugin_platform_names: Set[str] = set()
         self._cli_commands: Dict[str, dict] = {}
+        # Nested subcommands a plugin contributes under an existing command
+        # group (e.g. ``<cli> portal connect``): parent-command name -> list of
+        # command-info dicts. Consumed by apply_plugin_subcommands().
+        self._cli_subcommands: Dict[str, List[dict]] = {}
+        # Extra arguments a plugin contributes onto an EXISTING built-in command
+        # (e.g. ``doctor --static``): command name -> list of arg-info dicts.
+        # Consumed by apply_plugin_arguments().
+        self._cli_arguments: Dict[str, List[dict]] = {}
         self._context_engine = None  # Set by a plugin via register_context_engine()
         self._plugin_commands: Dict[str, dict] = {}  # Slash commands registered by plugins
         self._discovered: bool = False
@@ -1190,6 +1332,8 @@ class PluginManager:
             self._plugin_tool_names.clear()
             self._plugin_platform_names.clear()
             self._cli_commands.clear()
+            self._cli_subcommands.clear()  # nadia: nested plugin subcommands
+            self._cli_arguments.clear()  # nadia: extra flags on existing commands
             self._plugin_commands.clear()
             self._plugin_skills.clear()
             self._aux_tasks.clear()
@@ -1647,6 +1791,13 @@ class PluginManager:
             manifest.key or manifest.name, manifest.source, manifest.kind, manifest.path,
         )
 
+        from tools.registry import registry as _registry
+        _plugin_id = manifest.key or manifest.name
+        _slug = _plugin_id.replace("/", "__").replace("-", "_")
+        _registry.register_plugin_override_policy(
+            f"{_NS_PARENT}.{_slug}",
+            PluginContext(manifest, self)._tool_override_allowed(""),
+        )
         try:
             if manifest.source in {"user", "project", "bundled"}:
                 module = self._load_directory_module(manifest)
@@ -1714,7 +1865,6 @@ class PluginManager:
                 "Failed to load plugin '%s': %s",
                 manifest.name, exc, exc_info=_PLUGINS_DEBUG,
             )
-
         self._plugins[manifest.key or manifest.name] = loaded
 
     def _load_directory_module(self, manifest: PluginManifest) -> types.ModuleType:
@@ -1817,6 +1967,31 @@ class PluginManager:
     def has_hook(self, hook_name: str) -> bool:
         """Return True when at least one callback is registered for a hook."""
         return bool(self._hooks.get(hook_name))
+
+    def invoke_hook_first(self, hook_name: str, **kwargs: Any) -> Any:
+        """First-wins hook invocation for resolver-style hooks.
+
+        Unlike :meth:`invoke_hook` (observer semantics — every callback runs,
+        exceptions are logged and swallowed, all non-``None`` results are
+        collected), this returns the FIRST non-``None`` callback result and does
+        NOT swallow exceptions: a resolver hook that fully owns a request must
+        be able to fail it closed rather than silently fall through to the
+        default path. Callbacks are only ever registered by explicitly-enabled
+        plugins, so this preserves the same trust boundary as the tool-override
+        gate. Returns ``None`` when no callback handles the request."""
+        for cb in self._hooks.get(hook_name, []):
+            ret = cb(**kwargs)
+            if ret is not None:
+                return ret
+        return None
+
+    def cli_subcommands_for(self, parent: str) -> List[dict]:
+        """Return nested subcommands plugins registered under *parent*."""
+        return list(self._cli_subcommands.get(parent, []))
+
+    def cli_arguments_for(self, command: str) -> List[dict]:
+        """Return argument contributors plugins registered for *command*."""
+        return list(self._cli_arguments.get(command, []))
 
     def has_middleware(self, kind: str) -> bool:
         """Return True when at least one callback is registered for middleware."""
@@ -1964,6 +2139,71 @@ def has_hook(hook_name: str) -> bool:
     return get_plugin_manager().has_hook(hook_name)
 
 
+def invoke_hook_first(hook_name: str, **kwargs: Any) -> Any:
+    """Invoke a resolver-style hook, returning the first non-``None`` result.
+
+    Exceptions from callbacks propagate (fail-closed); see
+    :meth:`PluginManager.invoke_hook_first`."""
+    return get_plugin_manager().invoke_hook_first(hook_name, **kwargs)
+
+
+def apply_plugin_subcommands(parent: str, subparsers: Any) -> None:
+    """Materialize plugin-registered nested subcommands onto *subparsers*.
+
+    Triggers plugin discovery (only enabled plugins load), then for each
+    subcommand a plugin registered via
+    ``register_cli_command(..., parent=<parent>)`` adds a leaf parser to the
+    parent group's *subparsers* action, calls its ``setup_fn(leaf)`` to add
+    arguments, and wires ``handler_fn`` via ``set_defaults(func=...)`` so
+    argparse dispatches straight to it. Generic: any built-in command group can
+    offer itself as a parent this way. Callers gate this on the group actually
+    being invoked so the hot no-arg / chat paths pay no discovery cost."""
+    try:
+        discover_plugins()
+    except Exception as exc:  # discovery failure must not break the parser
+        logger.debug("Nested plugin subcommand discovery failed: %s", exc)
+        return
+    for info in get_plugin_manager().cli_subcommands_for(parent):
+        try:
+            leaf = subparsers.add_parser(
+                info["name"],
+                help=info.get("help", ""),
+                description=info.get("description", ""),
+            )
+            info["setup_fn"](leaf)
+            if info.get("handler_fn") is not None:
+                leaf.set_defaults(func=info["handler_fn"])
+        except Exception as exc:
+            logger.warning(
+                "Failed to register nested subcommand %s %s: %s",
+                parent, info.get("name"), exc,
+            )
+
+
+def apply_plugin_arguments(command: str, parser: Any) -> None:
+    """Materialize plugin-contributed arguments onto an existing *command* parser.
+
+    Triggers plugin discovery (only enabled plugins load), then for each
+    contributor a plugin registered via ``register_cli_arguments(command, ...)``
+    calls its ``setup_fn(parser)`` so it can ``add_argument(...)`` onto the
+    host's existing command parser. Generic: any built-in command can offer its
+    parser this way. Callers gate this on the command actually being invoked so
+    the hot no-arg / chat paths pay no discovery cost."""
+    try:
+        discover_plugins()
+    except Exception as exc:  # discovery failure must not break the parser
+        logger.debug("Plugin CLI-argument discovery failed: %s", exc)
+        return
+    for info in get_plugin_manager().cli_arguments_for(command):
+        try:
+            info["setup_fn"](parser)
+        except Exception as exc:
+            logger.warning(
+                "Failed to apply plugin arguments for %s (plugin %s): %s",
+                command, info.get("plugin"), exc,
+            )
+
+
 _thread_tool_whitelist = threading.local()
 
 
@@ -2025,6 +2265,57 @@ def get_pre_tool_call_block_message(
         message = result.get("message")
         if isinstance(message, str) and message:
             return message
+
+    return None
+
+
+def get_pre_verify_continue_message(
+    *,
+    session_id: str = "",
+    platform: str = "",
+    model: str = "",
+    coding: bool = False,
+    attempt: int = 0,
+    final_response: str = "",
+    changed_paths: Optional[List[str]] = None,
+) -> Optional[str]:
+    """Check user ``pre_verify`` hooks for a directive to keep the agent going.
+
+    Fired once per turn when the agent edited code and is about to verify/finish.
+    A hook keeps the turn going (run a check, defer it, tidy the diff) by
+    returning::
+
+        {"action": "continue", "message": "<follow-up for the model>"}
+
+    The Claude-Code Stop shape ``{"decision": "block", "reason": "..."}`` (block
+    the stop == keep going) is accepted too. The first directive carrying a
+    non-empty message wins; any other return lets the turn finish. Mirrors
+    :func:`get_pre_tool_call_block_message` — the call site stays a one-liner.
+
+    ``coding`` / ``attempt`` let a hook scope itself (``if not coding`` …) and
+    self-throttle (``if attempt`` …), the same way a ``pre_tool_call`` hook
+    scopes on ``tool_name``.
+    """
+    hook_results = invoke_hook(
+        "pre_verify",
+        session_id=session_id,
+        platform=platform,
+        model=model,
+        coding=coding,
+        attempt=attempt,
+        final_response=final_response,
+        changed_paths=list(changed_paths or []),
+    )
+
+    for result in hook_results:
+        if not isinstance(result, dict):
+            continue
+        action = str(result.get("action") or result.get("decision") or "").strip().lower()
+        if action not in ("continue", "block"):
+            continue
+        message = result.get("message") or result.get("reason")
+        if isinstance(message, str) and message.strip():
+            return message.strip()
 
     return None
 

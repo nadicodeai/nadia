@@ -32,4 +32,21 @@ def build_doctor_parser(subparsers, *, cmd_doctor: Callable) -> None:
             "doctor` first to see active advisories and their IDs."
         ),
     )
+    # Let enabled plugins contribute extra flags onto this existing command
+    # (e.g. the brand-leakage doctor's `doctor --static` / `--live`) via
+    # register_cli_arguments("doctor", ...). Gated on `doctor` actually being
+    # the invoked command so the hot no-arg / chat paths pay no plugin-discovery
+    # cost. Scan argv for the first non-flag token (the subcommand) rather than
+    # testing argv[1] exactly, so leading top-level flags (e.g.
+    # `nadia --verbose doctor`) still wire the plugin flags. Claiming plugins
+    # handle the invocation through the cli_command_dispatch hook consulted in
+    # cmd_doctor.
+    import sys as _sys
+    _first_cmd = next((a for a in _sys.argv[1:] if not a.startswith("-")), None)
+    if _first_cmd == "doctor":
+        try:
+            from nadia_cli.plugins import apply_plugin_arguments
+            apply_plugin_arguments("doctor", doctor_parser)
+        except Exception:
+            pass
     doctor_parser.set_defaults(func=cmd_doctor)

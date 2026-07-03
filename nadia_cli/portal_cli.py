@@ -201,9 +201,6 @@ def portal_command(args) -> int:
         return _cmd_status(args)
     if sub == "open":
         return _cmd_open(args)
-    if sub == "connect":
-        from nadia_cli.portal_activation import portal_connect_command
-        return portal_connect_command(args)
     if sub == "tools":
         return _cmd_tools(args)
     print(f"Unknown portal subcommand: {sub}", file=sys.stderr)
@@ -245,7 +242,21 @@ def add_parser(subparsers) -> None:
         help="List Tool Gateway tools and which are routed via Nadia",
     )
 
-    from nadia_cli.portal_activation import add_connect_parser
-    add_connect_parser(portal_sub)
+    # Let enabled plugins contribute nested subcommands under this group (e.g.
+    # `<cli> portal connect`) via register_cli_command(..., parent="portal").
+    # Gated on `portal` actually being the invoked command so the hot no-arg /
+    # chat paths pay no plugin-discovery cost. Scan argv for the first non-flag
+    # token (the subcommand) rather than testing argv[1] exactly, so leading
+    # top-level flags (e.g. `nadia --verbose portal`) still wire the nested
+    # subcommands. Handlers wire their own set_defaults(func=...), so argparse
+    # dispatches straight to them.
+    import sys as _sys
+    _first_cmd = next((a for a in _sys.argv[1:] if not a.startswith("-")), None)
+    if _first_cmd == "portal":
+        try:
+            from nadia_cli.plugins import apply_plugin_subcommands
+            apply_plugin_subcommands("portal", portal_sub)
+        except Exception:
+            pass
 
     portal_parser.set_defaults(func=portal_command)

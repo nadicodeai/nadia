@@ -123,7 +123,6 @@ _CLONE_ALL_HISTORY_EXCLUDE_ROOT: frozenset[str] = frozenset({
     "backups",
     "state-snapshots",
     "checkpoints",
-    "portal-activation",  # NadicodeAI portal identity/credentials (never clone)
 })
 
 # Marker file written by `nadia profile create --no-skills`.  When present in
@@ -141,6 +140,30 @@ def has_bundled_skills_opt_out(profile_dir: Path) -> bool:
         return (profile_dir / NO_BUNDLED_SKILLS_MARKER).exists()
     except OSError:
         return False
+
+
+def _plugin_profile_exclusions(hook_name: str) -> frozenset[str]:
+    """Union of root-level names plugins contribute to a profile exclusion set.
+
+    Enabled plugins return an iterable of names (or a single name) via
+    ``profile_clone_exclusions`` / ``profile_export_exclusions`` so plugin-owned
+    per-profile state (identity, credentials) is never copied into a cloned or
+    exported profile. Discovery is triggered here so an enabled plugin's
+    exclusion is applied even when clone/export runs without a prior load;
+    failures fail open (over-copy) rather than crashing the profile operation."""
+    try:
+        from nadia_cli.plugins import discover_plugins, invoke_hook
+        discover_plugins()
+        results = invoke_hook(hook_name)
+    except Exception:
+        return frozenset()
+    names: set[str] = set()
+    for ret in results:
+        if isinstance(ret, str):
+            names.add(ret)
+        elif isinstance(ret, (list, tuple, set, frozenset)):
+            names.update(str(x) for x in ret)
+    return frozenset(names)
 
 
 def _clone_all_copytree_ignore(source_dir: Path):
@@ -166,6 +189,10 @@ def _clone_all_copytree_ignore(source_dir: Path):
     """
     source_resolved = source_dir.resolve()
     is_default_source = source_resolved == _get_default_nadia_home().resolve()
+    # nadia: fold plugin-contributed clone exclusions into the history set.
+    history_exclude = _CLONE_ALL_HISTORY_EXCLUDE_ROOT | _plugin_profile_exclusions(
+        "profile_clone_exclusions"
+    )
 
     def _ignore(directory: str, names: List[str]) -> List[str]:
         ignored: list[str] = []
@@ -186,7 +213,7 @@ def _clone_all_copytree_ignore(source_dir: Path):
                 at_root = False
             if at_root:
                 # History artifacts: excluded for ANY source profile.
-                if entry in _CLONE_ALL_HISTORY_EXCLUDE_ROOT:
+                if entry in history_exclude:  # nadia: incl. plugin exclusions
                     ignored.append(entry)
                     continue
                 # Infrastructure: only the default profile contains these.
@@ -222,7 +249,6 @@ _DEFAULT_EXPORT_EXCLUDE_ROOT = frozenset({
     "image_cache", "audio_cache", "document_cache",
     "browser_screenshots", "checkpoints",
     "sandboxes",
-    "portal-activation",  # NadicodeAI portal identity/credentials (never export)
     "logs",                 # gateway logs
 })
 
@@ -1663,6 +1689,11 @@ def _default_export_ignore(root_dir: Path):
     At all levels it excludes ``__pycache__``, sockets, and temp files.
     """
 
+    # nadia: fold plugin-contributed export exclusions into the root set.
+    export_exclude = _DEFAULT_EXPORT_EXCLUDE_ROOT | _plugin_profile_exclusions(
+        "profile_export_exclusions"
+    )
+
     def _ignore(directory: str, contents: list) -> set:
         ignored: set = set()
         for entry in contents:
@@ -1674,7 +1705,7 @@ def _default_export_ignore(root_dir: Path):
                 ignored.add(entry)
         # Root-level exclusions
         if Path(directory) == root_dir:
-            ignored.update(c for c in contents if c in _DEFAULT_EXPORT_EXCLUDE_ROOT)
+            ignored.update(c for c in contents if c in export_exclude)
         return ignored
 
     return _ignore

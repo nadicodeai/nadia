@@ -1222,11 +1222,16 @@ clone_repo() {
             git remote set-branches origin "$BRANCH" 2>/dev/null || true
             git fetch origin "$BRANCH"
             git checkout "$BRANCH"
-            # Fast-forward when possible; if the main branch was force-pushed
-            # with rewritten history, fall back to a hard reset to match the
-            # remote exactly (mirrors `nadia update`'s recovery path). Local
-            # changes are already stashed above, so the reset is safe.
-            git pull --ff-only origin "$BRANCH" || git reset --hard "origin/$BRANCH"
+            # Managed installs should follow origin/$BRANCH exactly. If the
+            # release branch was force-pushed / the checkout has diverged (or
+            # has local-only commits), ff-only pull cannot succeed — mirror
+            # ``nadia update`` and reset to the fetched remote so
+            # bootstrap/install can recover. Local changes are already stashed
+            # above, so the reset is safe.
+            if ! git pull --ff-only origin "$BRANCH"; then
+                log_warn "Fast-forward not possible; resetting managed install to origin/$BRANCH..."
+                git reset --hard "origin/$BRANCH"
+            fi
 
             if [ -n "$autostash_ref" ]; then
                 local restore_now="yes"
