@@ -5,6 +5,8 @@
   "version": "0.18.0",
   "description": "Native desktop shell for Nadia Agent.",
   "author": "NadicodeAI",
+  "homepage": "https://github.com/nadicodeai/nadia#readme",
+  "repository": "git+https://github.com/nadicodeai/nadia.git",
   "type": "module",
   "main": "electron/main.cjs",
   "engines": {
