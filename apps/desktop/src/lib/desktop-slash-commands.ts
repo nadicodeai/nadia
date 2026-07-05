@@ -16,12 +16,6 @@ export interface DesktopSlashCompletion {
   text: string
 }
 
-export interface DesktopThemeCommandOption {
-  description: string
-  label: string
-  name: string
-}
-
 /**
  * Local client action a command resolves to. Each id maps to exactly one
  * handler in the dispatcher (`use-prompt-actions`), so adding a command never
@@ -32,12 +26,10 @@ export type DesktopActionId =
   | 'branch'
   | 'browser'
   | 'handoff'
-  | 'hatch'
   | 'help'
   | 'new'
-  | 'pet'
   | 'profile'
-  | 'skin'
+  // 'skin' removed: /skin is retired, one NadicodeAI skin
   | 'title'
   | 'yolo'
 
@@ -113,7 +105,7 @@ const DESKTOP_COMMAND_SPECS: readonly DesktopCommandSpec[] = [
     args: true
   },
   { name: '/profile', description: 'Switch the active Nadia profile', surface: action('profile') },
-  { name: '/skin', description: 'Switch desktop theme or cycle to the next one', surface: action('skin'), args: true },
+  // One NadicodeAI skin: `/skin` is retired — see NO_DESKTOP_SURFACE.settings.
   { name: '/title', description: 'Rename the current session', surface: action('title') },
   { name: '/help', description: 'Show desktop slash commands', aliases: ['/commands'], surface: action('help') },
   {
@@ -145,18 +137,6 @@ const DESKTOP_COMMAND_SPECS: readonly DesktopCommandSpec[] = [
   { name: '/debug', description: 'Create a debug report', surface: exec() },
   { name: '/goal', description: 'Manage the standing goal for this session', surface: exec() },
   { name: '/personality', description: 'Switch personality for this session', surface: exec(), args: true },
-  {
-    name: '/pet',
-    description: 'Toggle or adopt a petdex mascot (/pet, /pet list, /pet boba)',
-    surface: action('pet'),
-    args: true
-  },
-  {
-    name: '/hatch',
-    description: 'Generate a new pet (opens the pet generator)',
-    aliases: ['/generate-pet'],
-    surface: action('hatch')
-  },
   { name: '/queue', description: 'Queue a prompt for the next turn', aliases: ['/q'], surface: exec() },
   { name: '/retry', description: 'Retry the last user message', surface: exec() },
   { name: '/rollback', description: 'List or restore filesystem checkpoints', surface: exec() },
@@ -211,7 +191,8 @@ const NO_DESKTOP_SURFACE: Record<DesktopUnavailableReason, readonly string[]> = 
     '/verbose'
   ],
   messaging: ['/approve', '/deny'],
-  settings: ['/skills', '/pets'],
+  // `/skin` retired: one NadicodeAI skin, appearance mode lives in Settings.
+  settings: ['/skills', '/pets', '/skin'],
   advanced: ['/curator', '/fast', '/insights', '/kanban', '/reasoning', '/voice']
 }
 
@@ -362,37 +343,10 @@ export function desktopSlashCommandTakesArgs(command: string): boolean {
   return resolveDesktopCommand(command)?.args ?? false
 }
 
-export function desktopSkinSlashCompletions(
-  themes: DesktopThemeCommandOption[],
-  activeThemeName: string,
-  argPrefix: string
-): DesktopSlashCompletion[] {
-  const prefix = argPrefix.trim().toLowerCase()
-
-  const commands: DesktopSlashCompletion[] = [
-    {
-      text: '/skin list',
-      display: '/skin list',
-      meta: 'Show available desktop themes'
-    },
-    {
-      text: '/skin next',
-      display: '/skin next',
-      meta: 'Cycle to the next desktop theme'
-    },
-    ...themes.map(theme => ({
-      text: `/skin ${theme.name}`,
-      display: `/skin ${theme.name}`,
-      meta: `${theme.label}${theme.name === activeThemeName ? ' (current)' : ''} - ${theme.description}`
-    }))
-  ]
-
-  if (!prefix) {
-    return commands
-  }
-
-  return commands.filter(item => item.text.slice('/skin '.length).toLowerCase().startsWith(prefix))
-}
+// one NadicodeAI skin: `/skin` is retired, so the composer's
+// slash-completion hook no longer needs a skin arg-completion surface (the
+// desktopSkinSlashCompletions stub + DesktopThemeCommandOption type it took
+// were removed with it).
 
 export function filterDesktopCommandsCatalog(catalog: CommandsCatalogLike): CommandsCatalogLike {
   const categories = catalog.categories

@@ -1,12 +1,12 @@
+import { Button as UIButton, Card } from '@nadicodeai/ui'
 import { useStore } from '@nanostores/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { Input } from '@/components/ui/input'
-import { getGlobalModelOptions } from '@/nadia'
 import { useI18n } from '@/i18n'
-import { Check, ChevronDown, ChevronLeft, KeyRound, Loader2 } from '@/lib/icons'
+import { Check, ChevronLeft, KeyRound, Loader2 } from '@/lib/icons'
 import { isProviderSetupErrorMessage } from '@/lib/provider-setup-errors'
 import { cn } from '@/lib/utils'
 import { $desktopBoot, type DesktopBootState } from '@/store/boot'
@@ -22,15 +22,11 @@ import {
   peekPendingProviderOAuth,
   refreshOnboarding,
   saveOnboardingApiKey,
-  setOnboardingMode,
   startProviderOAuth
 } from '@/store/onboarding'
-import type { ModelOptionProvider, OAuthProvider } from '@/types/nadia'
+import type { OAuthProvider } from '@/types/nadia'
 
 import { DocsLink, FlowPanel, Status } from './flow'
-import { FeaturedProviderRow, KeyProviderRow, ProviderRow, sortProviders } from './providers'
-
-export { FeaturedProviderRow, KeyProviderRow, ProviderRow, providerTitle, sortProviders } from './providers'
 
 interface DesktopOnboardingOverlayProps {
   enabled: boolean
@@ -48,107 +44,19 @@ export interface ApiKeyOption {
   short?: string
 }
 
-const API_KEY_OPTIONS: ApiKeyOption[] = [
-  {
-    id: 'openrouter',
-    name: 'OpenRouter',
-    envKey: 'OPENROUTER_API_KEY',
-    docsUrl: 'https://openrouter.ai/keys'
-  },
-  {
-    id: 'openai',
-    name: 'OpenAI',
-    envKey: 'OPENAI_API_KEY',
-    docsUrl: 'https://platform.openai.com/api-keys'
-  },
-  {
-    id: 'gemini',
-    name: 'Google Gemini',
-    envKey: 'GEMINI_API_KEY',
-    docsUrl: 'https://aistudio.google.com/app/apikey'
-  },
-  {
-    id: 'xai',
-    name: 'xAI Grok',
-    envKey: 'XAI_API_KEY',
-    docsUrl: 'https://console.x.ai/'
-  },
-  {
-    id: 'local',
-    name: 'Local / custom endpoint',
-    envKey: 'OPENAI_BASE_URL',
-    docsUrl: 'https://github.com/nadicodeai/nadia#bring-your-own-endpoint',
-    placeholder: 'http://127.0.0.1:8000/v1'
-  }
-]
-
-// Build the FULL API-key provider catalog from the backend model options so the
-// onboarding / Providers key form lists every `api_key` provider `nadia model`
-// knows about — not just the hand-curated five. Curated entries keep their
-// richer copy + placeholders and float to the top (recommended defaults); every
-// other api_key provider is appended with a generic "paste {KEY}" affordance.
-// OAuth / external providers are intentionally excluded here — they go through
-// the OAuth picker / sign-in flow, not a pasted key.
-function useApiKeyCatalog(): ApiKeyOption[] {
-  const [rows, setRows] = useState<ModelOptionProvider[]>([])
-
-  useEffect(() => {
-    let cancelled = false
-
-    // Best-effort — on failure the curated defaults still render. Wrapped in
-    // Promise.resolve().then so a synchronous throw (e.g. no desktop bridge in
-    // tests) is funneled into the same .catch instead of escaping.
-    void Promise.resolve()
-      .then(() => getGlobalModelOptions())
-      .then(res => {
-        if (!cancelled) {
-          setRows(res.providers ?? [])
-        }
-      })
-      .catch(() => {
-        // Ignore — fall back to the curated API_KEY_OPTIONS only.
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  return useMemo(() => {
-    const curatedByEnv = new Map(API_KEY_OPTIONS.map(o => [o.envKey, o]))
-    const derived: ApiKeyOption[] = []
-    const seenEnv = new Set<string>(API_KEY_OPTIONS.map(o => o.envKey))
-
-    for (const row of rows) {
-      // Only api_key providers can be activated with a pasted key. Skip OAuth /
-      // external / managed flows and anything missing an env var to write to.
-      if (row.auth_type && row.auth_type !== 'api_key') {
-        continue
-      }
-
-      const envKey = row.key_env
-
-      if (!envKey || seenEnv.has(envKey)) {
-        continue
-      }
-
-      seenEnv.add(envKey)
-      derived.push({
-        id: row.slug,
-        name: row.name,
-        envKey,
-        description: `Direct API access to ${row.name}.`,
-        docsUrl: ''
-      })
-    }
-
-    // Curated first (recommended order), then the rest alphabetically so the
-    // long tail is scannable.
-    derived.sort((a, b) => a.name.localeCompare(b.name))
-
-    return [...API_KEY_OPTIONS.filter(o => curatedByEnv.has(o.envKey)), ...derived]
-  }, [rows])
+// Desktop offers exactly one provider path: the NadicodeAI Portal sign-in. The
+// only non-portal entry is the developer / self-hosted endpoint override,
+// deep-linked from Settings →
+// Model → "Set up custom endpoint". No third-party API-key catalog is offered.
+const LOCAL_ENDPOINT_OPTION: ApiKeyOption = {
+  id: 'local',
+  name: 'Local / custom endpoint',
+  envKey: 'OPENAI_BASE_URL',
+  docsUrl: 'https://github.com/nadicodeai/nadia#bring-your-own-endpoint',
+  placeholder: 'http://127.0.0.1:8000/v1'
 }
+
+const assetPath = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\/+/, '')}`
 
 // Exit choreography, mirroring the gateway "connecting" overlay's timing:
 // text-out (360ms: CONNECTED fades down, rest scrambles+fades) → hold (300ms)
@@ -371,54 +279,23 @@ function Header() {
 }
 
 export const FEATURED_ID = 'nous'
-const SHOW_ALL_KEY = 'nadia-onboarding-show-all-v1'
 
-const readShowAll = () => {
-  try {
-    return window.localStorage.getItem(SHOW_ALL_KEY) === '1'
-  } catch {
-    return false
-  }
-}
-
-const persistShowAll = (value: boolean) => {
-  try {
-    window.localStorage.setItem(SHOW_ALL_KEY, value ? '1' : '0')
-  } catch {
-    // localStorage unavailable — degrade silently.
-  }
-
-  return value
-}
-
+// Portal-only onboarding: a single NadicodeAI Portal sign-in. There is no
+// provider list, no API-key catalog, and no third-party card. The developer
+// custom-endpoint override is the one non-portal path (deep-linked only).
 export function Picker({ ctx }: { ctx: OnboardingContext }) {
   const { t } = useI18n()
-  const { localEndpoint, manual, mode, providers } = useStore($desktopOnboarding)
-  const [showAll, setShowAll] = useState(readShowAll)
-  const ordered = useMemo(() => (providers ? sortProviders(providers) : []), [providers])
-  const hasOauth = ordered.length > 0
-  const apiKeyOptions = useApiKeyCatalog()
+  const { localEndpoint, manual, providers } = useStore($desktopOnboarding)
 
-  // localEndpoint forces the key form regardless of `mode` (which a manual
-  // provider refresh may flip back to 'oauth'); it preselects the local option
-  // and hides the "back to sign in" link since the user came specifically to
-  // configure a custom endpoint.
-  if (localEndpoint || mode === 'apikey' || !hasOauth) {
+  if (localEndpoint) {
     return (
-      <div className="grid gap-3">
-        <ApiKeyForm
-          canGoBack={hasOauth && !localEndpoint}
-          initialEnvKey={localEndpoint ? 'OPENAI_BASE_URL' : undefined}
-          onBack={() => setOnboardingMode('oauth')}
-          onSave={(envKey, value, name, apiKey) => saveOnboardingApiKey(envKey, value, name, ctx, apiKey)}
-          options={apiKeyOptions}
-        />
-        {manual ? null : (
-          <div className="flex justify-center border-t border-(--ui-stroke-tertiary) pt-3">
-            <ChooseLaterLink />
-          </div>
-        )}
-      </div>
+      <ApiKeyForm
+        canGoBack={false}
+        initialEnvKey="OPENAI_BASE_URL"
+        onBack={() => undefined}
+        onSave={(envKey, value, name, apiKey) => saveOnboardingApiKey(envKey, value, name, ctx, apiKey)}
+        options={[LOCAL_ENDPOINT_OPTION]}
+      />
     )
   }
 
@@ -426,55 +303,53 @@ export function Picker({ ctx }: { ctx: OnboardingContext }) {
     return <Status>{t.onboarding.lookingUpProviders}</Status>
   }
 
-  const select = (p: OAuthProvider) => void startProviderOAuth(p, ctx)
-  const featured = ordered.find(p => p.id === FEATURED_ID) ?? null
-  const rest = featured ? ordered.filter(p => p.id !== FEATURED_ID) : ordered
-  // Collapse the secondary providers behind a disclosure only when Nadia
-  // Portal is present to anchor the choice — otherwise show the full list.
-  const collapsible = Boolean(featured) && rest.length > 0
-  const showRest = !collapsible || showAll
+  const portal = providers.find(p => p.id === FEATURED_ID) ?? null
+
+  // The portal is the only offered path. If the list hasn't surfaced it yet,
+  // keep waiting rather than falling back to anything third-party.
+  if (!portal) {
+    return <Status>{t.onboarding.lookingUpProviders}</Status>
+  }
 
   return (
-    <div className="grid gap-2">
-      <div className="grid max-h-[60dvh] gap-2 overflow-y-auto p-1">
-        {featured ? <FeaturedProviderRow onSelect={select} provider={featured} /> : null}
-        {showRest ? (
-          <>
-            {rest.map(p => (
-              <ProviderRow key={p.id} onSelect={select} provider={p} />
-            ))}
-            <KeyProviderRow onClick={() => setOnboardingMode('apikey')} />
-          </>
-        ) : null}
-      </div>
-      {collapsible ? (
-        <Button
-          className="mt-1 self-center font-medium"
-          onClick={() => setShowAll(persistShowAll(!showAll))}
-          size="xs"
-          type="button"
-          variant="text"
-        >
-          {showAll ? t.onboarding.collapse : t.onboarding.otherProviders}
-          <ChevronDown className={cn('size-3.5 transition', showAll && 'rotate-180')} />
-        </Button>
-      ) : null}
-      <div className="flex items-center justify-between gap-3 pt-1">
-        {/* First run only: let the user defer the choice and land in the app.
-            In manual mode the overlay already has a close affordance, so the
-            "choose later" escape would be redundant — hide it. */}
-        {manual ? <span /> : <ChooseLaterLink />}
-        <Button
-          className="-mr-2 font-medium"
-          onClick={() => setOnboardingMode('apikey')}
-          size="xs"
-          type="button"
-          variant="text"
-        >
-          {t.onboarding.haveApiKey}
-        </Button>
-      </div>
+    <div className="grid gap-4">
+      <PortalSignIn onSelect={() => void startProviderOAuth(portal, ctx)} provider={portal} />
+      {manual ? null : (
+        <div className="flex justify-center border-t border-(--ui-stroke-tertiary) pt-3">
+          <ChooseLaterLink />
+        </div>
+      )}
     </div>
+  )
+}
+
+// The single portal sign-in card — a rebuilt surface built on @nadicodeai/ui.
+// The payload label ("NadicodeAI Portal") is authoritative post-A.
+function PortalSignIn({ onSelect, provider }: { onSelect: () => void; provider: OAuthProvider }) {
+  const { t } = useI18n()
+  const loggedIn = provider.status?.logged_in
+
+  return (
+    <Card className="grid gap-4 border-(--stroke-nadia) bg-primary/[0.04] p-5">
+      <div className="flex items-center gap-3">
+        <img alt="" className="size-8 shrink-0 rounded" src={assetPath('nadia-apple-touch-icon.png')} />
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-base font-semibold">{provider.name}</span>
+            {loggedIn ? (
+              <span className="inline-flex items-center gap-1 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                <Check className="size-3" />
+                {t.onboarding.connected}
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-1 text-sm leading-5 text-muted-foreground">{t.onboarding.featuredPitch}</p>
+        </div>
+      </div>
+      <UIButton className="w-full" onClick={onSelect} size="lg">
+        {t.onboarding.signInWith(provider.name)}
+      </UIButton>
+    </Card>
   )
 }
 
@@ -503,7 +378,8 @@ export function ApiKeyForm({
   onBack,
   onClear,
   onSave,
-  options = API_KEY_OPTIONS,
+  // portal-only: default to the local/custom endpoint, not the retired upstream provider key catalog
+  options = [LOCAL_ENDPOINT_OPTION],
   redactedValue
 }: {
   canGoBack: boolean

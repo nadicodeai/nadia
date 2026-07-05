@@ -1,21 +1,22 @@
 import { Box, Text } from '@nadia/ink'
 
 import { HOTKEYS } from '../content/hotkeys.js'
+import { t as tr } from '../i18n/index.js'
 import type { Theme } from '../theme.js'
 
-const COMMON_COMMANDS: [string, string][] = [
-  ['/help', 'full list of commands + hotkeys'],
-  ['/clear', 'start a new session'],
-  ['/resume', 'switch live or resume past sessions'],
-  ['/details', 'control transcript detail level'],
-  ['/copy', 'copy selection or last assistant message'],
-  ['/quit', 'exit nadia']
+const commonCommands = (): [string, string][] => [
+  ['/help', tr('helpHint.commands.help')],
+  ['/clear', tr('helpHint.commands.clear')],
+  ['/resume', tr('helpHint.commands.resume')],
+  ['/details', tr('helpHint.commands.details')],
+  ['/copy', tr('helpHint.commands.copy')],
+  ['/quit', tr('helpHint.commands.quit')]
 ]
 
-const HOTKEY_PREVIEW = HOTKEYS.slice(0, 8)
-
 export function HelpHint({ t }: { t: Theme }) {
-  const labelW = Math.max(...COMMON_COMMANDS.map(([k]) => k.length), ...HOTKEY_PREVIEW.map(([k]) => k.length))
+  const commands = commonCommands()
+  const hotkeyPreview = HOTKEYS.slice(0, 8)
+  const labelW = Math.max(...commands.map(([k]) => k.length), ...hotkeyPreview.map(([k]) => k.length))
 
   const pad = (s: string) => s + ' '.repeat(Math.max(0, labelW - s.length + 2))
 
@@ -32,18 +33,18 @@ export function HelpHint({ t }: { t: Theme }) {
       >
         <Text>
           <Text bold color={t.color.primary}>
-            ? quick help
+            {tr('helpHint.title')}
           </Text>
-          <Text color={t.color.muted}>{'  ·  type /help for the full panel  ·  backspace to dismiss'}</Text>
+          <Text color={t.color.muted}>{tr('helpHint.subtitle')}</Text>
         </Text>
 
         <Box marginTop={1}>
           <Text bold color={t.color.accent}>
-            Common commands
+            {tr('helpHint.commonCommandsTitle')}
           </Text>
         </Box>
 
-        {COMMON_COMMANDS.map(([k, v]) => (
+        {commands.map(([k, v]) => (
           <Text key={k}>
             <Text color={t.color.label}>{pad(k)}</Text>
             <Text color={t.color.muted}>{v}</Text>
@@ -52,11 +53,11 @@ export function HelpHint({ t }: { t: Theme }) {
 
         <Box marginTop={1}>
           <Text bold color={t.color.accent}>
-            Hotkeys
+            {tr('helpHint.hotkeysTitle')}
           </Text>
         </Box>
 
-        {HOTKEY_PREVIEW.map(([k, v]) => (
+        {hotkeyPreview.map(([k, v]) => (
           <Text key={k}>
             <Text color={t.color.label}>{pad(k)}</Text>
             <Text color={t.color.muted}>{v}</Text>

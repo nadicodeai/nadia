@@ -100,11 +100,11 @@ page is for built-in Nadia core development, not the usual user/custom-tool path
 
 ### "I want to train models"
 
-Use reinforcement learning to fine-tune model behavior with Nadia Agent's RL training pipeline (powered by [Atropos](https://github.com/NadicodeAI/atropos)).
+Use reinforcement learning to fine-tune model behavior with Nadia Agent's RL training pipeline (powered by Atropos (wire reference: `github.com/NadicodeAI/atropos`)).
 
 1. [Quickstart](/getting-started/quickstart)
 2. [Configuration](/user-guide/configuration)
-3. [Atropos RL Environments](https://github.com/NadicodeAI/atropos) (external)
+3. Atropos RL Environments (external, wire reference: `github.com/NadicodeAI/atropos`)
 4. [Provider Routing](/user-guide/features/provider-routing)
 5. [Architecture](/developer-guide/architecture)
 

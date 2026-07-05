@@ -22,7 +22,7 @@ import { cn, timeAgo, isoTimeAgo } from "@/lib/utils";
 import { Badge } from "@/nadicodeai-ui-compat";
 import { Button } from "@/nadicodeai-ui-compat";
 import { Checkbox } from "@/nadicodeai-ui-compat";
-import { Select, SelectOption } from "@/nadicodeai-ui-compat";
+import { Select, SelectOption, SelectItem } from "@/nadicodeai-ui-compat";
 import { Card, CardHeader, CardTitle, CardContent } from "@/nadicodeai-ui-compat";
 import { Input } from "@/nadicodeai-ui-compat";
 import { Label } from "@/nadicodeai-ui-compat";
@@ -152,6 +152,7 @@ export function exposePluginSDK() {
       Label,
       Select,
       SelectOption,
+      SelectItem,
       Separator,
       Tabs,
       TabsContent,

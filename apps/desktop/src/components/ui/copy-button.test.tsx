@@ -19,18 +19,18 @@ describe('CopyButton i18n', () => {
     })
 
     render(
-      <I18nProvider configClient={null} initialLocale="zh">
+      <I18nProvider configClient={null} initialLocale="it">
         <CopyButton text="hello" />
       </I18nProvider>
     )
 
-    const button = screen.getByRole('button', { name: '复制' })
+    const button = screen.getByRole('button', { name: 'Copia' })
 
-    expect(button.textContent).toContain('复制')
+    expect(button.textContent).toContain('Copia')
     fireEvent.click(button)
 
     await waitFor(() => expect(writeText).toHaveBeenCalledWith('hello'))
-    await waitFor(() => expect(screen.getByRole('button', { name: '已复制' })).toBeTruthy())
-    expect(screen.getByRole('button', { name: '已复制' }).textContent).toContain('已复制')
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Copiato' })).toBeTruthy())
+    expect(screen.getByRole('button', { name: 'Copiato' }).textContent).toContain('Copiato')
   })
 })

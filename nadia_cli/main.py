@@ -2950,12 +2950,7 @@ def select_provider_and_model(args=None):
     if active == "openrouter" and get_env_value("OPENAI_BASE_URL"):
         active = "custom"
 
-    from nadia_cli.models import (
-        CANONICAL_PROVIDERS,
-        _PROVIDER_LABELS,
-        group_providers,
-        provider_group_for_slug,
-    )
+    from nadia_cli.models import _PROVIDER_LABELS
 
     provider_labels = dict(_PROVIDER_LABELS)  # derive from canonical list
     if active and active in _custom_provider_map:
@@ -2968,64 +2963,13 @@ def select_provider_and_model(args=None):
     print(f"  Active provider:  {active_label}")
     print()
 
-    # Step 1: Provider selection.
-    #
-    # Canonical providers are folded into top-level groups (display only — see
-    # PROVIDER_GROUPS in nadia_cli/models.py). A multi-member group shows one
-    # row ("Kimi / Moonshot ▸"); picking it opens a member sub-picker that
-    # resolves back to a concrete slug, so the dispatch chain below is
-    # unchanged. Custom providers and the trailing actions stay flat.
-    canonical_descs = {p.slug: p.tui_desc for p in CANONICAL_PROVIDERS}
-    grouped_rows = group_providers([p.slug for p in CANONICAL_PROVIDERS])
-
-    # The group/slug that should be pre-selected: the active provider's group
-    # if it's grouped, otherwise the active slug itself.
-    active_group = provider_group_for_slug(active) if active else ""
-
-    # ordered entries: (key, label, members)
-    #   members == [] → leaf row, key is a provider slug / action
-    #   members != [] → group row, key is "group:<gid>"
-    ordered: list[tuple[str, str, list[str]]] = []
+    # Step 1: Provider selection. The interactive picker offers only the
+    # Portal path; already-configured third-party providers remain honored by
+    # runtime session resolution, but they are not offered as setup choices.
+    ordered: list[tuple[str, str, list[str]]] = [
+        ("nous", "NadicodeAI Portal", []),
+    ]
     default_idx = 0
-    for row in grouped_rows:
-        if row["kind"] == "group":
-            gid = row["group_id"]
-            group_desc = row.get("description", "")
-            label = f"{row['label']} ▸ ({group_desc})" if group_desc else f"{row['label']} ▸"
-            key = f"group:{gid}"
-            is_active = bool(active_group) and gid == active_group
-            members = row["members"]
-        else:
-            slug = row["slug"]
-            label = canonical_descs.get(slug, provider_labels.get(slug, slug))
-            key = slug
-            is_active = bool(active) and slug == active
-            members = []
-        if is_active:
-            ordered.append((key, f"{label}  ← currently active", members))
-            default_idx = len(ordered) - 1
-        else:
-            ordered.append((key, label, members))
-
-    for key, provider_info in _custom_provider_map.items():
-        name = provider_info["name"]
-        base_url = provider_info["base_url"]
-        short_url = base_url.replace("https://", "").replace("http://", "").rstrip("/")
-        saved_model = provider_info.get("model", "")
-        model_hint = f" — {saved_model}" if saved_model else ""
-        label = f"{name} ({short_url}){model_hint}"
-        if active and key == active:
-            ordered.append((key, f"{label}  ← currently active", []))
-            default_idx = len(ordered) - 1
-        else:
-            ordered.append((key, label, []))
-
-    ordered.append(("custom", "Custom endpoint (enter URL manually)", []))
-    _has_saved_custom_list = isinstance(config.get("custom_providers"), list) and bool(
-        config.get("custom_providers")
-    )
-    if _has_saved_custom_list:
-        ordered.append(("remove-custom", "Remove a saved custom provider", []))
     ordered.append(("aux-config", "Configure auxiliary models...", []))
     ordered.append(("cancel", "Leave unchanged", []))
 
@@ -3037,117 +2981,29 @@ def select_provider_and_model(args=None):
         print("No change.")
         return
 
-    selected_key = ordered[provider_idx][0]
-    selected_members = ordered[provider_idx][2]
-
-    # Group row → drill into a member sub-picker. Default to the active member
-    # if the active provider lives in this group. The descriptive text lives on
-    # the group row itself, so member rows show only their short label here.
-    if selected_members:
-        member_default = 0
-        if active in selected_members:
-            member_default = selected_members.index(active)
-        member_labels = [
-            provider_labels.get(m, m) for m in selected_members
-        ]
-        group_label = ordered[provider_idx][1].split(" ▸", 1)[0]
-        member_idx = _prompt_provider_choice(
-            member_labels,
-            default=member_default,
-            title=f"Select {group_label} provider:",
-        )
-        if member_idx is None:
-            print("No change.")
-            return
-        selected_provider = selected_members[member_idx]
-    else:
-        selected_provider = selected_key
+    # `ordered` above only ever produces leaf rows (members == [] for every
+    # entry: nadia, aux-config, cancel) — the group-drill sub-picker and the
+    # third-party dispatch chain (openrouter/moa/custom/custom:/anthropic/
+    # api-key-provider/etc.) below this point were picker-internal dead code:
+    # nothing in `ordered` can produce those keys anymore. Removed rather
+    # than left dormant, so a stray re-added row can't silently re-light a
+    # third-party flow. The `_model_flow_*` functions themselves are left in
+    # place — other callers/tests still use them directly.
+    selected_provider = ordered[provider_idx][0]
 
     if selected_provider == "aux-config":
         _aux_config_menu()
         return
 
-    # Step 2: Provider-specific setup + model selection
-    if selected_provider == "openrouter":
-        _model_flow_openrouter(config, current_model)
-    elif selected_provider == "moa":
-        _model_flow_moa(config, current_model)
-    elif selected_provider == "nous":
-        _model_flow_nous(config, current_model, args=args)
-    elif selected_provider == "openai-codex":
-        _model_flow_openai_codex(config, current_model)
-    elif selected_provider == "xai-oauth":
-        _model_flow_xai_oauth(config, current_model, args=args)
-    elif selected_provider == "qwen-oauth":
-        _model_flow_qwen_oauth(config, current_model)
-    elif selected_provider == "minimax-oauth":
-        _model_flow_minimax_oauth(config, current_model, args=args)
-    elif selected_provider == "copilot-acp":
-        _model_flow_copilot_acp(config, current_model)
-    elif selected_provider == "copilot":
-        _model_flow_copilot(config, current_model)
-    elif selected_provider == "custom":
-        _model_flow_custom(config)
-    elif (
-        selected_provider.startswith("custom:")
-        or selected_provider in _custom_provider_map
-    ):
-        provider_info = _named_custom_provider_map(load_config()).get(selected_provider)
-        if provider_info is None:
-            print(
-                "Warning: the selected saved custom provider is no longer available. "
-                "It may have been removed from config.yaml. No change."
-            )
-            return
-        _model_flow_named_custom(config, provider_info)
-    elif selected_provider == "remove-custom":
-        _remove_custom_provider(config)
-    elif selected_provider == "anthropic":
-        _model_flow_anthropic(config, current_model)
-    elif selected_provider == "kimi-coding":
-        _model_flow_kimi(config, current_model)
-    elif selected_provider == "stepfun":
-        _model_flow_stepfun(config, current_model)
-    elif selected_provider == "bedrock":
-        _model_flow_bedrock(config, current_model)
-    elif selected_provider == "vertex":
-        _model_flow_vertex(config, current_model)
-    elif selected_provider == "azure-foundry":
-        _model_flow_azure_foundry(config, current_model)
-    elif selected_provider in {
-        "openai-api",
-        "gemini",
-        "deepseek",
-        "xai",
-        "zai",
-        "kimi-coding-cn",
-        "minimax",
-        "minimax-cn",
-        "kilocode",
-        "opencode-zen",
-        "opencode-go",
-        "alibaba",
-        "huggingface",
-        "xiaomi",
-        "arcee",
-        "gmi",
-        "nvidia",
-        "ollama-cloud",
-        "tencent-tokenhub",
-        "lmstudio",
-    } or _is_profile_api_key_provider(selected_provider):
-        _model_flow_api_key_provider(config, selected_provider, current_model)
+    # Step 2: Provider-specific setup + model selection. Portal ("nous") is
+    # the only provider the picker offers.
+    _model_flow_nous(config, current_model, args=args)
 
     # ── Post-switch cleanup: clear stale OPENAI_BASE_URL ──────────────
-    # When the user switches to a named provider (anything except "custom"),
-    # a leftover OPENAI_BASE_URL in ~/.nadia/.env can poison auxiliary
-    # clients that use provider:auto. Clear it proactively.  (#5161)
-    if selected_provider not in {
-        "custom",
-        "cancel",
-        "remove-custom",
-    } and not selected_provider.startswith("custom:"):
-        _clear_stale_openai_base_url()
+    # A leftover OPENAI_BASE_URL in ~/.nadia/.env can poison auxiliary
+    # clients (compression, vision, delegation) that use provider:auto.
+    # Clear it proactively.  (#5161)
+    _clear_stale_openai_base_url()
 
 
 def _clear_stale_openai_base_url():
@@ -3404,6 +3260,25 @@ def _aux_select_for_task(task: str) -> None:
     except Exception as exc:
         print(f"Could not detect authenticated providers: {exc}")
         providers = []
+    else:
+        # Gate to the portal catalog the same way the top-level `nadia
+        # model` picker is gated (see inventory._portal_only_provider_rows).
+        # Without this, a stray already-authenticated third-party provider
+        # (e.g. a leftover OPENAI_API_KEY/ANTHROPIC_API_KEY in the
+        # environment) would resurface here even though the main picker no
+        # longer offers it as a setup choice.
+        from nadia_cli.inventory import ConfigContext, _portal_only_provider_rows
+
+        providers = _portal_only_provider_rows(
+            providers,
+            ConfigContext(
+                current_provider=current_provider,
+                current_model=current_model,
+                current_base_url=current_base_url,
+                user_providers={},
+                custom_providers=[],
+            ),
+        )
 
     entries: list[tuple[str, str, list[str]]] = []  # (slug, label, models)
     # "auto" always first
@@ -11643,7 +11518,9 @@ _BUILTIN_SUBCOMMANDS = frozenset(
         "dump", "fallback", "gateway", "hooks", "import", "insights",
         "gui", "desktop", "kanban", "login", "logout", "logs", "lsp", "mcp", "memory", "migrate", "moa",
         "journey", "memory-graph", "learning",
-        "model", "pairing", "pets", "plugins", "portal", "postinstall", "profile",
+        "model", "pairing",
+        # Python pet top-level command removed.
+        "plugins", "portal", "postinstall", "profile",
         "project", "proxy",
         "prompt-size",
         "send", "sessions", "setup",
@@ -12559,25 +12436,7 @@ def main():
     except Exception as _exc:
         logging.getLogger(__name__).debug("curator CLI wiring failed: %s", _exc)
 
-    # =========================================================================
-    # pets command — petdex animated mascots (CLI / TUI / desktop display)
-    # =========================================================================
-    pets_parser = subparsers.add_parser(
-        "pets",
-        help="Browse, install, and select petdex animated pets",
-        description=(
-            "Petdex (https://github.com/crafter-station/petdex) is a public "
-            "gallery of animated sprite pets for coding agents. Install one "
-            "and Nadia shows it reacting to agent activity across the CLI, "
-            "TUI, and desktop app."
-        ),
-    )
-    try:
-        from nadia_cli.pets import register_cli as _register_pets_cli
-
-        _register_pets_cli(pets_parser)
-    except Exception as _exc:
-        logging.getLogger(__name__).debug("pets CLI wiring failed: %s", _exc)
+    # Python pet top-level CLI command removed.
 
     # =========================================================================
     # journey command — learned skills + memories over time, in the terminal

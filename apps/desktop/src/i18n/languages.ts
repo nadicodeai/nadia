@@ -2,6 +2,7 @@ import type { Locale } from './types'
 
 export const DEFAULT_LOCALE: Locale = 'en'
 
+// product-wide locale set: exactly English and Italian
 export const LOCALE_OPTIONS = [
   {
     id: 'en',
@@ -25,20 +26,17 @@ export const LOCALE_META: Record<Locale, { name: string; englishName: string }> 
   LOCALE_OPTIONS.map(locale => [locale.id, { name: locale.name, englishName: locale.englishName }])
 ) as Record<Locale, { name: string; englishName: string }>
 
+// only English and Italian resolve; every other value (including
+// the retired zh/zh-hant/ja) falls back to English via normalizeLocale.
 const LOCALE_ALIASES: Record<string, Locale> = {
   en: 'en',
   'en-us': 'en',
   en_us: 'en',
-  'en-gb': 'en',
-  en_gb: 'en',
-  english: 'en',
   it: 'it',
   'it-it': 'it',
   it_it: 'it',
   'it-ch': 'it',
-  it_ch: 'it',
-  italian: 'it',
-  italiano: 'it'
+  it_ch: 'it'
 }
 
 function normalizeLocaleKey(value: string): string {

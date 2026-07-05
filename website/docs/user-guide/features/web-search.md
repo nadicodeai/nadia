@@ -32,7 +32,8 @@ Brave Search, DDGS, and xAI are **search-only** — pair any of them with Firecr
 **Per-capability split:** you can use different providers for search and extract independently — for example SearXNG (free) for search and Firecrawl for extract. See [Per-capability configuration](#per-capability-configuration) below.
 
 :::tip NadicodeAI Subscribers
-If you have a paid [NadicodeAI Portal](https://portal.nadicodeai.com) subscription, web search and extract are available through the **[Tool Gateway](tool-gateway.md)** via managed Firecrawl — no API key needed. New installs can run `nadia setup --portal` to log in and turn on all gateway tools at once; existing installs can flip just web via `nadia tools`.
+If you have a paid [NadicodeAI Portal](https://portal.nadicode.ai) subscription, web search and extract are available through the **[Tool Gateway](tool-gateway.md)** via managed Firecrawl — no API key needed.
+New installs can run `nadia setup --portal` to log in and turn on all gateway tools at once; existing installs can flip just web via `nadia tools`.
 :::
 
 ---

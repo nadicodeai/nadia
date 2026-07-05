@@ -17,7 +17,7 @@ Nadia reads environment variables from the process environment and, for user-man
 | `NADIA_OPENROUTER_CACHE` | Enable OpenRouter response caching (`1`/`true`/`yes`/`on`). Overrides `openrouter.response_cache` in config.yaml. See [Response Caching](https://openrouter.ai/docs/guides/features/response-caching). |
 | `NADIA_OPENROUTER_CACHE_TTL` | Cache TTL in seconds (1-86400). Overrides `openrouter.response_cache_ttl` in config.yaml. |
 | `NOUS_BASE_URL` | Override NadicodeAI Portal base URL (rarely needed; development/testing only) |
-| `NOUS_INFERENCE_BASE_URL` | Override Nadia inference endpoint directly |
+| `NOUS_INFERENCE_BASE_URL` | Override NadicodeAI Portal inference endpoint directly |
 | `OPENAI_API_KEY` | API key for custom OpenAI-compatible endpoints (used with `OPENAI_BASE_URL`) |
 | `OPENAI_BASE_URL` | Base URL for custom endpoint (VLLM, SGLang, etc.) |
 | `LM_API_KEY` | API key for LM Studio (`lmstudio` provider). Often a placeholder for local servers |
@@ -116,9 +116,9 @@ For native Anthropic auth, Nadia prefers Claude Code's own credential files when
 | Variable | Description |
 |----------|-------------|
 | `NADIA_PORTAL_BASE_URL` | Override NadicodeAI Portal URL (for development/testing) |
-| `NOUS_INFERENCE_BASE_URL` | Override Nadia inference API URL |
+| `NOUS_INFERENCE_BASE_URL` | Override NadicodeAI Portal inference API URL |
 | `NADIA_NOUS_MIN_KEY_TTL_SECONDS` | Min agent key TTL before re-mint (default: 1800 = 30min) |
-| `NADIA_NOUS_TIMEOUT_SECONDS` | HTTP timeout for Nadia credential / token flows |
+| `NADIA_NOUS_TIMEOUT_SECONDS` | HTTP timeout for NadicodeAI Portal credential / token flows |
 | `NADIA_DUMP_REQUESTS` | Dump API request payloads to log files (`true`/`false`) |
 | `NADIA_PREFILL_MESSAGES_FILE` | Path to a JSON file of ephemeral prefill messages injected at API-call time |
 | `NADIA_TIMEZONE` | IANA timezone override (for example `America/New_York`) |
@@ -197,7 +197,7 @@ These variables configure the [Tool Gateway](/user-guide/features/tool-gateway) 
 |----------|-------------|
 | `TOOL_GATEWAY_DOMAIN` | Base domain for Tool Gateway routing (default: NadicodeAI-managed gateway domain) |
 | `TOOL_GATEWAY_SCHEME` | HTTP or HTTPS scheme for gateway URLs (default: `https`) |
-| `TOOL_GATEWAY_USER_TOKEN` | Auth token for the Tool Gateway (normally auto-populated from Nadia auth) |
+| `TOOL_GATEWAY_USER_TOKEN` | Auth token for the Tool Gateway (normally auto-populated from NadicodeAI Portal auth) |
 | `FIRECRAWL_GATEWAY_URL` | Override URL for the Firecrawl gateway endpoint specifically |
 
 ## Terminal Backend
@@ -443,12 +443,12 @@ Three dashboard-auth providers ship in the box. For a remote Nadia Desktop conne
 | `NADIA_DASHBOARD_BASIC_AUTH_PASSWORD_HASH` | scrypt password hash for the basic provider (preferred — no plaintext at rest). Compute with `python -c "from plugins.dashboard_auth.basic import hash_password; print(hash_password('PW'))"`. Overrides `dashboard.basic_auth.password_hash`. |
 | `NADIA_DASHBOARD_BASIC_AUTH_SECRET` | HMAC key (32+ bytes, base64/hex/raw) signing the basic provider's stateless session tokens. Set explicitly so sessions survive restarts / span multiple workers; blank → random per-process (you'll be logged out on every restart). Overrides `dashboard.basic_auth.secret`. |
 | `NADIA_DASHBOARD_BASIC_AUTH_TTL_SECONDS` | Access-token lifetime for the basic provider (default 12h). Overrides `dashboard.basic_auth.session_ttl_seconds`. |
-| `NADIA_DASHBOARD_OAUTH_CLIENT_ID` | OAuth client id (`agent:{instance_id}`) for the gated/public dashboard, activating the Nadia (`plugins/dashboard_auth/nadia`) provider. Overrides `dashboard.oauth.client_id`. Provision it with `nadia dashboard register`. |
+| `NADIA_DASHBOARD_OAUTH_CLIENT_ID` | OAuth client id (`agent:{instance_id}`) for the gated/public dashboard, activating the NadicodeAI Portal (`plugins/dashboard_auth/nadia`) provider. Overrides `dashboard.oauth.client_id`. Provision it with `nadia dashboard register`. |
 | `NADIA_DASHBOARD_PUBLIC_URL` | Complete public URL the dashboard is reached at, for OAuth callback construction behind reverse proxies. Overrides `dashboard.public_url`. |
 | `NADIA_DASHBOARD_OIDC_ISSUER` | OIDC issuer URL for the bundled self-hosted OIDC provider (`plugins/dashboard_auth/self_hosted`). Required to activate it. Overrides `dashboard.oauth.self_hosted.issuer`. |
 | `NADIA_DASHBOARD_OIDC_CLIENT_ID` | Public OIDC client id (authorization-code + PKCE) for the self-hosted OIDC provider. Required to activate it. Overrides `dashboard.oauth.self_hosted.client_id`. |
 | `NADIA_DASHBOARD_OIDC_SCOPES` | Requested OIDC scopes for the self-hosted OIDC provider (default `openid profile email`). Overrides `dashboard.oauth.self_hosted.scopes`. |
-| `NADIA_DESKTOP_REMOTE_URL` | (Desktop side) Base URL of the remote backend, e.g. `http://host:9119`. When set, overrides the in-app Gateway URL; you still sign in from the Gateway settings panel (OAuth redirect or username/password, whichever the backend advertises). |
+| `NADIA_DESKTOP_REMOTE_URL` | (Desktop side) Base URL of a remote backend, e.g. `http://host:9119`. Nadia Desktop always runs its own local gateway; this developer-only override — set together with `NADIA_DESKTOP_REMOTE_TOKEN` (both required) — is the sole way to point it at a remote backend instead, using a static session token. |
 | `NADIA_DESKTOP_NADIA` | Desktop backend command override. Used by packagers/Nix or troubleshooting to point Electron at a specific `nadia` executable after backend probing. |
 | `NADIA_DESKTOP_NADIA_ROOT` | Desktop source-checkout override used by `nadia desktop --nadia-root`; checked before the packaged first-launch install or an existing `nadia` on `PATH`. |
 | `NADIA_DESKTOP_IGNORE_EXISTING` | Set to `1` to make Desktop ignore an existing `nadia` on `PATH` during backend resolution. Equivalent to `nadia desktop --ignore-existing`. |

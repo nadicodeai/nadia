@@ -448,11 +448,7 @@ export function fromSkin(
   bannerHero = '',
   toolPrefix = '',
   helpHeader = '',
-  // Skin identity from the gateway. Absent → 'default', mirroring the Python
-  // CLI's getattr(skin, "name", "default"), so an unnamed skin keeps the
-  // legacy wordmark fallback and only explicitly-named non-default skins
-  // (e.g. 'nadia') suppress it.
-  skinName = 'default'
+  _skinName = 'nadia'
 ): Theme {
   const d = DEFAULT_THEME
   const c = (k: string) => colors[k]
@@ -522,7 +518,7 @@ export function fromSkin(
 
       bannerLogo,
       bannerHero,
-      legacyWordmark: skinName === 'default'
+      legacyWordmark: false
     },
     process.env,
     DEFAULT_LIGHT_MODE

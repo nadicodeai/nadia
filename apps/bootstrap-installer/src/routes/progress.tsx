@@ -12,6 +12,8 @@ import { Check, X, ChevronRight, FileText } from 'lucide-react'
 import clsx from 'clsx'
 import { BrandMark } from '../components/brand-mark'
 import { Loader } from '../components/loader'
+import { useI18n } from '../i18n'
+import type { StageName } from '../i18n/types'
 
 interface ProgressProps {
   bootstrap: BootstrapStateModel
@@ -23,6 +25,7 @@ interface ProgressProps {
  * of the product.
  */
 export default function ProgressScreen({ bootstrap }: ProgressProps) {
+  const t = useI18n()
   const progress = useStore($progress)
   const mode = useStore($mode)
   const [showLogs, setShowLogs] = useState(false)
@@ -47,10 +50,13 @@ export default function ProgressScreen({ bootstrap }: ProgressProps) {
   }, [bootstrap.status])
 
   const isUpdate = mode === 'update'
-  const title = bootstrap.status === 'completed' ? 'Done' : isUpdate ? 'Updating Nadia's : 'Setting up Nadia Agent'
-  const description = isUpdate
-    ? 'Nadia is updating to the latest version — this only takes a moment.'
-    : 'This is a one-time setup. The Nadia installer is downloading dependencies and configuring your machine. Subsequent launches will skip this step.'
+  const title =
+    bootstrap.status === 'completed'
+      ? t.progress.titleDone
+      : isUpdate
+        ? t.progress.titleUpdate
+        : t.progress.titleInstall
+  const description = isUpdate ? t.progress.descUpdate : t.progress.descInstall
   const pct = Math.round(progress.fraction * 100)
 
   return (
@@ -72,7 +78,7 @@ export default function ProgressScreen({ bootstrap }: ProgressProps) {
           <div className="mb-4">
             <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
               <span className={clsx(bootstrap.status === 'running' && 'shimmer')}>
-                {progress.done} of {progress.total} steps complete
+                {t.progress.stepsComplete(progress.done, progress.total)}
               </span>
               <span className="tabular-nums">{pct}%</span>
             </div>
@@ -107,8 +113,15 @@ export default function ProgressScreen({ bootstrap }: ProgressProps) {
                       : 'text-muted-foreground'
                   )}
                 >
-                  {rec.state === 'running' && <Loader className="-ml-2 size-6 shrink-0" />}
-                  <span className="flex-1 truncate">{rec.info.title}</span>
+                  {rec.state === 'running' && (
+                    <Loader className="-ml-2 size-6 shrink-0" label={t.progress.loading} />
+                  )}
+                  {/* Stage titles arrive from the Rust worker as prose; localize by
+                      mapping the stable machine name, falling back to the worker
+                      title for any stage the catalog doesn't know. */}
+                  <span className="flex-1 truncate">
+                    {t.stages[rec.info.name as StageName] ?? rec.info.title}
+                  </span>
                   {meta && <span className="text-xs tabular-nums text-muted-foreground/70">{meta}</span>}
                   <StateIcon state={rec.state ?? null} />
                 </li>
@@ -120,8 +133,8 @@ export default function ProgressScreen({ bootstrap }: ProgressProps) {
         {showLogs && (
           <div className="flex w-1/2 flex-col border-l border-(--stroke-nadia)">
             <div className="flex shrink-0 items-center justify-between border-b border-(--stroke-nadia) px-3 py-2 text-xs">
-              <span className="font-medium text-foreground/80">Live output</span>
-              <span className="tabular-nums text-muted-foreground">{bootstrap.logs.length} lines</span>
+              <span className="font-medium text-foreground/80">{t.progress.liveOutput}</span>
+              <span className="tabular-nums text-muted-foreground">{t.progress.lineCount(bootstrap.logs.length)}</span>
             </div>
             <div className="flex-1 overflow-y-auto px-3 py-2 font-mono text-[10.5px] leading-relaxed">
               {bootstrap.logs.map((entry, idx) => (
@@ -148,13 +161,13 @@ export default function ProgressScreen({ bootstrap }: ProgressProps) {
           className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
         >
           <FileText size={14} />
-          {showLogs ? 'Hide details' : 'Show details'}
+          {showLogs ? t.progress.hideDetails : t.progress.showDetails}
           <ChevronRight size={12} className={clsx('transition-transform', showLogs && 'rotate-90')} />
         </button>
 
         {bootstrap.status === 'running' && (
           <Button variant="outline" size="sm" onClick={() => void cancelInstall()}>
-            Cancel
+            {t.progress.cancel}
           </Button>
         )}
       </div>

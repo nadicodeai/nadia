@@ -10,6 +10,8 @@ import {
   type BootstrapStateModel
 } from '../store'
 import { RefreshCw, FileText } from 'lucide-react'
+import { useI18n } from '../i18n'
+import { classifyFailure } from '../i18n/failures'
 
 interface FailureProps {
   bootstrap: BootstrapStateModel
@@ -19,13 +21,25 @@ interface FailureProps {
  * Failure screen. Same hero treatment as Welcome/Success — the wordmark
  * carries the brand, so we keep it across every terminal state.
  *
- * The actual error message lives below in muted text. Two affordances on
- * shared Button tokens: Retry (primary) and Open logs (quiet text link).
+ * The explanation below is localized: known Rust failure classes (see
+ * i18n/failures) get a plain-language message in the operator's language;
+ * the raw diagnostic is demoted to a secondary detail line — visible for
+ * support, but never the headline. Unknown classes fall back to the generic
+ * localized message with the raw string as the detail.
  */
 export default function Failure({ bootstrap }: FailureProps) {
+  const t = useI18n()
   const logPath = useStore($logPath)
   const mode = useStore($mode)
   const isUpdate = mode === 'update'
+  const title = isUpdate ? t.failure.titleUpdate : t.failure.titleInstall
+
+  const cause = classifyFailure(bootstrap.error)
+  const explanation = cause
+    ? t.causes[cause]
+    : isUpdate
+      ? t.failure.defaultErrorUpdate
+      : t.failure.defaultErrorInstall
 
   return (
     <div className="nadia-fade-in flex h-full flex-col items-center justify-center gap-6 px-12 py-10">
@@ -41,33 +55,37 @@ export default function Failure({ bootstrap }: FailureProps) {
           }
         >
           <span>
-            <span>{isUpdate ? 'Update didn\u2019t finish' : 'Install didn\u2019t finish'}</span>
+            <span>{title}</span>
           </span>
-          <span aria-hidden="true">{isUpdate ? 'Update didn\u2019t finish' : 'Install didn\u2019t finish'}</span>
+          <span aria-hidden="true">{title}</span>
         </p>
 
         <p className="m-0 mx-auto max-w-xl text-center text-sm leading-normal tracking-tight text-muted-foreground">
-          {bootstrap.error ??
-            (isUpdate
-              ? 'Something went wrong during the update.'
-              : 'Something went wrong during installation.')}
+          {explanation}
         </p>
+
+        {bootstrap.error && (
+          <p className="mx-auto mt-2 max-w-xl text-center text-xs leading-normal text-muted-foreground/60">
+            {t.errorDetailLabel}{' '}
+            <span className="font-mono break-words">{bootstrap.error}</span>
+          </p>
+        )}
       </div>
 
       <div className="flex items-center gap-3">
         <Button onClick={() => void (isUpdate ? startUpdate() : startInstall())} className="gap-1.5">
           <RefreshCw />
-          {isUpdate ? 'Retry update' : 'Retry install'}
+          {isUpdate ? t.failure.retryUpdate : t.failure.retryInstall}
         </Button>
         <Button variant="text" onClick={() => void openLogDir()} className="gap-1.5">
           <FileText />
-          Open logs
+          {t.failure.openLogs}
         </Button>
       </div>
 
       {logPath && (
         <p className="max-w-lg text-center text-xs text-muted-foreground/70">
-          Log: <code className="font-mono">{logPath}</code>
+          {t.failure.logLabel} <code className="font-mono">{logPath}</code>
         </p>
       )}
     </div>

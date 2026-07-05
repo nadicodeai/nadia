@@ -12,7 +12,8 @@ import { RemoteDisplayBanner } from '@/components/remote-display-banner'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import { isFocusWithin } from '@/lib/keybinds/combo'
 import { cn } from '@/lib/utils'
-import { useSkinCommand } from '@/themes/use-skin-command'
+// /skin theme-cycling command retired: one NadicodeAI skin,
+// not an operator choice.
 
 import { formatRefValue } from '../components/assistant-ui/directive-text'
 import { getSessionMessages, triggerCronJob } from '../nadia'
@@ -37,13 +38,6 @@ import {
 } from '../store/layout'
 import { respondToApprovalAction } from '../store/native-notifications'
 import { $paneOpen } from '../store/panes'
-import { setPetActivity } from '../store/pet'
-import { setPetScale } from '../store/pet-gallery'
-import {
-  setPetOverlayOpenAppHandler,
-  setPetOverlayScaleHandler,
-  setPetOverlaySubmitHandler
-} from '../store/pet-overlay'
 import { $filePreviewTarget, $previewTarget, closeActiveRightRailTab } from '../store/preview'
 import {
   $activeGatewayProfile,
@@ -55,7 +49,6 @@ import { $startWorkSessionRequest, followActiveSessionCwd, resolveNewSessionCwd 
 import { $reviewOpen, REVIEW_PANE_ID } from '../store/review'
 import {
   $activeSessionId,
-  $attentionSessionIds,
   $currentCwd,
   $freshDraftReady,
   $gatewayState,
@@ -97,7 +90,6 @@ import { useKeybinds } from './hooks/use-keybinds'
 import { SIDEBAR_COLLAPSE_MEDIA_QUERY } from './layout-constants'
 import { ModelPickerOverlay } from './model-picker-overlay'
 import { ModelVisibilityOverlay } from './model-visibility-overlay'
-import { PetGenerateOverlay } from './pet-generate/pet-generate-overlay'
 import { RightSidebarPane } from './right-sidebar'
 import { FileActionDialogs } from './right-sidebar/file-actions'
 import { RemoteFolderPicker } from './right-sidebar/files/remote-picker'
@@ -721,8 +713,6 @@ export function DesktopController() {
     }
   }, [startSessionInWorkspace, startWorkSessionRequest])
 
-  const handleSkinCommand = useSkinCommand()
-
   const {
     cancelRun,
     editMessage,
@@ -738,7 +728,6 @@ export function DesktopController() {
     branchCurrentSession: branchInNewChat,
     busyRef,
     createBackendSessionForSend,
-    handleSkinCommand,
     refreshSessions,
     requestGateway,
     resumeStoredSession: resumeSession,
@@ -747,59 +736,6 @@ export function DesktopController() {
     sttEnabled,
     updateSessionState
   })
-
-  // The popped-out pet drives two actions back into the app: send a prompt, and
-  // open the most recent thread. Both are registered ONCE through refs that track
-  // the latest callbacks — re-registering on every `submitText`/`resumeSession`
-  // identity change left a brief window where the handler was nulled (cleanup
-  // before re-register), which could drop a submit fired from the overlay (e.g.
-  // creating a session from the new-session screen). The ref form keeps a stable,
-  // always-current handler. Primary window only — it owns the overlay.
-  const submitTextRef = useRef(submitText)
-  submitTextRef.current = submitText
-  const resumeSessionRef = useRef(resumeSession)
-  resumeSessionRef.current = resumeSession
-  const requestGatewayRef = useRef(requestGateway)
-  requestGatewayRef.current = requestGateway
-
-  useEffect(() => {
-    if (isSecondaryWindow()) {
-      return
-    }
-
-    setPetOverlaySubmitHandler(text => void submitTextRef.current(text))
-    // Alt+wheel resize from the popped-out pet — persist it through this
-    // window's gateway (the overlay has none) so it survives restart.
-    setPetOverlayScaleHandler(scale => setPetScale(requestGatewayRef.current, scale))
-    // Mail icon: $sessions is ordered most-recent-first; the pet is global (not
-    // per session) so "most recent" is the right target. main.cjs already raised
-    // the window before forwarding this.
-    setPetOverlayOpenAppHandler(() => {
-      const recent = $sessions.get()[0]
-
-      if (recent?.id) {
-        void resumeSessionRef.current(recent.id)
-      }
-    })
-
-    return () => {
-      setPetOverlaySubmitHandler(null)
-      setPetOverlayOpenAppHandler(null)
-      setPetOverlayScaleHandler(null)
-    }
-  }, [])
-
-  // Mirror "a session is blocked on the user" (clarify/approval) into the pet's
-  // awaitingInput flag so it shows the `waiting` pose. Lives on $petActivity so
-  // it rides the same atom the pop-out overlay mirrors — no session list needed
-  // there. Every window keeps its own in-window pet in sync.
-  useEffect(() => {
-    const sync = () => setPetActivity({ awaitingInput: $attentionSessionIds.get().length > 0 })
-
-    sync()
-
-    return $attentionSessionIds.listen(sync)
-  }, [])
 
   useGatewayBoot({
     handleGatewayEvent: handleDesktopGatewayEvent,
@@ -938,7 +874,6 @@ export function DesktopController() {
       <GatewayConnectingOverlay />
       <BootFailureOverlay />
       <CommandPalette />
-      <PetGenerateOverlay />
       <SessionSwitcher />
       <FileActionDialogs />
       <RemoteFolderPicker />

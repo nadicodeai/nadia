@@ -52,7 +52,7 @@ The bar along the bottom of the chat shows live session state and exposes quick 
 
 - **Per-session YOLO toggle** — flip YOLO on or off for just this session (matching the TUI). YOLO bypasses the dangerous-command approval prompts, so know what you're turning off — see [Security → YOLO Mode](./security.md#yolo-mode).
 
-Chatting against a Nadia instance on another machine instead of the bundled local backend? See [Connecting to a remote backend](#connecting-to-a-remote-backend) below — and for the full picture of how the remote-hosted dashboard connection works (the auth gate, the `/api/ws` chat socket, and WebSocket close-code triage), see [Web Dashboard → Connecting Nadia Desktop to a remote backend](./features/web-dashboard.md#connecting-nadia-desktop-to-a-remote-backend).
+Nadia Desktop always runs its own local backend; see [Connecting to a remote backend](#connecting-to-a-remote-backend) below for the developer-only env-var override.
 
 #### Choosing a model
 
@@ -72,9 +72,9 @@ Talk to Nadia and hear it back, the same [voice mode](./features/voice-mode.md) 
 
 ### Settings & onboarding
 
-Manage providers, models, tools, and credentials from a real UI instead of editing YAML. First-run onboarding gets you to your first message in seconds. The settings panes cover providers/keys, model selection, toolset configuration, MCP servers, the gateway, and session management.
+Manage providers, models, tools, and credentials from a real UI instead of editing YAML. First-run onboarding gets you to your first message in seconds. The settings panes cover providers/keys, model selection, toolset configuration, MCP servers, and session management — the backend is always local, so there is no gateway-location pane.
 
-- **Providers settings pane** — a dedicated place to manage inference providers, with an Accounts / API-keys UX for signing in and storing credentials per provider.
+- **Providers settings pane** — a single Accounts view showing your NadicodeAI Portal connection status, with a connect / disconnect affordance. Third-party providers configured via environment variables are honored by the runtime but aren't managed from this pane.
 - **Every provider and model in the menus** — the GUI surfaces the full provider list and every model that `nadia model` knows about, so you pick from the same catalog the CLI sees rather than a curated subset.
 - **xAI Grok OAuth** — Grok is a first-class OAuth provider in the launcher; sign in through the browser flow like the other OAuth providers.
 - **Tool-backend installs from the GUI** — run a tool backend's post-setup install steps directly from the app instead of dropping to a terminal.
@@ -148,76 +148,17 @@ The packaged app ships the Electron shell and a native React chat surface. On fi
 
 ## Connecting to a remote backend
 
-By default the app starts and manages its own **local** backend. You can instead point it at a Nadia backend running on another machine — a VPS, a home server, or a Mini behind Tailscale.
+Nadia Desktop always starts and manages its own **local** backend — where the backend runs is not a Settings choice, and the app has no remote-gateway walkthrough or sign-in flow to configure one from the UI.
 
-:::info The remote backend is a running `nadia serve` process
-"Remote backend" means a **`nadia serve`** server running on the remote machine — that is the process the desktop app connects to. Nothing in this section works unless that backend is actually up and reachable. The desktop app does not start it for you; you (or a `systemd` service) keep `nadia serve` running on the remote host, and the app attaches to it. If you also use messaging channels (Telegram, Discord, etc.), the **gateway** is a *separate* long-running process you start independently — see the note after the setup steps.
-:::
-
-The connection has two halves: on the backend you protect it with an **auth provider**, and in the app you enter the backend's URL and sign in. Binding the backend to a non-loopback address automatically engages its auth gate, and the provider you configure is what lets the desktop app through.
-
-**Pick a provider based on where the backend lives:**
-
-- **OAuth (NadicodeAI Portal) — preferred for anything reachable beyond your own machine.** Logins are verified against your NadicodeAI account, so this is the option suitable for a VPS, a public host, or any remote backend. Register the dashboard with `nadia dashboard register` (or the Portal [`/local-dashboards`](https://portal.nadicodeai.com/local-dashboards) page) to provision its OAuth client, then sign in from the app with **Sign in with NadicodeAI Portal**. A self-hosted OIDC provider works the same way if you run your own identity provider.
-- **Username/password — local / trusted-network use only.** The simplest option when the backend is on the same trusted LAN or reachable only over a VPN (e.g. Tailscale). It protects a single shared credential with no external identity provider, so **do not use it for a dashboard exposed to the public internet** — reach for OAuth there instead.
-
-The rest of this section shows the username/password path because it's the quickest to stand up on a trusted network; for the OAuth path see [Web Dashboard → Default provider: NadicodeAI Portal](./features/web-dashboard.md#default-provider-nadicodeai-portal).
-
-### On the backend (the remote machine)
-
-Set a username and password, then start the backend bound to a reachable address. The credentials live in `~/.nadia/.env` (the secrets file, mode 0600):
+For local development only, two environment variables together point the app at a different backend instead of its bundled one, over a static session token:
 
 ```bash
-# 1. Set the dashboard login credentials.
-cat >> ~/.nadia/.env <<'EOF'
-NADIA_DASHBOARD_BASIC_AUTH_USERNAME=admin
-NADIA_DASHBOARD_BASIC_AUTH_PASSWORD=choose-a-strong-password
-# Recommended: a stable signing secret so sessions survive restarts.
-# Without it a random key is generated per boot and you'll be logged out
-# on every restart.
-NADIA_DASHBOARD_BASIC_AUTH_SECRET=$(openssl rand -base64 32)
-EOF
-chmod 600 ~/.nadia/.env
-
-# 2. Run the backend bound to a reachable address. The non-loopback bind
-#    engages the auth gate; the username/password provider handles login.
-nadia serve --host 0.0.0.0 --port 9119
+NADIA_DESKTOP_REMOTE_URL=http://<backend-host>:9119 \
+NADIA_DESKTOP_REMOTE_TOKEN=<token> \
+  nadia desktop
 ```
 
-Keep that `nadia serve` process running for as long as you want the desktop app to be able to connect — if it stops, the app can no longer reach the backend. Run it under `systemd`, `tmux`, or your process manager of choice so it survives logout and reboots.
-
-Separately, make sure the **gateway is running** on the remote host if you rely on messaging channels — the `nadia serve` backend is what the desktop app talks to, but your Telegram/Discord/Slack gateway sessions are a different process that you start and keep running on their own. See [Messaging](./messaging/index.md) for gateway setup.
-
-Prefer not to keep a plaintext password at rest? Set `NADIA_DASHBOARD_BASIC_AUTH_PASSWORD_HASH` to a scrypt hash instead — compute it with `python -c "from plugins.dashboard_auth.basic import hash_password; print(hash_password('PW'))"`. Full configuration surface (config.yaml keys, every env var, the rate limiter): [Web Dashboard → Username/password provider](./features/web-dashboard.md#usernamepassword-provider-no-oauth-idp).
-
-Running the backend as a systemd service? Give the unit `EnvironmentFile=%h/.nadia/.env` so the credentials are in the environment at boot.
-
-:::warning
-The backend reads and writes your `.env` (API keys, secrets) and can run agent commands. The **username/password** setup shown above is for a trusted network — never expose a password-protected backend directly to the open internet; put it behind a VPN. [Tailscale](https://tailscale.com/) is the clean option: bind to the machine's tailscale IP (`--host <tailscale-ip>`) and use `http://<tailscale-ip>:9119` as the Remote URL so only your tailnet can reach it. To reach a backend over the public internet, use the **OAuth (NadicodeAI Portal)** provider instead.
-:::
-
-### In the app
-
-**Settings → Gateway → Remote gateway:**
-
-1. **Remote URL** — `http://<backend-host>:9119` (path prefixes like `/nadia` work if you front it with a reverse proxy)
-2. **Sign in** — the app detects which provider the backend advertises and adapts the button. For a username/password backend it shows a **Sign in** button that opens a credential form (enter the credentials from step 1). For an OAuth backend it shows **Sign in with `<provider>`** (e.g. *Sign in with NadicodeAI Portal*), which runs the provider's browser sign-in. Either way the app ends up with an authenticated session against the backend.
-3. **Save and reconnect** — switches the desktop shell onto the remote backend. The session refreshes automatically; you stay signed in across restarts when `NADIA_DASHBOARD_BASIC_AUTH_SECRET` is set.
-
-You can also set the backend URL without the UI via the `NADIA_DESKTOP_REMOTE_URL` environment variable before launching the app (it overrides the in-app setting); you still sign in from the Gateway settings panel.
-
-:::note Per-profile remote hosts
-The remote gateway host is configured per [profile](./profiles.md), so each profile can point at its own remote backend (or stay on its local one). Switching profiles switches which remote host the app connects to.
-:::
-
-### Troubleshooting
-
-- **Sign-in fails with 401 / "Invalid credentials"** — the username or password doesn't match the backend's `NADIA_DASHBOARD_BASIC_AUTH_USERNAME` / `NADIA_DASHBOARD_BASIC_AUTH_PASSWORD`. The backend returns the same generic error for an unknown user and a wrong password (no enumeration oracle), so double-check both. Confirm the gate is on with `curl -s http://<host>:9119/api/status | jq '.auth_required, .auth_providers'` — it should report `true` and include `"basic"`.
-- **No "Sign in" button — it asks for a session token instead** — the backend's username/password provider isn't active. `/api/status` won't list `"basic"` in `auth_providers`. Make sure both the username and a password (or password hash) are set in `~/.nadia/.env` and that the dashboard process actually loaded them.
-- **Signed out on every restart** — set `NADIA_DASHBOARD_BASIC_AUTH_SECRET` to a stable value. Without it the token-signing key is regenerated per boot, invalidating all sessions.
-- **Connection refused / times out** — the backend bound to `127.0.0.1` (the default) or a firewall/VPN is blocking the port. Bind to `0.0.0.0` or the tailscale IP and open the port to your trusted network.
-
-For the same setup from the web-dashboard angle, see [Web Dashboard → Connecting Nadia Desktop to a remote backend](./features/web-dashboard.md#connecting-nadia-desktop-to-a-remote-backend); the env vars are catalogued under [Environment Variables → Web Dashboard & Nadia Desktop](../reference/environment-variables.md#web-dashboard--nadia-desktop).
+Both variables are required together — setting one without the other is an error. There is no per-profile or in-app override; this is strictly a developer escape hatch, not an operator-facing feature. Full variable reference: [Environment Variables → Web Dashboard & Nadia Desktop](../reference/environment-variables.md#web-dashboard--nadia-desktop).
 
 ## Troubleshooting
 

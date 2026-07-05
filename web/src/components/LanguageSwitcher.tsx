@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * Language picker — shows the current language's endonym, opens a dropdown
- * of all supported locales when clicked.  Persists choice to localStorage via
+ * with English and Italiano when clicked.  Persists choice to localStorage via
  * the I18n context.
  *
  * Nadia ships English and Italian as customer-facing UI locales.

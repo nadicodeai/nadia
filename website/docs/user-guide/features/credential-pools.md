@@ -91,7 +91,7 @@ What would you like to do?
   5. Exit
 ```
 
-For providers that support both API keys and OAuth (Anthropic, Nadia, Codex), the add flow asks which type:
+For providers that support both API keys and OAuth (Anthropic, NadicodeAI Portal, Codex), the add flow asks which type:
 
 ```
 anthropic supports both API keys and OAuth login.
@@ -178,7 +178,7 @@ Nadia automatically discovers credentials from multiple sources and seeds the po
 | Source | Example | Auto-seeded? |
 |--------|---------|-------------|
 | Environment variables | `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY` | Yes |
-| OAuth tokens (auth.json) | Codex device code, Nadia device code | Yes |
+| OAuth tokens (auth.json) | Codex device code, NadicodeAI Portal device code | Yes |
 | Claude Code credentials | `~/.claude/.credentials.json` | Yes (Anthropic) |
 | Nadia PKCE OAuth | `~/.nadia/auth.json` | Yes (Anthropic) |
 | Custom endpoint config | `model.api_key` in config.yaml | Yes (custom endpoints) |

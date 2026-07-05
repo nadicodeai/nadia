@@ -1,17 +1,18 @@
 import type { PanelSection } from '../types.js'
+import { t } from '../i18n/index.js'
 
-export const SETUP_REQUIRED_TITLE = 'Setup Required'
+export const getSetupRequiredTitle = () => t('setup.title')
 
 export const buildSetupRequiredSections = (): PanelSection[] => [
   {
-    text: 'Nadia needs a model provider before the TUI can start a session.'
+    text: t('setup.body')
   },
   {
     rows: [
-      ['/model', 'configure provider + model in-place'],
-      ['/setup', 'run full first-time setup wizard in-place'],
-      ['Ctrl+C', 'exit and run `nadia setup` manually']
+      ['/model', t('setup.modelAction')],
+      ['/setup', t('setup.setupAction')],
+      ['Ctrl+C', t('setup.exitAction')]
     ],
-    title: 'Actions'
+    title: t('setup.actionsTitle')
   }
 ]

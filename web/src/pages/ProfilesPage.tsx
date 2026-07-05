@@ -41,7 +41,7 @@ import {
   SelectOption,
 } from "@/nadicodeai-ui-compat";
 import { Checkbox } from "@/nadicodeai-ui-compat";
-import { useI18n } from "@/i18n";
+import { formatText, useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { cn, themedBody } from "@/lib/utils";
 
@@ -272,6 +272,8 @@ export default function ProfilesPage() {
       activeBadge: p.activeBadge ?? "active",
       setActive: p.setActive ?? "Set as active",
       activeSet: p.activeSet ?? "Active profile set",
+      activeSetToast:
+        p.activeSetToast ?? "Active profile set: {name} — {hint}",
       gatewayRunning: p.gatewayRunning ?? "Gateway running",
       gatewayStopped: p.gatewayStopped ?? "Gateway stopped",
       gatewayRunningWarning:
@@ -398,9 +400,9 @@ export default function ProfilesPage() {
         setProfiles(res.profiles);
         setActiveInfo(active);
       })
-      .catch((e) => showToast(`${t.status.error}: ${e}`, "error"))
+      .catch((e) => showToast(formatText(t.common.errorWithDetail, { error: String(e) }), "error"))
       .finally(() => setLoading(false));
-  }, [showToast, t.status.error]);
+  }, [showToast, t.common.errorWithDetail]);
 
   useEffect(() => {
     load();
@@ -426,7 +428,13 @@ export default function ProfilesPage() {
       return;
     }
     if (!PROFILE_NAME_RE.test(name)) {
-      showToast(`${t.profiles.invalidName}: ${t.profiles.nameRule}`, "error");
+      showToast(
+        formatText(t.profiles.invalidNameWithRule, {
+          reason: t.profiles.invalidName,
+          rule: t.profiles.nameRule,
+        }),
+        "error",
+      );
       return;
     }
     setCreating(true);
@@ -446,12 +454,9 @@ export default function ProfilesPage() {
         provider: picked?.provider,
         model: picked?.model,
       });
-      showToast(`${t.profiles.created}: ${name}`, "success");
+      showToast(formatText(t.profiles.createdToast, { name }), "success");
       if (picked && res.model_set === false) {
-        showToast(
-          `Profile created, but the model could not be saved — set it from the profile editor.`,
-          "error",
-        );
+        showToast(t.profiles.modelNotSavedAfterCreate, "error");
       }
       setNewName("");
       setNewDescription("");
@@ -462,7 +467,7 @@ export default function ProfilesPage() {
       setCreateModalOpen(false);
       load();
     } catch (e) {
-      showToast(`${t.status.error}: ${e}`, "error");
+      showToast(formatText(t.common.errorWithDetail, { error: String(e) }), "error");
     } finally {
       setCreating(false);
     }
@@ -477,17 +482,26 @@ export default function ProfilesPage() {
       return;
     }
     if (!PROFILE_NAME_RE.test(target)) {
-      showToast(`${t.profiles.invalidName}: ${t.profiles.nameRule}`, "error");
+      showToast(
+        formatText(t.profiles.invalidNameWithRule, {
+          reason: t.profiles.invalidName,
+          rule: t.profiles.nameRule,
+        }),
+        "error",
+      );
       return;
     }
     try {
       await api.renameProfile(renamingFrom, target);
-      showToast(`${t.profiles.renamed}: ${renamingFrom} → ${target}`, "success");
+      showToast(
+        formatText(t.profiles.renamedToast, { from: renamingFrom, to: target }),
+        "success",
+      );
       setRenamingFrom(null);
       setRenameTo("");
       load();
     } catch (e) {
-      showToast(`${t.status.error}: ${e}`, "error");
+      showToast(formatText(t.common.errorWithDetail, { error: String(e) }), "error");
     }
   };
 
@@ -499,14 +513,17 @@ export default function ProfilesPage() {
       const { active } = await api.setActiveProfile(name);
       setProfile(active);
       showToast(
-        `${L.activeSet}: ${active} — ${L.activeSetHint.replace("{name}", active)}`,
+        formatText(L.activeSetToast, {
+          name: active,
+          hint: formatText(L.activeSetHint, { name: active }),
+        }),
         "success",
       );
       setActiveInfo((prev) =>
         prev ? { ...prev, active } : { active, current: active },
       );
     } catch (e) {
-      showToast(`${t.status.error}: ${e}`, "error");
+      showToast(formatText(t.common.errorWithDetail, { error: String(e) }), "error");
     } finally {
       setSettingActive(null);
     }
@@ -541,22 +558,22 @@ export default function ProfilesPage() {
         }
       } catch (e) {
         if (activeSoulRequest.current === name) {
-          showToast(`${t.status.error}: ${e}`, "error");
+          showToast(formatText(t.common.errorWithDetail, { error: String(e) }), "error");
         }
       }
     },
-    [closeEditor, editingSoulFor, showToast, t.status.error],
+    [closeEditor, editingSoulFor, showToast, t.common.errorWithDetail],
   );
 
   const handleSaveSoul = async (name: string) => {
     setSoulSaving(true);
     try {
       await api.updateProfileSoul(name, soulText);
-      showToast(`${t.profiles.soulSaved}: ${name}`, "success");
+      showToast(formatText(t.profiles.soulSavedToast, { name }), "success");
       activeSoulRequest.current = null;
       setEditingSoulFor(null);
     } catch (e) {
-      showToast(`${t.status.error}: ${e}`, "error");
+      showToast(formatText(t.common.errorWithDetail, { error: String(e) }), "error");
     } finally {
       setSoulSaving(false);
     }
@@ -597,12 +614,12 @@ export default function ProfilesPage() {
         ),
       );
       if (activeDescRequest.current === name) {
-        showToast(`${L.descriptionSaved}: ${name}`, "success");
+        showToast(formatText(t.profiles.descriptionSavedToast, { name }), "success");
         setEditingDescFor(null);
       }
     } catch (e) {
       if (activeDescRequest.current === name) {
-        showToast(`${t.status.error}: ${e}`, "error");
+        showToast(formatText(t.common.errorWithDetail, { error: String(e) }), "error");
       }
     } finally {
       descSavingCount.current -= 1;
@@ -630,13 +647,15 @@ export default function ProfilesPage() {
               : p,
           ),
         );
-        if (current) showToast(`${L.descriptionSaved}: ${name}`, "success");
+        if (current) {
+          showToast(formatText(t.profiles.descriptionSavedToast, { name }), "success");
+        }
       } else if (current) {
-        showToast(`${L.describeFailed}: ${res.reason}`, "error");
+        showToast(formatText(t.profiles.describeFailedToast, { reason: res.reason }), "error");
       }
     } catch (e) {
       if (activeDescRequest.current === name) {
-        showToast(`${t.status.error}: ${e}`, "error");
+        showToast(formatText(t.common.errorWithDetail, { error: String(e) }), "error");
       }
     } finally {
       describingCount.current -= 1;
@@ -669,7 +688,7 @@ export default function ProfilesPage() {
     setModelSaving(true);
     try {
       await api.setProfileModel(name, picked.provider, picked.model);
-      showToast(`${L.modelSaved}: ${picked.model}`, "success");
+      showToast(formatText(t.profiles.modelSavedToast, { model: picked.model }), "success");
       setProfiles((prev) =>
         prev.map((p) =>
           p.name === name
@@ -679,7 +698,7 @@ export default function ProfilesPage() {
       );
       setEditingModelFor(null);
     } catch (e) {
-      showToast(`${t.status.error}: ${e}`, "error");
+      showToast(formatText(t.common.errorWithDetail, { error: String(e) }), "error");
     } finally {
       setModelSaving(false);
     }
@@ -706,14 +725,14 @@ export default function ProfilesPage() {
       const res = await api.getProfileSetupCommand(name);
       cmd = res.command;
     } catch (e) {
-      showToast(`${t.status.error}: ${e}`, "error");
+      showToast(formatText(t.common.errorWithDetail, { error: String(e) }), "error");
       return;
     }
     try {
       await navigator.clipboard.writeText(cmd);
-      showToast(`${t.profiles.commandCopied}: ${cmd}`, "success");
+      showToast(formatText(t.profiles.commandCopiedToast, { command: cmd }), "success");
     } catch {
-      showToast(`${t.profiles.copyFailed}: ${cmd}`, "error");
+      showToast(formatText(t.profiles.copyFailedToast, { command: cmd }), "error");
     }
   };
 
@@ -722,14 +741,14 @@ export default function ProfilesPage() {
       async (name: string) => {
         try {
           await api.deleteProfile(name);
-          showToast(`${t.profiles.deleted}: ${name}`, "success");
+          showToast(formatText(t.profiles.deletedToast, { name }), "success");
           load();
         } catch (e) {
-          showToast(`${t.status.error}: ${e}`, "error");
+          showToast(formatText(t.common.errorWithDetail, { error: String(e) }), "error");
           throw e;
         }
       },
-      [load, showToast, t.profiles.deleted, t.status.error],
+      [load, showToast, t.common.errorWithDetail, t.profiles.deletedToast],
     ),
   });
 

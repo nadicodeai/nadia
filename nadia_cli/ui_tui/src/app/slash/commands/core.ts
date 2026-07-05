@@ -13,6 +13,7 @@ import type {
   SessionTitleResponse,
   SessionUndoResponse
 } from '../../../gatewayTypes.js'
+import { t as tr } from '../../../i18n/index.js'
 import { writeClipboardText } from '../../../lib/clipboard.js'
 import { writeOsc52Clipboard } from '../../../lib/osc52.js'
 import { configureDetectedTerminalKeybindings, configureTerminalKeybindings } from '../../../lib/terminalSetup.js'
@@ -101,16 +102,13 @@ export const coreCommands: SlashCommand[] = [
       sections.push(
         {
           rows: [
-            ['/details [hidden|collapsed|expanded|cycle]', 'set global agent detail visibility mode'],
-            [
-              '/details <section> [hidden|collapsed|expanded|reset]',
-              'override one section (thinking/tools/subagents/activity)'
-            ],
-            ['/fortune [random|daily]', 'show a random or daily local fortune']
+            ['/details [hidden|collapsed|expanded|cycle]', tr('helpPanel.detailsGlobalDescription')],
+            ['/details <section> [hidden|collapsed|expanded|reset]', tr('helpPanel.detailsSectionDescription')],
+            ['/fortune [random|daily]', tr('helpPanel.fortuneDescription')]
           ],
-          title: 'TUI'
+          title: tr('helpPanel.tuiTitle')
         },
-        { rows: HOTKEYS, title: 'Hotkeys' }
+        { rows: HOTKEYS, title: tr('helpPanel.hotkeysTitle') }
       )
 
       ctx.transcript.panel(ctx.ui.theme.brand.helpHeader, sections)

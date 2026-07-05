@@ -1165,7 +1165,7 @@ These options apply to **auxiliary task configs** (`auxiliary:`, `compression:`)
 
 | Provider | Description | Requirements |
 |----------|-------------|-------------|
-| `"auto"` | Best available (default). Vision tries OpenRouter → Nadia → Codex. | — |
+| `"auto"` | Best available (default). Vision tries OpenRouter → NadicodeAI Portal → Codex. | — |
 | `"openrouter"` | Force OpenRouter — routes to any model (Gemini, GPT-4o, Claude, etc.) | `OPENROUTER_API_KEY` |
 | `"nadia"` | Force NadicodeAI Portal | `nadia auth` |
 | `"codex"` | Force Codex OAuth (ChatGPT account). Supports vision (gpt-5.3-codex). | `nadia model` → Codex |

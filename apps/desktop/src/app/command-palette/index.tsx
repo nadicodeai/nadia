@@ -19,10 +19,7 @@ import {
   ChevronRight,
   Clock,
   Cpu,
-  Download,
-  Egg,
   GitBranch,
-  Globe,
   type IconComponent,
   Info,
   KeyRound,
@@ -30,8 +27,6 @@ import {
   Monitor,
   Moon,
   Package,
-  Palette,
-  PawPrint,
   Plus,
   RefreshCw,
   Settings,
@@ -49,15 +44,13 @@ import {
   $commandPaletteOpen,
   $commandPalettePage,
   closeCommandPalette,
-  setCommandPaletteOpen
+  setCommandPaletteOpen,
+  type CommandPalettePage
 } from '@/store/command-palette'
 import { $bindings } from '@/store/keybinds'
-import { openPetGenerate } from '@/store/pet-generate'
 import { requestStartWorkSession } from '@/store/projects'
 import { runGatewayRestart } from '@/store/system-actions'
-import { luminance } from '@/themes/color'
 import { type ThemeMode, useTheme } from '@/themes/context'
-import { isUserTheme, resolveTheme } from '@/themes/user-themes'
 
 import {
   AGENTS_ROUTE,
@@ -76,8 +69,6 @@ import { FIELD_LABELS, SECTIONS } from '../settings/constants'
 import { fieldCopyForSchemaKey } from '../settings/field-copy'
 import { prettyName } from '../settings/helpers'
 
-import { MarketplaceThemePage } from './marketplace-theme-page'
-import { PetInlineToggle, PetPalettePage } from './pet-palette-page'
 
 interface PaletteItem {
   /** Keybind action id — its live combo renders as a hotkey hint. */
@@ -91,7 +82,7 @@ interface PaletteItem {
   /** Action to run when selected. Mutually exclusive with `to`. */
   run?: () => void
   /** Open a nested palette page (VS Code-style "choose X → options"). */
-  to?: string
+  to?: CommandPalettePage
 }
 
 interface PaletteGroup {
@@ -103,7 +94,7 @@ interface PaletteGroup {
 
 // Nested page → its parent, so Back / Esc step up one level instead of closing
 // the palette. Pages absent here go straight back to the root list.
-const PAGE_PARENTS: Record<string, string> = { 'install-theme': 'theme' }
+const PAGE_PARENTS: Partial<Record<CommandPalettePage, CommandPalettePage>> = {}
 
 /** A nested page reachable from a root item via `to`. */
 interface PalettePage {
@@ -149,12 +140,14 @@ const toSessionEntry = (session: SessionRow): SessionEntry => ({
 type NonConfigSettingsLabel =
   | 'about'
   | 'archivedChats'
-  | 'gateway'
+  // 'gateway' removed: always-local desktop, no gateway-settings
+  // view. 'providerApiKeys' removed: providers-settings.tsx renders one
+  // portal card regardless of view (portal-only surface); no separate
+  // API-keys provider entry.
   | 'keysSettings'
   | 'keysTools'
   | 'mcp'
   | 'providerAccounts'
-  | 'providerApiKeys'
 
 const NON_CONFIG_SETTINGS: ReadonlyArray<{
   icon: IconComponent
@@ -168,13 +161,6 @@ const NON_CONFIG_SETTINGS: ReadonlyArray<{
     labelKey: 'providerAccounts',
     tab: 'providers&pview=accounts'
   },
-  {
-    icon: KeyRound,
-    keywords: ['providers', 'api key', 'keys', 'secrets', 'tokens'],
-    labelKey: 'providerApiKeys',
-    tab: 'providers&pview=keys'
-  },
-  { icon: Globe, keywords: ['connection', 'messaging'], labelKey: 'gateway', tab: 'gateway' },
   {
     icon: KeyRound,
     keywords: ['api', 'secrets', 'tokens', 'credentials', 'browser', 'search'],
@@ -198,27 +184,6 @@ const THEME_MODES: ReadonlyArray<{ icon: IconComponent; mode: ThemeMode }> = [
   { icon: Monitor, mode: 'system' }
 ]
 
-// Which Light/Dark groups a theme belongs in. Built-ins render in both modes
-// (the engine synthesises the missing side). Imported VS Code themes only carry
-// the variant(s) the extension shipped — a single dark theme like Dracula lives
-// under Dark only, while a GitHub/Solarized family (light + dark) lives in both.
-function themeSupportsMode(name: string, target: 'light' | 'dark'): boolean {
-  if (!isUserTheme(name)) {
-    return true
-  }
-
-  const resolved = resolveTheme(name)
-
-  if (!resolved) {
-    return true
-  }
-
-  const background =
-    target === 'dark' ? (resolved.darkColors ?? resolved.colors).background : resolved.colors.background
-
-  return target === 'dark' ? luminance(background) <= 0.5 : luminance(background) > 0.5
-}
-
 export function CommandPalette() {
   const { t } = useI18n()
   const open = useStore($commandPaletteOpen)
@@ -226,9 +191,9 @@ export function CommandPalette() {
   const bindings = useStore($bindings)
   const worktrees = useStore($repoWorktrees)
   const navigate = useNavigate()
-  const { availableThemes, resolvedMode, setMode, setTheme, themeName } = useTheme()
+  const { setMode } = useTheme()
   const [search, setSearch] = useState('')
-  const [page, setPage] = useState<string | null>(null)
+  const [page, setPage] = useState<CommandPalettePage | null>(null)
 
   // Server-backed sources for the type-to-search groups, fetched lazily while
   // the palette is open. react-query handles caching/dedup/staleness.
@@ -269,7 +234,7 @@ export function CommandPalette() {
     }
   }, [open])
 
-  // Deep-link into a nested page (e.g. `/pet list` → pets picker).
+  // Deep-link into a nested page.
   useEffect(() => {
     if (open && pendingPage) {
       setPage(pendingPage)
@@ -431,37 +396,16 @@ export function CommandPalette() {
       },
       {
         // Declared before Settings: cmdk keeps group order, so this keeps the
-        // theme/mode pickers on top for "theme"/"color" queries instead of
-        // buried under a fuzzy Settings match.
+        // appearance-mode picker on top for "appearance"/"mode" queries instead
+        // of buried under a fuzzy Settings match.
         heading: cc.appearance,
         items: [
-          {
-            icon: Palette,
-            id: 'appearance-theme',
-            keywords: ['theme', 'appearance', 'color', 'palette', 'skin', 'dark', 'light', 'look'],
-            label: cc.changeTheme,
-            to: 'theme'
-          },
           {
             icon: Sun,
             id: 'appearance-mode',
             keywords: ['appearance', 'color mode', 'brightness', 'dark', 'light', 'system'],
             label: cc.changeColorMode,
             to: 'color-mode'
-          },
-          {
-            icon: PawPrint,
-            id: 'appearance-pets',
-            keywords: ['pet', 'petdex', 'mascot', 'pets', '/pet', 'paw'],
-            label: cc.pets.title,
-            to: 'pets'
-          },
-          {
-            icon: Egg,
-            id: 'appearance-generate-pet',
-            keywords: ['pet', 'generate', 'create', 'make', 'new pet', 'mascot', 'hatch', 'ai'],
-            label: cc.generatePet.title,
-            run: () => openPetGenerate()
           }
         ]
       },
@@ -573,46 +517,10 @@ export function CommandPalette() {
 
   // Nested palette pages (VS Code-style submenus). Reusable: add an entry here
   // and point a root item at it via `to`.
-  const subPages = useMemo<Record<string, PalettePage>>(
+  const subPages = useMemo<Partial<Record<CommandPalettePage, PalettePage>>>(
     () => ({
-      theme: {
-        title: t.settings.appearance.themeTitle,
-        placeholder: t.settings.appearance.themeDesc,
-        groups: [
-          // Pinned at the top: drills into the Marketplace browser.
-          {
-            items: [
-              {
-                icon: Download,
-                id: 'theme-install',
-                keywords: ['install', 'marketplace', 'vscode', 'vs code', 'download', 'new', 'color'],
-                label: t.commandCenter.installTheme.title,
-                to: 'install-theme'
-              }
-            ]
-          },
-          // Built-ins and imported families list under the mode(s) they support;
-          // picking sets skin + mode at once. A multi-variant import (GitHub,
-          // Solarized) appears in both groups and switches variants with the mode.
-          ...(['light', 'dark'] as const).map(groupMode => ({
-            heading: groupMode === 'light' ? t.settings.modeOptions.light.label : t.settings.modeOptions.dark.label,
-            items: availableThemes
-              .filter(theme => themeSupportsMode(theme.name, groupMode))
-              .map(theme => ({
-                active: themeName === theme.name && resolvedMode === groupMode,
-                icon: groupMode === 'light' ? Sun : Moon,
-                id: `theme-${theme.name}-${groupMode}`,
-                keepOpen: true,
-                keywords: ['theme', 'appearance', 'palette', groupMode, theme.label, theme.description ?? ''],
-                label: theme.label,
-                run: () => {
-                  setTheme(theme.name)
-                  setMode(groupMode)
-                }
-              }))
-          }))
-        ]
-      },
+      // One skin: the only appearance sub-page is the light/dark/system mode
+      // picker. (Skin/theme gallery and the VS Code Marketplace browser are gone.)
       'color-mode': {
         title: t.settings.appearance.colorMode,
         placeholder: t.settings.appearance.colorModeDesc,
@@ -629,25 +537,12 @@ export function CommandPalette() {
             }))
           }
         ]
-      },
-      // Server-driven page: browse petdex gallery, adopt/switch, toggle off.
-      pets: {
-        title: t.commandCenter.pets.title,
-        placeholder: t.commandCenter.pets.placeholder,
-        groups: []
-      },
-      // Server-driven page: items come from the Marketplace, rendered by
-      // <MarketplaceThemePage> (loader + live search + per-row install).
-      'install-theme': {
-        title: t.commandCenter.installTheme.title,
-        placeholder: t.commandCenter.installTheme.placeholder,
-        groups: []
       }
     }),
-    [availableThemes, resolvedMode, setMode, setTheme, t, themeName]
+    [setMode, t]
   )
 
-  const activePage = page ? subPages[page] : null
+  const activePage = (page ? subPages[page] : null) ?? null
   const visibleGroups = activePage ? activePage.groups : groups
   const placeholder = activePage ? activePage.placeholder : t.commandCenter.searchPlaceholder
 
@@ -712,57 +607,41 @@ export function CommandPalette() {
               }}
               onValueChange={setSearch}
               placeholder={placeholder}
-              right={page === 'pets' ? <PetInlineToggle /> : undefined}
               value={search}
             />
             <CommandList className="dt-portal-scrollbar max-h-[min(20rem,56vh)]">
-              {/* Server-driven pages render their own list; the rest show groups. */}
-              {page === 'pets' ? (
-                <PetPalettePage
-                  onGenerate={() => {
-                    closeCommandPalette()
-                    openPetGenerate()
-                  }}
-                  search={search}
-                />
-              ) : page === 'install-theme' ? (
-                <MarketplaceThemePage onPickTheme={setTheme} search={search} />
-              ) : (
-                <>
-                  <CommandEmpty>{t.commandCenter.noResults}</CommandEmpty>
-                  {visibleGroups.map((group, index) => (
-                    <CommandGroup
-                      className={HUD_HEADING}
-                      heading={group.heading}
-                      key={group.heading ?? `palette-group-${index}`}
-                    >
-                      {group.items.map(item => {
-                        const Icon = item.icon
-                        const combo = item.action ? bindings[item.action]?.[0] : undefined
+              <CommandEmpty>{t.commandCenter.noResults}</CommandEmpty>
+              {visibleGroups.map((group, index) => (
+                <CommandGroup
+                  className={HUD_HEADING}
+                  heading={group.heading}
+                  key={group.heading ?? `palette-group-${index}`}
+                >
+                  {group.items.map(item => {
+                    const Icon = item.icon
+                    const combo = item.action ? bindings[item.action]?.[0] : undefined
 
-                        return (
-                          <CommandItem
-                            className={cn(HUD_ITEM, HUD_TEXT)}
-                            key={item.id}
-                            keywords={item.keywords}
-                            onSelect={() => handleSelect(item)}
-                            value={`${item.label} ${item.keywords?.join(' ') ?? ''} ${item.id}`}
-                          >
-                            <Icon className="size-3.5 shrink-0 text-muted-foreground" />
-                            <span className="truncate">{item.label}</span>
-                            {combo && <KbdCombo className="ml-auto opacity-55" combo={combo} size="sm" />}
-                            {item.to && (
-                              <ChevronRight
-                                className={cn('size-3.5 shrink-0 text-muted-foreground/70', !combo && 'ml-auto')}
-                              />
-                            )}
-                          </CommandItem>
-                        )
-                      })}
-                    </CommandGroup>
-                  ))}
-                </>
-              )}
+                    return (
+                      <CommandItem
+                        className={cn(HUD_ITEM, HUD_TEXT)}
+                        key={item.id}
+                        keywords={item.keywords}
+                        onSelect={() => handleSelect(item)}
+                        value={`${item.label} ${item.keywords?.join(' ') ?? ''} ${item.id}`}
+                      >
+                        <Icon className="size-3.5 shrink-0 text-muted-foreground" />
+                        <span className="truncate">{item.label}</span>
+                        {combo && <KbdCombo className="ml-auto opacity-55" combo={combo} size="sm" />}
+                        {item.to && (
+                          <ChevronRight
+                            className={cn('size-3.5 shrink-0 text-muted-foreground/70', !combo && 'ml-auto')}
+                          />
+                        )}
+                      </CommandItem>
+                    )
+                  })}
+                </CommandGroup>
+              ))}
             </CommandList>
           </Command>
         </DialogPrimitive.Content>

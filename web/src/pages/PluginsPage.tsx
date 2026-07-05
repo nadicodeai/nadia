@@ -16,7 +16,7 @@ import { Input } from "@/nadicodeai-ui-compat";
 import { Label } from "@/nadicodeai-ui-compat";
 import { useToast } from "@/nadicodeai-ui-compat";
 import { Toast } from "@/nadicodeai-ui-compat";
-import { useI18n } from "@/i18n";
+import { formatText, useI18n } from "@/i18n";
 import { PluginSlot } from "@/plugins";
 import { cn } from "@/lib/utils";
 import { usePageHeader } from "@/contexts/usePageHeader";
@@ -87,14 +87,23 @@ export default function PluginsPage() {
         force: installForce,
         enable: installEnable,
       });
-      showToast(`${r.plugin_name ?? id} installed`, "success");
-      if ((r.warnings?.length ?? 0) > 0) showToast(r.warnings!.join(" "), "error");
-      if ((r.missing_env?.length ?? 0) > 0)
-        showToast(`${t.pluginsPage.missingEnvWarn} ${r.missing_env!.join(", ")}`, "error");
+      showToast(
+        formatText(t.pluginsPage.installedToast, { name: r.plugin_name ?? id }),
+        "success",
+      );
+      if ((r.warnings?.length ?? 0) > 0) {
+        const warningMessage = r.warnings!.join(" ");
+        showToast(warningMessage, "error");
+      }
+      if ((r.missing_env?.length ?? 0) > 0) {
+        const names = r.missing_env!.join(", ");
+        showToast(formatText(t.pluginsPage.missingEnvToast, { names }), "error");
+      }
       setInstallId("");
       await loadHub();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Install failed", "error");
+      const message = e instanceof Error ? e.message : t.pluginsPage.installFailed;
+      showToast(message, "error");
     } finally {
       setInstallBusy(false);
     }
@@ -105,12 +114,13 @@ export default function PluginsPage() {
     try {
       const rc = await api.rescanPlugins();
       showToast(
-        `${t.pluginsPage.refreshDashboard} (${rc.count})`,
+        formatText(t.pluginsPage.rescanToast, { count: rc.count }),
         "success",
       );
       await loadHub();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Rescan failed", "error");
+      const message = e instanceof Error ? e.message : t.pluginsPage.rescanFailed;
+      showToast(message, "error");
     } finally {
       setRescanBusy(false);
     }
@@ -127,7 +137,8 @@ export default function PluginsPage() {
       showToast(t.pluginsPage.savedProviders, "success");
       await loadHub();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Save failed", "error");
+      const message = e instanceof Error ? e.message : t.pluginsPage.saveFailed;
+      showToast(message, "error");
     } finally {
       setProviderBusy(false);
     }
@@ -139,7 +150,8 @@ export default function PluginsPage() {
       await fn();
       await loadHub();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Failed", "error");
+      const message = e instanceof Error ? e.message : t.pluginsPage.actionFailed;
+      showToast(message, "error");
     } finally {
       setRowBusy(null);
     }
@@ -567,7 +579,7 @@ function PluginRowCard(props: PluginRowCardProps) {
           setConfirmRemove(false);
           void setRuntimeLoading(row.name, async () => {
             await api.removeAgentPlugin(row.name);
-            showToast(`${row.name} removed`, "success");
+            showToast(formatText(t.pluginsPage.removedToast, { name: row.name }), "success");
           });
         }}
         title={t.pluginsPage.removeConfirm}

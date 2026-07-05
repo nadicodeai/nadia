@@ -42,10 +42,8 @@ function ToggleRow(props: {
           aria-label={props.label}
           checked={props.checked}
           disabled={props.disabled}
-          onCheckedChange={on => {
-            triggerHaptic('selection')
-            props.onChange(on)
-          }}
+          // Silent settings: toggling a notification option plays no haptic click.
+          onCheckedChange={props.onChange}
         />
       }
       description={props.description}
@@ -98,11 +96,10 @@ export function NotificationsSettings() {
           <div className="flex flex-wrap items-center justify-end gap-2">
             <Select
               onValueChange={value => {
-                const variantId = Number.parseInt(value, 10)
-
-                setCompletionSoundVariantId(variantId)
-                previewCompletionSound(variantId)
-                triggerHaptic('selection')
+                // Silent settings: changing the variant only stores it — no
+                // auto-preview, no haptic click. The explicit Preview button
+                // below is the only sanctioned chime.
+                setCompletionSoundVariantId(Number.parseInt(value, 10))
               }}
               value={String(completionSoundVariantId)}
             >
@@ -121,10 +118,7 @@ export function NotificationsSettings() {
 
             <Button
               className="gap-1.5"
-              onClick={() => {
-                previewCompletionSound()
-                triggerHaptic('crisp')
-              }}
+              onClick={() => previewCompletionSound()}
               size="sm"
               type="button"
               variant="outline"

@@ -102,8 +102,7 @@ Type `/` in the CLI to open the autocomplete menu. Built-in commands are case-in
 | `/reload-skills` (alias: `/reload_skills`) | Re-scan `~/.nadia/skills/` for newly installed or removed skills |
 | `/reload` | Reload `.env` variables into the running session (picks up new API keys without restarting) |
 | `/plugins` | List installed plugins and their status |
-| `/pet [list\|<slug>]` | Toggle or adopt a [petdex](/user-guide/features/pets) mascot. `/pet` toggles the pane, `/pet list` shows installed pets, `/pet <slug>` adopts a specific one. |
-| `/hatch <description>` (alias: `/generate-pet`) | Generate a brand-new petdex pet from a text description, using the configured image backend (OpenRouter / NadicodeAI Portal). See [Pets](/user-guide/features/pets). |
+<!-- Python pet slash-command reference rows removed. -->
 
 ### Info
 
@@ -112,14 +111,14 @@ Type `/` in the CLI to open the autocomplete menu. Built-in commands are case-in
 | `/help` | Show this help message |
 | `/version` | Show Nadia Agent version, build, and environment info. |
 | `/usage` | Show token usage, cost breakdown, session duration, and — when available from the active provider — an **Account limits** section with remaining quota / credits / plan usage pulled live from the provider's API. |
-| `/credits` | Show your Nadia credit balance and a top-up handoff link. |
-| `/billing` | CLI terminal-billing flow for Nadia — view balance, buy credits, and manage auto-reload / monthly limits. |
+| `/credits` | Show your NadicodeAI credit balance and a top-up handoff link. |
+| `/billing` | CLI terminal-billing flow for NadicodeAI — view balance, buy credits, and manage auto-reload / monthly limits. |
 | `/insights` | Show usage insights and analytics (last 30 days) |
 | `/platforms` (alias: `/gateway`) | Show gateway/messaging platform status (CLI-only summary view). |
 | `/paste` | Attach a clipboard image |
 | `/copy [number]` | Copy the last assistant response to clipboard (or the Nth-from-last with a number). CLI-only. |
 | `/image <path>` | Attach a local image file for your next prompt. |
-| `/debug` | Upload debug report (system info + logs) and get shareable links. Also available in messaging. |
+| `/debug` | Upload debug report (system info + logs) and get shareable links. CLI/TUI only; messaging treats it as unknown. |
 | `/profile` | Show active profile name and home directory |
 
 ### Exit
@@ -209,8 +208,7 @@ The messaging gateway supports the following built-in commands inside Telegram, 
 | `/status` | Show session info, followed by a local **Session recap** block (recent turn counts, top tools used, files touched, latest prompt + reply). |
 | `/stop` | Kill all running background processes and interrupt the running agent. |
 | `/model [provider:model]` | Show or change the model. Supports provider switches (`/model zai:glm-5`), custom endpoints (`/model custom:model`), named custom providers (`/model custom:local:qwen`), auto-detect (`/model custom`), and user-defined aliases (`/model fav`, `/model grok` — see [Custom model aliases](#custom-model-aliases)). Use `--global` to persist the change to config.yaml. **Note:** `/model` can only switch between already-configured providers. To add a new provider or set up API keys, use `nadia model` from your terminal (outside the chat session). |
-| `/codex-runtime [auto\|codex_app_server\|on\|off]` | Toggle the optional [Codex app-server runtime](../user-guide/features/codex-app-server-runtime). Persists to `model.openai_runtime` in config.yaml and evicts the cached agent so the next message picks up the new runtime. Effective on next session. |
-| `/personality [name]` | Set a personality overlay for the session. |
+<!-- `/codex-runtime` and `/personality` are CLI/TUI-only hidden commands on messaging surfaces. -->
 | `/fast [normal\|fast\|status]` | Toggle fast mode — OpenAI Priority Processing / Anthropic Fast Mode. |
 | `/retry` | Retry the last message. |
 | `/undo` | Remove the last exchange. |
@@ -220,7 +218,7 @@ The messaging gateway supports the following built-in commands inside Telegram, 
 | `/title [name]` | Set or show the session title. |
 | `/resume [name]` | Resume a previously named session. |
 | `/usage` | Show token usage, estimated cost breakdown (input/output), context window state, session duration, and — when available from the active provider — an **Account limits** section with remaining quota / credits pulled live from the provider's API. |
-| `/credits` | Show your Nadia credit balance and a top-up link that opens the portal billing page in a browser. |
+| `/credits` | Show your NadicodeAI credit balance and a top-up link that opens the portal billing page in a browser. |
 | `/insights [days]` | Show usage analytics. |
 | `/reasoning [level\|show\|hide]` | Change reasoning effort or toggle reasoning display. |
 | `/voice [on\|off\|tts\|join\|channel\|leave\|status]` | Control spoken replies in chat. `join`/`channel`/`leave` manage Discord voice-channel mode. |
@@ -238,23 +236,23 @@ The messaging gateway supports the following built-in commands inside Telegram, 
 | `/kanban <action>` | Drive the multi-profile, multi-project collaboration board from chat — identical argument surface to the CLI. Bypasses the running-agent guard, so `/kanban unblock t_abc`, `/kanban comment t_abc "…"`, `/kanban list --mine`, `/kanban boards switch <slug>`, etc. work mid-turn. `/kanban create …` auto-subscribes the originating chat to the new task's terminal events. See [Kanban slash command](/user-guide/features/kanban#kanban-slash-command). |
 | `/platform <list\|pause\|resume> [name]` | Operate a running gateway platform right from chat. `/platform list` shows every adapter and its state (running, paused-by-breaker, manually-paused); `/platform pause <name>` stops dispatching new messages to that adapter without unloading it; `/platform resume <name>` re-enables it and clears a tripped circuit breaker once the upstream is healthy. |
 | `/reload-mcp` (alias: `/reload_mcp`) | Reload MCP servers from config. |
-| `/yolo` | Toggle YOLO mode — skip all dangerous command approval prompts. |
+<!-- `/yolo` is a CLI/TUI-only hidden command on messaging surfaces. -->
 | `/commands [page]` | Browse all commands and skills (paginated). |
 | `/approve [session\|always]` | Approve and execute a pending dangerous command. `session` approves for this session only; `always` adds to permanent allowlist. |
 | `/deny` | Reject a pending dangerous command. |
 | `/update` | Update Nadia Agent to the latest version. |
 | `/restart` | Gracefully restart the gateway after draining active runs. When the gateway comes back online, it sends a confirmation to the requester's chat/thread. |
-| `/debug` | Upload debug report (system info + logs) and get shareable links. |
+<!-- `/debug` is a CLI/TUI-only hidden command on messaging surfaces. -->
 | `/help` | Show messaging help. |
 | `/<skill-name>` | Invoke any installed skill by name. |
 
 ## Notes
 
-- `/skin`, `/snapshot`, `/reload`, `/tools`, `/toolsets`, `/browser`, `/config`, `/cron`, `/platforms`, `/paste`, `/image`, `/statusbar`, `/plugins`, `/busy`, `/indicator`, `/redraw`, `/clear`, `/history`, `/save`, `/copy`, `/handoff`, `/billing`, and `/quit` are **CLI-only** commands.
+- `/skin`, `/snapshot`, `/reload`, `/tools`, `/toolsets`, `/browser`, `/config`, `/cron`, `/platforms`, `/paste`, `/image`, `/statusbar`, `/plugins`, `/busy`, `/indicator`, `/redraw`, `/clear`, `/history`, `/save`, `/copy`, `/handoff`, `/billing`, `/codex-runtime`, `/personality`, `/yolo`, `/debug`, and `/quit` are **CLI-only** commands. The four hidden commands (`/codex-runtime`, `/personality`, `/yolo`, `/debug`) are treated as unknown on messaging platforms and are omitted from messaging help and native command menus.
 - `/skills` is **CLI-only for search/browse/install**; its write-approval review subcommands (`pending`, `approve`, `reject`, `diff`, `approval`) also work on messaging platforms when `skills.write_approval` is on. `/memory` works on **both** surfaces.
 - `/verbose` is **CLI-only by default**, but can be enabled for messaging platforms by setting `display.tool_progress_command: true` in `config.yaml`. When enabled, it cycles the `display.tool_progress` mode and saves to config.
 - `/sethome`, `/update`, `/restart`, `/approve`, `/deny`, `/topic`, `/platform`, and `/commands` are **messaging-only** commands.
-- `/status`, `/version`, `/background`, `/queue`, `/steer`, `/voice`, `/reload-mcp`, `/reload-skills`, `/rollback`, `/debug`, `/fast`, `/footer`, `/curator`, `/kanban`, `/credits`, `/suggestions`, `/blueprint`, `/learn`, `/sessions`, and `/yolo` work in **both** the CLI and the messaging gateway.
+- `/status`, `/version`, `/background`, `/queue`, `/steer`, `/voice`, `/reload-mcp`, `/reload-skills`, `/rollback`, `/fast`, `/footer`, `/curator`, `/kanban`, `/credits`, `/suggestions`, `/blueprint`, `/learn`, and `/sessions` work in **both** the CLI and the messaging gateway.
 - `/voice join`, `/voice channel`, and `/voice leave` are only meaningful on Discord.
 - In the TUI, `/sessions` shows live sessions in the current TUI process. Use `/resume [name]` or `nadia --tui --resume <id-or-title>` for saved or closed transcripts.
 

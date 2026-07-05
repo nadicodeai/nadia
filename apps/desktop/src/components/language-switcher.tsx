@@ -6,7 +6,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { type Locale, LOCALE_META, useI18n } from '@/i18n'
-import { triggerHaptic } from '@/lib/haptics'
 import { Check, ChevronDown, Globe } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 import { notifyError } from '@/store/notifications'
@@ -43,12 +42,10 @@ export function LanguageSwitcher({ className, collapsed = false, dropUp = false 
       return
     }
 
-    triggerHaptic('selection')
-
+    // Silent settings: switching the locale plays no haptic click.
     try {
       await setLocale(code)
       setOpen(false)
-      triggerHaptic('success')
     } catch (error) {
       notifyError(error, t.language.saveError)
     }
@@ -130,10 +127,10 @@ function LanguageCommand({
 
   // Own the search term and filter manually. cmdk's built-in shouldFilter
   // reorders items by its fuzzy-match score (≈alphabetical with an empty
-  // query), which destroys the curated en→zh→zh-hant→ja order. We disable it
-  // and do a plain substring filter that preserves array order — matching
+  // query), which destroys the curated en→it order. We disable it and do a
+  // plain substring filter that preserves array order — matching
   // model-picker.tsx. Match against the endonym, the (hidden) English name,
-  // and the locale code so "日本"/"japanese"/"ja" all find Japanese.
+  // and the locale code so "italiano"/"italian"/"it" all find Italian.
   const q = search.trim().toLowerCase()
 
   const filtered = allLocales.filter(

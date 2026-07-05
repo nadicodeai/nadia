@@ -5,6 +5,7 @@ import { providerDisplayNames } from '../domain/providers.js'
 import { TUI_SESSION_MODEL_FLAG } from '../domain/slash.js'
 import type { GatewayClient } from '../gatewayClient.js'
 import type { ModelOptionProvider, ModelOptionsResponse } from '../gatewayTypes.js'
+import { t as tr } from '../i18n/index.js'
 import { fuzzyRank } from '../lib/fuzzy.js'
 import { asRpcResult, rpcErrorMessage } from '../lib/rpc.js'
 import type { Theme } from '../theme.js'
@@ -14,6 +15,12 @@ import { OverlayHint, useOverlayKeys, windowItems } from './overlayControls.js'
 const VISIBLE = 12
 const MIN_WIDTH = 40
 const MAX_WIDTH = 90
+
+const fill = (template: string, values: Record<string, string>) =>
+  Object.entries(values).reduce((text, [key, value]) => text.replaceAll(`{${key}}`, value), template)
+
+const countText = (count: number, singular: string, plural: string) =>
+  fill(count === 1 ? singular : plural, { count: String(count) })
 
 type Stage = 'provider' | 'key' | 'model' | 'disconnect'
 
@@ -55,7 +62,7 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
         const r = asRpcResult<ModelOptionsResponse>(raw)
 
         if (!r) {
-          setErr('invalid response: model.options')
+          setErr(tr('modelPicker.invalidOptionsResponse'))
           setLoading(false)
 
           return
@@ -192,7 +199,7 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
             const r = asRpcResult<{ provider?: ModelOptionProvider }>(raw)
 
             if (!r?.provider) {
-              setKeyError('failed to save key')
+              setKeyError(tr('modelPicker.failedToSaveKey'))
               setKeySaving(false)
 
               return
@@ -260,7 +267,9 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
                         authenticated: false,
                         models: [],
                         total_models: 0,
-                        warning: p.key_env ? `paste ${p.key_env} to activate` : 'run `nadia model` to configure'
+                        warning: p.key_env
+                          ? fill(tr('modelPicker.pasteKeyToActivate'), { key: p.key_env })
+                          : tr('modelPicker.runNadiaModelToConfigure')
                       }
                     : p
                 )
@@ -416,14 +425,16 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
   })
 
   if (loading) {
-    return <Text color={t.color.muted}>loading models…</Text>
+    return <Text color={t.color.muted}>{tr('modelPicker.loadingModels')}</Text>
   }
 
   if (err) {
     return (
       <Box flexDirection="column">
-        <Text color={t.color.label}>error: {err}</Text>
-        <OverlayHint t={t}>Esc/q cancel</OverlayHint>
+        <Text color={t.color.label}>
+          {tr('modelPicker.errorPrefix')} {err}
+        </Text>
+        <OverlayHint t={t}>{tr('modelPicker.cancelHint')}</OverlayHint>
       </Box>
     )
   }
@@ -431,8 +442,8 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
   if (!providers.length) {
     return (
       <Box flexDirection="column">
-        <Text color={t.color.muted}>no providers available</Text>
-        <OverlayHint t={t}>Esc/q cancel</OverlayHint>
+        <Text color={t.color.muted}>{tr('modelPicker.noProvidersAvailable')}</Text>
+        <OverlayHint t={t}>{tr('modelPicker.cancelHint')}</OverlayHint>
       </Box>
     )
   }
@@ -444,11 +455,11 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
     return (
       <Box flexDirection="column" width={width}>
         <Text bold color={t.color.accent} wrap="truncate-end">
-          Configure {provider.name}
+          {tr('modelPicker.configureProviderPrefix')} {provider.name}
         </Text>
 
         <Text color={t.color.muted} wrap="truncate-end">
-          Paste your API key below (saved to ~/.nadia/.env)
+          {tr('modelPicker.keyPrompt')}
         </Text>
 
         <Text color={t.color.muted} wrap="truncate-end">
@@ -461,7 +472,7 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
 
         <Text color={t.color.accent} wrap="truncate-end">
           {'  '}
-          {masked || '(empty)'}
+          {masked || tr('modelPicker.emptyKey')}
           {keySaving ? '' : '▎'}
         </Text>
 
@@ -471,11 +482,11 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
 
         {keyError ? (
           <Text color={t.color.label} wrap="truncate-end">
-            error: {keyError}
+            {tr('modelPicker.errorPrefix')} {keyError}
           </Text>
         ) : keySaving ? (
           <Text color={t.color.muted} wrap="truncate-end">
-            saving…
+            {tr('modelPicker.saving')}
           </Text>
         ) : (
           <Text color={t.color.muted} wrap="truncate-end">
@@ -483,7 +494,7 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
           </Text>
         )}
 
-        <OverlayHint t={t}>Enter save · Ctrl+U clear · Esc back</OverlayHint>
+        <OverlayHint t={t}>{tr('modelPicker.keySaveHint')}</OverlayHint>
       </Box>
     )
   }
@@ -493,7 +504,7 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
     return (
       <Box flexDirection="column" width={width}>
         <Text bold color={t.color.accent} wrap="truncate-end">
-          Disconnect {provider.name}?
+          {tr('modelPicker.disconnectProviderPrefix')} {provider.name}?
         </Text>
 
         <Text color={t.color.muted} wrap="truncate-end">
@@ -501,11 +512,11 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
         </Text>
 
         <Text color={t.color.muted} wrap="truncate-end">
-          This removes saved credentials for {provider.name}.
+          {fill(tr('modelPicker.savedCredentialsRemoval'), { provider: provider.name })}
         </Text>
 
         <Text color={t.color.muted} wrap="truncate-end">
-          You can re-authenticate later by selecting it again.
+          {tr('modelPicker.reauthenticateLater')}
         </Text>
 
         <Text color={t.color.muted} wrap="truncate-end">
@@ -514,10 +525,12 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
 
         {keySaving ? (
           <Text color={t.color.muted} wrap="truncate-end">
-            disconnecting…
+            {tr('modelPicker.disconnecting')}
           </Text>
         ) : (
-          <OverlayHint t={t}>y/Enter confirm · n/Esc cancel</OverlayHint>
+          <>
+            <OverlayHint t={t}>{tr('modelPicker.disconnectConfirmHint')}</OverlayHint>
+          </>
         )}
       </Box>
     )
@@ -530,7 +543,11 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
       const modelCount = p.total_models ?? p.models?.length ?? 0
 
       const suffix =
-        p.authenticated === false ? (p.auth_type === 'api_key' ? '(no key)' : '(needs setup)') : `${modelCount} models`
+        p.authenticated === false
+          ? p.auth_type === 'api_key'
+            ? tr('modelPicker.noKey')
+            : tr('modelPicker.needsSetup')
+          : countText(modelCount, tr('modelPicker.modelCountSingular'), tr('modelPicker.modelCountPlural'))
 
       return `${authMark} ${name} · ${suffix}`
     })
@@ -541,29 +558,29 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
     return (
       <Box flexDirection="column" width={width}>
         <Text bold color={t.color.accent} wrap="truncate-end">
-          Select provider (step 1/2)
+          {tr('modelPicker.selectProviderTitle')}
         </Text>
 
         <Text color={t.color.muted} wrap="truncate-end">
-          Full model IDs on the next step · Enter to continue
+          {tr('modelPicker.fullModelIdsHint')}
         </Text>
 
         <Text color={t.color.muted} wrap="truncate-end">
-          Current: {currentModel || '(unknown)'}
+          {tr('modelPicker.currentPrefix')} {currentModel || tr('modelPicker.unknown')}
         </Text>
         <Text color={filter ? t.color.accent : t.color.muted} wrap="truncate-end">
-          {filter ? `filter: ${filter}▎` : 'type to filter · ↑/↓ select'}
+          {filter ? `${tr('modelPicker.filterPrefix')} ${filter}▎` : tr('modelPicker.typeToFilterSelect')}
         </Text>
         <Text color={t.color.label} wrap="truncate-end">
-          {provider?.warning ? `warning: ${provider.warning}` : ' '}
+          {provider?.warning ? `${tr('modelPicker.warningPrefix')} ${provider.warning}` : ' '}
         </Text>
         <Text color={t.color.muted} wrap="truncate-end">
-          {offset > 0 ? ` ↑ ${offset} more` : ' '}
+          {offset > 0 ? ` ↑ ${offset} ${tr('modelPicker.more')}` : ' '}
         </Text>
 
         {noMatches ? (
           <Text color={t.color.muted} wrap="truncate-end">
-            no providers match
+            {tr('modelPicker.noProvidersMatch')}
           </Text>
         ) : (
           Array.from({ length: VISIBLE }, (_, i) => {
@@ -592,14 +609,18 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
         )}
 
         <Text color={t.color.muted} wrap="truncate-end">
-          {offset + VISIBLE < rows.length ? ` ↓ ${rows.length - offset - VISIBLE} more` : ' '}
+          {offset + VISIBLE < rows.length ? ` ↓ ${rows.length - offset - VISIBLE} ${tr('modelPicker.more')}` : ' '}
         </Text>
 
         <Text color={t.color.muted} wrap="truncate-end">
-          persist: {allowPersistGlobal ? (persistGlobal ? 'global' : 'session') : 'session'}
-          {allowPersistGlobal ? ' · ^g toggle' : ' only'}
+          {tr('modelPicker.persistPrefix')} {allowPersistGlobal
+            ? persistGlobal
+              ? tr('modelPicker.persistGlobal')
+              : tr('modelPicker.persistSession')
+            : tr('modelPicker.persistSession')}
+          {allowPersistGlobal ? tr('modelPicker.persistToggle') : tr('modelPicker.persistOnly')}
         </Text>
-        <OverlayHint t={t}>↑/↓ select · Enter choose · ^d disconnect · Esc clear/back · q close</OverlayHint>
+        <OverlayHint t={t}>{tr('modelPicker.providerStageHint')}</OverlayHint>
       </Box>
     )
   }
@@ -611,20 +632,20 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
   return (
     <Box flexDirection="column" width={width}>
       <Text bold color={t.color.accent} wrap="truncate-end">
-        Select model (step 2/2)
+        {tr('modelPicker.selectModelTitle')}
       </Text>
 
       <Text color={t.color.muted} wrap="truncate-end">
-        {filteredProviderRows[providerIdx]?.name || '(unknown provider)'} · Esc back
+        {filteredProviderRows[providerIdx]?.name || tr('modelPicker.unknownProvider')} · {tr('modelPicker.escapeBack')}
       </Text>
       <Text color={filter ? t.color.accent : t.color.muted} wrap="truncate-end">
-        {filter ? `filter: ${filter}▎` : 'type to filter · ↑/↓ select'}
+        {filter ? `${tr('modelPicker.filterPrefix')} ${filter}▎` : tr('modelPicker.typeToFilterSelect')}
       </Text>
       <Text color={t.color.label} wrap="truncate-end">
-        {provider?.warning ? `warning: ${provider.warning}` : ' '}
+        {provider?.warning ? `${tr('modelPicker.warningPrefix')} ${provider.warning}` : ' '}
       </Text>
       <Text color={t.color.muted} wrap="truncate-end">
-        {offset > 0 ? ` ↑ ${offset} more` : ' '}
+        {offset > 0 ? ` ↑ ${offset} ${tr('modelPicker.more')}` : ' '}
       </Text>
 
       {Array.from({ length: VISIBLE }, (_, i) => {
@@ -634,7 +655,7 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
         if (!row) {
           return (!allModels.length || noModelMatches) && i === 0 ? (
             <Text color={t.color.muted} key="empty" wrap="truncate-end">
-              {noModelMatches ? 'no models match filter' : 'no models listed for this provider'}
+              {noModelMatches ? tr('modelPicker.noModelMatchesFilter') : tr('modelPicker.noModelsForProvider')}
             </Text>
           ) : (
             <Text color={t.color.muted} key={`pad-${i}`} wrap="truncate-end">
@@ -660,15 +681,19 @@ export function ModelPicker({ allowPersistGlobal = true, gw, onCancel, onSelect,
       })}
 
       <Text color={t.color.muted} wrap="truncate-end">
-        {offset + VISIBLE < models.length ? ` ↓ ${models.length - offset - VISIBLE} more` : ' '}
+        {offset + VISIBLE < models.length ? ` ↓ ${models.length - offset - VISIBLE} ${tr('modelPicker.more')}` : ' '}
       </Text>
 
       <Text color={t.color.muted} wrap="truncate-end">
-        persist: {allowPersistGlobal ? (persistGlobal ? 'global' : 'session') : 'session'}
-        {allowPersistGlobal ? ' · ^g toggle' : ' only'}
+        {tr('modelPicker.persistPrefix')} {allowPersistGlobal
+          ? persistGlobal
+            ? tr('modelPicker.persistGlobal')
+            : tr('modelPicker.persistSession')
+          : tr('modelPicker.persistSession')}
+        {allowPersistGlobal ? tr('modelPicker.persistToggle') : tr('modelPicker.persistOnly')}
       </Text>
       <OverlayHint t={t}>
-        {models.length ? '↑/↓ select · Enter switch · Esc clear/back · q close' : 'Esc back · q close'}
+        {models.length ? tr('modelPicker.modelStageHintWithModels') : tr('modelPicker.modelStageHintWithoutModels')}
       </OverlayHint>
     </Box>
   )

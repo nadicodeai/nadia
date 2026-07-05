@@ -1,7 +1,9 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+
 import { describe, expect, it } from 'vitest'
 
 import {
-  desktopSkinSlashCompletions,
   desktopSlashDescription,
   desktopSlashUnavailableMessage,
   filterDesktopCommandsCatalog,
@@ -12,11 +14,15 @@ import {
   resolveDesktopCommand
 } from './desktop-slash-commands'
 
+const DESKTOP_SLASH_COMMANDS_SOURCE = readFileSync(
+  join(process.cwd(), 'src/lib/desktop-slash-commands.ts'),
+  'utf8'
+)
+
 describe('desktop slash command curation', () => {
   it('keeps core desktop chat commands in suggestions', () => {
     expect(isDesktopSlashSuggestion('/new')).toBe(true)
     expect(isDesktopSlashSuggestion('/branch')).toBe(true)
-    expect(isDesktopSlashSuggestion('/skin')).toBe(true)
     expect(isDesktopSlashSuggestion('/usage')).toBe(true)
     expect(isDesktopSlashSuggestion('/version')).toBe(true)
     expect(isDesktopSlashSuggestion('/yolo')).toBe(true)
@@ -38,6 +44,9 @@ describe('desktop slash command curation', () => {
     expect(isDesktopSlashSuggestion('/skills')).toBe(false)
     expect(isDesktopSlashSuggestion('/voice')).toBe(false)
     expect(isDesktopSlashSuggestion('/curator')).toBe(false)
+    // One NadicodeAI skin: /skin is retired (appearance mode lives in Settings).
+    expect(isDesktopSlashSuggestion('/skin')).toBe(false)
+    expect(isDesktopSlashCommand('/skin')).toBe(false)
   })
 
   it('surfaces /tools, /save, and /personality on the desktop', () => {
@@ -52,14 +61,9 @@ describe('desktop slash command curation', () => {
     expect(desktopSlashUnavailableMessage('/personality')).toBeNull()
   })
 
-  it('routes /pet through the desktop action handler and drops /pets', () => {
-    expect(resolveDesktopCommand('/pet')?.surface).toEqual({ kind: 'action', action: 'pet' })
-    expect(resolveDesktopCommand('/pet')?.args).toBe(true)
-    expect(isDesktopSlashSuggestion('/pet')).toBe(true)
-    expect(isDesktopSlashCommand('/pet')).toBe(true)
-    expect(resolveDesktopCommand('/pets')?.surface).toEqual({ kind: 'unavailable', reason: 'settings' })
-    expect(isDesktopSlashSuggestion('/pets')).toBe(false)
-    expect(isDesktopSlashCommand('/pets')).toBe(false)
+  it('does not define pet slash commands on the desktop', () => {
+    expect(DESKTOP_SLASH_COMMANDS_SOURCE).not.toMatch(/name:\s*['"]\/pet['"]/)
+    expect(DESKTOP_SLASH_COMMANDS_SOURCE).not.toContain('/generate-pet')
   })
 
   it('treats /browser as an executable action command (local-gateway connect)', () => {
@@ -134,34 +138,6 @@ describe('desktop slash command curation', () => {
     expect(desktopSlashDescription('/branch', 'Branch the current session')).toBe(
       'Branch the latest message into a new chat'
     )
-    expect(desktopSlashDescription('/skin', 'Show or change the display skin/theme')).toBe(
-      'Switch desktop theme or cycle to the next one'
-    )
-  })
-
-  it('builds /skin completions from desktop themes', () => {
-    const completions = desktopSkinSlashCompletions(
-      [
-        { name: 'mono', label: 'Mono', description: 'Clean grayscale' },
-        { name: 'midnight', label: 'Midnight', description: 'Deep blue' },
-        { name: 'slate', label: 'Slate', description: 'Cool slate blue' }
-      ],
-      'mono',
-      'm'
-    )
-
-    expect(completions).toEqual([
-      {
-        text: '/skin mono',
-        display: '/skin mono',
-        meta: 'Mono (current) - Clean grayscale'
-      },
-      {
-        text: '/skin midnight',
-        display: '/skin midnight',
-        meta: 'Midnight - Deep blue'
-      }
-    ])
   })
 
   it('explains known commands that desktop owns elsewhere', () => {

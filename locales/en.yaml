@@ -56,6 +56,11 @@ gateway:
     usage_switch_model:     "`/model <name>` — switch model"
     usage_switch_provider:  "`/model <name> --provider <slug>` — switch provider"
     usage_persist:          "`/model <name> --global` — persist"
+    stale_gateway_restart:  "This gateway is running code from {boot_rev} but the checkout on disk is now {disk_rev}. Switching models would risk a stale-module crash — restart the gateway to load the new code: nadia gateway restart"
+    switch_failed_staying:  "Model switch to {model} failed ({error}); staying on {current}."
+    expensive_title:        "Expensive Model Warning"
+    expensive_confirm_prompt: "⚠️ **Expensive Model Warning**\n\n{warning}\n\n_Text fallback: reply `{prefix}approve` to switch or `{prefix}cancel` to keep the current model._"
+    expensive_cancelled:    "🟡 Model switch cancelled. Current model unchanged ({model})."
 
   agents:
     header:                "🤖 **Active Agents & Tasks**"
@@ -88,6 +93,21 @@ gateway:
     switch_failed:         "Branch created but failed to switch to it."
     branched_one:          "⑂ Branched to **{title}** ({count} message copied)\nOriginal: `{parent}`\nBranch: `{new}`\nUse `/resume` to switch back to the original."
     branched_many:         "⑂ Branched to **{title}** ({count} messages copied)\nOriginal: `{parent}`\nBranch: `{new}`\nUse `/resume` to switch back to the original."
+
+  bundles:
+    unavailable:           "Bundles subsystem unavailable: {error}"
+    none_installed:        "No skill bundles installed.\nCreate one on the host with:\n  `nadia bundles create <name> --skill <s1> --skill <s2>`\nDirectory: `{directory}`"
+    header:                "**Skill Bundles** ({count} installed):"
+    default_description:   "Load {count} skills"
+    item:                  "• `/{slug}` — {description} _({count} skills)_"
+    skill_item:            "    · {skill}"
+    invoke:                "Invoke a bundle with `/<slug>` to load all its skills."
+
+  codex_runtime:
+    errors:                "❌ {errors}"
+    config_load_failed:    "❌ Could not load config: {error}"
+    success:               "✓ {message}"
+    failed:                "✗ {message}"
 
   commands:
     usage:                 "Usage: `/commands [page]`"
@@ -149,6 +169,15 @@ gateway:
     resumed:               "▶ Goal resumed: {goal}\nSend any message to continue, or wait — I'll take the next step on the next turn."
     invalid:               "Invalid goal: {error}"
     set:                   "⊙ Goal set ({budget}-turn budget): {goal}\nI'll keep working until the goal is done, you pause/clear it, or the budget is exhausted.\nControls: /goal status · /goal pause · /goal resume · /goal clear"
+    completion_contract:   "{status}\nCompletion contract:\n{contract}"
+    wait_usage:            "Usage: /goal wait <pid> [reason]"
+    wait_pid_invalid:      "/goal wait: <pid> must be an integer process id."
+    wait_error:            "/goal wait: {error}"
+    wait_parked:           "⏳ Goal parked on pid {pid}{reason}. Loop pauses until it exits."
+    wait_cleared:          "▶ Wait barrier cleared — goal loop resumes."
+    no_wait_barrier:       "No wait barrier set."
+    draft_usage:           "Usage: /goal draft <objective in plain language>"
+    draft_failed_freeform: "{base}\n(Couldn't draft a contract — running as a free-form goal.)"
 
   help:
     header:                "📖 **Nadia Commands**\n"
@@ -174,6 +203,9 @@ gateway:
       status_joiner:       ", "
       message:             "[kanban] Task {task_id} {status}.\nTitle: {title}\nAssignee: @{assignee}\nBoard: {board}\n\nCheck the result or decide the next step."
 
+  memory:
+    unknown_subcommand:    "Unknown /memory subcommand. Use: pending, approve <id>, reject <id>, approval <on|off>."
+
   personality:
     none_configured:       "No personalities configured in `{path}/config.yaml`"
     header:                "🎭 **Available Personalities**\n"
@@ -184,6 +216,24 @@ gateway:
     cleared:               "🎭 Personality cleared — using base agent behavior.\n_(takes effect on next message)_"
     set_to:                "🎭 Personality set to **{name}**\n_(takes effect on next message)_"
     unknown:               "Unknown personality: `{name}`\n\nAvailable: {available}"
+
+  platform:
+    header:                "**Gateway platforms**"
+    connected:             "Connected: {platforms}"
+    connected_none:        "Connected: (none)"
+    failed_paused:         "  · {platform} — PAUSED ({reason}). Resume with `/platform resume {platform}`."
+    failed_retrying:       "  · {platform} — retrying (attempt {attempts})"
+    failed_none:           "Failed/paused: (none)"
+    reason_paused:         "paused"
+    usage_action:          "Usage: /platform {action} <name>"
+    unknown:               "Unknown platform: {platform}"
+    pause_not_in_retry_queue: "{platform} is not in the retry queue (it's either connected or not enabled)."
+    already_paused:        "{platform} is already paused."
+    paused:                "✓ {platform} paused. Resume with `/platform resume {platform}` or `nadia gateway restart` to reset."
+    resume_not_in_retry_queue: "{platform} is not in the retry queue — nothing to resume."
+    already_retrying:      "{platform} is already retrying — no resume needed."
+    resumed:               "✓ {platform} resumed — retrying on next watcher tick."
+    usage:                 "Usage: /platform <list|pause|resume> [name]\n  /platform list — show platform status\n  /platform pause <name> — stop retrying a failing platform\n  /platform resume <name> — re-queue a paused platform"
 
   profile:
     header:                "👤 **Profile:** `{profile}`"
@@ -279,6 +329,15 @@ gateway:
     save_failed:           "Failed to save home channel: {error}"
     success:               "✅ Home channel set to **{name}** (ID: {chat_id}).\nCron jobs and cross-platform messages will be delivered here."
 
+  sessions:
+    title_all:             "Sessions"
+    title_named:           "Named Sessions"
+
+  skills:
+    approval_off:          "Skill write approval is off (skills.write_approval). Enable it with /skills approval on, then review staged writes here with /skills pending."
+    unknown_subcommand:    "Unknown /skills subcommand on this platform. Use: pending, approve <id>, reject <id>, diff <id>, approval <on|off>. (Search/install are CLI-only.)"
+    diff_truncated:        "\n… (truncated — full diff in ~/.nadia/pending/skills/{pending_id}.json)"
+
   status:
     header:                "📊 **Nadia Gateway Status**"
     matrix_scope_header:   "**Matrix scope:**"
@@ -306,6 +365,20 @@ gateway:
     stopped_pending:       "⚡ Stopped. The agent hadn't started yet — you can continue this session."
     stopped:               "⚡ Stopped. You can continue this session."
     no_active:             "No active task to stop."
+
+  subgoal:
+    no_active:             "No active goal. Set one with /goal <text>."
+    list:                  "{status}\n{subgoals}"
+    remove_usage:          "Usage: /subgoal remove <n>"
+    remove_invalid:        "/subgoal remove: <n> must be an integer (1-based index)."
+    remove_error:          "/subgoal remove: {error}"
+    removed:               "✓ Removed subgoal {index}: {text}"
+    clear_error:           "/subgoal clear: {error}"
+    cleared_one:           "✓ Cleared {count} subgoal."
+    cleared_many:          "✓ Cleared {count} subgoals."
+    none_to_clear:         "No subgoals to clear."
+    add_error:             "/subgoal: {error}"
+    added:                 "✓ Added subgoal {index}: {text}"
 
   title:
     db_unavailable:        "Session database not available."
@@ -339,6 +412,7 @@ gateway:
     nadia_cmd_not_found:    "✗ Could not locate the `nadia` command. Nadia is running, but the update command could not find the executable on PATH or via the current Python interpreter. Try running `nadia update` manually in your terminal."
     start_failed:            "✗ Failed to start update: {error}"
     starting:                "⚕ Starting Nadia update… I'll stream progress here."
+    managed:                 "✗ {message}"
 
   usage:
     rate_limits:              "⏱️ **Rate Limits:** {state}"
@@ -372,6 +446,9 @@ gateway:
 
   credits:
     not_logged_in:            "Not logged into NadicodeAI Portal. Log in to see your credit balance and top up."
+    header:                   "💳 **Nadia credits**"
+    top_up:                   "Top up: {url}"
+    browser_completion:       "Complete your top-up in the browser — credits will appear in /credits shortly."
 
   verbose:
     not_enabled:           "The `/verbose` command is not enabled for messaging platforms.\n\nEnable it in `config.yaml`:\n```yaml\ndisplay:\n  tool_progress_command: true\n```"
@@ -381,6 +458,8 @@ gateway:
     mode_verbose:          "⚙️ Tool progress: **VERBOSE** — every tool call with full arguments."
     saved_suffix:          "_(saved for **{platform}** — takes effect on next message)_"
     save_failed:           "_(could not save to config: {error})_"
+    saved:                 "{description}\n_(saved for **{platform}** — takes effect on next message)_"
+    save_failed_with_description: "{description}\n_(could not save to config: {error})_"
 
   voice:
     enabled_voice_only:    "Voice mode enabled.\nI'll reply with voice when you send voice messages.\nUse /voice tts to get voice replies for all messages."
@@ -402,6 +481,14 @@ gateway:
   yolo:
     disabled:                   "⚠️ YOLO mode **OFF** for this session — dangerous commands will require approval."
     enabled:                    "⚡ YOLO mode **ON** for this session — all commands auto-approved. Use with caution."
+
+  whoami:
+    scope_dm:              "DM"
+    scope_group:           "group/channel"
+    none:                  "(none)"
+    unrestricted:          "**You** — {platform} ({scope})\nUser ID: `{user_id}`\nTier: unrestricted (no admin list configured for this scope)\nSlash commands: all available"
+    admin:                 "**You** — {platform} ({scope})\nUser ID: `{user_id}`\nTier: **admin**\nSlash commands: all available"
+    user:                  "**You** — {platform} ({scope})\nUser ID: `{user_id}`\nTier: user\nSlash commands you can run: {commands}"
 
   shared:
     session_db_unavailable:      "Session database not available."

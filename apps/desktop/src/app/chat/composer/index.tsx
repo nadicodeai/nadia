@@ -24,7 +24,8 @@ import { toggleReview } from '@/store/review'
 import { $gatewayState, $messages } from '@/store/session'
 import { $threadScrolledUp } from '@/store/thread-scroll'
 import { $autoSpeakReplies } from '@/store/voice-prefs'
-import { useTheme } from '@/themes'
+// useTheme import removed with the /skin arg-completion wiring
+// below: one NadicodeAI skin, not an operator choice.
 
 import { AttachmentList } from './attachments'
 import {
@@ -132,9 +133,8 @@ export function ChatBar({
   const queueEditRef = useRef<QueueEditState | null>(null)
   const composingRef = useRef(false) // true during IME composition (CJK input)
 
-  const { availableThemes, themeName } = useTheme()
   const at = useAtCompletions({ gateway: gateway ?? null, sessionId: sessionId ?? null, cwd: cwd ?? null })
-  const slash = useSlashCompletions({ activeSkin: themeName, gateway: gateway ?? null, skinThemes: availableThemes })
+  const slash = useSlashCompletions({ gateway: gateway ?? null })
 
   const { t } = useI18n()
   const gatewayState = useStore($gatewayState)

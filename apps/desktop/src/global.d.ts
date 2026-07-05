@@ -1,10 +1,3 @@
-import type {
-  PetOverlayBounds,
-  PetOverlayControl,
-  PetOverlayOpenRequest,
-  PetOverlayStatePayload
-} from './store/pet-overlay'
-
 export {}
 
 declare global {
@@ -33,28 +26,13 @@ declare global {
       openSessionWindow: (sessionId: string, opts?: { watch?: boolean }) => Promise<{ ok: boolean; error?: string }>
       // Open (or focus) a compact secondary window on the new-session draft.
       openNewSessionWindow: () => Promise<{ ok: boolean; error?: string }>
-      // The pop-out pet overlay: a transparent always-on-top window hosting only
-      // the mascot. The main renderer drives it (open/close/drag + state push);
-      // the overlay sends control messages back (pop-in, composer submit).
-      petOverlay: {
-        open: (request: PetOverlayOpenRequest) => Promise<{ ok: boolean; bounds?: PetOverlayBounds }>
-        close: () => Promise<{ ok: boolean }>
-        setBounds: (bounds: PetOverlayBounds) => void
-        setIgnoreMouse: (ignore: boolean) => void
-        setFocusable: (focusable: boolean) => void
-        pushState: (payload: PetOverlayStatePayload) => void
-        control: (payload: PetOverlayControl) => void
-        onState: (callback: (payload: PetOverlayStatePayload) => void) => () => void
-        onControl: (callback: (payload: PetOverlayControl) => void) => () => void
-      }
       getBootProgress: () => Promise<DesktopBootProgress>
       getConnectionConfig: (profile?: null | string) => Promise<DesktopConnectionConfig>
-      saveConnectionConfig: (payload: DesktopConnectionConfigInput) => Promise<DesktopConnectionConfig>
       applyConnectionConfig: (payload: DesktopConnectionConfigInput) => Promise<DesktopConnectionConfig>
-      testConnectionConfig: (payload: DesktopConnectionConfigInput) => Promise<DesktopConnectionTestResult>
       probeConnectionConfig: (remoteUrl: string) => Promise<DesktopConnectionProbeResult>
       oauthLoginConnectionConfig: (remoteUrl: string) => Promise<DesktopOauthLoginResult>
-      oauthLogoutConnectionConfig: (remoteUrl?: string) => Promise<DesktopOauthLogoutResult>
+      // saveConnectionConfig/testConnectionConfig/oauthLogoutConnectionConfig
+      // removed with the gateway-settings UI (always-local desktop).
       profile: {
         get: () => Promise<DesktopActiveProfile>
         // Persists the desktop's profile choice and relaunches the local
@@ -187,38 +165,15 @@ declare global {
         summary: () => Promise<DesktopUninstallSummary>
         run: (mode: DesktopUninstallMode) => Promise<DesktopUninstallResult>
       }
-      themes: {
-        // Download a VS Code Marketplace extension and return the raw color
-        // theme files it contributes. The renderer converts + persists them.
-        fetchMarketplace: (id: string) => Promise<DesktopMarketplaceThemeResult>
-        // Search the Marketplace for color-theme extensions. An empty query
-        // returns the most-installed themes.
-        searchMarketplace: (query: string) => Promise<DesktopMarketplaceSearchItem[]>
-      }
+      // report the renderer's resolved locale (en/it) so the
+      // native menu / About / context menu track the in-app language.
+      setMenuLocale?: (locale: string) => void
+      // themes.fetchMarketplace/searchMarketplace typing (and
+      // the DesktopMarketplace* result types below) removed with the VS Code
+      // Marketplace theme-gallery bridge: one NadicodeAI skin, not an
+      // operator choice on any surface.
     }
   }
-}
-
-export interface DesktopMarketplaceSearchItem {
-  extensionId: string
-  displayName: string
-  publisher: string
-  description: string
-  installs: number
-}
-
-export interface DesktopMarketplaceThemeFile {
-  label: string
-  /** VS Code's `uiTheme` for this entry (vs-dark / vs / hc-black). */
-  uiTheme?: string
-  /** Raw theme JSON (JSONC) text, parsed + converted by the renderer. */
-  contents: string
-}
-
-export interface DesktopMarketplaceThemeResult {
-  extensionId: string
-  displayName: string
-  themes: DesktopMarketplaceThemeFile[]
 }
 
 export interface NadiaTerminalSession {
@@ -399,19 +354,19 @@ export interface DesktopConnectionConfig {
 
 export interface DesktopConnectionConfigInput {
   mode: 'local' | 'remote'
-  // When set, the save/apply/test targets this profile's per-profile remote
-  // override instead of the global connection.
+  // When set, apply targets this profile's per-profile remote override
+  // instead of the global connection.
+  // (comment only: was "the save/apply/test targets";
+  // save/test were removed with the gateway-settings UI)
   profile?: null | string
   remoteAuthMode?: 'oauth' | 'token'
   remoteToken?: string
   remoteUrl?: string
 }
 
-export interface DesktopConnectionTestResult {
-  baseUrl: string
-  ok: boolean
-  version: string | null
-}
+// DesktopConnectionTestResult and DesktopOauthLogoutResult were removed with
+// the gateway-settings UI they exclusively served (testConnectionConfig /
+// oauthLogoutConnectionConfig above).
 
 export interface DesktopAuthProvider {
   name: string
@@ -435,11 +390,6 @@ export interface DesktopConnectionProbeResult {
 export interface DesktopOauthLoginResult {
   ok: boolean
   baseUrl: string
-  connected: boolean
-}
-
-export interface DesktopOauthLogoutResult {
-  ok: boolean
   connected: boolean
 }
 

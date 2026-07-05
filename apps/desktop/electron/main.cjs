@@ -41,7 +41,8 @@ const { adoptServedDashboardToken } = require('./dashboard-token.cjs')
 const { waitForDashboardPortAnnouncement } = require('./backend-ready.cjs')
 const { dashboardFallbackArgs, sourceDeclaresServe } = require('./backend-command.cjs')
 const { serializeJsonBody, setJsonRequestHeaders } = require('./oauth-net-request.cjs')
-const { fetchMarketplaceThemes, searchMarketplaceThemes } = require('./vscode-marketplace.cjs')
+// VS Code Marketplace theme-gallery bridge removed: one
+// NadicodeAI skin, not an operator choice on any surface.
 const { buildDesktopBackendEnv, normalizeNadiaHomeRoot } = require('./backend-env.cjs')
 const { readWindowsUserEnvVar } = require('./windows-user-env.cjs')
 const { readWslWindowsClipboardImage } = require('./wsl-clipboard-image.cjs')
@@ -402,6 +403,14 @@ const BOOT_FAKE_STEP_MS = (() => {
   return Math.max(120, raw)
 })()
 const APP_NAME = 'Nadia'
+// native menu/About/context locale (en+it). At startup the
+// locale is resolved from the persisted in-app choice first, then the OS
+// language; the renderer pushes its resolved locale over IPC
+// ('nadia:menu-locale'), which both re-applies the menu and persists the
+// choice so the NEXT cold launch opens in the operator's language.
+const { menuStrings, resolveStartupMenuLocale, persistMenuLocale } = require('./i18n.cjs')
+const DESKTOP_MENU_LOCALE_PATH = path.join(app.getPath('userData'), 'menu-locale.json')
+let currentMenuLocale = 'en'
 const TITLEBAR_HEIGHT = 34
 const MACOS_TRAFFIC_LIGHTS_HEIGHT = 14
 const WINDOW_BUTTON_POSITION = {
@@ -693,7 +702,8 @@ if (IS_WINDOWS) {
 app.setAboutPanelOptions({
   applicationName: APP_NAME,
   applicationVersion: resolveNadiaVersion(),
-  copyright: 'Copyright © 2026 NadicodeAI'
+  // NadicodeAI brand copyright string, set directly.
+  copyright: menuStrings(currentMenuLocale).about.copyright
 })
 
 // Custom scheme for streaming local media (video/audio) into the renderer.
@@ -3940,15 +3950,17 @@ function sendWindowStateChanged(nextIsFullscreen) {
 
 function buildApplicationMenu() {
   const template = []
+  // native menu labels localize to the resolved en/it locale
+  const m = menuStrings(currentMenuLocale).menu
   const checkForUpdatesItem = {
-    label: 'Check for Updates…',
+    label: m.checkUpdates,
     click: () => sendOpenUpdatesRequested()
   }
   if (IS_MAC) {
     template.push({
       label: APP_NAME,
       submenu: [
-        { label: `About ${APP_NAME}`, click: () => showAboutPanelFresh() },
+        { label: m.about(APP_NAME), click: () => showAboutPanelFresh() },
         checkForUpdatesItem,
         { type: 'separator' },
         { role: 'services' },
@@ -3963,7 +3975,7 @@ function buildApplicationMenu() {
   }
 
   template.push({
-    label: 'File',
+    label: m.file,
     submenu: [
       IS_MAC
         ? {
@@ -3975,13 +3987,13 @@ function buildApplicationMenu() {
                 mainWindow?.close()
               }
             },
-            label: 'Close'
+            label: m.close
           }
         : { role: 'quit' }
     ]
   })
   template.push({
-    label: 'Edit',
+    label: m.edit,
     submenu: [
       { role: 'undo' },
       { role: 'redo' },
@@ -3994,21 +4006,21 @@ function buildApplicationMenu() {
     ]
   })
   template.push({
-    label: 'View',
+    label: m.view,
     submenu: [
       { role: 'reload' },
       { role: 'forceReload' },
       { role: 'toggleDevTools' },
       { type: 'separator' },
       {
-        label: 'Actual Size',
+        label: m.actualSize,
         accelerator: 'CommandOrControl+0',
         click: () => {
           setAndPersistZoomLevel(mainWindow, 0)
         }
       },
       {
-        label: 'Zoom In',
+        label: m.zoomIn,
         accelerator: 'CommandOrControl+Plus',
         click: () => {
           if (mainWindow && !mainWindow.isDestroyed()) {
@@ -4017,7 +4029,7 @@ function buildApplicationMenu() {
         }
       },
       {
-        label: 'Zoom Out',
+        label: m.zoomOut,
         accelerator: 'CommandOrControl+-',
         click: () => {
           if (mainWindow && !mainWindow.isDestroyed()) {
@@ -4030,18 +4042,28 @@ function buildApplicationMenu() {
     ]
   })
   template.push({
-    label: 'Window',
+    label: m.window,
     submenu: IS_MAC
       ? [{ role: 'minimize' }, { role: 'zoom' }, { role: 'front' }]
       : [{ role: 'minimize' }, { role: 'close' }]
   })
   template.push({
-    label: 'Help',
+    label: m.help,
     role: 'help',
     submenu: [checkForUpdatesItem]
   })
 
   return Menu.buildFromTemplate(template)
+}
+
+// rebuild the native menu when the renderer's resolved locale
+// changes (macOS draws the app menu; other platforms suppress it).
+function applyMenuLocale(locale) {
+  currentMenuLocale = locale === 'it' ? 'it' : 'en'
+
+  if (IS_MAC) {
+    Menu.setApplicationMenu(buildApplicationMenu())
+  }
 }
 
 function toggleDevTools(window) {
@@ -4146,6 +4168,8 @@ function installZoomShortcuts(window) {
 function installContextMenu(window) {
   window.webContents.on('context-menu', (_event, params) => {
     const template = []
+    // context-menu labels localize to the resolved en/it locale
+    const ctx = menuStrings(currentMenuLocale).context
     const hasSelection = Boolean(params.selectionText?.trim())
     const hasImage = params.mediaType === 'image' && Boolean(params.srcURL)
     const hasLink = Boolean(params.linkURL)
@@ -4154,7 +4178,7 @@ function installContextMenu(window) {
     if (hasImage) {
       template.push(
         {
-          label: 'Open Image',
+          label: ctx.openImage,
           click: () => {
             if (params.srcURL && !params.srcURL.startsWith('data:')) {
               openExternalUrl(params.srcURL)
@@ -4163,17 +4187,17 @@ function installContextMenu(window) {
           enabled: !params.srcURL.startsWith('data:')
         },
         {
-          label: 'Copy Image',
+          label: ctx.copyImage,
           click: () => {
             void copyImageFromUrl(params.srcURL).catch(error => rememberLog(`Copy image failed: ${error.message}`))
           }
         },
         {
-          label: 'Copy Image Address',
+          label: ctx.copyImageAddress,
           click: () => clipboard.writeText(params.srcURL)
         },
         {
-          label: 'Save Image As...',
+          label: ctx.saveImageAs,
           click: () => {
             void saveImageFromUrl(params.srcURL).catch(error => rememberLog(`Save image failed: ${error.message}`))
           }
@@ -4185,11 +4209,11 @@ function installContextMenu(window) {
       if (template.length) template.push({ type: 'separator' })
       template.push(
         {
-          label: 'Open Link',
+          label: ctx.openLink,
           click: () => openExternalUrl(params.linkURL)
         },
         {
-          label: 'Copy Link',
+          label: ctx.copyLink,
           click: () => clipboard.writeText(params.linkURL)
         }
       )
@@ -4212,7 +4236,7 @@ function installContextMenu(window) {
 
       template.push({ type: 'separator' })
       template.push({
-        label: 'Add to dictionary',
+        label: ctx.addToDictionary,
         click: () => window.webContents.session.addWordToSpellCheckerDictionary(params.misspelledWord)
       })
     }
@@ -4652,6 +4676,31 @@ function sanitizeConnectionProfiles(raw) {
   return out
 }
 
+// True when the config still carries a remote setup from before the desktop
+// went always-local: a global remote mode, a non-empty saved global remote
+// block, or any per-profile entries at all. Ignores the `authMode` key that
+// readDesktopConnectionConfig always stamps onto `remote` (even an empty
+// saved block), so a genuinely-empty local config isn't flagged as stale.
+// `remote` is treated as non-empty (and thus stale) unless it's a plain
+// object with nothing but that stamped `authMode` key — a hand-edited or
+// wrong-shape block (unrecognized keys, or an array) must not dodge
+// normalization just because it doesn't happen to carry `.url`/`.token`.
+function hasStoredRemoteConfig(config) {
+  if (config.mode === 'remote') {
+    return true
+  }
+  if (config.remote && typeof config.remote === 'object') {
+    if (Array.isArray(config.remote)) {
+      return true
+    }
+    const remoteKeys = Object.keys(config.remote).filter(key => key !== 'authMode')
+    if (remoteKeys.length > 0) {
+      return true
+    }
+  }
+  return Boolean(config.profiles && Object.keys(config.profiles).length > 0)
+}
+
 function readDesktopConnectionConfig() {
   // Check if file changed on disk since last read (e.g. modified by another
   // process or an external tool).  Our own writes update the cache inline
@@ -4690,6 +4739,18 @@ function readDesktopConnectionConfig() {
     }
   } catch {
     // Missing or malformed connection settings should fall back to local.
+  }
+
+  // Nadia Desktop is always-local: a connection.json carrying a stale remote
+  // setup (from before this fork, or hand-edited) is normalized back to local
+  // here, on the next read after it's found stale, via the existing atomic
+  // write path. One-way and silent — no error, no UI. Idempotent: once
+  // normalized, hasStoredRemoteConfig() is false and this branch is skipped
+  // on every subsequent read (including across app restarts).
+  if (hasStoredRemoteConfig(config)) {
+    config = { mode: 'local', remote: {}, profiles: {} }
+    writeDesktopConnectionConfig(config)
+    return config
   }
 
   connectionConfigCache = config
@@ -4896,25 +4957,15 @@ async function buildRemoteConnection(rawUrl, authMode, token, source) {
 }
 
 // Resolve the remote backend for a given profile, or null when that profile
-// should run a LOCAL backend. Precedence:
-//   1. explicit per-profile remote override (connection.json `profiles[name]`)
-//   2. env override (NADIA_DESKTOP_REMOTE_URL/_TOKEN) — applies app-wide
-//   3. global remote (connection.json `mode: 'remote'`)
-// A null/empty profile resolves the env/global remote, so legacy callers and
-// the connection test (which pass no profile) are unchanged.
+// should run a LOCAL backend. Nadia Desktop is always-local: the per-profile
+// override (upstream step 1) and the global `mode: 'remote'` (upstream step
+// 3) are gated out below — connection.json can no longer steer the app to a
+// remote gateway (it's normalized back to local on every read, see
+// readDesktopConnectionConfig). Only the developer env override survives,
+// byte-identical to upstream. A null/empty profile is unaffected, since the
+// env override never depended on it either.
 async function resolveRemoteBackend(profile) {
-  const config = readDesktopConnectionConfig()
-
-  // 1. Per-profile override — "a profile with its own remote host". Wins even
-  //    over the env override so an explicitly-configured profile always
-  //    reaches its intended backend.
-  const override = profileRemoteOverride(config, profile)
-  if (override) {
-    const token = override.authMode === 'oauth' ? null : decryptDesktopSecret(override.token)
-    return buildRemoteConnection(override.url, override.authMode, token, 'profile')
-  }
-
-  // 2. Env override (global, token-auth only).
+  // Env override (global, token-auth only): the sanctioned dev escape hatch.
   const rawEnvUrl = process.env.NADIA_DESKTOP_REMOTE_URL
   const rawEnvToken = process.env.NADIA_DESKTOP_REMOTE_TOKEN
   if (rawEnvUrl) {
@@ -4927,13 +4978,7 @@ async function resolveRemoteBackend(profile) {
     return buildRemoteConnection(rawEnvUrl, 'token', rawEnvToken, 'env')
   }
 
-  // 3. Global remote.
-  if (config.mode !== 'remote') {
-    return null
-  }
-  const authMode = normAuthMode(config.remote?.authMode)
-  const token = authMode === 'oauth' ? null : decryptDesktopSecret(config.remote?.token)
-  return buildRemoteConnection(config.remote?.url, authMode, token, 'settings')
+  return null
 }
 
 // A remote profile's sessions live on its remote host's state.db, not on a local
@@ -5037,62 +5082,10 @@ async function probeRemoteAuthMode(rawUrl) {
   }
 }
 
-async function testDesktopConnectionConfig(input = {}) {
-  const config = coerceDesktopConnectionConfig(input, readDesktopConnectionConfig(), { persistToken: false })
-  const key = connectionScopeKey(input.profile)
-  // The block under test: a per-profile entry or the global remote. Coerce has
-  // already normalized the URL and resolved token inheritance for the scope.
-  const block = key ? config.profiles?.[key] || null : config.remote
-  const wantRemote =
-    block?.mode === 'remote' || (!key && config.mode === 'remote') || (input.mode === 'remote' && block)
-  // ``/api/status`` is public on every gateway (no creds needed), so a
-  // reachability test works for local, token, and oauth modes alike — we only
-  // need a base URL. For a remote config we normalize the URL from the input;
-  // for local we fall back to the resolved/started backend.
-  let baseUrl
-  let token = null
-  let authMode = 'token'
-  if (wantRemote && block?.url) {
-    baseUrl = normalizeRemoteBaseUrl(block.url)
-    authMode = normAuthMode(block.authMode)
-    if (authMode !== 'oauth') {
-      token = decryptDesktopSecret(block.token)
-    }
-  } else {
-    const remote = (await resolveRemoteBackend(key)) || (await startNadia())
-    baseUrl = remote.baseUrl
-    token = remote.token
-    authMode = normAuthMode(remote.authMode)
-  }
-  const status = await fetchJson(`${baseUrl}/api/status`, token, { timeoutMs: 8_000 })
-
-  // The HTTP status check above proves the backend is reachable, but the chat
-  // surface only works once the renderer's live WebSocket to ``/api/ws``
-  // connects — a separate transport with separate server-side guards (Host/
-  // Origin, ws-ticket/token auth). Validating only the HTTP side produced a
-  // false-positive "reachable" while the real boot still failed with "Could not
-  // connect to Nadia gateway". Mirror the renderer's connect here so the test
-  // reflects the full path the app actually uses.
-  const wsUrl = await resolveTestWsUrl(baseUrl, authMode, token, { mintTicket: mintGatewayWsTicket })
-  // Skip the WS leg only when the runtime genuinely lacks a WebSocket (so an
-  // older Electron/Node never fails the test spuriously); Electron's main
-  // process ships a global WebSocket on every supported version.
-  if (wsUrl && typeof globalThis.WebSocket === 'function') {
-    const probe = await probeGatewayWebSocket(wsUrl, { WebSocketImpl: globalThis.WebSocket })
-    if (!probe.ok) {
-      throw new Error(
-        `Reached the gateway over HTTP, but the live WebSocket (/api/ws) connection failed: ${probe.reason} ` +
-          'The HTTP check can pass while the WebSocket is blocked by a proxy, firewall, or gateway auth/origin guard.'
-      )
-    }
-  }
-
-  return {
-    ok: true,
-    baseUrl,
-    version: status?.version || null
-  }
-}
+// testDesktopConnectionConfig (the Settings "Test remote" action) was removed
+// with the gateway-settings UI it exclusively served — the always-local
+// desktop has no remote config left to test. See resolveRemoteBackend and the
+// removed 'nadia:connection-config:test' IPC handler below.
 
 function resetBootProgressForReconnect() {
   updateBootProgress(
@@ -5744,142 +5737,6 @@ function createNewSessionWindow() {
   return spawnSecondaryWindow({ newSession: true })
 }
 
-// The pet overlay: a single transparent, frameless, always-on-top window that
-// hosts ONLY the floating mascot. Shift-clicking the in-window pet "pops it out"
-// here so it can leave the app's bounds and stay visible while Nadia is
-// minimized (Codex-style task-completion glance). It carries no gateway
-// connection of its own — the main renderer is the single source of truth and
-// pushes pet state over IPC (nadia:pet-overlay:state); the overlay just renders
-// it. Control flows back (pop-in, composer submit) via nadia:pet-overlay:control.
-let petOverlayWindow = null
-
-function petOverlayUrl() {
-  if (DEV_SERVER) {
-    return `${DEV_SERVER.endsWith('/') ? DEV_SERVER.slice(0, -1) : DEV_SERVER}/?win=overlay#/`
-  }
-
-  return `${pathToFileURL(resolveRendererIndex()).toString()}?win=overlay#/`
-}
-
-function spawnPetOverlayWindow(bounds) {
-  const win = new BrowserWindow({
-    width: Math.max(80, Math.round(bounds?.width || 220)),
-    height: Math.max(80, Math.round(bounds?.height || 220)),
-    x: Number.isFinite(bounds?.x) ? Math.round(bounds.x) : undefined,
-    y: Number.isFinite(bounds?.y) ? Math.round(bounds.y) : undefined,
-    frame: false,
-    transparent: true,
-    resizable: false,
-    movable: true,
-    minimizable: false,
-    maximizable: false,
-    fullscreenable: false,
-    // Windows/Linux need this so the helper window does not get its own
-    // taskbar/alt-tab entry. On macOS, cmd-tab is app-level and this can make
-    // the whole app look like it vanished when the only newly-created visible
-    // window is a frameless overlay. Use NSPanel + Mission Control hiding below
-    // instead, leaving the main Nadia app as the Dock/cmd-tab anchor.
-    skipTaskbar: !IS_MAC,
-    hasShadow: false,
-    alwaysOnTop: true,
-    // macOS panels are non-activating helper windows and can float over full
-    // screen spaces without becoming the app's main switcher window.
-    type: IS_MAC ? 'panel' : undefined,
-    hiddenInMissionControl: IS_MAC,
-    // Non-activating: the overlay must never become the app's key/main window,
-    // or it (a frameless, taskbar-skipping panel) becomes the app's switcher
-    // anchor and the Nadia icon drops out of cmd/alt-tab — especially when the
-    // main window is minimized. We flip this on only while the composer needs
-    // the keyboard (see nadia:pet-overlay:set-focusable).
-    focusable: false,
-    show: false,
-    // Fully transparent — the renderer paints only the sprite + bubble.
-    backgroundColor: '#00000000',
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.cjs'),
-      contextIsolation: true,
-      sandbox: true,
-      nodeIntegration: false,
-      devTools: true,
-      // Keep the sprite animating + bubble updating while the main window is
-      // minimized/blurred — the whole point of the overlay.
-      backgroundThrottling: false
-    }
-  })
-
-  // Float above other apps and follow the user across desktops so the pet is
-  // always reachable. `floating` + `type: panel` is the macOS NSPanel path; the
-  // more aggressive `screen-saver` level can interfere with normal app/window
-  // switching semantics.
-  win.setAlwaysOnTop(true, IS_MAC ? 'floating' : 'screen-saver')
-  win.setHiddenInMissionControl?.(true)
-  try {
-    // Electron docs: macOS may transform process type on each
-    // setVisibleOnAllWorkspaces() call unless skipTransformProcessType=true,
-    // which briefly hides the Dock/cmd-tab presence. Keep Nadia in the normal
-    // ForegroundApplication class so shift-clicking the pet never drops the app
-    // out of app switchers.
-    win.setVisibleOnAllWorkspaces(
-      true,
-      IS_MAC ? { visibleOnFullScreen: true, skipTransformProcessType: true } : undefined
-    )
-  } catch {
-    // Not supported everywhere — best effort.
-  }
-
-  wireCommonWindowHandlers(win)
-
-  win.once('ready-to-show', () => {
-    if (!win.isDestroyed()) win.showInactive()
-  })
-
-  win.on('closed', () => {
-    if (petOverlayWindow === win) {
-      petOverlayWindow = null
-    }
-
-    // If the overlay went away on its own (e.g. ⌘W), tell the main renderer to
-    // pop the pet back in so it doesn't stay hidden. Harmless echo when we're
-    // the ones who closed it (popInPet already cleared the active flag).
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('nadia:pet-overlay:control', { type: 'pop-in' })
-    }
-  })
-
-  win.loadURL(petOverlayUrl())
-
-  return win
-}
-
-function openPetOverlay(bounds) {
-  if (petOverlayWindow && !petOverlayWindow.isDestroyed()) {
-    if (bounds) {
-      petOverlayWindow.setBounds({
-        x: Math.round(bounds.x),
-        y: Math.round(bounds.y),
-        width: Math.max(80, Math.round(bounds.width)),
-        height: Math.max(80, Math.round(bounds.height))
-      })
-    }
-
-    petOverlayWindow.showInactive()
-
-    return petOverlayWindow
-  }
-
-  petOverlayWindow = spawnPetOverlayWindow(bounds)
-
-  return petOverlayWindow
-}
-
-function closePetOverlay() {
-  if (petOverlayWindow && !petOverlayWindow.isDestroyed()) {
-    petOverlayWindow.close()
-  }
-
-  petOverlayWindow = null
-}
-
 function createWindow() {
   const icon = getAppIconPath()
   const savedWindowState = readWindowState()
@@ -5952,11 +5809,6 @@ function createWindow() {
   mainWindow.on('maximize', schedulePersistWindowState)
   mainWindow.on('unmaximize', schedulePersistWindowState)
   mainWindow.on('close', () => schedulePersistWindowState.flush())
-
-  // The overlay rides the main window — closing the app's primary window must
-  // tear it down too (otherwise it strands as an orphan that blocks
-  // window-all-closed from quitting on Windows/Linux).
-  mainWindow.on('closed', () => closePetOverlay())
 
   wireCommonWindowHandlers(mainWindow)
 
@@ -6084,128 +5936,6 @@ ipcMain.handle('nadia:window:openNewSession', async () => {
   return { ok: true }
 })
 
-// --- Pet overlay (pop-out mascot) -----------------------------------------
-// `request` is `{ bounds, screen }`. A fresh pop-out passes viewport-space
-// bounds (screen=false): convert to screen space by adding the main window's
-// content origin so the pet lands where it sat in-window. A remembered/dragged
-// spot passes screen-space bounds (screen=true) and is used as-is. We return the
-// resolved screen bounds so the renderer can persist exactly where it opened.
-ipcMain.handle('nadia:pet-overlay:open', async (_event, request) => {
-  const bounds = request && request.bounds ? request.bounds : request
-  const isScreen = Boolean(request && request.screen)
-  let screenBounds = bounds
-
-  try {
-    if (bounds && !isScreen && mainWindow && !mainWindow.isDestroyed()) {
-      const content = mainWindow.getContentBounds()
-      screenBounds = {
-        x: content.x + (bounds.x || 0),
-        y: content.y + (bounds.y || 0),
-        width: bounds.width,
-        height: bounds.height
-      }
-    }
-  } catch {
-    // Fall back to raw bounds if the window geometry is unavailable.
-  }
-
-  openPetOverlay(screenBounds)
-
-  return { ok: true, bounds: screenBounds }
-})
-ipcMain.handle('nadia:pet-overlay:close', async () => {
-  closePetOverlay()
-
-  return { ok: true }
-})
-// Drag/resize: the overlay reports new absolute screen bounds (it already knows
-// the pointer's screen coords). Drag keeps the size constant; the wheel-to-scale
-// gesture grows/shrinks it so the sprite is never cropped by the window edge.
-// The window is created non-resizable (no stray edge-drag on the transparent
-// frameless panel), which on Windows/Linux also blocks programmatic setBounds
-// sizing — so briefly flip resizable on whenever the size actually changes.
-ipcMain.on('nadia:pet-overlay:set-bounds', (_event, bounds) => {
-  if (!petOverlayWindow || petOverlayWindow.isDestroyed() || !bounds) {
-    return
-  }
-
-  const win = petOverlayWindow
-  const width = Math.max(80, Math.round(bounds.width))
-  const height = Math.max(80, Math.round(bounds.height))
-  const [curW, curH] = win.getSize()
-  const resizing = width !== curW || height !== curH
-
-  if (resizing && !win.isResizable()) {
-    win.setResizable(true)
-  }
-
-  win.setBounds({ x: Math.round(bounds.x), y: Math.round(bounds.y), width, height })
-
-  if (resizing) {
-    win.setResizable(false)
-  }
-})
-// Click-through: the overlay window is a full rectangle but only the pet pixels
-// should be interactive. The renderer toggles this as the cursor enters/leaves
-// the sprite so transparent margins pass clicks to whatever is behind.
-ipcMain.on('nadia:pet-overlay:ignore-mouse', (_event, ignore) => {
-  if (petOverlayWindow && !petOverlayWindow.isDestroyed()) {
-    petOverlayWindow.setIgnoreMouseEvents(Boolean(ignore), { forward: true })
-  }
-})
-// The overlay is a non-activating panel (focusable:false) so it never steals
-// the app's cmd/alt-tab anchor from the main window. But the pop-up composer
-// needs the keyboard, so the renderer asks us to flip it focusable + focus it
-// while the composer is open, then back to non-activating when it closes.
-ipcMain.on('nadia:pet-overlay:set-focusable', (_event, focusable) => {
-  if (!petOverlayWindow || petOverlayWindow.isDestroyed()) {
-    return
-  }
-
-  petOverlayWindow.setFocusable(Boolean(focusable))
-  if (focusable) {
-    petOverlayWindow.focus()
-  }
-})
-// Main renderer → overlay: forward the latest pet state for the overlay to render.
-ipcMain.on('nadia:pet-overlay:state', (_event, payload) => {
-  if (petOverlayWindow && !petOverlayWindow.isDestroyed()) {
-    petOverlayWindow.webContents.send('nadia:pet-overlay:state', payload)
-  }
-})
-// Overlay → main renderer: control messages (pop back in, composer submit).
-ipcMain.on('nadia:pet-overlay:control', (_event, payload) => {
-  if (!mainWindow || mainWindow.isDestroyed()) {
-    return
-  }
-
-  // Double-click toggles the app window: hide it away if it's up front, bring it
-  // back if it's minimized/buried. Pure window control — nothing for the
-  // renderer to do, so don't forward it.
-  if (payload && payload.type === 'toggle-app') {
-    if (mainWindow.isMinimized() || !mainWindow.isVisible()) {
-      mainWindow.show()
-      mainWindow.focus()
-    } else {
-      mainWindow.minimize()
-    }
-
-    return
-  }
-
-  // The mail icon means "take me to the app": raise the main window (it may be
-  // minimized or buried) before the renderer navigates to the latest thread.
-  if (payload && payload.type === 'open-app') {
-    if (mainWindow.isMinimized()) {
-      mainWindow.restore()
-    }
-
-    mainWindow.show()
-    mainWindow.focus()
-  }
-
-  mainWindow.webContents.send('nadia:pet-overlay:control', payload)
-})
 ipcMain.handle('nadia:bootstrap:reset', async () => {
   // Renderer's "Reload and retry" path. Clear the latched failure and
   // reset connection state so the next startNadia() call restarts the
@@ -6263,7 +5993,6 @@ ipcMain.handle('nadia:bootstrap:get', async () => getBootstrapState())
 ipcMain.handle('nadia:connection-config:get', async (_event, profile) =>
   sanitizeDesktopConnectionConfig(readDesktopConnectionConfig(), profile)
 )
-ipcMain.handle('nadia:connection-config:test', async (_event, payload) => testDesktopConnectionConfig(payload))
 ipcMain.handle('nadia:connection-config:probe', async (_event, rawUrl) => probeRemoteAuthMode(rawUrl))
 ipcMain.handle('nadia:connection-config:oauth-login', async (_event, rawUrl) => {
   // Open the gateway's OAuth login window and wait for the session cookie to
@@ -6274,20 +6003,9 @@ ipcMain.handle('nadia:connection-config:oauth-login', async (_event, rawUrl) => 
   await openOauthLoginWindow(baseUrl)
   return { ok: true, baseUrl, connected: await hasOauthSessionCookie(baseUrl) }
 })
-ipcMain.handle('nadia:connection-config:oauth-logout', async (_event, rawUrl) => {
-  const baseUrl = rawUrl ? normalizeRemoteBaseUrl(rawUrl) : ''
-  await clearOauthSession(baseUrl || undefined)
-  // Report against the SAME liveness notion the Settings indicator uses
-  // (AT-or-RT) so a logout that left any session cookie behind is reflected
-  // as still-connected rather than silently signed-out.
-  return { ok: true, connected: baseUrl ? await hasLiveOauthSession(baseUrl) : false }
-})
-ipcMain.handle('nadia:connection-config:save', async (_event, payload) => {
-  const config = coerceDesktopConnectionConfig(payload)
-  writeDesktopConnectionConfig(config)
-
-  return sanitizeDesktopConnectionConfig(config, payload?.profile)
-})
+// oauth-logout and save were removed with the gateway-settings UI they
+// exclusively served (oauth-login and apply below stay: the boot-failure
+// remote-reauth flow still uses them for the env-override escape hatch).
 ipcMain.handle('nadia:connection-config:apply', async (_event, payload) => {
   const config = coerceDesktopConnectionConfig(payload)
   writeDesktopConnectionConfig(config)
@@ -7211,10 +6929,19 @@ function showAboutPanelFresh() {
   app.setAboutPanelOptions({
     applicationName: APP_NAME,
     applicationVersion: resolveNadiaVersion(),
-    copyright: 'Copyright © 2026 NadicodeAI'
+    // NadicodeAI brand copyright string, set directly.
+    copyright: menuStrings(currentMenuLocale).about.copyright
   })
   app.showAboutPanel()
 }
+
+// the renderer reports its resolved locale (en/it) so the native
+// menu, About panel, and context menu follow the in-app language choice.
+ipcMain.on('nadia:menu-locale', (_event, locale) => {
+  const resolved = locale === 'it' ? 'it' : 'en'
+  applyMenuLocale(resolved)
+  persistMenuLocale(DESKTOP_MENU_LOCALE_PATH, resolved)
+})
 
 ipcMain.handle('nadia:version', async () => ({
   appVersion: resolveNadiaVersion(),
@@ -7421,12 +7148,8 @@ ipcMain.handle('nadia:uninstall:run', async (_event, payload) => {
   return runDesktopUninstall(String(mode || ''))
 })
 
-// Download a VS Code Marketplace extension and return the raw color-theme JSON
-// it contributes. No theme code is executed — we only read JSON from the .vsix.
-ipcMain.handle('nadia:vscode-theme:fetch', async (_event, id) => fetchMarketplaceThemes(String(id || '')))
-
-// Search the Marketplace for color-theme extensions (empty query = top installs).
-ipcMain.handle('nadia:vscode-theme:search', async (_event, query) => searchMarketplaceThemes(String(query || ''), 20))
+// the color-theme download/search IPC handlers are removed
+// with the VS Code Marketplace theme-gallery bridge.
 
 // ---------------------------------------------------------------------------
 // nadia:// deep links (e.g. nadia://blueprint/morning-brief?time=08:00).
@@ -7529,6 +7252,10 @@ app.on('open-url', (event, url) => {
 })
 
 app.whenReady().then(() => {
+  // seed the native menu locale: the persisted in-app choice
+  // wins, else OS-language Italian detection, else English. The renderer
+  // refines it over 'nadia:menu-locale' once its catalog loads.
+  currentMenuLocale = resolveStartupMenuLocale(DESKTOP_MENU_LOCALE_PATH, app.getLocale && app.getLocale())
   if (IS_MAC) {
     Menu.setApplicationMenu(buildApplicationMenu())
   } else {
@@ -7583,10 +7310,6 @@ function configureSpellChecker() {
 }
 
 app.on('before-quit', () => {
-  // The always-on-top overlay isn't a "real" app window; close it so a stray
-  // pet can't keep the process alive or float over a quit app.
-  closePetOverlay()
-
   // Quitting mid-install should stop the installer, not orphan it.
   if (bootstrapAbortController) {
     try {

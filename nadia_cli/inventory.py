@@ -163,9 +163,7 @@ def build_models_payload(
         refresh=refresh,
     )
 
-    moa_row = _moa_provider_row(ctx.current_provider)
-    if moa_row is not None:
-        rows = [moa_row] + [r for r in rows if str(r.get("slug", "")).lower() != "moa"]
+    rows = _portal_only_provider_rows(rows, ctx)
 
     # --- Deduplicate: remove models from aggregators that overlap with
     # user-defined providers.  When a local proxy (e.g. litellm-proxy)
@@ -213,7 +211,7 @@ def build_models_payload(
                     row["total_models"] = len(filtered)
 
     if include_unconfigured:
-        rows = list(rows) + [r for r in _append_unconfigured_rows(rows, ctx) if str(r.get("slug", "")).lower() != "moa"]
+        rows = list(rows)
     if picker_hints:
         _apply_picker_hints(rows)
     if canonical_order:
@@ -228,6 +226,83 @@ def build_models_payload(
         "model": ctx.current_model,
         "provider": ctx.current_provider,
     }
+
+
+_PORTAL_PROVIDER_LABEL = "NadicodeAI Portal"
+
+
+def _portal_model_id(model: object) -> str:
+    if isinstance(model, dict):
+        return str(model.get("id") or "").strip()
+    return str(model or "").strip()
+
+
+def _portal_curated_model_ids(models: object) -> list[str]:
+    try:
+        from nadia_cli.model_catalog import is_curated_model
+    except Exception:
+        is_curated_model = None  # type: ignore[assignment]
+
+    out: list[str] = []
+    seen: set[str] = set()
+    for model in (models if isinstance(models, list) else []):
+        mid = _portal_model_id(model)
+        key = mid.lower()
+        if not mid or key in seen:
+            continue
+        if is_curated_model is not None:
+            try:
+                candidate = model if isinstance(model, dict) else {"id": mid}
+                if not is_curated_model(candidate):
+                    continue
+            except Exception:
+                text = mid.lower()
+                if "alpha" in text or "preview" in text:
+                    continue
+        else:
+            text = mid.lower()
+            if "alpha" in text or "preview" in text:
+                continue
+        out.append(mid)
+        seen.add(key)
+    return out
+
+
+def _portal_only_provider_rows(rows: list[dict], ctx: ConfigContext) -> list[dict]:
+    portal = next(
+        (
+            row
+            for row in rows
+            if str(row.get("slug", "")).strip().lower() == "nous"
+        ),
+        None,
+    )
+    models = _portal_curated_model_ids((portal or {}).get("models") or [])
+    if not models:
+        try:
+            from nadia_cli.models import get_curated_nous_model_ids
+            models = get_curated_nous_model_ids()
+        except Exception:
+            models = []
+    try:
+        from nadia_cli.models import union_with_nous_curated_router_and_free_ids
+        models = union_with_nous_curated_router_and_free_ids(models)
+    except Exception:
+        models = _portal_curated_model_ids(models)
+
+    row = dict(portal or {})
+    row.update(
+        {
+            "slug": "nous",
+            "name": _PORTAL_PROVIDER_LABEL,
+            "models": models,
+            "total_models": len(models),
+            "is_current": str(ctx.current_provider or "").strip().lower() == "nous",
+            "is_user_defined": False,
+            "source": row.get("source") or "nadia",
+        }
+    )
+    return [row]
 
 
 def _apply_capabilities(rows: list[dict]) -> None:
@@ -271,37 +346,12 @@ def _apply_capabilities(rows: list[dict]) -> None:
 # ─── Internal: row post-processing ──────────────────────────────────────
 
 
-def _append_unconfigured_rows(rows: list[dict], ctx: ConfigContext) -> list[dict]:
-    """Build skeleton rows for canonical providers missing from ``rows``."""
-    from nadia_cli.models import CANONICAL_PROVIDERS, _PROVIDER_LABELS
-
-    seen = {r["slug"].lower() for r in rows}
-    cur = (ctx.current_provider or "").lower()
-    extras: list[dict] = []
-    for entry in CANONICAL_PROVIDERS:
-        if entry.slug.lower() in seen:
-            continue
-        extras.append(
-            {
-                "slug": entry.slug,
-                "name": _PROVIDER_LABELS.get(entry.slug, entry.label),
-                "is_current": entry.slug.lower() == cur,
-                "is_user_defined": False,
-                "models": [],
-                "total_models": 0,
-                "source": "canonical",
-            }
-        )
-    return extras
-
-
 def _apply_picker_hints(rows: list[dict]) -> None:
     """Add ``authenticated``/``auth_type``/``key_env``/``warning`` per row.
 
     Mutates ``rows`` in-place. Rows already from
     ``list_authenticated_providers`` are marked ``authenticated=True``;
-    the unconfigured skeleton rows from ``_append_unconfigured_rows`` get
-    the picker's setup-hint shape.
+    any unconfigured skeleton rows get the picker's setup-hint shape.
     """
     from nadia_cli.auth import PROVIDER_REGISTRY
 
@@ -309,10 +359,9 @@ def _apply_picker_hints(rows: list[dict]) -> None:
         if "authenticated" in row:
             continue
         # Distinguish authenticated rows (returned by
-        # list_authenticated_providers) from skeleton rows (from
-        # _append_unconfigured_rows). The skeleton rows have empty
-        # `models` AND source="canonical"; authenticated rows have
-        # populated `models` OR a non-canonical source.
+        # list_authenticated_providers) from skeleton rows. Skeleton rows
+        # have empty `models` AND source="canonical"; authenticated rows
+        # have populated `models` OR a non-canonical source.
         is_skeleton = row.get("source") == "canonical" and not row.get("models")
         row["authenticated"] = not is_skeleton
         if not is_skeleton or row.get("is_user_defined"):
@@ -417,6 +466,13 @@ def _apply_pricing(
                 "cache": cache,
                 "free": is_free,
             }
+            if is_free:
+                metadata = row.setdefault("model_metadata", {})
+                if isinstance(metadata, dict):
+                    current = metadata.get(mid)
+                    item = dict(current) if isinstance(current, dict) else {}
+                    item["badge"] = "free"
+                    metadata[mid] = item
 
         if formatted:
             row["pricing"] = formatted

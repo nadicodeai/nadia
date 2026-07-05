@@ -157,7 +157,8 @@ interface PromptActionsOptions {
   busyRef: MutableRefObject<boolean>
   branchCurrentSession: () => Promise<boolean>
   createBackendSessionForSend: (preview?: string | null) => Promise<string | null>
-  handleSkinCommand: (arg: string) => string
+  // the skin-command callback prop is removed: /skin
+  // theme-cycling is retired (one NadicodeAI skin).
   refreshSessions: () => Promise<void>
   requestGateway: <T>(method: string, params?: Record<string, unknown>, timeoutMs?: number) => Promise<T>
   resumeStoredSession: (storedSessionId: string) => Promise<void> | void
@@ -184,7 +185,6 @@ export function usePromptActions({
   busyRef,
   branchCurrentSession,
   createBackendSessionForSend,
-  handleSkinCommand,
   refreshSessions,
   requestGateway,
   resumeStoredSession,
@@ -445,7 +445,6 @@ export function usePromptActions({
     busyRef,
     copy,
     createBackendSessionForSend,
-    handleSkinCommand,
     handoffSession,
     refreshSessions,
     requestGateway,

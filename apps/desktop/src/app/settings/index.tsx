@@ -5,7 +5,7 @@ import { Tip } from '@/components/ui/tooltip'
 import { getNadiaConfigDefaults, getNadiaConfigRecord, saveNadiaConfig } from '@/nadia'
 import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
-import { Archive, Bell, Download, Globe, Info, KeyRound, RefreshCw, Settings2, Upload, Wrench, Zap } from '@/lib/icons'
+import { Archive, Bell, Download, Info, KeyRound, RefreshCw, Settings2, Upload, Wrench, Zap } from '@/lib/icons'
 import { notifyError } from '@/store/notifications'
 
 import { useRouteEnumParam } from '../hooks/use-route-enum-param'
@@ -17,7 +17,9 @@ import { AboutSettings } from './about-settings'
 import { AppearanceSettings } from './appearance-settings'
 import { ConfigSettings } from './config-settings'
 import { SECTIONS } from './constants'
-import { GatewaySettings } from './gateway-settings'
+// the gateway-settings section (local/remote choice) is
+// removed: Nadia Desktop is always-local, so its nav item, view, and import
+// are gone from this file.
 import { KEYS_VIEWS, KeysSettings, type KeysView } from './keys-settings'
 import { McpSettings } from './mcp-settings'
 import { NotificationsSettings } from './notifications-settings'
@@ -28,7 +30,6 @@ import type { SettingsPageProps, SettingsView as SettingsViewId } from './types'
 const SETTINGS_VIEWS: readonly SettingsViewId[] = [
   ...SECTIONS.map(s => `config:${s.id}` as SettingsViewId),
   'providers',
-  'gateway',
   'keys',
   'mcp',
   'notifications',
@@ -78,8 +79,8 @@ export function SettingsView({ gateway, onClose, onConfigSaved, onMainModelChang
     }
 
     try {
+      // Silent settings: resetting options plays no haptic click.
       await saveNadiaConfig(await getNadiaConfigDefaults())
-      triggerHaptic('success')
       onConfigSaved?.()
     } catch (err) {
       notifyError(err, t.settings.resetFailed)
@@ -116,6 +117,10 @@ export function SettingsView({ gateway, onClose, onConfigSaved, onMainModelChang
             label={t.settings.nav.providers}
             onClick={() => setActiveView('providers')}
           />
+          {/* the "API keys" provider subnav item is removed:
+              providers-settings.tsx renders one portal card regardless of
+              view (portal-only surface), so PROVIDER_VIEWS collapsed to the
+              single 'accounts' entry. */}
           {activeView === 'providers' && (
             <div className="ml-3.5 flex flex-col gap-0.5 pl-1.5">
               <OverlayNavItem
@@ -125,21 +130,8 @@ export function SettingsView({ gateway, onClose, onConfigSaved, onMainModelChang
                 nested
                 onClick={() => openProviderView('accounts')}
               />
-              <OverlayNavItem
-                active={providerView === 'keys'}
-                icon={KeyRound}
-                label={t.settings.nav.providerApiKeys}
-                nested
-                onClick={() => openProviderView('keys')}
-              />
             </div>
           )}
-          <OverlayNavItem
-            active={activeView === 'gateway'}
-            icon={Globe}
-            label={t.settings.nav.gateway}
-            onClick={() => setActiveView('gateway')}
-          />
           <OverlayNavItem
             active={activeView === 'keys'}
             icon={KeyRound}
@@ -202,10 +194,7 @@ export function SettingsView({ gateway, onClose, onConfigSaved, onMainModelChang
             <Tip label={t.settings.resetToDefaults}>
               <OverlayIconButton
                 className="hover:text-destructive"
-                onClick={() => {
-                  triggerHaptic('warning')
-                  void resetConfig()
-                }}
+                onClick={() => void resetConfig()}
               >
                 <RefreshCw className="size-3.5" />
               </OverlayIconButton>
@@ -218,8 +207,6 @@ export function SettingsView({ gateway, onClose, onConfigSaved, onMainModelChang
             <AppearanceSettings />
           ) : activeView === 'about' ? (
             <AboutSettings />
-          ) : activeView === 'gateway' ? (
-            <GatewaySettings />
           ) : activeView.startsWith('config:') ? (
             <ConfigSettings
               activeSectionId={activeView.slice('config:'.length)}

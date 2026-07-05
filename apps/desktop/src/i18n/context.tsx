@@ -112,6 +112,11 @@ export function I18nProvider({ children, configClient = defaultConfigClient, ini
   useEffect(() => {
     localeRef.current = locale
     setRuntimeI18nLocale(locale)
+    // keep the native menu / About / context menu in the same
+    // language as the renderer (main process owns those surfaces).
+    if (typeof window !== 'undefined') {
+      window.nadiaDesktop?.setMenuLocale?.(locale)
+    }
   }, [locale])
 
   useEffect(() => {

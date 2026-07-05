@@ -173,7 +173,7 @@ Use the existing providers as templates:
 - simple API-key path: Z.AI, MiniMax
 - API-key path with endpoint detection: Kimi, Z.AI
 - native token resolution: Anthropic
-- OAuth / auth-store path: Nadia, OpenAI Codex
+- OAuth / auth-store path: NadicodeAI Portal, OpenAI Codex
 
 Questions to answer here:
 

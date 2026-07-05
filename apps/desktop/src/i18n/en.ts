@@ -300,8 +300,8 @@ export const en: Translations = {
     nav: {
       providers: 'Providers',
       providerAccounts: 'Accounts',
-      providerApiKeys: 'API keys',
-      gateway: 'Gateway',
+      // gateway removed: always-local desktop. providerApiKeys
+      // removed: portal-only surface, no separate API-keys provider view.
       apiKeys: 'Tools & Keys',
       keysTools: 'Tools',
       keysSettings: 'Settings',
@@ -361,7 +361,7 @@ export const en: Translations = {
     searchPlaceholder: {
       about: 'About Nadia Desktop',
       config: 'Search settings...',
-      gateway: 'Gateway connection...',
+      // gateway removed: always-local desktop
       keys: 'Search API keys...',
       mcp: 'Search MCP servers...',
       sessions: 'Search archived sessions...'
@@ -373,8 +373,8 @@ export const en: Translations = {
     },
     appearance: {
       title: 'Appearance',
-      intro:
-        'These are desktop-only display preferences. Mode controls brightness; theme controls the accent palette and chat surface styling.',
+      // themes/skins retired: mode is the only visual choice
+      intro: 'These are desktop-only display preferences. Mode controls brightness.',
       colorMode: 'Color Mode',
       colorModeDesc: 'Pick a fixed mode or let Nadia follow your system setting.',
       toolViewTitle: 'Tool Call Display',
@@ -392,58 +392,9 @@ export const en: Translations = {
       productDesc: 'Human-friendly tool activity with concise summaries.',
       technical: 'Technical',
       technicalDesc: 'Include raw tool args/results and low-level details.',
-      themeTitle: 'Theme',
-      themeDesc: 'Desktop palettes only. The selected mode is applied on top.',
-      themeProfileNote: profile => `Saved for the ${profile} profile — each profile keeps its own theme.`,
-      installTitle: 'Install from VS Code',
-      installDesc:
-        'Paste a Marketplace extension id (e.g. dracula-theme.theme-dracula) to convert its color theme into a desktop palette.',
-      installPlaceholder: 'publisher.extension',
-      installButton: 'Install',
-      installing: 'Installing…',
-      installError: 'Could not install that theme.',
-      installed: name => `Installed “${name}”.`,
-      removeTheme: 'Remove theme',
-      importedBadge: 'Imported',
-      pet: {
-        title: 'Pet',
-        intro:
-          'Adopt an animated petdex mascot that floats over the app and reacts to what Nadia is doing — running while tools execute, celebrating on success, sulking on errors.',
-        restartHint:
-          'Pets need a quick restart — the running app started before this feature was added. Quit and reopen Nadia, then come back here.',
-        on: 'On',
-        off: 'Off',
-        scaleTitle: 'Size',
-        scaleDesc: 'Resize the floating mascot. Applies everywhere instantly.',
-        roamTitle: 'Roam',
-        roamDesc: 'Let the pet wander the window on its own while idle.',
-        chooseTitle: 'Choose a pet',
-        chooseDesc: 'Picking one installs it (if needed) and makes it active.',
-        searchPlaceholder: 'Search pets…',
-        unreachable: "Couldn't reach the petdex gallery. Check your connection and reopen this page.",
-        noMatch: query => `No pets match "${query}".`,
-        installedTag: 'installed',
-        generatedTag: 'Generated',
-        countCapped: (cap, total) => `Showing ${cap} of ${total} — type to narrow it down.`,
-        count: n => `${n} pet${n === 1 ? '' : 's'}.`,
-        uninstall: name => `Uninstall ${name}`,
-        delete: name => `Delete ${name}`,
-        deleteTitle: name => `Delete ${name}?`,
-        deleteBody: "This permanently deletes the pet — it can't be reinstalled.",
-        deleteConfirm: 'Delete',
-        rename: name => `Rename ${name}`,
-        renameTitle: 'Rename pet',
-        renamePlaceholder: 'Name your pet',
-        renameSave: 'Save',
-        exportPet: name => `Export ${name}`,
-        adoptFailed: slug => `Could not adopt ${slug}`,
-        uninstallFailed: slug => `Could not uninstall ${slug}`,
-        renameFailed: slug => `Could not rename ${slug}`,
-        exportFailed: slug => `Could not export ${slug}`,
-        noneAvailable: 'No pets available to turn on right now.',
-        turnOnFailed: 'Could not turn the pet on.',
-        turnOffFailed: 'Could not turn the pet off.'
-      }
+      // theme picker retired; the install-from-VS-Code keys
+      // (installTitle/installDesc/installPlaceholder/installButton/installing/
+      // installError/installed/importedBadge) are removed with it.
     },
     fieldLabels: FIELD_LABELS,
     fieldDescriptions: FIELD_DESCRIPTIONS,
@@ -510,73 +461,8 @@ export const en: Translations = {
       set: 'Set',
       clear: 'Clear'
     },
-    gateway: {
-      loading: 'Loading gateway settings...',
-      unavailableTitle: 'Gateway settings unavailable',
-      unavailableDesc: 'The desktop IPC bridge does not expose gateway settings.',
-      title: 'Gateway Connection',
-      envOverride: 'env override',
-      intro:
-        'Nadia Desktop starts its own local gateway by default. Use a remote gateway when you want this app to control an already-running Nadia backend on another machine or behind a trusted proxy. Pick a profile below to give it its own remote host.',
-      appliesTo: 'Applies to',
-      allProfiles: 'All profiles',
-      defaultConnection: 'Default connection for every profile that has no override of its own.',
-      profileConnection: profile =>
-        `Connection used only when “${profile}” is the active profile. Set it to Local to inherit the default.`,
-      envOverrideTitle: 'Environment variables are controlling this desktop session.',
-      envOverrideDesc:
-        'Unset NADIA_DESKTOP_REMOTE_URL and NADIA_DESKTOP_REMOTE_TOKEN to use the saved setting below.',
-      localTitle: 'Local gateway',
-      localDesc: 'Start a private Nadia backend on localhost. This is the default and works offline.',
-      remoteTitle: 'Remote gateway',
-      remoteDesc:
-        'Connect this desktop shell to a remote Nadia backend. Hosted gateways use OAuth or a username and password; self-hosted ones may use a session token.',
-      remoteUrlTitle: 'Remote URL',
-      remoteUrlDesc: 'Base URL for the remote dashboard backend. Path prefixes are supported, for example /nadia.',
-      probing: 'Checking how this gateway authenticates…',
-      probeError: 'Could not reach this gateway yet. Check the URL — the auth method will appear once it responds.',
-      signedIn: 'Signed in',
-      signIn: 'Sign in',
-      signOut: 'Sign out',
-      signInWith: provider => `Sign in with ${provider}`,
-      authTitle: 'Authentication',
-      authSignedInPassword:
-        'This gateway uses a username and password. You are signed in; the session refreshes automatically.',
-      authSignedInOauth: 'This gateway uses OAuth. You are signed in; the session refreshes automatically.',
-      authNeedsPassword: 'This gateway uses a username and password. Sign in to authorize this desktop app.',
-      authNeedsOauth: provider => `This gateway uses OAuth. Sign in with ${provider} to authorize this desktop app.`,
-      tokenTitle: 'Session token',
-      tokenDesc: 'The dashboard session token used for REST and WebSocket access. Leave blank to keep the saved token.',
-      existingToken: value => `Existing token ${value}`,
-      savedToken: 'saved',
-      pasteSessionToken: 'Paste session token',
-      testRemote: 'Test remote',
-      saveForRestart: 'Save for next restart',
-      saveAndReconnect: 'Save and reconnect',
-      diagnostics: 'Diagnostics',
-      diagnosticsDesc: 'Reveal desktop.log in your file manager — useful when the gateway fails to start.',
-      openLogs: 'Open logs',
-      incompleteTitle: 'Remote gateway incomplete',
-      incompleteSignIn: 'Enter a remote URL and sign in before switching to remote.',
-      incompleteToken: 'Enter a remote URL and session token before switching to remote.',
-      incompleteSignInTest: 'Enter a remote URL and sign in before testing.',
-      incompleteTokenTest: 'Enter a remote URL and session token before testing.',
-      enterUrlFirst: 'Enter a remote URL first.',
-      restartingTitle: 'Gateway connection restarting',
-      savedTitle: 'Gateway settings saved',
-      restartingMessage: 'Nadia Desktop will reconnect using the saved settings.',
-      savedMessage: 'Saved for the next restart.',
-      connectedTo: (baseUrl, version) => `Connected to ${baseUrl}${version ? ` · Nadia ${version}` : ''}`,
-      reachableTitle: 'Remote gateway reachable',
-      signedOutTitle: 'Signed out',
-      signedOutMessage: 'Cleared the remote gateway session.',
-      failedLoad: 'Gateway settings failed to load',
-      signInFailed: 'Sign-in failed',
-      signOutFailed: 'Sign-out failed',
-      testFailed: 'Remote gateway test failed',
-      applyFailed: 'Could not apply gateway settings',
-      saveFailed: 'Could not save gateway settings'
-    },
+    // the gateway settings copy block (Local/Remote gateway
+    // choice) is removed: Nadia Desktop is always-local.
     keys: {
       loading: 'Loading API keys and credentials...',
       failedLoad: 'API keys failed to load',
@@ -644,6 +530,8 @@ export const en: Translations = {
       intro:
         'Sign in with a subscription — no API key to copy. Nadia runs the browser sign-in for you, right here in the app.',
       connected: 'Connected',
+      // portal connection status copy for the portal-only provider settings card
+      notConnected: 'Not connected',
       collapse: 'Collapse',
       connectAnother: 'Connect another provider',
       otherProviders: 'Other providers',
@@ -823,64 +711,9 @@ export const en: Translations = {
     commandCenter: 'Command Center',
     appearance: 'Appearance',
     settings: 'Settings',
-    changeTheme: 'Change theme',
+    // themes retired: no "change theme" command
     changeColorMode: 'Change color mode...',
-    pets: {
-      title: 'Pets',
-      placeholder: 'Search pets…',
-      loading: 'Loading petdex gallery…',
-      error: 'Could not reach the petdex gallery.',
-      staleBackend: 'Restart Nadia to use pets — the backend predates this feature.',
-      empty: 'No matching pets.',
-      turnOff: 'Turn off',
-      turnOn: 'Turn on',
-      installed: 'Installed',
-      generatedTag: 'Generated',
-      adoptFailed: 'Could not adopt that pet.',
-      toggleFailed: 'Could not toggle the pet.',
-      noneAvailable: 'No pets available — pick one below to install.'
-    },
-    generatePet: {
-      title: 'Generate a pet',
-      placeholder: 'Describe a pet to generate…',
-      promptHint: 'Type a description, then press Enter to draft four looks.',
-      readyHint: 'Press Enter to draft four looks from your description.',
-      generate: 'Generate',
-      generating: 'Generating…',
-      retry: 'Retry',
-      hatch: 'Hatch',
-      spawning: 'Spawning…',
-      hatching: 'Hatching your pet…',
-      hatchingSub: 'Bringing it to life…',
-      hatched: 'It hatched!',
-      hatchRow: (_state, done, total) => `Sketching frame ${done} of ${total}…`,
-      hatchComposing: 'Piecing it together…',
-      hatchSaving: 'Almost there…',
-      namePlaceholder: 'Name your pet',
-      staleBackend: 'Update Nadia to generate pets.',
-      backgroundHint: 'You can close this — Nadia will notify you when it’s done.',
-      slowProviderHint: 'This can take several minutes',
-      remix: 'Remix',
-      remixConfirmTitle: 'Remix this look?',
-      remixConfirmBody:
-        'This generates a fresh set of drafts using this one as the starting point. It can take several minutes.',
-      genericError: 'Generation failed — try again or pick a suggestion.',
-      referenceImageTooLarge: 'Reference image is too large. Use one under 16 MB.',
-      referenceImageInvalid: 'Could not read that reference image. Try a PNG, JPG, WebP, or GIF.',
-      adopt: 'Adopt',
-      startOver: 'Start over'
-    },
-    installTheme: {
-      title: 'Install theme...',
-      placeholder: 'Search the VS Code Marketplace...',
-      loading: 'Searching the Marketplace...',
-      error: 'Could not reach the Marketplace.',
-      empty: 'No matching themes.',
-      install: 'Install',
-      installing: 'Installing...',
-      installed: 'Installed',
-      installs: count => `${count} installs`
-    },
+    // VS Code Marketplace theme install retired
     settingsFields: 'Settings fields',
     mcpServers: 'MCP servers',
     archivedChats: 'Archived chats',
@@ -1753,6 +1586,13 @@ export const en: Translations = {
     connectedPicking: provider => `${provider} connected. Picking a default model...`,
     signInFailed: 'Sign-in failed. Try again.',
     pickDifferentProvider: 'Pick a different provider',
+    // plain-language portal activation failure copy (denied / expired / unreachable) + retry
+    activationFailure: {
+      denied: 'Activation was declined on the portal device page. Nothing was connected — you can try again.',
+      expired: 'The activation code expired before it was approved. Start activation again to get a fresh code.',
+      unreachable: 'Could not reach the NadicodeAI Portal to complete activation. Check your connection and try again.'
+    },
+    retryActivation: 'Try again',
     signInWith: provider => `Sign in with ${provider}`,
     openedBrowser: provider => `We opened ${provider} in your browser.`,
     authorizeThere: 'Authorize Nadia there.',

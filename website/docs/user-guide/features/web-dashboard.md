@@ -129,57 +129,11 @@ The **Chat** tab embeds the full Nadia TUI (the same interface you get from `nad
 
 Close the browser tab and the PTY is reaped cleanly on the server. Re-opening spawns a fresh session.
 
-To point [Nadia Desktop](#connecting-nadia-desktop-to-a-remote-backend) at a dashboard running on another machine instead of its own bundled backend, see the remote-backend section below.
+Nadia Desktop always runs its own local backend and has no in-app remote-gateway setting; see [Connecting Nadia Desktop to a remote backend](#connecting-nadia-desktop-to-a-remote-backend) below for the developer-only env-var override.
 
 ### Connecting Nadia Desktop to a remote backend
 
-Nadia Desktop normally launches its own local backend, but it can also attach to a dashboard running on a remote machine (a VM, a homelab box, etc.) via **Settings → Gateway → Remote gateway**. This is the most common source of "Desktop says the backend is ready but chat never works" reports, because Desktop's readiness check verifies less than the live chat connection actually needs.
-
-:::info Prerequisite: a `nadia dashboard` must be running on the remote host
-The "remote backend" Desktop connects to **is** a `nadia dashboard` process running on the remote machine — the same server this page documents. It has to be up and reachable before any of the steps below matter; Desktop attaches to it, it doesn't start it for you. Keep it running under `systemd`/`tmux`/etc. so it survives logout and reboots. The **gateway** (Telegram/Discord/Slack/etc.) is a *separate* long-running process — start it independently if you rely on messaging channels; it is not the thing the desktop app connects to.
-:::
-
-Desktop's "remote backend is ready" probe only hits `GET /api/status`, which is a public endpoint — it answers as soon as *any* dashboard is running on the host. The live chat connection is a **separate** WebSocket to `/api/ws` (and `/api/pty`), and that socket is gated by two more checks the status probe never touches:
-
-1. **You must be authenticated.** When the dashboard is bound to a non-loopback address it engages its auth gate. Protect it with a username and password (the bundled [username/password provider](#usernamepassword-provider-no-oauth-idp)); Desktop signs in once and reuses the resulting session for the WebSocket via a single-use ticket. Without a configured provider, a non-loopback dashboard **fails closed at startup**.
-2. **The bind host must allow the client and match the Host header.** A loopback bind (`127.0.0.1`) only accepts loopback clients, so a remote machine is rejected at the socket layer regardless of credentials. Bind to a non-loopback address (`--host 0.0.0.0`) so the peer-IP guard lets the remote client through. The remote URL you enter in Desktop must reach the dashboard by the same host it bound to — the DNS-rebinding guard requires the Host header to match.
-
-#### Remote dashboard setup
-
-Set a username and password, then run the dashboard bound to a reachable address. For a `systemd` service:
-
-```ini
-[Service]
-EnvironmentFile=%h/.nadia/.env
-ExecStart=/path/to/venv/bin/python -m nadia_cli.main dashboard \
-    --host 0.0.0.0 --port 9119 --no-open
-```
-
-with `~/.nadia/.env` containing:
-
-```bash
-NADIA_DASHBOARD_BASIC_AUTH_USERNAME=admin
-NADIA_DASHBOARD_BASIC_AUTH_PASSWORD=choose-a-strong-password
-NADIA_DASHBOARD_BASIC_AUTH_SECRET=<32+ random bytes; openssl rand -base64 32>
-```
-
-Then in Desktop enter the **Remote URL** (e.g. `http://VM_IP:9119`) and **Sign in** with that username and password. See the [username/password provider](#usernamepassword-provider-no-oauth-idp) section for the full configuration surface.
-
-:::tip Verify the gate is on before retrying Desktop
-From any machine, check that the dashboard advertises the username/password provider:
-
-```bash
-curl -s http://VM_IP:9119/api/status | jq '.auth_required, .auth_providers'
-# true
-# ["basic"]
-```
-
-- `auth_required: true` and `"basic"` in the providers list → Desktop's **Sign in** flow will work.
-- `auth_required: false` → the bind is loopback, or the gate didn't engage. Bind to a non-loopback address.
-- `auth_required: true` but no `"basic"` provider → the username/password env vars aren't loaded. Fix those first.
-:::
-
-If `/api/status` shows the gate is on with the `"basic"` provider and Desktop *still* fails to connect after signing in, the issue is past basic setup — grab a fresh `desktop.log` (Settings → Gateway → Open logs) plus the dashboard's logs from the same retry window and look for the `/api/ws` close code (4403 = chat WS rejected by the request guard, e.g. Host/peer mismatch; 4401 = the WS ticket didn't authenticate).
+Nadia Desktop always starts and manages its own local backend — there is no Settings UI to point it at a dashboard running elsewhere, and no interactive sign-in flow from the desktop side. For local development only, launch the app with `NADIA_DESKTOP_REMOTE_URL` and `NADIA_DESKTOP_REMOTE_TOKEN` set (both are required together) to connect it to a remote `nadia dashboard` instance over a static session token instead. Full variable reference: [Environment Variables → Web Dashboard & Nadia Desktop](/reference/environment-variables#web-dashboard--nadia-desktop).
 
 ### Config
 
@@ -560,10 +514,12 @@ same auth gate as the rest of `/api/`.
 When the dashboard is bound to a public or non-loopback address — anything other than `127.0.0.1` / `localhost` — Nadia Agent engages an auth gate. Every request must carry a verified session cookie or it's bounced to the login page. Three providers ship in the box:
 
 - **[Username/password](#usernamepassword-provider-no-oauth-idp)** — the simplest way to put auth on a self-hosted / on-prem / homelab dashboard. No external identity provider. **Use it only on a trusted network or behind a VPN — not for public-internet exposure.**
-- **[OAuth (NadicodeAI Portal)](#default-provider-nadicodeai-portal)** — for hosted deployments and any dashboard reachable over the public internet, and the recommended path for a [remote Nadia Desktop connection](#connecting-nadia-desktop-to-a-remote-backend). Every login is verified against your NadicodeAI account, so this is the provider suitable for internet-facing use.
+- **[OAuth (NadicodeAI Portal)](#default-provider-nadicodeai-portal)** — for hosted deployments and any dashboard reachable over the public internet. Every login is verified against your NadicodeAI account, so this is the provider suitable for internet-facing use.
 - **[Self-hosted OIDC](#self-hosted-oidc-provider)** — for bringing your own identity provider via standard OpenID Connect (Keycloak, Auth0, Okta, Google, GitHub via an OIDC bridge, etc.). No NadicodeAI Portal involved; suitable for public-internet exposure when fronted by a conformant OIDC server.
 
 Operator-owned dashboards bound to loopback are unaffected — no auth, no login page.
+
+(A remote Nadia Desktop connection does not use any of these providers interactively — it authenticates with a static env-var token; see [Connecting Nadia Desktop to a remote backend](#connecting-nadia-desktop-to-a-remote-backend).)
 
 ### When the gate engages
 
@@ -605,7 +561,7 @@ To use the NadicodeAI Portal provider you need an OAuth client ID (shape `agent:
   # …writes NADIA_DASHBOARD_OAUTH_CLIENT_ID to ~/.nadia/.env
   ```
 
-- **GUI — the Local Dashboards page.** Open [`/local-dashboards`](https://portal.nadicodeai.com/local-dashboards) in the NadicodeAI Portal to register, name, manage, and revoke self-hosted dashboards from the browser. Copy the resulting `agent:{id}` client ID into `NADIA_DASHBOARD_OAUTH_CLIENT_ID` (env) or `dashboard.oauth.client_id` (config.yaml). This is also where you revoke a dashboard registered via the CLI.
+- **GUI — the Local Dashboards page.** Open [`/local-dashboards`](https://portal.nadicode.ai/local-dashboards) in the NadicodeAI Portal to register, name, manage, and revoke self-hosted dashboards from the browser. Copy the resulting `agent:{id}` client ID into `NADIA_DASHBOARD_OAUTH_CLIENT_ID` (env) or `dashboard.oauth.client_id` (config.yaml). This is also where you revoke a dashboard registered via the CLI.
 
 #### Configuration
 
@@ -912,11 +868,11 @@ Validation rejects values without `http://` / `https://` scheme, without a host,
 
 ### OAuth flow
 
-The provider implements the [NadicodeAI Portal OAuth contract v1](https://github.com/NadicodeAI/nadia-account-service/blob/main/docs/agent-dashboard-oauth-contract.md) — authorization-code grant with PKCE (S256):
+The provider implements the NadicodeAI Portal OAuth contract v1 (wire reference: `github.com/NadicodeAI/nadia-account-service/blob/main/docs/agent-dashboard-oauth-contract.md`) — authorization-code grant with PKCE (S256):
 
 1. User hits `/` without a session cookie → gate redirects to `/login`.
 2. Login page shows a "Continue with NadicodeAI Portal" button → `/auth/login?provider=nadia`.
-3. Server stashes PKCE state in a short-lived cookie, redirects user to `https://portal.nadicodeai.com/oauth/authorize?…`.
+3. Server stashes PKCE state in a short-lived cookie, redirects user to `https://portal.nadicode.ai/oauth/authorize?…`.
 4. User authenticates with Portal, lands at `/auth/callback?code=…&state=…`.
 5. Server exchanges the code for an access token at `POST /api/oauth/token`, verifies the JWT signature against the Portal's JWKS (`/.well-known/jwks.json`), and sets the `nadia_session_at` cookie.
 6. User is redirected to `/` (or to the original deep-link path via the `next=` query parameter).
@@ -999,62 +955,17 @@ The dashboard's React StatusPage shows the same fields under "Web server". A sid
 
 ## Connecting Nadia Desktop to a remote backend
 
-Nadia Desktop can drive a Nadia backend running on another machine (a VPS, a home server, a Mini behind Tailscale). In the app this lives under **Settings → Gateway → Remote gateway**, which asks for a **Remote URL** and a way to **Sign in**. (For the desktop app itself — install, settings, chat — see the [Nadia Desktop](/user-guide/desktop) page.)
+Nadia Desktop always starts and manages its own local backend. Where the backend runs is not a Settings choice — there is no **Remote URL**/**Sign in** UI in the app, and no per-profile remote override. (For the desktop app itself — install, settings, chat — see the [Nadia Desktop](/user-guide/desktop) page.)
 
-You protect the remote dashboard with one of the bundled auth providers, and the desktop app signs in against whichever one the backend advertises. For a backend reachable beyond your own machine — a VPS, a public host, anything internet-facing — the recommended provider is **OAuth (NadicodeAI Portal)** (register it with [`nadia dashboard register`](#registering-a-dashboard) and sign in with *Sign in with NadicodeAI Portal*). The bundled [username/password provider](#usernamepassword-provider-no-oauth-idp) is the quickest option when the backend is on a trusted LAN or reachable only over a VPN, but is **not suitable for direct public-internet exposure**. Binding the dashboard to a non-loopback address engages its auth gate; once signed in, Desktop reuses the session for the chat WebSocket automatically — there is no token to copy or paste.
-
-The recipe below uses the username/password path because it's the quickest to stand up on a trusted network; for the OAuth path see [Default provider: NadicodeAI Portal](#default-provider-nadicodeai-portal).
-
-### On the backend (the remote machine)
+For local development only, two environment variables together point the app at a `nadia dashboard` instance running on another machine instead of its bundled backend, over a static session token:
 
 ```bash
-# 1. Set the dashboard login credentials in ~/.nadia/.env (secrets file, 0600).
-cat >> ~/.nadia/.env <<'EOF'
-NADIA_DASHBOARD_BASIC_AUTH_USERNAME=admin
-NADIA_DASHBOARD_BASIC_AUTH_PASSWORD=choose-a-strong-password
-# Recommended: a stable signing secret so sessions survive restarts.
-NADIA_DASHBOARD_BASIC_AUTH_SECRET=$(openssl rand -base64 32)
-EOF
-chmod 600 ~/.nadia/.env
-
-# 2. Run the dashboard bound to a reachable address. The non-loopback bind
-#    engages the auth gate; the username/password provider handles login.
-nadia dashboard --no-open --host 0.0.0.0 --port 9119
+NADIA_DESKTOP_REMOTE_URL=http://<backend-host>:9119 \
+NADIA_DESKTOP_REMOTE_TOKEN=<token> \
+  nadia desktop
 ```
 
-Prefer no plaintext at rest? Use `NADIA_DASHBOARD_BASIC_AUTH_PASSWORD_HASH` with a scrypt hash instead — see [Username/password provider](#usernamepassword-provider-no-oauth-idp) for the full surface.
-
-If you run the dashboard as a systemd service, `~/.nadia/.env` is picked up automatically when the unit has `EnvironmentFile=%h/.nadia/.env`, so the credentials are in the environment at boot.
-
-:::warning
-The dashboard reads and writes your `.env` (API keys, secrets) and can run agent commands. The **username/password** setup shown here is for a trusted network — never expose a password-protected dashboard directly to the open internet. Put it behind a VPN. [Tailscale](https://tailscale.com/) is the clean option: bind to the machine's tailscale IP (`--host <tailscale-ip>`) and use `http://<tailscale-ip>:9119` as the Remote URL. Only devices on your tailnet can reach it. To reach a backend over the public internet, use the **OAuth (NadicodeAI Portal)** provider instead.
-:::
-
-### In Nadia Desktop
-
-**Settings → Gateway → Remote gateway:**
-
-- **Remote URL** — `http://<backend-host>:9119` (path prefixes like `/nadia` are supported if you front it with a reverse proxy)
-- **Sign in** — the app detects the username/password gateway and shows a **Sign in** button; click it and enter the credentials from step 1
-- **Save and reconnect** — switches the desktop shell onto the remote backend
-
-The session refreshes automatically and survives restarts when `NADIA_DASHBOARD_BASIC_AUTH_SECRET` is set on the backend.
-
-### Environment-variable override
-
-Instead of the in-app setting, you can point the desktop at a backend with an env var before launching it. When `NADIA_DESKTOP_REMOTE_URL` is set, it overrides the saved in-app URL (the Gateway settings panel shows an "env override" badge and disables editing); you still **Sign in** with your username and password from the panel.
-
-| Env var | Value |
-|---------|-------|
-| `NADIA_DESKTOP_REMOTE_URL` | `http://<backend-host>:9119` |
-
-### Troubleshooting
-
-- **"Remote gateway incomplete"** — you haven't entered a remote URL.
-- **Sign-in fails with 401 / "Invalid credentials"** — the username or password doesn't match the backend's `NADIA_DASHBOARD_BASIC_AUTH_USERNAME` / `NADIA_DASHBOARD_BASIC_AUTH_PASSWORD`. The backend returns the same generic error for unknown user and wrong password, so check both. Confirm the gate with `curl -s http://<host>:9119/api/status | jq '.auth_required, .auth_providers'` — it should report `true` and include `"basic"`.
-- **No "Sign in" button — it asks for a session token instead** — the username/password provider isn't active (`/api/status` won't list `"basic"`). Make sure the username and a password (or password hash) are set and the dashboard process loaded them.
-- **Signed out on every restart** — set `NADIA_DASHBOARD_BASIC_AUTH_SECRET` to a stable value; otherwise the signing key is regenerated per boot.
-- **Connection refused / times out** — the backend bound to `127.0.0.1` (the default) instead of a reachable address, or a firewall/VPN is blocking the port. Bind to `0.0.0.0` or the tailscale IP and open the port to your trusted network.
+Both variables are required together — setting one without the other is an error. This is strictly a developer escape hatch, not an operator-facing feature. Full variable reference: [Environment Variables → Web Dashboard & Nadia Desktop](/reference/environment-variables#web-dashboard--nadia-desktop).
 
 ## CORS
 
@@ -1088,30 +999,11 @@ The frontend is built with React 19, TypeScript, Tailwind CSS v4, and shadcn/ui-
 
 When you run `nadia update`, the web frontend is automatically rebuilt if `npm` is available. This keeps the dashboard in sync with code updates. If `npm` isn't installed, the update skips the frontend build and `nadia dashboard` will build it on first launch.
 
-## Themes & plugins
+## Plugins
 
-The dashboard ships with six built-in themes and can be extended with user-defined themes, plugin tabs, and backend API routes — all drop-in, no repo clone needed.
+The dashboard's appearance is the one NadicodeAI skin, with **light / dark / system** as the only visual choice (no theme gallery, no font picker) — there is no `dashboard.theme` / `dashboard.font` config or theme YAML schema to author against.
 
-**Switch themes live** from the header bar — click the palette icon next to the language switcher. Selection persists to `config.yaml` under `dashboard.theme` and is restored on page load.
+The dashboard can still be extended with plugin tabs and backend API routes — all drop-in, no repo clone needed. See **[Extending the Dashboard](./extending-the-dashboard)** for what remains current there:
 
-**Change the font independently** from the same picker — the **Font** section below the theme list overrides the UI font of whatever theme is active. The choice persists across theme switches (`config.yaml` → `dashboard.font`); pick **Theme default** to clear it and return to the active theme's own font.
-
-Built-in themes:
-
-| Theme | Character |
-|-------|-----------|
-| **Nadia Teal** (`default`) | Dark teal + cream, system fonts, comfortable spacing |
-| **Nadia Teal (Large)** (`default-large`) | Same as default with 18px text and roomier spacing |
-| **Midnight** (`midnight`) | Deep blue-violet, Inter + JetBrains Mono |
-| **Ember** (`ember`) | Warm crimson + bronze, Spectral serif + IBM Plex Mono |
-| **Mono** (`mono`) | Grayscale, IBM Plex, compact |
-| **Cyberpunk** (`cyberpunk`) | Neon green on black, Share Tech Mono |
-| **Rosé** (`rose`) | Pink + ivory, Fraunces serif, spacious |
-
-To build your own theme, add a plugin tab, inject into shell slots, or expose plugin-specific REST endpoints, see **[Extending the Dashboard](./extending-the-dashboard)** — the complete guide covers:
-
-- Theme YAML schema — palette, typography, layout, assets, componentStyles, colorOverrides, customCSS
-- Layout variants — `standard`, `cockpit`, `tiled`
 - Plugin manifest, SDK, shell slots, page-scoped slots (inject widgets into built-in pages without overriding them), backend FastAPI routes
-- A full combined theme-plus-plugin walkthrough (Strike Freedom cockpit demo)
 - Discovery, reload, and troubleshooting

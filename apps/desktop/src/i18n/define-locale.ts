@@ -36,6 +36,9 @@ function mergeTranslations<T>(base: T, overrides: TranslationOverride<T> | undef
   return result as T
 }
 
-export function defineLocale(overrides: TranslationOverrides): Translations {
-  return mergeTranslations<Translations>(en, overrides)
+// a locale passed here must be a complete `Translations`: a
+// missing key is a compile error, not a silent English fallback. The English
+// merge stays as a runtime backstop for the loosely-typed field-copy records.
+export function defineLocale(translations: Translations): Translations {
+  return mergeTranslations<Translations>(en, translations)
 }

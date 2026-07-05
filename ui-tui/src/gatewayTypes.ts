@@ -161,6 +161,7 @@ export interface ConfigDisplayConfig {
   busy_input_mode?: string
   details_mode?: string
   inline_diffs?: boolean
+  language?: string
   mouse_tracking?: boolean | null | number | string
   sections?: Record<string, string>
   show_cost?: boolean

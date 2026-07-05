@@ -5,9 +5,7 @@ import type { NadiaGateway } from '@/nadia'
 import { sessionTitle } from '@/lib/chat-runtime'
 import {
   type CommandsCatalogLike,
-  desktopSkinSlashCompletions,
   desktopSlashDescription,
-  type DesktopThemeCommandOption,
   filterDesktopCommandsCatalog,
   isDesktopSlashExtensionCommand,
   isDesktopSlashSuggestion
@@ -52,15 +50,11 @@ const SESSION_INLINE_LIMIT = 7
 /** Live `/` completions backed by the gateway's `complete.slash` RPC. */
 export function useSlashCompletions(options: {
   gateway: NadiaGateway | null
-  /** Desktop theme list — `/skin` is owned client-side, so its arg completions
-   *  come from here, not the backend (whose skin list is CLI/TUI-only). */
-  skinThemes?: DesktopThemeCommandOption[]
-  activeSkin?: string
 }): {
   adapter: Unstable_TriggerAdapter
   loading: boolean
 } {
-  const { gateway, skinThemes, activeSkin } = options
+  const { gateway } = options
   const enabled = Boolean(gateway)
 
   const fetcher = useCallback(
@@ -71,22 +65,9 @@ export function useSlashCompletions(options: {
 
       const text = `/${query}`
 
-      // The desktop owns /skin entirely (client-side theme context). Surface its
-      // theme list inside this single popover instead of a bespoke one, and skip
-      // the backend skin completions (which describe CLI/TUI skins that don't
-      // apply here). Matches once we're past `/skin ` into the arg stage.
-      const skinArg = /^\/skin\s+(.*)$/is.exec(text)
-
-      if (skinArg && skinThemes) {
-        const items = desktopSkinSlashCompletions(skinThemes, activeSkin ?? '', skinArg[1] ?? '').map(entry => ({
-          text: entry.text,
-          display: entry.display,
-          meta: entry.meta,
-          group: 'Themes'
-        }))
-
-        return { items, query }
-      }
+      // /skin arg completions removed: one NadicodeAI skin,
+      // not an operator choice on any surface. `/skin` now
+      // resolves to `unavailable('settings')` in desktop-slash-commands.ts.
 
       // /resume (and its aliases) completes recent sessions inline — the same
       // client-side list the picker overlay shows — instead of the backend
@@ -199,7 +180,7 @@ export function useSlashCompletions(options: {
         return { items: [], query }
       }
     },
-    [gateway, skinThemes, activeSkin]
+    [gateway]
   )
 
   const toItem = useCallback((entry: CompletionEntry, index: number): Unstable_TriggerItem => {

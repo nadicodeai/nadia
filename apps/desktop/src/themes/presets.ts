@@ -28,22 +28,26 @@ const NADIA_CANVAS_SOFT = '#fafafa'
 const NADIA_CANVAS_SOFT_2 = '#f5f5f5'
 const NADIA_LINE = '#e5e5e5'
 const NADIA_SEAM = '#e4e7ec'
-const NADIA_LINK = '#007a5e'
-const NADIA_LINK_DEEP = '#005d49'
-const NADIA_LINK_BG_SOFT = '#d8f0e9'
+// The NadicodeAI brand green — design-system `color.primary` token. Kept
+// identical in light and dark (DESIGN.md pins this token the same way it
+// pins `chart-2`) so the accent reads as the same green in both modes.
+const NADIA_PRIMARY = '#008c45'
+const NADIA_LINK = '#007a3c'
+const NADIA_LINK_DEEP = '#00602f'
+const NADIA_LINK_BG_SOFT = '#d9f6e4'
 const NADIA_ERROR = '#b80022'
 const NADIA_CYAN = '#50e3c2'
-const NADIA_DARK_CANVAS = '#101414'
-const NADIA_DARK_CANVAS_SOFT = '#151b19'
-const NADIA_DARK_CANVAS_SOFT_2 = '#1d2522'
-const NADIA_DARK_INK = '#f5f7f4'
-const NADIA_DARK_BODY = '#c8d0cb'
-const NADIA_DARK_MUTED = '#8d9892'
-const NADIA_DARK_LINE = '#2c3632'
-const NADIA_DARK_SEAM = '#24302b'
-const NADIA_DARK_LINK = '#7ee7c6'
-const NADIA_DARK_LINK_BG_SOFT = '#163f34'
-const NADIA_DARK_ERROR = '#ff7a8b'
+const NADIA_DARK_CANVAS = '#0a0a0a'
+const NADIA_DARK_CANVAS_SOFT = '#171717'
+const NADIA_DARK_CANVAS_SOFT_2 = '#262626'
+const NADIA_DARK_INK = '#f5f5f5'
+const NADIA_DARK_BODY = '#d4d4d4'
+const NADIA_DARK_MUTED = '#a3a3a3'
+const NADIA_DARK_LINE = '#2e2e2e'
+const NADIA_DARK_SEAM = '#1f1f1f'
+const NADIA_DARK_LINK = '#9fe6bc'
+const NADIA_DARK_LINK_BG_SOFT = '#00301a'
+const NADIA_DARK_ERROR = '#f7b3b5'
 const NADIA_DARK_CYAN = '#83f7dc'
 
 /**
@@ -64,7 +68,7 @@ export const nadiaTheme: DesktopTheme = {
     mutedForeground: NADIA_MUTED,
     popover: NADIA_CANVAS,
     popoverForeground: NADIA_INK,
-    primary: NADIA_LINK,
+    primary: NADIA_PRIMARY,
     primaryForeground: NADIA_CANVAS,
     secondary: NADIA_CANVAS_SOFT,
     secondaryForeground: NADIA_BODY,
@@ -91,7 +95,7 @@ export const nadiaTheme: DesktopTheme = {
     mutedForeground: NADIA_DARK_MUTED,
     popover: NADIA_DARK_CANVAS_SOFT,
     popoverForeground: NADIA_DARK_INK,
-    primary: NADIA_DARK_LINK,
+    primary: NADIA_PRIMARY,
     primaryForeground: NADIA_DARK_CANVAS,
     secondary: NADIA_DARK_CANVAS_SOFT_2,
     secondaryForeground: NADIA_DARK_BODY,
@@ -115,193 +119,11 @@ export const nadiaTheme: DesktopTheme = {
   }
 }
 
-/** Deep blue-violet with cool accents. Matches the dashboard midnight theme. */
-export const midnightTheme: DesktopTheme = {
-  name: 'midnight',
-  label: 'Midnight',
-  description: 'Deep blue-violet with cool accents',
-  colors: {
-    background: '#08081c',
-    foreground: '#ddd6ff',
-    card: '#0d0d28',
-    cardForeground: '#ddd6ff',
-    muted: '#13133a',
-    mutedForeground: '#7c7ab0',
-    popover: '#0f0f2e',
-    popoverForeground: '#ddd6ff',
-    primary: '#ddd6ff',
-    primaryForeground: '#08081c',
-    secondary: '#1a1a4a',
-    secondaryForeground: '#c4bff0',
-    accent: '#1a1a44',
-    accentForeground: '#d0c8ff',
-    border: '#1e1e52',
-    input: '#1e1e52',
-    ring: '#8b80e8',
-    midground: '#8b80e8',
-    destructive: '#b03060',
-    destructiveForeground: '#fef2f2',
-    sidebarBackground: '#06061a',
-    sidebarBorder: '#12123a',
-    userBubble: '#14143a',
-    userBubbleBorder: '#242466'
-  },
-  typography: {
-    fontMono: `"JetBrains Mono", ${SYSTEM_MONO}`,
-    fontUrl: 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap'
-  }
-}
-
-/** Warm crimson and bronze — forge vibes. Matches the CLI ares skin. */
-export const emberTheme: DesktopTheme = {
-  name: 'ember',
-  label: 'Ember',
-  description: 'Warm crimson and bronze — forge vibes',
-  colors: {
-    background: '#160800',
-    foreground: '#ffd8b0',
-    card: '#1e0e04',
-    cardForeground: '#ffd8b0',
-    muted: '#2a1408',
-    mutedForeground: '#aa7a56',
-    popover: '#221008',
-    popoverForeground: '#ffd8b0',
-    primary: '#ffd8b0',
-    primaryForeground: '#160800',
-    secondary: '#341800',
-    secondaryForeground: '#f0c090',
-    accent: '#301600',
-    accentForeground: '#e8c080',
-    border: '#3a1c08',
-    input: '#3a1c08',
-    ring: '#d97316',
-    midground: '#d97316',
-    destructive: '#c43010',
-    destructiveForeground: '#fef2f2',
-    sidebarBackground: '#100600',
-    sidebarBorder: '#2a1004',
-    userBubble: '#2a1000',
-    userBubbleBorder: '#4a2010'
-  },
-  typography: {
-    fontMono: `"IBM Plex Mono", ${SYSTEM_MONO}`,
-    fontUrl: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&display=swap'
-  }
-}
-
-/** Clean grayscale. Matches the CLI mono skin and dashboard mono theme. */
-export const monoTheme: DesktopTheme = {
-  name: 'mono',
-  label: 'Mono',
-  description: 'Clean grayscale — minimal and focused',
-  colors: {
-    background: '#0e0e0e',
-    foreground: '#eaeaea',
-    card: '#141414',
-    cardForeground: '#eaeaea',
-    muted: '#1e1e1e',
-    mutedForeground: '#808080',
-    popover: '#181818',
-    popoverForeground: '#eaeaea',
-    primary: '#eaeaea',
-    primaryForeground: '#0e0e0e',
-    secondary: '#262626',
-    secondaryForeground: '#c8c8c8',
-    accent: '#222222',
-    accentForeground: '#d8d8d8',
-    border: '#2a2a2a',
-    input: '#2a2a2a',
-    ring: '#9a9a9a',
-    midground: '#9a9a9a',
-    destructive: '#a84040',
-    destructiveForeground: '#fef2f2',
-    sidebarBackground: '#0a0a0a',
-    sidebarBorder: '#202020',
-    userBubble: '#1a1a1a',
-    userBubbleBorder: '#363636'
-  }
-}
-
-/** Neon green on black. Matches the CLI cyberpunk skin and dashboard theme. */
-export const cyberpunkTheme: DesktopTheme = {
-  name: 'cyberpunk',
-  label: 'Cyberpunk',
-  description: 'Neon green on black — matrix terminal',
-  colors: {
-    background: '#000a00',
-    foreground: '#00ff41',
-    card: '#001200',
-    cardForeground: '#00ff41',
-    muted: '#001a00',
-    mutedForeground: '#1a8a30',
-    popover: '#001000',
-    popoverForeground: '#00ff41',
-    primary: '#00ff41',
-    primaryForeground: '#000a00',
-    secondary: '#002800',
-    secondaryForeground: '#00cc34',
-    accent: '#002000',
-    accentForeground: '#00e038',
-    border: '#003000',
-    input: '#003000',
-    ring: '#00ff41',
-    midground: '#00ff41',
-    destructive: '#ff003c',
-    destructiveForeground: '#000a00',
-    sidebarBackground: '#000600',
-    sidebarBorder: '#001800',
-    userBubble: '#001400',
-    userBubbleBorder: '#004800'
-  },
-  typography: {
-    fontMono: `"Courier New", Courier, monospace, ${EMOJI_FALLBACK}`,
-    fontSans: `"Courier New", Courier, monospace, ${EMOJI_FALLBACK}`
-  }
-}
-
-/** Cool slate blue for developers. Matches the CLI slate skin. */
-export const slateTheme: DesktopTheme = {
-  name: 'slate',
-  label: 'Slate',
-  description: 'Cool slate blue — focused developer theme',
-  colors: {
-    background: '#0d1117',
-    foreground: '#c9d1d9',
-    card: '#161b22',
-    cardForeground: '#c9d1d9',
-    muted: '#21262d',
-    mutedForeground: '#8b949e',
-    popover: '#1c2128',
-    popoverForeground: '#c9d1d9',
-    primary: '#c9d1d9',
-    primaryForeground: '#0d1117',
-    secondary: '#2a3038',
-    secondaryForeground: '#adb5bf',
-    accent: '#1e2530',
-    accentForeground: '#c0c8d0',
-    border: '#30363d',
-    input: '#30363d',
-    ring: '#58a6ff',
-    midground: '#58a6ff',
-    destructive: '#cf4848',
-    destructiveForeground: '#fef2f2',
-    sidebarBackground: '#090d13',
-    sidebarBorder: '#1c2228',
-    userBubble: '#1e2a38',
-    userBubbleBorder: '#2e4060'
-  },
-  typography: {
-    fontMono: `"JetBrains Mono", ${SYSTEM_MONO}`
-  }
-}
-
+// One NadicodeAI skin: light/dark/system modes render the single `nous`
+// identity. Nadia is not a skin gallery — the upstream preset themes
+// (midnight/ember/mono/cyberpunk/slate) are retired.
 export const BUILTIN_THEMES: Record<string, DesktopTheme> = {
-  nadia: nadiaTheme,
-  midnight: midnightTheme,
-  ember: emberTheme,
-  mono: monoTheme,
-  cyberpunk: cyberpunkTheme,
-  slate: slateTheme
+  nadia: nadiaTheme
 }
 
 export const BUILTIN_THEME_LIST = Object.values(BUILTIN_THEMES)

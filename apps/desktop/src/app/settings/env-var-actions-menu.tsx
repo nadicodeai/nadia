@@ -94,10 +94,8 @@ export function EnvVarActionsMenu({
             <DropdownMenuSeparator />
             <DropdownMenuItem
               disabled={clearDisabled}
-              onSelect={() => {
-                triggerHaptic('warning')
-                onClear()
-              }}
+              // Silent settings: clearing a stored value plays no haptic click.
+              onSelect={() => onClear()}
               variant="destructive"
             >
               <Trash2 className="size-3.5" />

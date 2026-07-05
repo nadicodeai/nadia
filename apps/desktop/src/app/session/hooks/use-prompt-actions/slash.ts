@@ -13,11 +13,8 @@ import {
   resolveDesktopCommand
 } from '@/lib/desktop-slash-commands'
 import { setSessionYolo } from '@/lib/yolo-session'
-import { openCommandPalettePage } from '@/store/command-palette'
 import { type ComposerAttachment, setComposerDraft } from '@/store/composer'
 import { notify, notifyError } from '@/store/notifications'
-import { setPetScale } from '@/store/pet-gallery'
-import { $petGenInput, openPetGenerate } from '@/store/pet-generate'
 import { $activeGatewayProfile, $newChatProfile, ensureGatewayProfile, normalizeProfileKey } from '@/store/profile'
 import {
   $connection,
@@ -49,7 +46,8 @@ interface SlashCommandDeps {
   busyRef: MutableRefObject<boolean>
   copy: Translations['desktop']
   createBackendSessionForSend: (preview?: string | null) => Promise<string | null>
-  handleSkinCommand: (arg: string) => string
+  // the skin-command callback prop is removed: /skin
+  // theme-cycling is retired (one NadicodeAI skin).
   handoffSession: (
     platform: string,
     options?: { onProgress?: (state: string) => void; sessionId?: string }
@@ -73,7 +71,6 @@ export function useSlashCommand(deps: SlashCommandDeps) {
     busyRef,
     copy,
     createBackendSessionForSend,
-    handleSkinCommand,
     handoffSession,
     refreshSessions,
     requestGateway,
@@ -317,20 +314,10 @@ export function useSlashCommand(deps: SlashCommandDeps) {
             notifyError(err, copy.setProfileFailed)
           }
         },
-        skin: async ({ arg, command, recordInput, sessionHint }) => {
-          const sid = sessionHint || activeSessionIdRef.current
-          const message = handleSkinCommand(arg)
-
-          // No session to print into yet — surface it as a toast instead of
-          // spinning up a backend session just to change the theme.
-          if (!sid) {
-            notify({ kind: 'success', message })
-
-            return
-          }
-
-          appendSessionTextMessage(sid, 'system', recordInput ? slashStatusText(command, message) : message)
-        },
+        // /skin action handler removed: one NadicodeAI skin,
+        // not an operator choice on any surface. `/skin`
+        // now resolves to `unavailable('settings')` in desktop-slash-commands.ts
+        // and never reaches this dispatcher.
         // /title <name> renames via the gateway's session.title RPC — the same
         // path the TUI uses, NOT REST renameSession (which 404s on runtime ids)
         // nor the slash worker (whose DB write can silently fail). Bare /title
@@ -387,47 +374,6 @@ export function useSlashCommand(deps: SlashCommandDeps) {
           } catch (err) {
             renderSlashOutput(`error: ${err instanceof Error ? err.message : String(err)}`)
           }
-        },
-        // /hatch opens the pet generator overlay (the desktop's rich, multi-step
-        // generate→pick→hatch→adopt flow). A typed description seeds the prompt
-        // so `/hatch a cyber fox` lands on the composer step prefilled.
-        hatch: async ({ arg }) => {
-          const concept = arg.trim()
-
-          if (concept) {
-            $petGenInput.set(concept)
-          }
-
-          openPetGenerate()
-        },
-        pet: async ctx => {
-          const [sub = '', rawValue = ''] = ctx.arg.trim().split(/\s+/)
-          const lower = sub.toLowerCase()
-
-          if (lower === 'list' || lower === 'gallery' || lower === 'browse' || lower === 'all') {
-            openCommandPalettePage('pets')
-
-            return
-          }
-
-          // `/pet scale <n>` resizes the floating pet locally (instant) and
-          // persists via the store — no round-trip to the slash worker.
-          if (lower === 'scale') {
-            const value = Number(rawValue)
-
-            if (!rawValue || Number.isNaN(value)) {
-              const resolved = await withSlashOutput(ctx)
-              resolved?.render('usage: /pet scale <factor>  (e.g. /pet scale 0.5)')
-
-              return
-            }
-
-            setPetScale(requestGateway, value)
-
-            return
-          }
-
-          await runExec(ctx)
         },
         // /browser connect|disconnect|status manages the live CDP connection on
         // the gateway host, mirroring the TUI's browser.manage RPC. It mutates
@@ -602,7 +548,6 @@ export function useSlashCommand(deps: SlashCommandDeps) {
       busyRef,
       copy,
       createBackendSessionForSend,
-      handleSkinCommand,
       handoffSession,
       refreshSessions,
       requestGateway,

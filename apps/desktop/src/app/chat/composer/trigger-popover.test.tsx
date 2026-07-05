@@ -10,7 +10,7 @@ function renderPopover(kind: '@' | '/', loading = false) {
   const onPick = vi.fn()
 
   const rendered = render(
-    <I18nProvider configClient={null} initialLocale="zh">
+    <I18nProvider configClient={null} initialLocale="it">
       <ComposerTriggerPopover
         activeIndex={0}
         items={[]}
@@ -33,10 +33,10 @@ describe('ComposerTriggerPopover i18n', () => {
   it('renders localized empty lookup copy for @ references', () => {
     const { container } = renderPopover('@')
 
-    expect(screen.getByText('没有匹配项。')).toBeTruthy()
-    expect(container.textContent).toContain('试试')
+    expect(screen.getByText('Nessuna corrispondenza.')).toBeTruthy()
+    expect(container.textContent).toContain('Prova')
     expect(container.textContent).toContain('@file:')
-    expect(container.textContent).toContain('或')
+    expect(container.textContent).toContain('oppure')
     expect(container.textContent).toContain('@folder:')
   })
 
@@ -45,13 +45,13 @@ describe('ComposerTriggerPopover i18n', () => {
 
     // While loading the popover shows only the spinner + loading copy — the
     // `/help` empty-state hint is reserved for the resolved (not-loading) state.
-    expect(screen.getByText('查找中…')).toBeTruthy()
+    expect(screen.getByText('Ricerca…')).toBeTruthy()
   })
 
   it('renders the slash empty-state hint when not loading', () => {
     const { container } = renderPopover('/')
 
-    expect(screen.getByText('没有匹配项。')).toBeTruthy()
+    expect(screen.getByText('Nessuna corrispondenza.')).toBeTruthy()
     expect(container.textContent).toContain('/help')
   })
 })

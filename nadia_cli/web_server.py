@@ -639,16 +639,8 @@ _SCHEMA_OVERRIDES: Dict[str, Dict[str, Any]] = {
         "description": "ElevenLabs Scribe model",
         "options": ["scribe_v2", "scribe_v1"],
     },
-    "display.skin": {
-        "type": "select",
-        "description": "CLI visual theme",
-        "options": ["default", "ares", "mono", "slate"],
-    },
-    "dashboard.theme": {
-        "type": "select",
-        "description": "Legacy web dashboard theme",
-        "options": ["default"],
-    },
+    # Skin/theme catalogs are retired. Operators choose appearance mode in the
+    # web client; the generated Nadia skin is fixed on CLI/TUI.
     "display.resume_display": {
         "type": "select",
         "description": "How resumed sessions display history",
@@ -2632,7 +2624,7 @@ async def get_portal_status():
         "portal_url": auth.get("portal_base_url"),
         "inference_url": auth.get("inference_base_url"),
         "provider": str((model_cfg or {}).get("provider") or ""),
-        "subscription_url": "https://portal.nadicodeai.com/manage-subscription",
+        "subscription_url": "https://portal.nadicode.ai/manage-subscription",
         "features": features,
     }
 
@@ -4231,7 +4223,9 @@ def get_recommended_default_model(provider: str = ""):
                 partition_nous_models_by_tier,
                 union_with_portal_free_recommendations,
                 union_with_portal_paid_recommendations,
+                get_default_model_for_provider,
             )
+            from nadia_cli.model_catalog import is_curated_model
             from nadia_cli.auth import get_provider_auth_state
 
             model_ids = get_curated_nous_model_ids()
@@ -4257,7 +4251,16 @@ def get_recommended_default_model(provider: str = ""):
                     model_ids, pricing, portal_url
                 )
 
-            model = model_ids[0] if model_ids else ""
+            model = next(
+                (
+                    mid
+                    for mid in model_ids
+                    if is_curated_model({"id": mid})
+                ),
+                "",
+            )
+            if not model:
+                model = get_default_model_for_provider("nous")
             return {"provider": "nous", "model": model, "free_tier": bool(free_tier)}
         except Exception:
             _log.exception("GET /api/model/recommended-default (nadia) failed")
@@ -6434,7 +6437,7 @@ _OAUTH_PROVIDER_CATALOG: tuple[Dict[str, Any], ...] = (
         "name": "NadicodeAI Portal",
         "flow": "device_code",
         "cli_command": "nadia auth add nous",
-        "docs_url": "https://portal.nadicodeai.com",
+        "docs_url": "https://portal.nadicode.ai",
         "status_fn": None,  # dispatched via auth.get_nous_auth_status
     },
     {
@@ -13058,6 +13061,12 @@ def mount_spa(application: FastAPI):
             return FileResponse(file_path)
         return _serve_index(prefix)
 
+
+# ---------------------------------------------------------------------------
+# Dashboard theme endpoints
+# ---------------------------------------------------------------------------
+# Retired: dashboard appearance is client-side light/dark/system mode only.
+# The old catalog/font endpoints are intentionally not registered.
 
 # ---------------------------------------------------------------------------
 # Dashboard plugin system

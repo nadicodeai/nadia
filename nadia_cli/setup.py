@@ -2665,7 +2665,7 @@ def _run_portal_one_shot(config: dict) -> None:
     print_info("    web search, image generation, TTS, browser automation")
     print_info("    — all routed through your NadicodeAI Portal sub.")
     print()
-    print_info("  Sign up: https://portal.nadicodeai.com/manage-subscription")
+    print_info("  Sign up: https://portal.nadicode.ai/manage-subscription")
     print()
 
     # _model_flow_nous handles BOTH the logged-out path (device-code OAuth,
@@ -2886,8 +2886,7 @@ def run_setup_wizard(args):
         setup_mode = prompt_choice(
             "How would you like to set up Nadia?",
             [
-                "Quick Setup (NadicodeAI Portal) — free OAuth login, no API keys, model + tools (recommended)",
-                "Full setup — configure every provider, tool & option yourself (bring your own keys)",
+                "Portal sign-in — NadicodeAI Portal login, curated models, and tools (recommended)",
                 "Blank Slate — everything off except the bare minimum; opt in to each capability",
             ],
             0,
@@ -2896,7 +2895,7 @@ def run_setup_wizard(args):
         if setup_mode == 0:
             _run_first_time_quick_setup(config, nadia_home, is_existing)
             return
-        if setup_mode == 2:
+        if setup_mode >= 1:
             _run_blank_slate_setup(config, nadia_home, is_existing)
             return
 
@@ -2965,7 +2964,7 @@ def _run_first_time_quick_setup(config: dict, nadia_home, is_existing: bool):
     print_header("NadicodeAI Portal")
     print_info("One subscription, 300+ models, plus the Tool Gateway:")
     print_info("  web search, image generation, TTS, browser automation.")
-    print_info("Sign up: https://portal.nadicodeai.com/manage-subscription")
+    print_info("Sign up: https://portal.nadicode.ai/manage-subscription")
     print()
     try:
         from nadia_cli.main import _model_flow_nous
@@ -3099,29 +3098,34 @@ def _run_blank_slate_setup(config: dict, nadia_home, is_existing: bool):
 
     Either way nothing is enabled that the user did not explicitly choose.
     """
+    # Fork note: the docstring above is kept upstream-identical (mergeable),
+    # but the "provider + model" clause no longer describes this function's
+    # behavior — Blank Slate does NOT force provider/model here. That step is
+    # gated to the NadicodeAI Portal; activate it later with `nadia portal`.
+    # Advanced users can still configure providers non-interactively through
+    # env vars or config.yaml.
     from nadia_cli.config import load_config
 
     print()
     print_header("Blank Slate Setup")
-    print_info("Everything starts OFF. First we force-enable only what's required")
-    print_info("to run an agent, then you choose whether to stop there or walk")
-    print_info("through enabling more — opting in to exactly what you want.")
+    print_info("Everything starts OFF. First we force-enable the minimal")
+    print_info("local tool surface, then you choose whether to stop there or")
+    print_info("walk through enabling more — opting in to exactly what you want.")
     print_info("")
-    print_info("Forced on: Provider & Model, File Operations, Terminal.")
+    print_info("Forced on: File Operations, Terminal.")
+    print_info("Models are not configured by Blank Slate. Activate the")
+    print_info("NadicodeAI Portal later with: nadia portal")
+    print_info("Advanced users can still configure providers non-interactively")
+    print_info("through env vars or config.yaml.")
     print_info("Everything else (web, browser, code exec, vision, memory,")
     print_info("delegation, cron, skills, plugins, MCP, …) starts disabled.")
     print()
 
-    # ── Step 1: Provider & Model (REQUIRED — the agent cannot run without it) ──
-    print_header("Step 1 — Provider & Model (required)")
-    setup_model_provider(config)
-    save_config(config)
-
-    # ── Step 2: Terminal backend (where commands run — a core decision) ──
-    print_header("Step 2 — Terminal Backend")
+    # ── Step 1: Terminal backend (where commands run — a core decision) ──
+    print_header("Step 1 — Terminal Backend")
     setup_terminal_backend(config)
 
-    # ── Step 3: Lock in the minimal toolset + minimized config knobs ──
+    # ── Step 2: Lock in the minimal toolset + minimized config knobs ──
     _blank_slate_minimal_toolsets(config)
     _blank_slate_minimize_config(config)
     save_config(config)

@@ -62,7 +62,7 @@ import {
 } from "@/nadicodeai-ui-compat";
 import { useSystemActions } from "@/contexts/useSystemActions";
 import { useToast } from "@/nadicodeai-ui-compat";
-import { useI18n } from "@/i18n";
+import { formatText, useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { PluginSlot } from "@/plugins";
 import { isDashboardEmbeddedChatEnabled } from "@/lib/dashboard-flags";
@@ -1039,10 +1039,7 @@ export default function SessionsPage() {
     try {
       const resp = await api.bulkDeleteSessions(ids);
       showToast(
-        t.sessions.selectedSessionsDeleted.replace(
-          "{count}",
-          String(resp.deleted),
-        ),
+        formatText(t.sessions.selectedSessionsDeleted, { count: resp.deleted }),
         "success",
       );
       setDeleteSelectedOpen(false);
@@ -1084,10 +1081,7 @@ export default function SessionsPage() {
       // the delete — e.g. an active session just ended without sending
       // any messages).
       showToast(
-        t.sessions.emptySessionsDeleted.replace(
-          "{count}",
-          String(resp.deleted),
-        ),
+        formatText(t.sessions.emptySessionsDeleted, { count: resp.deleted }),
         "success",
       );
       setDeleteEmptyOpen(false);
@@ -1120,13 +1114,13 @@ export default function SessionsPage() {
         setOverviewSessions((prev) =>
           prev.map((s) => (s.id === id ? { ...s, title } : s)),
         );
-        showToast("Session renamed", "success");
+        showToast(t.sessions.sessionRenamed, "success");
         loadStats();
       } catch {
-        showToast("Failed to rename session", "error");
+        showToast(t.sessions.failedToRenameSession, "error");
       }
     },
-    [showToast, loadStats],
+    [showToast, loadStats, t.sessions.failedToRenameSession, t.sessions.sessionRenamed],
   );
 
   const handleExport = useCallback(
@@ -1149,23 +1143,25 @@ export default function SessionsPage() {
         a.click();
         URL.revokeObjectURL(url);
       } catch {
-        showToast("Failed to export session", "error");
+        showToast(t.sessions.failedToExportSession, "error");
       }
     },
-    [showToast],
+    [showToast, t.sessions.failedToExportSession],
   );
 
   const handlePrune = useCallback(async () => {
     const days = parseInt(pruneDays, 10);
     if (!Number.isFinite(days) || days < 0) {
-      showToast("Enter a valid number of days", "error");
+      showToast(t.sessions.validPruneDays, "error");
       return;
     }
     setPruning(true);
     try {
       const resp = await api.pruneSessions(days);
       showToast(
-        `Pruned ${resp.removed} session${resp.removed === 1 ? "" : "s"}`,
+        resp.removed === 1
+          ? t.sessions.sessionPruned
+          : formatText(t.sessions.sessionsPruned, { count: resp.removed }),
         "success",
       );
       setPruneOpen(false);
@@ -1173,11 +1169,20 @@ export default function SessionsPage() {
       setPage(0);
       loadStats();
     } catch {
-      showToast("Failed to prune sessions", "error");
+      showToast(t.sessions.failedToPruneSessions, "error");
     } finally {
       setPruning(false);
     }
-  }, [pruneDays, showToast, loadSessions, loadStats]);
+  }, [
+    pruneDays,
+    showToast,
+    loadSessions,
+    loadStats,
+    t.sessions.failedToPruneSessions,
+    t.sessions.sessionPruned,
+    t.sessions.sessionsPruned,
+    t.sessions.validPruneDays,
+  ]);
 
   const pendingSession = sessionDelete.pendingId
     ? sessions.find((s) => s.id === sessionDelete.pendingId)

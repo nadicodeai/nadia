@@ -22,6 +22,12 @@ type LoopbackStart = Extract<OAuthStartResponse, { flow: 'loopback' }>
 
 export type OnboardingMode = 'apikey' | 'oauth'
 
+// Portal activation can fail in three operator-facing ways: the device page was
+// denied, the short code expired before approval, or the portal was unreachable.
+// The flow carries the cause so the surface can explain it in plain words and
+// offer a retry that re-enters the same device flow — never a third-party escape.
+export type ActivationFailureCause = 'denied' | 'expired' | 'unreachable'
+
 export type OnboardingFlow =
   | { status: 'idle' }
   | { provider: OAuthProvider; status: 'starting' }
@@ -48,7 +54,13 @@ export type OnboardingFlow =
       saving: boolean
       status: 'confirming_model'
     }
-  | { message: string; provider?: OAuthProvider; start?: OAuthStartResponse; status: 'error' }
+  | {
+      cause?: ActivationFailureCause
+      message: string
+      provider?: OAuthProvider
+      start?: OAuthStartResponse
+      status: 'error'
+    }
 
 export interface DesktopOnboardingState {
   /** null until the first runtime check resolves. Seeded from localStorage so
@@ -605,7 +617,7 @@ export async function startProviderOAuth(provider: OAuthProvider, ctx: Onboardin
     setFlow({ status: 'polling', provider, start, copied: false })
     pollTimer = window.setInterval(() => void pollSession(provider, start, ctx), POLL_MS)
   } catch (error) {
-    setFlow({ status: 'error', provider, message: `Could not start sign-in: ${errMessage(error)}` })
+    setFlow({ status: 'error', provider, cause: 'unreachable', message: `Could not start sign-in: ${errMessage(error)}` })
   }
 }
 
@@ -628,11 +640,21 @@ async function pollSession(provider: OAuthProvider, start: DeviceStart | Loopbac
       )
     } else if (status !== 'pending') {
       clearPoll()
-      setFlow({ status: 'error', provider, start, message: error_message || `Sign-in ${status}.` })
+      // The portal plugin's poll endpoint reports exactly three terminal
+      // statuses: 'denied', 'expired', and a flat 'error' that carries only a
+      // free-text message (OAuthPollResponse has no error_code). Every non-
+      // denied/expired failure — a network-unreachable portal, a TLS problem, a
+      // malformed response — collapses into 'error', so the wire gives us no way
+      // to tell them apart. Rather than render the raw wire message as the
+      // headline, we map the whole 'error' class onto the localized 'unreachable'
+      // explanation (plain words + retry, no third-party escape).
+      const cause: ActivationFailureCause =
+        status === 'denied' ? 'denied' : status === 'expired' ? 'expired' : 'unreachable'
+      setFlow({ status: 'error', provider, start, cause, message: error_message || `Sign-in ${status}.` })
     }
   } catch (error) {
     clearPoll()
-    setFlow({ status: 'error', provider, start, message: `Polling failed: ${errMessage(error)}` })
+    setFlow({ status: 'error', provider, start, cause: 'unreachable', message: `Polling failed: ${errMessage(error)}` })
   }
 }
 

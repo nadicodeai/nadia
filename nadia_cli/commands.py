@@ -135,10 +135,10 @@ COMMAND_REGISTRY: list[CommandDef] = [
                args_hint="[model] [--provider name] [--global|--session] [--refresh]"),
     CommandDef("codex-runtime", "Toggle codex app-server runtime for OpenAI/Codex models",
                "Configuration", aliases=("codex_runtime",),
-               args_hint="[auto|codex_app_server]"),
+               args_hint="[auto|codex_app_server]", cli_only=True),
 
     CommandDef("personality", "Set a predefined personality", "Configuration",
-               args_hint="[name]"),
+               args_hint="[name]", cli_only=True),
     CommandDef("statusbar", "Toggle the context/model status bar", "Configuration",
                cli_only=True, aliases=("sb",)),
     CommandDef("timestamps", "Toggle [HH:MM] timestamps on messages and /history", "Configuration",
@@ -151,15 +151,14 @@ COMMAND_REGISTRY: list[CommandDef] = [
                "Configuration", args_hint="[on|off|status]",
                subcommands=("on", "off", "status")),
     CommandDef("yolo", "Toggle YOLO mode (skip all dangerous command approvals)",
-               "Configuration"),
+               "Configuration", cli_only=True),
     CommandDef("reasoning", "Manage reasoning effort and display", "Configuration",
                args_hint="[level|show|hide|full|clamp]",
                subcommands=("none", "minimal", "low", "medium", "high", "xhigh", "show", "hide", "on", "off", "full", "clamp")),
     CommandDef("fast", "Toggle fast mode — OpenAI Priority Processing / Anthropic Fast Mode (Normal/Fast)", "Configuration",
                args_hint="[normal|fast|status]",
                subcommands=("normal", "fast", "status", "on", "off")),
-    CommandDef("skin", "Show or change the display skin/theme", "Configuration",
-               cli_only=True, args_hint="[name]"),
+    # Skin is a generated product identity, not an operator command.
     CommandDef("indicator", "Pick the TUI busy-indicator style", "Configuration",
                cli_only=True, args_hint="[kaomoji|emoji|unicode|ascii]",
                subcommands=("kaomoji", "emoji", "unicode", "ascii")),
@@ -185,10 +184,7 @@ COMMAND_REGISTRY: list[CommandDef] = [
                subcommands=("pending", "approve", "reject", "approval")),
     CommandDef("bundles", "List skill bundles (aliases /<name> for multiple skills)",
                "Tools & Skills"),
-    CommandDef("pet", "Toggle or adopt a petdex mascot (/pet, /pet list, /pet <slug>)", "Tools & Skills",
-               cli_only=True, args_hint="[toggle|list|scale <n>|<slug>]", subcommands=("toggle", "list", "scale", "off")),
-    CommandDef("hatch", "Generate a new petdex pet from a description",
-               "Tools & Skills", cli_only=True, aliases=("generate-pet",), args_hint="[description]"),
+    # Python pet slash commands removed.
     CommandDef("learn", "Learn a reusable skill from anything you describe (dirs, URLs, this chat, notes)",
                "Tools & Skills", args_hint="<what to learn from>"),
     CommandDef("cron", "Manage scheduled tasks", "Tools & Skills",
@@ -247,7 +243,7 @@ COMMAND_REGISTRY: list[CommandDef] = [
     CommandDef("update", "Update Nadia Agent to the latest version", "Info"),
     CommandDef("version", "Show Nadia Agent version", "Info", aliases=("v",)),
     CommandDef("debug", "Upload debug report (system info + logs) and get shareable links", "Info",
-               args_hint="[nadia|local]"),
+               args_hint="[nadia|local]", cli_only=True),
 
     # Exit
     CommandDef("quit", "Exit the CLI (use --delete to also remove session history)", "Exit",
@@ -1359,7 +1355,7 @@ class SlashCommandCompleter(Completer):
     # These should NOT receive a trailing space in completions because:
     # - The TUI's submit handler applies completions on Enter if input differs
     # - Adding space makes "/model" → "/model " which blocks picker execution
-    _PICKER_COMMANDS = frozenset({"model", "skin", "personality"})
+    _PICKER_COMMANDS = frozenset({"model", "personality"})
 
     @staticmethod
     def _completion_text(cmd_name: str, word: str) -> str:
@@ -1370,7 +1366,7 @@ class SlashCommandCompleter(Completer):
         menu. Appending a trailing space keeps the dropdown visible and makes
         backspacing retrigger it naturally.
 
-        However, commands that open pickers (model, skin, personality) should
+        However, commands that open pickers (model, personality) should
         NOT get a trailing space — the TUI would apply the completion on Enter
         and block the picker from opening.
         """
@@ -1696,23 +1692,6 @@ class SlashCommandCompleter(Completer):
             )
 
     @staticmethod
-    def _skin_completions(sub_text: str, sub_lower: str):
-        """Yield completions for /skin from available skins."""
-        try:
-            from nadia_cli.skin_engine import list_skins
-            for s in list_skins():
-                name = s["name"]
-                if name.startswith(sub_lower) and name != sub_lower:
-                    yield Completion(
-                        name,
-                        start_position=-len(sub_text),
-                        display=name,
-                        display_meta=s.get("description", "") or s.get("source", ""),
-                    )
-        except Exception:
-            pass
-
-    @staticmethod
     def _tools_completions(sub_text: str, sub_lower: str):
         """Yield completions for /tools — subcommand + toolset/MCP-server name.
 
@@ -1891,9 +1870,7 @@ class SlashCommandCompleter(Completer):
 
             # Dynamic completions for commands with runtime lists
             if " " not in sub_text:
-                if base_cmd == "/skin":
-                    yield from self._skin_completions(sub_text, sub_lower)
-                    return
+                # /skin is retired; only runtime-backed picker commands remain.
                 if base_cmd == "/personality":
                     yield from self._personality_completions(sub_text, sub_lower)
                     return

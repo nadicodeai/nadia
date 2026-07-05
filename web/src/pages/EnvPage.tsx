@@ -35,7 +35,7 @@ import {
 import { Badge } from "@/nadicodeai-ui-compat";
 import { Input } from "@/nadicodeai-ui-compat";
 import { Label } from "@/nadicodeai-ui-compat";
-import { useI18n } from "@/i18n";
+import { formatText, useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { PluginSlot } from "@/plugins";
 
@@ -44,30 +44,31 @@ import { PluginSlot } from "@/plugins";
 /* ------------------------------------------------------------------ */
 
 /** Map env-var key prefixes to a human-friendly provider name + ordering. */
-const PROVIDER_GROUPS: { prefix: string; name: string; priority: number }[] = [
-  // NadicodeAI Portal first
+export const PROVIDER_GROUPS: { prefix: string; name: string; priority: number }[] = [
+  // Portal-only: the NadicodeAI Portal is the sole provider path an operator is
+  // offered. The backend env payload only carries
+  // the portal provider credentials, so the page's own grouping table is
+  // trimmed to match — the former hand-maintained third-party provider rows are
+  // gone. Any stray non-portal provider key falls through to the generic "Other"
+  // bucket rather than resurrecting a named third-party group.
   { prefix: "NOUS_", name: "NadicodeAI Portal", priority: 0 },
-  // Then alphabetical by display name
-  { prefix: "ANTHROPIC_", name: "Anthropic", priority: 1 },
-  { prefix: "DASHSCOPE_", name: "DashScope (Qwen)", priority: 2 },
-  { prefix: "NADIA_QWEN_", name: "DashScope (Qwen)", priority: 2 },
-  { prefix: "DEEPSEEK_", name: "DeepSeek", priority: 3 },
-  { prefix: "GOOGLE_", name: "Gemini", priority: 4 },
-  { prefix: "GEMINI_", name: "Gemini", priority: 4 },
-  { prefix: "GLM_", name: "GLM / Z.AI", priority: 5 },
-  { prefix: "ZAI_", name: "GLM / Z.AI", priority: 5 },
-  { prefix: "Z_AI_", name: "GLM / Z.AI", priority: 5 },
-  { prefix: "HF_", name: "Hugging Face", priority: 6 },
-  { prefix: "KIMI_", name: "Kimi / Moonshot", priority: 7 },
-  { prefix: "MINIMAX_CN_", name: "MiniMax (China)", priority: 9 },
-  { prefix: "MINIMAX_", name: "MiniMax", priority: 8 },
-  { prefix: "OPENCODE_GO_", name: "OpenCode Go", priority: 10 },
-  { prefix: "OPENCODE_ZEN_", name: "OpenCode Zen", priority: 11 },
-  { prefix: "OPENROUTER_", name: "OpenRouter", priority: 12 },
-  { prefix: "XIAOMI_", name: "Xiaomi MiMo", priority: 13 },
 ];
 
-function getProviderGroup(key: string): string {
+// Non-model integrations (TTS voices, image generation) are out of the
+// provider/credential UI: they use the portal credential where the backend
+// supports it and are otherwise config-file-only — no key-entry cards return to
+// Settings for them. These specific `tool`
+// credentials are excluded from the rendered Settings cards; other legitimate
+// tool keys (browser engines, GitHub token, …) keep theirs.
+const NON_MODEL_INTEGRATION_KEYS = new Set<string>([
+  "FAL_KEY",
+  "KREA_API_KEY",
+  "VOICE_TOOLS_OPENAI_KEY",
+  "ELEVENLABS_API_KEY",
+  "MISTRAL_API_KEY",
+]);
+
+export function getProviderGroup(key: string): string {
   for (const g of PROVIDER_GROUPS) {
     if (key.startsWith(g.prefix)) return g.name;
   }
@@ -707,9 +708,9 @@ export default function EnvPage() {
         delete n[key];
         return n;
       });
-      showToast(`${key} ${t.common.save.toLowerCase()}d`, "success");
+      showToast(formatText(t.env.savedToast, { key }), "success");
     } catch (e) {
-      showToast(`${t.config.failedToSave} ${key}: ${e}`, "error");
+      showToast(formatText(t.env.saveFailed, { key, error: String(e) }), "error");
     } finally {
       setSaving(null);
     }
@@ -739,15 +740,15 @@ export default function EnvPage() {
             delete n[key];
             return n;
           });
-          showToast(`${key} ${t.common.removed}`, "success");
+          showToast(formatText(t.env.removedToast, { key }), "success");
         } catch (e) {
-          showToast(`${t.common.failedToRemove} ${key}: ${e}`, "error");
+          showToast(formatText(t.env.removeFailed, { key, error: String(e) }), "error");
           throw e;
         } finally {
           setSaving(null);
         }
       },
-      [showToast, t.common.removed, t.common.failedToRemove],
+      [showToast, t.env.removeFailed, t.env.removedToast],
     ),
   });
 
@@ -764,7 +765,7 @@ export default function EnvPage() {
       const resp = await api.revealEnvVar(key);
       setRevealed((prev) => ({ ...prev, [key]: resp.value }));
     } catch {
-      showToast(`${t.common.failedToReveal} ${key}`, "error");
+      showToast(formatText(t.env.revealFailed, { key }), "error");
     }
   };
 
@@ -850,9 +851,11 @@ export default function EnvPage() {
     const otherCategories = ["tool", "messaging", "setting"];
     const nonProvider = otherCategories.map((cat) => {
       const entries = Object.entries(vars).filter(
-        ([, info]) =>
+        ([key, info]) =>
           info.category === cat &&
           !info.channel_managed &&
+          // TTS/image-gen keys are config-file-only: no Settings card.
+          !NON_MODEL_INTEGRATION_KEYS.has(key) &&
           (showAdvanced || !info.advanced),
       );
       const setEntries = entries.filter(([, info]) => info.is_set);

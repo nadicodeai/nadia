@@ -1,6 +1,7 @@
 import { useStore } from '@nanostores/react'
 import { useEffect } from 'react'
 import { $route, $bootstrap, initialize } from './store'
+import { I18nProvider } from './i18n'
 import Welcome from './routes/welcome'
 import Progress from './routes/progress'
 import Success from './routes/success'
@@ -23,13 +24,17 @@ export default function App() {
   }, [])
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden bg-background text-foreground">
-      <main className="relative z-10 flex flex-1 flex-col overflow-hidden">
-        {route === 'welcome' && <Welcome />}
-        {route === 'progress' && <Progress bootstrap={bootstrap} />}
-        {route === 'success' && <Success />}
-        {route === 'failure' && <Failure bootstrap={bootstrap} />}
-      </main>
-    </div>
+    // The installer follows the OS language (en/it); the provider
+    // resolves the active catalog once from detectLocale() — no picker.
+    <I18nProvider>
+      <div className="relative flex h-full flex-col overflow-hidden bg-background text-foreground">
+        <main className="relative z-10 flex flex-1 flex-col overflow-hidden">
+          {route === 'welcome' && <Welcome />}
+          {route === 'progress' && <Progress bootstrap={bootstrap} />}
+          {route === 'success' && <Success />}
+          {route === 'failure' && <Failure bootstrap={bootstrap} />}
+        </main>
+      </div>
+    </I18nProvider>
   )
 }

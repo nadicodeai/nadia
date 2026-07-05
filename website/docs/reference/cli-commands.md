@@ -48,7 +48,7 @@ nadia [global-options] <command> [subcommand/options]
 | `nadia whatsapp` | Configure and pair the WhatsApp bridge. |
 | `nadia whatsapp-cloud` | Configure the official Meta WhatsApp Business Cloud API adapter (Business account + public webhook required). Distinct from `nadia whatsapp` (Baileys personal-account bridge). |
 | `nadia slack` | Slack helpers (currently: generate the app manifest with every command as a native slash). |
-| `nadia auth` | Manage credentials — add, list, remove, reset, status, logout. Handles OAuth flows for Codex/Nadia/Anthropic. |
+| `nadia auth` | Manage credentials — add, list, remove, reset, status, logout. Handles OAuth flows for Codex/NadicodeAI Portal/Anthropic. |
 | `nadia login` / `logout` | **Deprecated** — use `nadia auth` instead. |
 | `nadia send` | Send a one-shot message to a configured messaging platform (Telegram, Discord, Slack, Signal, SMS, …). Useful from shell scripts, cron jobs, CI hooks, and monitoring daemons — no agent loop, no LLM. |
 | `nadia secrets` | Manage external secret sources (currently Bitwarden Secrets Manager) for pulling API keys at process startup instead of from `~/.nadia/.env`. |
@@ -80,7 +80,7 @@ nadia [global-options] <command> [subcommand/options]
 | `nadia portal` | NadicodeAI Portal status, subscription link, and Tool Gateway routing. See [Tool Gateway](../user-guide/features/tool-gateway.md). |
 | `nadia tools` | Configure enabled tools per platform. |
 | `nadia computer-use` | Install or check the cua-driver backend (macOS Computer Use). |
-| `nadia pets` | Browse, install, and select [petdex](../user-guide/features/pets.md) animated pets shown across the CLI, TUI, and desktop app. Subcommands: `list`, `install`, `select`, `show`, `off`, `scale`, `remove`, `doctor`. |
+<!-- Python pet top-level command reference row removed. -->
 | `nadia sessions` | Browse, export, prune, rename, and delete sessions. |
 | `nadia insights` | Show token/cost/activity analytics. |
 | `nadia claw` | OpenClaw migration helpers. |
@@ -316,8 +316,8 @@ Inspect NadicodeAI Portal auth, Tool Gateway routing, and reach the subscription
 | Subcommand | Description |
 |------------|-------------|
 | `status` (default) | Portal auth state + per-tool Tool Gateway routing summary. Also shown when no subcommand is given. |
-| `open` | Open `portal.nadicodeai.com/manage-subscription` in your default browser. |
-| `tools` | List every Tool Gateway partner (Firecrawl, FAL, OpenAI TTS, Browser Use, Modal) and which are routed via Nadia. |
+| `open` | Open `portal.nadicode.ai/manage-subscription` in your default browser. |
+| `tools` | List every Tool Gateway partner (Firecrawl, FAL, OpenAI TTS, Browser Use, Modal) and which are routed via NadicodeAI Portal. |
 
 For configuration of the gateway itself, see [Tool Gateway](../user-guide/features/tool-gateway.md). For the one-shot setup path, see `nadia setup --portal` above.
 
@@ -1326,26 +1326,7 @@ of the update if cua-driver is on PATH, so most users will not need to
 call `--upgrade` manually. Use it when upstream ships a fix you want
 right now without waiting for the next Nadia update.
 
-## `nadia pets`
-
-```bash
-nadia pets <list|install|select|show|off|scale|remove|doctor>
-```
-
-[Petdex](https://github.com/crafter-station/petdex) is a public gallery of animated sprite pets for coding agents. Install one and Nadia shows it reacting to agent activity across the CLI, TUI, and desktop app.
-
-| Subcommand | Description |
-|------------|-------------|
-| `list` | Browse the petdex gallery. |
-| `install` | Install a pet from the gallery. |
-| `select` | Set the active pet (writes `display.pet.*`). |
-| `show` | Animate the active pet in the terminal. |
-| `off` | Disable the pet display. |
-| `scale` | Resize the pet everywhere (`display.pet.scale`). |
-| `remove` | Delete an installed pet. |
-| `doctor` | Check pet setup + terminal graphics support. |
-
-You can also generate a brand-new pet from a text description with the `/hatch` slash command. See [Pets](../user-guide/features/pets.md).
+<!-- Python pet top-level command section removed. -->
 
 ## `nadia sessions`
 

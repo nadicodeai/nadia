@@ -7,44 +7,21 @@ contextBridge.exposeInMainWorld('nadiaDesktop', {
   getGatewayWsUrl: profile => ipcRenderer.invoke('nadia:gateway:ws-url', profile),
   openSessionWindow: (sessionId, opts) => ipcRenderer.invoke('nadia:window:openSession', sessionId, opts),
   openNewSessionWindow: () => ipcRenderer.invoke('nadia:window:openNewSession'),
-  petOverlay: {
-    // Main renderer → main process: window lifecycle + drag. `request` is
-    // `{ bounds, screen }`; resolves with the screen bounds it actually used.
-    open: request => ipcRenderer.invoke('nadia:pet-overlay:open', request),
-    close: () => ipcRenderer.invoke('nadia:pet-overlay:close'),
-    setBounds: bounds => ipcRenderer.send('nadia:pet-overlay:set-bounds', bounds),
-    setIgnoreMouse: ignore => ipcRenderer.send('nadia:pet-overlay:ignore-mouse', ignore),
-    // Flip the overlay focusable (and focus it) while the composer needs keys.
-    setFocusable: focusable => ipcRenderer.send('nadia:pet-overlay:set-focusable', focusable),
-    // Main renderer → overlay (forwarded by main): push the latest pet state.
-    pushState: payload => ipcRenderer.send('nadia:pet-overlay:state', payload),
-    // Overlay → main renderer (forwarded by main): pop back in / composer submit.
-    control: payload => ipcRenderer.send('nadia:pet-overlay:control', payload),
-    // Overlay subscribes to state pushes.
-    onState: callback => {
-      const listener = (_event, payload) => callback(payload)
-      ipcRenderer.on('nadia:pet-overlay:state', listener)
-      return () => ipcRenderer.removeListener('nadia:pet-overlay:state', listener)
-    },
-    // Main renderer subscribes to overlay control messages.
-    onControl: callback => {
-      const listener = (_event, payload) => callback(payload)
-      ipcRenderer.on('nadia:pet-overlay:control', listener)
-      return () => ipcRenderer.removeListener('nadia:pet-overlay:control', listener)
-    }
-  },
   getBootProgress: () => ipcRenderer.invoke('nadia:boot-progress:get'),
   getConnectionConfig: profile => ipcRenderer.invoke('nadia:connection-config:get', profile),
-  saveConnectionConfig: payload => ipcRenderer.invoke('nadia:connection-config:save', payload),
   applyConnectionConfig: payload => ipcRenderer.invoke('nadia:connection-config:apply', payload),
-  testConnectionConfig: payload => ipcRenderer.invoke('nadia:connection-config:test', payload),
   probeConnectionConfig: remoteUrl => ipcRenderer.invoke('nadia:connection-config:probe', remoteUrl),
   oauthLoginConnectionConfig: remoteUrl => ipcRenderer.invoke('nadia:connection-config:oauth-login', remoteUrl),
-  oauthLogoutConnectionConfig: remoteUrl => ipcRenderer.invoke('nadia:connection-config:oauth-logout', remoteUrl),
+  // saveConnectionConfig/testConnectionConfig/oauthLogoutConnectionConfig
+  // removed with the gateway-settings UI (always-local desktop; no remote
+  // config left to save/test/sign-out of).
   profile: {
     get: () => ipcRenderer.invoke('nadia:profile:get'),
     set: name => ipcRenderer.invoke('nadia:profile:set', name)
   },
+  // report the renderer's resolved locale (en/it) so the native
+  // menu, About panel, and context menu follow the in-app language.
+  setMenuLocale: locale => ipcRenderer.send('nadia:menu-locale', locale),
   api: request => ipcRenderer.invoke('nadia:api', request),
   notify: payload => ipcRenderer.invoke('nadia:notify', payload),
   requestMicrophoneAccess: () => ipcRenderer.invoke('nadia:requestMicrophoneAccess'),
@@ -210,9 +187,7 @@ contextBridge.exposeInMainWorld('nadiaDesktop', {
       ipcRenderer.on('nadia:updates:progress', listener)
       return () => ipcRenderer.removeListener('nadia:updates:progress', listener)
     }
-  },
-  themes: {
-    fetchMarketplace: id => ipcRenderer.invoke('nadia:vscode-theme:fetch', id),
-    searchMarketplace: query => ipcRenderer.invoke('nadia:vscode-theme:search', query)
   }
+  // the theme-gallery IPC bridge is removed: one NadicodeAI
+  // skin, not an operator choice on any surface.
 })

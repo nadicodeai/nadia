@@ -1,12 +1,14 @@
 ---
 sidebar_position: 11
 title: Model Catalog
-description: Remotely-hosted manifest driving curated model picker lists for OpenRouter and NadicodeAI Portal.
+description: Remotely-hosted manifest behind the curated catalog — frontier model families, free variants labeled, experimental models stripped.
 ---
 
 # Model Catalog
 
 Nadia fetches curated model lists for **OpenRouter** and **NadicodeAI Portal** from a JSON manifest hosted alongside the docs site. This lets maintainers update picker lists without shipping a new `nadia-agent` release.
+
+For the Portal, the picker shows the **curated catalog**: the published manifest intersected with the live Portal catalog, with the tool-support filter retained, frontier model families surfaced, free variants (live price zero) labeled "free", and experimental (alpha/preview) models stripped out. It is the only model list the picker shows.
 
 When the manifest is unreachable (offline, network blocked, hosting failure), Nadia silently falls back to the in-repo snapshot that ships with the CLI. The manifest never breaks the picker — worst case you see whatever list was bundled with your installed version.
 

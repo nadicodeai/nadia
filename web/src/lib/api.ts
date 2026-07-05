@@ -19,6 +19,8 @@ function readBasePath(): string {
 export const NADIA_BASE_PATH = readBasePath();
 const BASE = NADIA_BASE_PATH;
 
+// Legacy dashboard theme/font APIs were removed with the single-skin contract.
+
 // Ephemeral session token for protected endpoints.
 // Injected into index.html by the server — never fetched via API.
 declare global {
@@ -920,6 +922,8 @@ export const api = {
         body: JSON.stringify({ hidden }),
       },
     ),
+
+  // Dashboard appearance is client-side mode only; no theme/font endpoints.
 
   // ── Admin: MCP servers ──────────────────────────────────────────────
   getMcpServers: () => fetchJSON<{ servers: McpServer[] }>("/api/mcp/servers"),
@@ -2218,6 +2222,8 @@ export interface OAuthPollResponse {
   error_message?: string | null;
   expires_at?: number | null;
 }
+
+// Dashboard theme/font response types retired with the legacy picker.
 
 // ── Dashboard plugin types ─────────────────────────────────────────────
 

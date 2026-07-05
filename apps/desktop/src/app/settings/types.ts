@@ -6,7 +6,7 @@ import type { EnvVarInfo } from '@/types/nadia'
 
 export type SettingsView =
   | 'about'
-  | 'gateway'
+  // 'gateway' removed: always-local desktop, no gateway-settings view
   | 'keys'
   | 'mcp'
   | 'notifications'

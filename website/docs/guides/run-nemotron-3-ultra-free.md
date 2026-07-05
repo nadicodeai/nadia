@@ -24,7 +24,7 @@ The simplest path: a one-click installer with a guided, point-and-click setup. N
 
 ### 2. Connect NadicodeAI Portal
 
-When the app opens, you'll see a "Let's get you set up" screen. Click **NadicodeAI Portal** (marked **Recommended**). Your browser opens — create a [NadicodeAI Portal](https://portal.nadicodeai.com) account (or sign in), choose the **Free** plan, and authorize Nadia. The app connects automatically.
+When the app opens, you'll see a "Let's get you set up" screen. Click **NadicodeAI Portal** (marked **Recommended**). Your browser opens — create a [NadicodeAI Portal](https://portal.nadicode.ai) account (or sign in), choose the **Free** plan, and authorize Nadia. The app connects automatically.
 
 ### 3. Pick the free Nemotron 3 Ultra model
 
@@ -76,7 +76,7 @@ Select **Quick Setup**. Nadia opens a browser tab and waits for you to finish th
 
 ### 3. Create a NadicodeAI Portal account
 
-In the browser, create a [NadicodeAI Portal](https://portal.nadicodeai.com) account (or sign in) and choose the **Free** plan.
+In the browser, create a [NadicodeAI Portal](https://portal.nadicode.ai) account (or sign in) and choose the **Free** plan.
 
 ### 4. Connect your account
 

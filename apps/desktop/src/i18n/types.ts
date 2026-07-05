@@ -5,6 +5,7 @@
 // partial locales should use `defineLocale()` so missing desktop-only strings
 // fall back to English while new keys remain type-checked.
 
+// product-wide locale set: exactly English and Italian
 export type Locale = 'en' | 'it'
 
 export type ToolTitleKey =
@@ -261,8 +262,9 @@ export interface Translations {
     nav: {
       providers: string
       providerAccounts: string
-      providerApiKeys: string
-      gateway: string
+      // gateway removed: always-local desktop, no gateway-settings
+      // nav item. providerApiKeys removed: portal-only surface, no separate
+      // API-keys provider view.
       apiKeys: string
       keysTools: string
       keysSettings: string
@@ -291,7 +293,8 @@ export interface Translations {
       completionSoundPreview: string
     }
     sections: Record<string, string>
-    searchPlaceholder: Record<'about' | 'config' | 'gateway' | 'keys' | 'mcp' | 'sessions', string>
+    // 'gateway' dropped from the union: always-local desktop, no gateway-settings view
+    searchPlaceholder: Record<'about' | 'config' | 'keys' | 'mcp' | 'sessions', string>
     modeOptions: Record<'light' | 'dark' | 'system', ModeOptionCopy>
     appearance: {
       title: string
@@ -312,55 +315,9 @@ export interface Translations {
       productDesc: string
       technical: string
       technicalDesc: string
-      themeTitle: string
-      themeDesc: string
-      themeProfileNote: (profile: string) => string
-      installTitle: string
-      installDesc: string
-      installPlaceholder: string
-      installButton: string
-      installing: string
-      installError: string
-      installed: (name: string) => string
-      removeTheme: string
-      importedBadge: string
-      pet: {
-        title: string
-        intro: string
-        restartHint: string
-        on: string
-        off: string
-        scaleTitle: string
-        scaleDesc: string
-        roamTitle: string
-        roamDesc: string
-        chooseTitle: string
-        chooseDesc: string
-        searchPlaceholder: string
-        unreachable: string
-        noMatch: (query: string) => string
-        installedTag: string
-        generatedTag: string
-        countCapped: (cap: number, total: number) => string
-        count: (n: number) => string
-        uninstall: (name: string) => string
-        delete: (name: string) => string
-        deleteTitle: (name: string) => string
-        deleteBody: string
-        deleteConfirm: string
-        rename: (name: string) => string
-        renameTitle: string
-        renamePlaceholder: string
-        renameSave: string
-        exportPet: (name: string) => string
-        adoptFailed: (slug: string) => string
-        uninstallFailed: (slug: string) => string
-        renameFailed: (slug: string) => string
-        exportFailed: (slug: string) => string
-        noneAvailable: string
-        turnOnFailed: string
-        turnOffFailed: string
-      }
+      // desktop themes/skins retired: no theme picker, no
+      // VS Code Marketplace gallery. Only the mode (light/dark/system)
+      // remains.
     }
     fieldLabels: Record<string, string>
     fieldDescriptions: Record<string, string>
@@ -426,68 +383,9 @@ export interface Translations {
       set: string
       clear: string
     }
-    gateway: {
-      loading: string
-      unavailableTitle: string
-      unavailableDesc: string
-      title: string
-      envOverride: string
-      intro: string
-      appliesTo: string
-      allProfiles: string
-      defaultConnection: string
-      profileConnection: (profile: string) => string
-      envOverrideTitle: string
-      envOverrideDesc: string
-      localTitle: string
-      localDesc: string
-      remoteTitle: string
-      remoteDesc: string
-      remoteUrlTitle: string
-      remoteUrlDesc: string
-      probing: string
-      probeError: string
-      signedIn: string
-      signIn: string
-      signOut: string
-      signInWith: (provider: string) => string
-      authTitle: string
-      authSignedInPassword: string
-      authSignedInOauth: string
-      authNeedsPassword: string
-      authNeedsOauth: (provider: string) => string
-      tokenTitle: string
-      tokenDesc: string
-      existingToken: (value: string) => string
-      savedToken: string
-      pasteSessionToken: string
-      testRemote: string
-      saveForRestart: string
-      saveAndReconnect: string
-      diagnostics: string
-      diagnosticsDesc: string
-      openLogs: string
-      incompleteTitle: string
-      incompleteSignIn: string
-      incompleteToken: string
-      incompleteSignInTest: string
-      incompleteTokenTest: string
-      enterUrlFirst: string
-      restartingTitle: string
-      savedTitle: string
-      restartingMessage: string
-      savedMessage: string
-      connectedTo: (baseUrl: string, version?: string) => string
-      reachableTitle: string
-      signedOutTitle: string
-      signedOutMessage: string
-      failedLoad: string
-      signInFailed: string
-      signOutFailed: string
-      testFailed: string
-      applyFailed: string
-      saveFailed: string
-    }
+    // the gateway settings copy block (Local/Remote gateway
+    // choice) is removed: Nadia Desktop is always-local, so the entire
+    // gateway-settings.tsx surface and its copy are gone.
     keys: {
       loading: string
       failedLoad: string
@@ -545,6 +443,7 @@ export interface Translations {
       haveApiKey: string
       intro: string
       connected: string
+      notConnected: string
       collapse: string
       connectAnother: string
       otherProviders: string
@@ -720,63 +619,9 @@ export interface Translations {
     commandCenter: string
     appearance: string
     settings: string
-    changeTheme: string
+    // desktop themes retired: no "change theme" command
     changeColorMode: string
-    pets: {
-      title: string
-      placeholder: string
-      loading: string
-      error: string
-      staleBackend: string
-      empty: string
-      turnOff: string
-      turnOn: string
-      installed: string
-      generatedTag: string
-      adoptFailed: string
-      toggleFailed: string
-      noneAvailable: string
-    }
-    generatePet: {
-      title: string
-      placeholder: string
-      promptHint: string
-      readyHint: string
-      generate: string
-      generating: string
-      retry: string
-      hatch: string
-      spawning: string
-      hatching: string
-      hatchingSub: string
-      hatched: string
-      hatchRow: (state: string, done: number, total: number) => string
-      hatchComposing: string
-      hatchSaving: string
-      namePlaceholder: string
-      staleBackend: string
-      backgroundHint: string
-      slowProviderHint: string
-      remix: string
-      remixConfirmTitle: string
-      remixConfirmBody: string
-      genericError: string
-      referenceImageTooLarge: string
-      referenceImageInvalid: string
-      adopt: string
-      startOver: string
-    }
-    installTheme: {
-      title: string
-      placeholder: string
-      loading: string
-      error: string
-      empty: string
-      install: string
-      installing: string
-      installed: string
-      installs: (count: string) => string
-    }
+    // VS Code Marketplace theme install retired
     settingsFields: string
     mcpServers: string
     archivedChats: string
@@ -1407,6 +1252,9 @@ export interface Translations {
     connectedPicking: (provider: string) => string
     signInFailed: string
     pickDifferentProvider: string
+    // portal activation failure explanations + retry
+    activationFailure: { denied: string; expired: string; unreachable: string }
+    retryActivation: string
     signInWith: (provider: string) => string
     openedBrowser: (provider: string) => string
     authorizeThere: string

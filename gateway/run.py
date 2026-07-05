@@ -2173,6 +2173,17 @@ def _check_unavailable_skill(command_name: str) -> str | None:
     return None
 
 
+def _unknown_command_reply(command_name: str) -> str:
+    return (
+        f"Unknown command `/{command_name}`. "
+        f"Type /commands to see what's available, "
+        f"or resend without the leading slash to send "
+        f"as a regular message."
+    )
+
+
+
+
 def _platform_config_key(platform: "Platform") -> str:
     """Map a Platform enum to its config.yaml key (LOCAL→"cli", rest→enum value)."""
     return "cli" if platform == Platform.LOCAL else platform.value
@@ -8740,6 +8751,12 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
             _evt_cmd = event.get_command()
             _cmd_def_inner = _resolve_cmd_inner(_evt_cmd) if _evt_cmd else None
 
+            if _cmd_def_inner is not None:
+                from nadia_cli.commands import is_gateway_known_command as _is_gateway_known_command_inner
+
+                if not _is_gateway_known_command_inner(_cmd_def_inner.name):
+                    return _unknown_command_reply(_evt_cmd)
+
             # Slash command access control on the running-agent fast-path.
             # Mirrors the cold-path gate further below so non-admin users
             # can't bypass gating just because an agent happens to be busy.
@@ -9134,6 +9151,9 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                         command = target_command.split()[0] if target_command else target_command
                         _cmd_def = _resolve_cmd(command) if command else None
                         canonical = _cmd_def.name if _cmd_def else command
+
+        if command and _cmd_def is not None and not is_gateway_known_command(canonical):
+            return _unknown_command_reply(command)
 
         # Per-platform slash command access control. Only kicks in when the
         # operator has set ``allow_admin_from`` for the source's scope (DM
@@ -9650,12 +9670,7 @@ class GatewayRunner(GatewayAuthorizationMixin, GatewayKanbanWatchersMixin, Gatew
                             command,
                             source.platform.value if source.platform else "?",
                         )
-                        return (
-                            f"Unknown command `/{command}`. "
-                            f"Type /commands to see what's available, "
-                            f"or resend without the leading slash to send "
-                            f"as a regular message."
-                        )
+                        return _unknown_command_reply(command)
             except Exception as e:
                 logger.debug("Skill command check failed (non-fatal): %s", e)
         

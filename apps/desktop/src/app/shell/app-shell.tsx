@@ -4,7 +4,6 @@ import { useSyncExternalStore } from 'react'
 
 import { NotificationStack } from '@/components/notifications'
 import { PaneShell } from '@/components/pane-shell'
-import { FloatingPet } from '@/components/pet/floating-pet'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import {
@@ -229,9 +228,6 @@ export function AppShell({
           surface above every route and overlay — not just the chat view. */}
       <NotificationStack />
 
-      {/* Petdex floating mascot — in-window, always-on-top, reactive to agent
-          activity. Renders nothing unless a pet is installed + enabled. */}
-      <FloatingPet />
     </SidebarProvider>
   )
 }

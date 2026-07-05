@@ -57,6 +57,8 @@ from utils import atomic_replace
 
 logger = logging.getLogger(__name__)
 
+_EXPERIMENTAL_MODEL_MARKERS: tuple[str, ...] = ("alpha", "preview")
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -321,6 +323,65 @@ def _get_provider_block(provider: str) -> dict[str, Any] | None:
     return block if isinstance(block, dict) else None
 
 
+def _model_id(model: Any) -> str:
+    if isinstance(model, dict):
+        return str(model.get("id") or "").strip()
+    return str(model or "").strip()
+
+
+def _model_label(model: Any) -> str:
+    if not isinstance(model, dict):
+        return ""
+    for key in ("label", "name", "display_name"):
+        value = model.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    metadata = model.get("metadata")
+    if isinstance(metadata, dict):
+        for key in ("label", "name", "display_name"):
+            value = metadata.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+    return ""
+
+
+def _supports_tools(model: Any) -> bool:
+    if not isinstance(model, dict):
+        return True
+    metadata = model.get("metadata")
+    if isinstance(metadata, dict) and metadata.get("supports_tools") is False:
+        return False
+    params = model.get("supported_parameters")
+    if not isinstance(params, list) and isinstance(metadata, dict):
+        params = metadata.get("supported_parameters")
+    if isinstance(params, list):
+        return "tools" in params
+    return True
+
+
+def _has_experimental_marker(value: str) -> bool:
+    lowered = value.lower()
+    return any(marker in lowered for marker in _EXPERIMENTAL_MODEL_MARKERS)
+
+
+def is_curated_model(model: Any) -> bool:
+    """Return True when a catalog/live entry is safe for the curated catalog.
+
+    The manifest membership is supplied by the caller's iteration over a
+    provider block. This predicate owns the cross-cutting checks: non-empty id,
+    explicit tool-support exclusion, and experimental marker stripping.
+    """
+    model_id = _model_id(model)
+    if not model_id:
+        return False
+    label = _model_label(model)
+    if _has_experimental_marker(model_id) or (
+        bool(label) and _has_experimental_marker(label)
+    ):
+        return False
+    return _supports_tools(model)
+
+
 def get_curated_openrouter_models() -> list[tuple[str, str]] | None:
     """Return OpenRouter's curated ``[(id, description), ...]`` from the manifest.
 
@@ -350,6 +411,8 @@ def get_curated_nous_models() -> list[str] | None:
         return None
     out: list[str] = []
     for m in block.get("models", []):
+        if not is_curated_model(m):
+            continue
         mid = str(m.get("id") or "").strip()
         if mid:
             out.append(mid)

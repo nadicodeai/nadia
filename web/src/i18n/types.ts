@@ -1,5 +1,514 @@
 export type Locale = "en" | "it";
 
+type DashboardPageTranslations<Key extends string> = { [K in Key]: string };
+
+type ChannelsTranslations = DashboardPageTranslations<
+  | "stateConnected"
+  | "statePendingRestart"
+  | "stateGatewayStopped"
+  | "stateStartupFailed"
+  | "stateDisconnected"
+  | "stateNotConfigured"
+  | "stateDisabled"
+  | "stateFatal"
+  | "errorWithDetail"
+  | "mustStartWith"
+  | "invalidSlackMember"
+  | "nothingToSave"
+  | "fieldRequired"
+  | "fixFields"
+  | "platformSaved"
+  | "failedToSave"
+  | "gatewayRestarting"
+  | "failedToRestart"
+  | "restartGateway"
+  | "restarting"
+  | "restartNow"
+  | "changesSaved"
+  | "gatewayNotRunningPrefix"
+  | "gatewayNotRunningSuffix"
+  | "configuredSummaryPrefix"
+  | "configuredSummarySuffix"
+  | "close"
+  | "configureTitle"
+  | "setupGuide"
+  | "keepExistingSecret"
+  | "cancel"
+  | "saveEnable"
+  | "saving"
+  | "enablePlatform"
+  | "testResult"
+  | "test"
+  | "configure"
+  | "telegramExistingCredentials"
+  | "telegramPairingExpired"
+  | "telegramWaitingRetry"
+  | "telegramNumericIds"
+  | "telegramRestartFailedExit"
+  | "telegramAddOneId"
+  | "telegramSavedRestarting"
+  | "telegramRestartFailed"
+  | "telegramRestartFailedShort"
+  | "setupWithQr"
+  | "starting"
+  | "ready"
+  | "allowedUsers"
+  | "ownerDetected"
+  | "telegramUserId"
+  | "add"
+  | "saveAndRestart"
+  | "qrAlt"
+  | "expired"
+  | "waiting"
+  | "openTelegram"
+>;
+
+type FilesTranslations = DashboardPageTranslations<
+  | "title"
+  | "refreshFiles"
+  | "path"
+  | "go"
+  | "upload"
+  | "create"
+  | "uploadFiles"
+  | "uploading"
+  | "releaseToUpload"
+  | "dropFilesHere"
+  | "loading"
+  | "chooseFiles"
+  | "name"
+  | "size"
+  | "modified"
+  | "actions"
+  | "loadingFiles"
+  | "noFiles"
+  | "openItem"
+  | "downloadItem"
+  | "deleteItem"
+  | "pathRequired"
+  | "directoryUnavailable"
+  | "folderNameRequired"
+  | "folderCreated"
+  | "createFailed"
+  | "uploadedCount"
+  | "uploadedFile"
+  | "uploadedFiles"
+  | "uploadFailed"
+  | "downloadFailed"
+  | "deleted"
+  | "deleteFailed"
+  | "createFolder"
+  | "target"
+  | "folderName"
+  | "cancel"
+  | "deleteNamed"
+  | "deleteItemTitle"
+  | "removeFolder"
+  | "removeFile"
+  | "downloadFallback"
+>;
+
+type McpTranslations = DashboardPageTranslations<
+  | "errorWithDetail"
+  | "nameRequired"
+  | "urlRequired"
+  | "commandRequired"
+  | "addSuccess"
+  | "failedToAdd"
+  | "toolCount"
+  | "serverFailed"
+  | "failed"
+  | "restartNote"
+  | "deleteToast"
+  | "installingBackground"
+  | "installedToast"
+  | "failedToInstall"
+  | "requiredField"
+  | "addServer"
+  | "removeServerTitle"
+  | "removeServerNamed"
+  | "removeServer"
+  | "close"
+  | "addMcpServer"
+  | "name"
+  | "namePlaceholder"
+  | "transport"
+  | "transportHttp"
+  | "transportStdio"
+  | "url"
+  | "urlPlaceholder"
+  | "command"
+  | "commandPlaceholder"
+  | "args"
+  | "argsPlaceholder"
+  | "environment"
+  | "envPlaceholder"
+  | "adding"
+  | "add"
+  | "installTitle"
+  | "installRequires"
+  | "installing"
+  | "install"
+  | "yourServers"
+  | "noServers"
+  | "disabled"
+  | "envVarCount"
+  | "envVar"
+  | "envVars"
+  | "connectedNoTools"
+  | "tools"
+  | "connectionFailed"
+  | "disable"
+  | "enable"
+  | "testConnection"
+  | "delete"
+  | "catalog"
+  | "catalogHint"
+  | "noCatalog"
+  | "authType"
+  | "source"
+  | "installed"
+  | "endpoint"
+  | "runs"
+  | "installsFrom"
+  | "bootstrapCommands"
+  | "setupNotes"
+>;
+
+type PairingTranslations = DashboardPageTranslations<
+  | "loadFailed"
+  | "missingCode"
+  | "approvedToast"
+  | "errorWithDetail"
+  | "clearPendingConfirm"
+  | "clearedPending"
+  | "clearedPendingOne"
+  | "clearedPendingMany"
+  | "revokedToast"
+  | "clearPending"
+  | "revokeAccess"
+  | "revokeNamedDescription"
+  | "revokeGenericDescription"
+  | "revoke"
+  | "pendingRequests"
+  | "noPending"
+  | "minutesAgo"
+  | "approve"
+  | "approvedUsers"
+  | "noApproved"
+>;
+
+type ProfileBuilderTranslations = DashboardPageTranslations<
+  | "stepIdentity"
+  | "stepModel"
+  | "stepSkills"
+  | "stepMcp"
+  | "stepReview"
+  | "mcpNeedsName"
+  | "mcpNeedsTarget"
+  | "invalidProfileName"
+  | "profileCreated"
+  | "profileCreatedInstalling"
+  | "profileCreatedInstallingOne"
+  | "profileCreatedInstallingMany"
+  | "createFailed"
+  | "newProfile"
+  | "cancel"
+  | "profileName"
+  | "namePlaceholder"
+  | "nameRule"
+  | "descriptionOptional"
+  | "descriptionPlaceholder"
+  | "modelHint"
+  | "filterModels"
+  | "loadingModels"
+  | "useDefaultModel"
+  | "keepAllSkills"
+  | "keepSkillsHint"
+  | "filterSkills"
+  | "loadingSkills"
+  | "addFromHub"
+  | "searchHubPlaceholder"
+  | "searching"
+  | "search"
+  | "add"
+  | "removeSkill"
+  | "mcpHint"
+  | "serverName"
+  | "urlPlaceholder"
+  | "commandPlaceholder"
+  | "argsPlaceholder"
+  | "addServer"
+  | "remove"
+  | "reviewName"
+  | "reviewDescription"
+  | "reviewModel"
+  | "reviewSkills"
+  | "reviewMcpServers"
+  | "reviewHubSkills"
+  | "dash"
+  | "defaultModel"
+  | "fullDefaultBundle"
+  | "keptSkills"
+  | "hubSuffix"
+  | "hubPrefix"
+  | "none"
+  | "back"
+  | "next"
+  | "creating"
+  | "createProfile"
+>;
+
+type SystemPageTranslations = DashboardPageTranslations<
+  | "archiveFallback"
+  | "noBackupCreated"
+  | "logRunning"
+  | "logDone"
+  | "logExit"
+  | "closeLog"
+  | "closeHookModal"
+  | "logStarting"
+  | "gatewayActionStarted"
+  | "gatewayActionFailed"
+  | "gatewayStartVerb"
+  | "gatewayStopVerb"
+  | "gatewayRestartVerb"
+  | "curatorResumed"
+  | "curatorPaused"
+  | "curatorToggleFailed"
+  | "resetToast"
+  | "listSeparator"
+  | "nothing"
+  | "resetFailed"
+  | "providerKeyRequired"
+  | "credentialAdded"
+  | "addCredentialFailed"
+  | "credentialRemoved"
+  | "removeFailed"
+  | "actionStarted"
+  | "actionFailed"
+  | "backupStarted"
+  | "backupFailed"
+  | "backupReady"
+  | "downloadFailed"
+  | "importStarted"
+  | "importFailed"
+  | "copyFailed"
+  | "uploadedPaste"
+  | "uploadedPastes"
+  | "redactedSuffix"
+  | "debugShareFailed"
+  | "updateAvailableBehind"
+  | "updateAvailable"
+  | "latestVersion"
+  | "updateCheckFailed"
+  | "externalUpdates"
+  | "updateUnavailable"
+  | "updateStarted"
+  | "updateFailed"
+  | "pruneStarted"
+  | "pruneFailed"
+  | "commandRequired"
+  | "hookCreated"
+  | "hookCreateFailed"
+  | "hookRemoved"
+  | "hookRemoveFailed"
+  | "updateNadiaTitle"
+  | "updateNadiaDescriptionBehind"
+  | "updateNadiaDescription"
+  | "updateNow"
+  | "resetMemory"
+  | "resetMemoryDescription"
+  | "removeCredential"
+  | "removeCredentialDescription"
+  | "pruneCheckpoints"
+  | "pruneCheckpointsDescription"
+  | "removeHook"
+  | "removeHookDescription"
+  | "newShellHook"
+  | "event"
+  | "commandAbsolute"
+  | "hookCommandPlaceholder"
+  | "matcherOptional"
+  | "hookMatcherPlaceholder"
+  | "timeoutSeconds"
+  | "hookTimeoutPlaceholder"
+  | "approveNow"
+  | "hookWarning"
+  | "creating"
+  | "createHook"
+  | "host"
+  | "os"
+  | "arch"
+  | "python"
+  | "nadia"
+  | "cpu"
+  | "cores"
+  | "memory"
+  | "disk"
+  | "uptime"
+  | "loadAvg"
+  | "behind"
+  | "latest"
+  | "psutilHint"
+  | "checkUpdates"
+  | "updateWith"
+  | "portal"
+  | "loggedIn"
+  | "notLoggedIn"
+  | "inferenceProvider"
+  | "manageSubscription"
+  | "toolGatewayRouting"
+  | "loginPortal"
+  | "skillCurator"
+  | "paused"
+  | "active"
+  | "disabled"
+  | "everyHours"
+  | "lastRun"
+  | "neverRun"
+  | "resume"
+  | "pause"
+  | "runNow"
+  | "curatorReview"
+  | "gateway"
+  | "running"
+  | "stopped"
+  | "pid"
+  | "start"
+  | "restart"
+  | "stop"
+  | "memoryTitle"
+  | "externalProvider"
+  | "builtInOnly"
+  | "changeInPlugins"
+  | "newCredentials"
+  | "builtinFiles"
+  | "resetMemoryMd"
+  | "resetUserMd"
+  | "resetAll"
+  | "credentialPool"
+  | "provider"
+  | "credentialProviderPlaceholder"
+  | "apiKey"
+  | "credentialKeyPlaceholder"
+  | "label"
+  | "optional"
+  | "addKey"
+  | "noCredentials"
+  | "removeCredentialAria"
+  | "operations"
+  | "doctor"
+  | "runDoctor"
+  | "securityAudit"
+  | "skillsUpdate"
+  | "updateSkills"
+  | "promptSize"
+  | "supportDump"
+  | "configMigrate"
+  | "migrateConfig"
+  | "fullBackup"
+  | "createBackup"
+  | "downloadBackup"
+  | "restoreUploadLabel"
+  | "chooseRestoreZip"
+  | "noArchiveSelected"
+  | "restoreUpload"
+  | "restorePathLabel"
+  | "restorePath"
+  | "backupPathPlaceholder"
+  | "restoreTitle"
+  | "restoreDescription"
+  | "restore"
+  | "cancel"
+  | "shareDebugReport"
+  | "shareDescription"
+  | "uploading"
+  | "generateShareLink"
+  | "redactTokens"
+  | "uploaded"
+  | "redacted"
+  | "notRedacted"
+  | "autoDeletesIn"
+  | "copyAll"
+  | "copyLink"
+  | "uploadFailures"
+  | "checkpoints"
+  | "sessionCount"
+  | "prune"
+  | "shellHooks"
+  | "newHook"
+  | "noHooks"
+  | "matcher"
+  | "notExecutable"
+  | "allowed"
+  | "notApproved"
+>;
+
+type WebhooksTranslations = DashboardPageTranslations<
+  | "copy"
+  | "loadFailed"
+  | "restartFailedExit"
+  | "restartFailedExitShort"
+  | "gatewayRestarting"
+  | "failedToRestart"
+  | "enabledRestarting"
+  | "restartFailed"
+  | "enabledRestartFailed"
+  | "failedToEnable"
+  | "nameRequired"
+  | "created"
+  | "failedToCreate"
+  | "enabledToast"
+  | "disabledToast"
+  | "errorWithDetail"
+  | "deletedToast"
+  | "newSubscription"
+  | "deleteWebhook"
+  | "deleteNamedDescription"
+  | "deleteDescription"
+  | "close"
+  | "createdHint"
+  | "webhookUrl"
+  | "secretShownOnce"
+  | "done"
+  | "name"
+  | "namePlaceholder"
+  | "description"
+  | "descriptionPlaceholder"
+  | "events"
+  | "eventsPlaceholder"
+  | "deliverTo"
+  | "deliverLog"
+  | "deliverTelegram"
+  | "deliverDiscord"
+  | "deliverSlack"
+  | "deliverEmail"
+  | "deliverGitHubComment"
+  | "deliverOnly"
+  | "skipAgent"
+  | "prompt"
+  | "promptPlaceholder"
+  | "creating"
+  | "create"
+  | "receiverDisabled"
+  | "receiverDisabledDescription"
+  | "enabling"
+  | "enableWebhooks"
+  | "restartNeeded"
+  | "restarting"
+  | "restartGateway"
+  | "subscriptions"
+  | "subscriptionsHint"
+  | "noSubscriptions"
+  | "deliverOnlyBadge"
+  | "disabled"
+  | "allEvents"
+  | "disable"
+  | "enable"
+  | "delete"
+>;
+
 export interface Translations {
   // ── Common ──
   common: {
@@ -50,6 +559,7 @@ export interface Translations {
     gatewayHint?: string;
     pluginLoadFailed: string;
     pluginNotRegistered: string;
+    errorWithDetail: string;
   };
 
   // ── App shell ──
@@ -180,6 +690,13 @@ export interface Translations {
       system: string;
       tool: string;
     };
+    sessionRenamed: string;
+    failedToRenameSession: string;
+    failedToExportSession: string;
+    validPruneDays: string;
+    sessionPruned: string;
+    sessionsPruned: string;
+    failedToPruneSessions: string;
   };
 
   // ── Analytics page ──
@@ -286,6 +803,15 @@ export interface Translations {
     pause: string;
     resume: string;
     triggerNow: string;
+    requiredPromptSchedule: string;
+    noAgentNeedsScript: string;
+    createdToast: string;
+    savedChanges: string;
+    saveFailed: string;
+    resumedToast: string;
+    pausedToast: string;
+    triggeredToast: string;
+    deletedToast: string;
     delivery: {
       local: string;
       telegram: string;
@@ -335,6 +861,14 @@ export interface Translations {
     versionBadge: string;
     showInSidebar: string;
     hideFromSidebar: string;
+    installedToast: string;
+    missingEnvToast: string;
+    installFailed: string;
+    rescanToast: string;
+    rescanFailed: string;
+    saveFailed: string;
+    actionFailed: string;
+    removedToast: string;
   };
 
   // ── Profiles page ──
@@ -374,6 +908,7 @@ export interface Translations {
     activeBadge?: string;
     setActive?: string;
     activeSet?: string;
+    activeSetToast?: string;
     gatewayRunning?: string;
     gatewayStopped?: string;
     gatewayRunningWarning?: string;
@@ -402,6 +937,17 @@ export interface Translations {
     actions?: string;
     manageSkills?: string;
     activeSetHint?: string;
+    invalidNameWithRule: string;
+    createdToast: string;
+    modelNotSavedAfterCreate: string;
+    renamedToast: string;
+    soulSavedToast: string;
+    descriptionSavedToast: string;
+    describeFailedToast: string;
+    modelSavedToast: string;
+    commandCopiedToast: string;
+    copyFailedToast: string;
+    deletedToast: string;
   };
 
   // ── Skills page ──
@@ -427,6 +973,16 @@ export interface Translations {
     profileSelector?: string;
     currentProfile?: string;
     managingProfile?: string;
+    skillToggled: string;
+    toggleFailed: string;
+    savedToast: string;
+    hubSearchFailed: string;
+    installingSkill: string;
+    installFailed: string;
+    updatingInstalled: string;
+    updateFailed: string;
+    previewFailed: string;
+    scanFailed: string;
   };
 
   // ── Config page ──
@@ -449,6 +1005,8 @@ export interface Translations {
     failedToSave: string;
     failedToSaveYaml: string;
     failedToLoadRaw: string;
+    failedToSaveDetail: string;
+    failedToSaveYamlDetail: string;
     configImported: string;
     invalidJson: string;
     categories: {
@@ -498,6 +1056,11 @@ export interface Translations {
     customKeyNamePlaceholder: string;
     add: string;
     invalidKeyName: string;
+    savedToast: string;
+    saveFailed: string;
+    removedToast: string;
+    removeFailed: string;
+    revealFailed: string;
   };
 
   // ── OAuth ──
@@ -539,6 +1102,15 @@ export interface Translations {
     };
     expiresIn: string;
   };
+
+  // ── Dashboard pages routed during the English/Italian locale slice ──
+  channels: ChannelsTranslations;
+  files: FilesTranslations;
+  mcp: McpTranslations;
+  pairing: PairingTranslations;
+  profileBuilder: ProfileBuilderTranslations;
+  systemPage: SystemPageTranslations;
+  webhooks: WebhooksTranslations;
 
   // ── Language switcher ──
   language: {

@@ -19,11 +19,11 @@ import {
   recheckExternalSignin,
   setOnboardingCode,
   setOnboardingModel,
+  startProviderOAuth,
   submitOnboardingCode
 } from '@/store/onboarding'
 
 import { DecodedLabel, GlyphText, HackeryButton, useScramble } from './glyph'
-import { providerTitle } from './providers'
 
 export function FlowPanel({
   ctx,
@@ -37,7 +37,9 @@ export function FlowPanel({
   onBegin: () => void
 }) {
   const { t } = useI18n()
-  const title = 'provider' in flow && flow.provider ? providerTitle(flow.provider) : ''
+  // Post-A the payload label is authoritative ("NadicodeAI Portal") — no
+  // frontend display override.
+  const title = 'provider' in flow && flow.provider ? flow.provider.name : ''
 
   if (flow.status === 'starting') {
     return <Status>{t.onboarding.startingSignIn(title)}</Status>
@@ -56,16 +58,25 @@ export function FlowPanel({
   }
 
   if (flow.status === 'error') {
+    // Portal activation failure: a plain-language explanation of the cause and a
+    // retry that re-enters the same device flow. There is no third-party escape.
+    const explanation = flow.cause ? t.onboarding.activationFailure[flow.cause] : flow.message || t.onboarding.signInFailed
+    const retry = () => {
+      if (flow.provider) {
+        void startProviderOAuth(flow.provider, ctx)
+      } else {
+        cancelOnboardingFlow()
+      }
+    }
+
     return (
       <div className="grid gap-3">
-        <div className="flex items-center gap-1.5 text-sm text-destructive">
-          <ErrorIcon className="shrink-0" size="0.875rem" />
-          <span>{flow.message || t.onboarding.signInFailed}</span>
+        <div className="flex items-start gap-1.5 text-sm text-destructive" role="status">
+          <ErrorIcon className="mt-0.5 shrink-0" size="0.875rem" />
+          <span>{explanation}</span>
         </div>
         <div className="flex justify-end">
-          <Button onClick={cancelOnboardingFlow} variant="outline">
-            {t.onboarding.pickDifferentProvider}
-          </Button>
+          <Button onClick={retry}>{t.onboarding.retryActivation}</Button>
         </div>
       </div>
     )

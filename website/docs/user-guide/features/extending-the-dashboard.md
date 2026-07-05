@@ -389,7 +389,7 @@ Key points:
 - Multiple plugins can claim the same page-scoped slot. They render stacked in registration order.
 - Zero footprint when no plugin registers: the built-in page renders exactly as before.
 
-A reference plugin (`example-dashboard` in [`nadia-example-plugins`](https://github.com/NadicodeAI/nadia-example-plugins/tree/main/example-dashboard)) ships a live demo that injects a banner into `sessions:top` — install it to see the pattern end-to-end.
+A reference plugin (`example-dashboard` in the `nadia-example-plugins` companion repo — wire reference: `github.com/NadicodeAI/nadia-example-plugins/tree/main/example-dashboard`) ships a live demo that injects a banner into `sessions:top` — install it to see the pattern end-to-end.
 
 ### Slot-only plugins (`tab.hidden`)
 

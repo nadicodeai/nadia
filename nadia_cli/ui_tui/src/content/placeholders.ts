@@ -1,13 +1,12 @@
-import { pick } from '../lib/text.js'
+import { catalogs, resolveLocale } from '../i18n/index.js'
+import { getUiState } from '../app/uiStore.js'
 
-export const PLACEHOLDERS = [
-  'Ask me anything…',
-  'Try "explain this codebase"',
-  'Try "write a test for…"',
-  'Try "refactor the auth module"',
-  'Try "/help" for commands',
-  'Try "fix the lint errors"',
-  'Try "how does the config loader work?"'
-]
+export const PLACEHOLDERS = catalogs.en.placeholders
 
-export const PLACEHOLDER = pick(PLACEHOLDERS)
+const PLACEHOLDER_INDEX = Math.floor(Math.random() * PLACEHOLDERS.length)
+
+export const getPlaceholder = () => {
+  const locale = resolveLocale(getUiState().locale)
+
+  return catalogs[locale].placeholders[PLACEHOLDER_INDEX] ?? catalogs.en.placeholders[PLACEHOLDER_INDEX]
+}

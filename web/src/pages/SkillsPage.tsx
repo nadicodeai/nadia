@@ -59,7 +59,7 @@ import {
 } from "@/nadicodeai-ui-compat";
 import { cn } from "@/lib/utils";
 import { Input } from "@/nadicodeai-ui-compat";
-import { useI18n } from "@/i18n";
+import { formatText, useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { PluginSlot } from "@/plugins";
 
@@ -184,11 +184,14 @@ export default function SkillsPage() {
         ),
       );
       showToast(
-        `${skill.name} ${skill.enabled ? t.common.disabled : t.common.enabled}`,
+        formatText(t.skills.skillToggled, {
+          name: skill.name,
+          state: skill.enabled ? t.common.disabled : t.common.enabled,
+        }),
         "success",
       );
     } catch {
-      showToast(`${t.common.failedToToggle} ${skill.name}`, "error");
+      showToast(formatText(t.skills.toggleFailed, { name: skill.name }), "error");
     } finally {
       setTogglingSkills((prev) => {
         const next = new Set(prev);
@@ -250,7 +253,7 @@ export default function SkillsPage() {
   }, []);
   const handleEditorSaved = useCallback(
     (skillName: string) => {
-      showToast(`${skillName} saved ✓`, "success");
+      showToast(formatText(t.skills.savedToast, { name: skillName }), "success");
       // Reload the list so a newly created skill (or an edited description)
       // shows up immediately.
       api
@@ -258,7 +261,7 @@ export default function SkillsPage() {
         .then(setSkills)
         .catch(() => {});
     },
-    [selectedProfile, showToast],
+    [selectedProfile, showToast, t.skills.savedToast],
   );
 
   /* ---- Derived data ---- */
@@ -863,6 +866,7 @@ function HubBrowser({
   /** Optional profile scoping installs + installed-state badges. */
   profile?: string;
 }) {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SkillHubResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -923,7 +927,7 @@ function HubBrowser({
       setTimedOut(r.timed_out || []);
       setInstalled((prev) => ({ ...prev, ...(r.installed || {}) }));
     } catch (e) {
-      showToast(`Hub search failed: ${e}`, "error");
+      showToast(formatText(t.skills.hubSearchFailed, { error: String(e) }), "error");
       setResults([]);
       setSourceCounts({});
       setTimedOut([]);
@@ -931,7 +935,7 @@ function HubBrowser({
       setSearchMs(Math.round(performance.now() - t0));
       setSearching(false);
     }
-  }, [query, showToast, profile]);
+  }, [query, showToast, profile, t.skills.hubSearchFailed]);
 
   /* ---- Poll a spawned action's log until it exits ---- */
   useEffect(() => {
@@ -968,29 +972,29 @@ function HubBrowser({
     async (identifier: string) => {
       try {
         const res = await api.installSkillFromHub(identifier, profile);
-        showToast(`Installing ${identifier}…`, "success");
+        showToast(formatText(t.skills.installingSkill, { identifier }), "success");
         setActionLog([]);
         setActionRunning(true);
         setAction(res.name);
         setDetail(null);
       } catch (e) {
-        showToast(`Install failed: ${e}`, "error");
+        showToast(formatText(t.skills.installFailed, { error: String(e) }), "error");
       }
     },
-    [showToast, profile],
+    [showToast, profile, t.skills.installFailed, t.skills.installingSkill],
   );
 
   const updateAll = useCallback(async () => {
     try {
       const res = await api.updateSkillsFromHub(profile);
-      showToast("Updating installed skills…", "success");
+      showToast(t.skills.updatingInstalled, "success");
       setActionLog([]);
       setActionRunning(true);
       setAction(res.name);
     } catch (e) {
-      showToast(`Update failed: ${e}`, "error");
+      showToast(formatText(t.skills.updateFailed, { error: String(e) }), "error");
     }
-  }, [showToast, profile]);
+  }, [showToast, profile, t.skills.updateFailed, t.skills.updatingInstalled]);
 
   const isInstalled = useCallback(
     (identifier: string) => Boolean(installed[identifier]),
@@ -1348,6 +1352,7 @@ function SkillDetailDialog({
   onInstall: () => void;
   showToast: (msg: string, kind: "success" | "error") => void;
 }) {
+  const { t } = useI18n();
   const [tab, setTab] = useState<"readme" | "scan">("readme");
   const [preview, setPreview] = useState<SkillHubPreview | null>(null);
   const [previewLoading, setPreviewLoading] = useState(true);
@@ -1362,13 +1367,15 @@ function SkillDetailDialog({
       .previewSkillFromHub(result.identifier)
       .then((p) => !cancelled && setPreview(p))
       .catch((e) => {
-        if (!cancelled) showToast(`Preview failed: ${e}`, "error");
+        if (!cancelled) {
+          showToast(formatText(t.skills.previewFailed, { error: String(e) }), "error");
+        }
       })
       .finally(() => !cancelled && setPreviewLoading(false));
     return () => {
       cancelled = true;
     };
-  }, [result.identifier, showToast]);
+  }, [result.identifier, showToast, t.skills.previewFailed]);
 
   const runScan = useCallback(async () => {
     setScanning(true);
@@ -1377,11 +1384,11 @@ function SkillDetailDialog({
       const s = await api.scanSkillFromHub(result.identifier);
       setScan(s);
     } catch (e) {
-      showToast(`Scan failed: ${e}`, "error");
+      showToast(formatText(t.skills.scanFailed, { error: String(e) }), "error");
     } finally {
       setScanning(false);
     }
-  }, [result.identifier, showToast]);
+  }, [result.identifier, showToast, t.skills.scanFailed]);
 
   return (
     <Dialog open onOpenChange={(o: boolean) => !o && onClose()}>

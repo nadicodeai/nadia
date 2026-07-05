@@ -48,7 +48,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/nadicodeai-ui-compat
 import { ConfirmDialog } from "@/nadicodeai-ui-compat";
 import { Input } from "@/nadicodeai-ui-compat";
 import { Badge } from "@/nadicodeai-ui-compat";
-import { useI18n } from "@/i18n";
+import { formatText, useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { PluginSlot } from "@/plugins";
 
@@ -274,7 +274,7 @@ export default function ConfigPage() {
       await api.saveConfig(config);
       showToast(t.config.configSaved, "success");
     } catch (e) {
-      showToast(`${t.config.failedToSave}: ${e}`, "error");
+      showToast(formatText(t.config.failedToSaveDetail, { error: String(e) }), "error");
     } finally {
       setSaving(false);
     }
@@ -290,7 +290,7 @@ export default function ConfigPage() {
         .then(setConfig)
         .catch(() => {});
     } catch (e) {
-      showToast(`${t.config.failedToSaveYaml}: ${e}`, "error");
+      showToast(formatText(t.config.failedToSaveYamlDetail, { error: String(e) }), "error");
     } finally {
       setYamlSaving(false);
     }
@@ -322,10 +322,7 @@ export default function ConfigPage() {
       next = setNestedValue(next, key, getNestedValue(defaults, key));
     }
     setConfig(next);
-    showToast(
-      t.config.resetScopeToast.replace("{scope}", scopeLabel),
-      "success",
-    );
+    showToast(formatText(t.config.resetScopeToast, { scope: scopeLabel }), "success");
   };
 
   const handleExport = () => {

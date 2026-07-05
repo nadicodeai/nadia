@@ -10,14 +10,14 @@ function provider(id: string, name = id): OAuthProvider {
   return {
     cli_command: `nadia login ${id}`,
     docs_url: `https://example.com/${id}`,
-    flow: 'pkce',
+    flow: 'device_code',
     id,
     name,
     status: { logged_in: false }
   }
 }
 
-function setProviders(providers: OAuthProvider[]) {
+function setProviders(providers: OAuthProvider[], patch: Partial<DesktopOnboardingState> = {}) {
   $desktopOnboarding.set({
     configured: false,
     flow: { status: 'idle' },
@@ -27,7 +27,8 @@ function setProviders(providers: OAuthProvider[]) {
     requested: false,
     firstRunSkipped: false,
     manual: false,
-    localEndpoint: false
+    localEndpoint: false,
+    ...patch
   } satisfies DesktopOnboardingState)
 }
 
@@ -55,29 +56,27 @@ afterEach(() => {
   })
 })
 
-describe('onboarding Picker', () => {
-  it('features NadicodeAI Portal and hides other providers behind a disclosure', () => {
+describe('onboarding Picker — portal-only', () => {
+  it('offers a single NadicodeAI Portal sign-in and no third-party provider path', () => {
     setProviders([provider('anthropic', 'Anthropic Claude'), provider('nous', 'NadicodeAI Portal')])
     render(<Picker ctx={ctx} />)
 
-    expect(screen.getByText('NadicodeAI Portal')).toBeTruthy()
-    expect(screen.getByText('Recommended')).toBeTruthy()
+    // Exactly one provider path: the portal sign-in.
+    expect(screen.getByRole('button', { name: /Sign in with NadicodeAI Portal/ })).toBeTruthy()
+
+    // No third-party provider surfaces, no API-key catalog, no disclosure.
+    expect(screen.queryByText('Anthropic Claude')).toBeNull()
     expect(screen.queryByText('Anthropic API Key')).toBeNull()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Other providers' }))
-
-    expect(screen.getByText('Anthropic API Key')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Collapse' })).toBeTruthy()
+    expect(screen.queryByText('OpenRouter')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Other providers' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'I have an API key' })).toBeNull()
   })
 
-  it('shows every provider directly when NadicodeAI Portal is absent', () => {
-    setProviders([provider('anthropic', 'Anthropic Claude'), provider('openai-codex', 'OpenAI Codex / ChatGPT')])
+  it('renders the portal sign-in when only the portal provider is present', () => {
+    setProviders([provider('nous', 'NadicodeAI Portal')])
     render(<Picker ctx={ctx} />)
 
-    expect(screen.getByText('Anthropic API Key')).toBeTruthy()
-    expect(screen.getByText('OpenAI OAuth (ChatGPT)')).toBeTruthy()
-    expect(screen.queryByText('Other sign-in options')).toBeNull()
-    expect(screen.queryByText('Recommended')).toBeNull()
+    expect(screen.getByRole('button', { name: /Sign in with NadicodeAI Portal/ })).toBeTruthy()
   })
 
   it('offers "choose later" on first run and persists the skip', () => {
@@ -93,8 +92,7 @@ describe('onboarding Picker', () => {
   })
 
   it('hides "choose later" in manual (add-provider) mode', () => {
-    setProviders([provider('nous', 'NadicodeAI Portal')])
-    $desktopOnboarding.set({ ...$desktopOnboarding.get(), manual: true })
+    setProviders([provider('nous', 'NadicodeAI Portal')], { manual: true })
     render(<Picker ctx={ctx} />)
 
     expect(screen.queryByRole('button', { name: "I'll choose a provider later" })).toBeNull()

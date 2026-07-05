@@ -10,6 +10,7 @@ import {
   refreshOnboarding,
   requestDesktopOnboarding,
   saveOnboardingLocalEndpoint,
+  startProviderOAuth,
   submitOnboardingCode
 } from './onboarding'
 
@@ -364,6 +365,72 @@ describe('OAuth onboarding', () => {
     expect(optionsIndex).toBeGreaterThanOrEqual(0)
     expect(recommendedIndex).toBeGreaterThan(optionsIndex)
     expect(setIndex).toBeGreaterThan(recommendedIndex)
+  })
+})
+
+describe('portal activation failure mapping', () => {
+  beforeEach(() => {
+    window.localStorage.clear()
+    $desktopOnboarding.set(baseState())
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    window.localStorage.clear()
+    $desktopOnboarding.set(baseState())
+    vi.restoreAllMocks()
+  })
+
+  // The portal plugin turns a request failure into a poll result with
+  // status:"error" and a plain "Could not reach the portal..." message — it
+  // never surfaces the denied/expired terminal statuses for a network failure.
+  // The store must still land the operator on the localized 'unreachable'
+  // activation cause so the surface explains it in plain words with retry,
+  // rather than falling back to the raw wire message.
+  it('maps a status:"error" poll result to the unreachable activation cause', async () => {
+    vi.spyOn(window, 'open').mockReturnValue(null)
+
+    const portal: OAuthProvider = {
+      cli_command: 'nadia login nadia',
+      docs_url: 'https://portal.nadicode.ai',
+      flow: 'device_code',
+      id: 'nous',
+      name: 'NadicodeAI Portal',
+      status: { logged_in: false }
+    }
+
+    installApiMock(async ({ path }: { path: string }) => {
+      if (path.endsWith('/start')) {
+        return {
+          flow: 'device_code',
+          session_id: 'sess-1',
+          user_code: 'ABCD-1234',
+          verification_url: 'https://portal.nadicode.ai/device',
+          expires_in: 600,
+          poll_interval: 2
+        }
+      }
+
+      if (path.includes('/poll/')) {
+        return {
+          session_id: 'sess-1',
+          status: 'error',
+          error_message: 'Could not reach the portal. Check your connection and try again.'
+        }
+      }
+
+      throw new Error(`unexpected api path: ${path}`)
+    })
+
+    await startProviderOAuth(portal, onboardingContext(async () => undefined as never))
+    // Advance one poll tick and let the async poll settle.
+    await vi.advanceTimersByTimeAsync(2000)
+
+    expect($desktopOnboarding.get().flow).toMatchObject({
+      status: 'error',
+      cause: 'unreachable'
+    })
   })
 })
 

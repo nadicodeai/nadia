@@ -136,7 +136,7 @@ export const StreamStallIndicator: FC = () => {
   const compacting = useStore($compactionActive)
   // A pending clarify / approval / sudo / secret means the turn is paused on the
   // user, not working — so don't resurrect the "thinking" timer while they
-  // decide (matches the pet's awaitingInput pose taking priority over busy).
+  // decide.
   const awaitingInput = useStore($activeSessionAwaitingInput)
 
   useEffect(() => {

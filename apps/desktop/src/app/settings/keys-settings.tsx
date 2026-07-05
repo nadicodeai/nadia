@@ -27,6 +27,20 @@ const VIEW_CATEGORIES: Record<KeysView, readonly string[]> = {
   tools: ['tool']
 }
 
+// Non-model integrations (TTS voices, image generation) are out of the
+// provider/credential UI: they use the portal credential where the backend
+// supports it and are otherwise config-file-only — no key-entry cards return to
+// Settings for them. These specific `tool`
+// credentials are excluded from the rendered cards; other legitimate tool keys
+// (browser engines, GitHub token, …) keep theirs.
+const NON_MODEL_INTEGRATION_KEYS = new Set<string>([
+  'FAL_KEY',
+  'KREA_API_KEY',
+  'VOICE_TOOLS_OPENAI_KEY',
+  'ELEVENLABS_API_KEY',
+  'MISTRAL_API_KEY'
+])
+
 export function KeysSettings({ view }: KeysSettingsProps) {
   const { t } = useI18n()
   const { rowProps, vars } = useEnvCredentials()
@@ -45,7 +59,13 @@ export function KeysSettings({ view }: KeysSettingsProps) {
       const cats = VIEW_CATEGORIES[v]
 
       const entries = Object.entries(vars)
-        .filter(([, info]) => !info.channel_managed && cats.includes(asText(info.category)))
+        .filter(
+          ([key, info]) =>
+            !info.channel_managed &&
+            // TTS/image-gen keys are config-file-only: no Settings card.
+            !NON_MODEL_INTEGRATION_KEYS.has(key) &&
+            cats.includes(asText(info.category))
+        )
         .sort(([a], [b]) => a.localeCompare(b))
 
       return entries.length === 0 ? [] : [{ category: v, entries }]

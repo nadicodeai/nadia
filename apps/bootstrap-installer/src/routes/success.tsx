@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { type CSSProperties } from 'react'
 import { HackeryButton } from '../components/hackery-button'
+import { useI18n } from '../i18n'
+import { classifyFailure } from '../i18n/failures'
 import { launchNadiaDesktop } from '../store'
 import { AlertCircle } from 'lucide-react'
 
@@ -16,6 +18,7 @@ import { AlertCircle } from 'lucide-react'
  * the rejection and left the user staring at an unresponsive button.
  */
 export default function Success() {
+  const t = useI18n()
   const [error, setError] = useState<string | null>(null)
   const [launching, setLaunching] = useState(false)
 
@@ -46,20 +49,21 @@ export default function Success() {
           }
         >
           <span>
-            <span>Nadia is ready</span>
+            <span>{t.success.ready}</span>
           </span>
-          <span aria-hidden="true">Nadia is ready</span>
+          <span aria-hidden="true">{t.success.ready}</span>
         </p>
 
         <p className="m-0 text-center text-base leading-normal tracking-tight text-muted-foreground">
-          You can launch from here, or any time from your terminal with{' '}
-          <code className="font-mono text-sm text-foreground/80">nadia desktop</code>.
+          {t.success.launchHintBefore}
+          <code className="font-mono text-sm text-foreground/80">nadia desktop</code>
+          {t.success.launchHintAfter}
         </p>
       </div>
 
       <HackeryButton
         disabled={launching}
-        label={launching ? 'Launching' : 'Launch Nadia'}
+        label={launching ? t.success.launching : t.success.launch}
         loading={launching}
         onClick={() => void handleLaunch()}
       />
@@ -68,8 +72,18 @@ export default function Success() {
         <div role="alert" className="flex max-w-2xl items-start gap-2 text-sm">
           <AlertCircle size={16} className="mt-0.5 shrink-0 text-destructive" />
           <div className="min-w-0">
-            <div className="font-medium text-destructive">Couldn&rsquo;t launch the desktop app</div>
-            <div className="mt-0.5 text-muted-foreground">{error}</div>
+            {/* Localized headline + plain-language body (known launch class or a
+                generic message); the raw diagnostic is demoted to a detail line. */}
+            <div className="font-medium text-destructive">{t.success.launchErrorTitle}</div>
+            <div className="mt-0.5 text-muted-foreground">
+              {(() => {
+                const cause = classifyFailure(error)
+                return cause ? t.causes[cause] : t.success.launchErrorGeneric
+              })()}
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground/60">
+              {t.errorDetailLabel} <span className="font-mono break-words">{error}</span>
+            </div>
           </div>
         </div>
       )}

@@ -12,7 +12,6 @@ const buildOverlayState = (): OverlayState => ({
   journey: false,
   modelPicker: false,
   pager: null,
-  petPicker: false,
   pluginsHub: false,
   secret: null,
   sessions: false,
@@ -33,7 +32,6 @@ export const $isBlocked = computed(
     journey,
     modelPicker,
     pager,
-    petPicker,
     pluginsHub,
     secret,
     sessions,
@@ -49,7 +47,6 @@ export const $isBlocked = computed(
       journey ||
       modelPicker ||
       pager ||
-      petPicker ||
       pluginsHub ||
       secret ||
       sessions ||
@@ -81,7 +78,6 @@ export const resetFlowOverlays = () =>
     agentsInitialHistoryIndex: $overlayState.get().agentsInitialHistoryIndex,
     journey: $overlayState.get().journey,
     modelPicker: $overlayState.get().modelPicker,
-    petPicker: $overlayState.get().petPicker,
     pluginsHub: $overlayState.get().pluginsHub,
     sessions: $overlayState.get().sessions,
     skillsHub: $overlayState.get().skillsHub

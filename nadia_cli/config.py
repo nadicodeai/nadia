@@ -1797,31 +1797,7 @@ DEFAULT_CONFIG = {
             "fields": ["model", "context_pct", "cwd"],  # Order shown; drop any to hide
         },
         "copy_shortcut": "auto",  # "auto" (platform default) | "ctrl_c" | "ctrl_shift_c" | "disabled"
-        # Petdex animated mascot (https://github.com/crafter-station/petdex).
-        # A purely cosmetic sprite that reacts to agent activity across the
-        # CLI, TUI, and desktop app. Manage with `nadia pets`. Disabled until
-        # a pet is installed + selected (no effect on prompt caching — this is
-        # a display concern only).
-        "pet": {
-            "enabled": False,
-            # Active pet slug; resolved against installed pets in
-            # get_nadia_home()/pets/. Empty → first installed pet.
-            "slug": "",
-            # Terminal render protocol for CLI/TUI:
-            #   auto  — detect kitty/iTerm2/sixel, else unicode half-blocks
-            #   kitty | iterm | sixel | unicode | off
-            "render_mode": "auto",
-            # Master size scalar (relative to native 192×208 frames). One knob
-            # shrinks every surface: the desktop canvas scales its pixels by it
-            # and the CLI/TUI derive their terminal column width from it. The
-            # half-block fallback clamps to a legibility floor (it can't shrink
-            # as far as true-pixel kitty/GUI without turning to mush).
-            "scale": 0.33,
-            # Hard override for terminal column width. 0 = auto (derive from
-            # scale); set a positive int only to pin the half-block/kitty width
-            # independently of scale.
-            "unicode_cols": 0,
-        },
+        # Python pet display config removed.
     },
 
     # Web dashboard settings
@@ -1854,7 +1830,7 @@ DEFAULT_CONFIG = {
         # touch config.yaml. Local dev / non-Fly deploys can set either
         # surface; missing values fall through to the plugin's defaults
         # (no provider registered when ``client_id`` is empty;
-        # ``portal_url`` defaults to https://portal.nadicodeai.com).
+        # ``portal_url`` defaults to https://portal.nadicode.ai).
         "oauth": {
             "client_id": "",  # agent:{instance_id} — Portal provisions this
             "portal_url": "",  # blank → use plugin default (production Portal)
@@ -2502,7 +2478,7 @@ DEFAULT_CONFIG = {
         "chronos": {
             # NAS / portal base URL the agent calls to arm/cancel one-shots
             # and that mints the inbound fire JWT (used as the expected issuer).
-            "portal_url": "https://portal.nadicodeai.com",
+            "portal_url": "https://portal.nadicode.ai",
             # The agent's OWN publicly-reachable base URL for NAS→agent fires
             # (NAS POSTs {callback_url}/api/cron/fire). Empty → Chronos is
             # unavailable and the resolver falls back to the built-in ticker.
@@ -3106,7 +3082,7 @@ DEFAULT_CONFIG = {
     },
 
     # Config schema version - bump this when adding new required fields
-    "_config_version": 32,
+    "_config_version": 33,
 }
 
 # =============================================================================
@@ -5603,6 +5579,18 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
                     "true. Set it to true again to re-enable, or \"auto\" for the "
                     "legacy surface-aware behavior."
                 )
+
+    # ── Version 32 → 33: drop removed Python pet display config ──
+    if current_ver < 33:
+        config = read_raw_config()
+        display = config.get("display")
+        if isinstance(display, dict) and "pet" in display:
+            display.pop("pet", None)
+            config["display"] = display
+            _persist_migration(config)
+            results["config_added"].append("display.pet removed")
+            if not quiet:
+                print("  ✓ Removed display.pet config for the retired pet feature")
 
     # ── Post-migration: disable exfiltration-shaped MCP stdio entries ──
     # Users can hand-edit mcp_servers, and older installs may already contain a

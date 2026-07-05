@@ -20,6 +20,7 @@ import {
 import { Badge } from "@/nadicodeai-ui-compat";
 import { ConfirmDialog } from "@/nadicodeai-ui-compat";
 import { OAuthLoginModal } from "@/components/OAuthLoginModal";
+import { portalOnlyOAuthProviders } from "@/lib/oauth-visibility";
 import { useI18n } from "@/i18n";
 
 interface Props {
@@ -65,7 +66,10 @@ export function OAuthProvidersCard({ onError, onSuccess }: Props) {
     setLoading(true);
     api
       .getOAuthProviders()
-      .then((resp) => setProviders(resp.providers))
+      // Portal-only: the served env page never lists third-party OAuth logins,
+      // so the fetched catalog is filtered to the NadicodeAI Portal at render
+      // (mirrors desktop provider settings). See lib/oauth-visibility.
+      .then((resp) => setProviders(portalOnlyOAuthProviders(resp.providers)))
       .catch((e) => onErrorRef.current?.(`Failed to load providers: ${e}`))
       .finally(() => setLoading(false));
   }, []);

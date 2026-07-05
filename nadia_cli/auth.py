@@ -67,7 +67,7 @@ AUTH_STORE_VERSION = 1
 AUTH_LOCK_TIMEOUT_SECONDS = 15.0
 
 # NadicodeAI Portal defaults
-DEFAULT_NOUS_PORTAL_URL = "https://portal.nadicodeai.com"
+DEFAULT_NOUS_PORTAL_URL = "https://portal.nadicode.ai"
 DEFAULT_NOUS_INFERENCE_URL = "https://inference-api.nadicode.ai/v1"
 DEFAULT_NOUS_CLIENT_ID = "nadia-cli"
 NADIA_INFERENCE_INVOKE_SCOPE = "inference:invoke"
@@ -1832,7 +1832,7 @@ _NOUS_STALE_PORTAL_HOSTS: FrozenSet[str] = frozenset({
 # set is treated as a misconfiguration and falls back to the default.
 # "localhost" / "127.0.0.1" are valid for local development and testing.
 _NOUS_PORTAL_ALLOWED_HOSTS: FrozenSet[str] = frozenset({
-    "portal.nadicodeai.com",
+    "portal.nadicode.ai",
     "localhost",
     "127.0.0.1",
 })
@@ -6026,7 +6026,7 @@ def _snapshot_nous_pool_status() -> Dict[str, Any]:
 
 # ── Process-level memo for get_nous_auth_status() ──
 # get_nous_auth_status() validates state by calling resolve_nous_runtime_credentials(),
-# which does a synchronous OAuth refresh POST to portal.nadicodeai.com. That can take
+# which does a synchronous OAuth refresh POST to portal.nadicode.ai. That can take
 # ~350ms even on the failure path, and read-only UI surfaces (`nadia tools`, status panels,
 # subscription-feature checks) call it many times per render — `nadia tools` → "All Platforms"
 # was firing the refresh ~31× during one menu paint, racking up >13s of HTTP and burning

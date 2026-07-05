@@ -26,8 +26,8 @@ import webbrowser
 from nadia_cli.colors import Colors, color
 from nadia_cli.config import load_config
 
-DEFAULT_PORTAL_URL = "https://portal.nadicodeai.com"
-SUBSCRIPTION_URL = "https://portal.nadicodeai.com/manage-subscription"
+DEFAULT_PORTAL_URL = "https://portal.nadicode.ai"
+SUBSCRIPTION_URL = "https://portal.nadicode.ai/manage-subscription"
 DOCS_URL = "https://docs.nadicode.ai/nadia/user-guide/features/tool-gateway"
 
 

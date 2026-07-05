@@ -267,6 +267,24 @@ def _discover_default_model(
     """
     factory = http_session_factory or portal_activation._new_session
     url = base_url.rstrip("/") + "/models"
+    try:
+        from nadia_cli.model_catalog import is_curated_model
+    except Exception:
+        is_curated_model = None  # type: ignore[assignment]
+    try:
+        from nadia_cli.models import get_default_model_for_provider
+        fallback_model = get_default_model_for_provider("nous")
+    except Exception:
+        fallback_model = "deepseek/deepseek-v4-flash"
+
+    def _curated(model_id: str) -> bool:
+        if is_curated_model is not None:
+            try:
+                return bool(is_curated_model({"id": model_id}))
+            except Exception:
+                pass
+        lowered = str(model_id or "").lower()
+        return bool(lowered) and "alpha" not in lowered and "preview" not in lowered
     session = factory()
     try:
         response = session.request(
@@ -292,11 +310,13 @@ def _discover_default_model(
     for entry in entries:
         if isinstance(entry, dict):
             model_id = str(entry.get("id") or "").strip()
-            if model_id:
+            if model_id and _curated(model_id):
                 return model_id
         elif isinstance(entry, str) and entry.strip():
-            return entry.strip()
-    return ""
+            model_id = entry.strip()
+            if _curated(model_id):
+                return model_id
+    return fallback_model if _curated(fallback_model) else ""
 
 
 def _persist_default_model(model_id: str) -> None:

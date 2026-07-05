@@ -1,24 +1,24 @@
 ---
 sidebar_position: 1
-title: "Run Nadia Agent with NadicodeAI Portal"
-description: "Start-to-finish walkthrough: subscribe, set up, switch models, enable gateway tools, and verify routing"
+title: "Run Nadia Agent with the NadicodeAI Portal"
+description: "Start-to-finish walkthrough: subscribe, activate, switch models, enable gateway tools, and verify routing."
 ---
 
-# Run Nadia Agent with NadicodeAI Portal
+# Run Nadia Agent with the NadicodeAI Portal
 
-This guide walks you through running Nadia Agent on a [NadicodeAI Portal](https://portal.nadicodeai.com) subscription end to end — from signing up to verifying that every tool routes correctly. If you just want the overview of what the Portal is and what's in the subscription, see the [NadicodeAI Portal integration page](/integrations/nadia-portal). This page is the task script.
+This guide walks you through running Nadia Agent on a [NadicodeAI Portal](https://portal.nadicode.ai) subscription end to end — from signing up to verifying that every tool routes correctly. If you just want the overview of what the Portal is and what's in the subscription, see the [NadicodeAI Portal integration page](/integrations/nadia-portal). This page is the task script.
 
 ## Prerequisites
 
 - Nadia Agent installed ([Quickstart](/getting-started/quickstart))
-- A web browser on the machine you're setting up (or SSH port forwarding — see [OAuth over SSH](/guides/oauth-over-ssh))
+- A device with a browser to approve activation (the browser does **not** have to be on the machine you're setting up — see [OAuth over SSH](/guides/oauth-over-ssh))
 - About 5 minutes
 
-You do **not** need: an OpenAI key, an Anthropic key, a Firecrawl account, a FAL account, a Browser Use account, or any other per-vendor credential. That's the whole point.
+You do **not** need a separate model key, search account, image account, browser account, or TTS key. That's the whole point.
 
 ## 1. Get a subscription
 
-Open [portal.nadicodeai.com/manage-subscription](https://portal.nadicodeai.com/manage-subscription), sign up, and pick a plan.
+Open [portal.nadicode.ai](https://portal.nadicode.ai), sign up, and pick a plan.
 
 Already subscribed? Skip to step 2.
 
@@ -30,29 +30,23 @@ nadia setup --portal
 
 This single command does five things:
 
-1. Opens your browser to portal.nadicodeai.com for OAuth login
+1. Runs Portal activation — prints a short user code and waits while you approve it at [portal.nadicode.ai/device](https://portal.nadicode.ai/device)
 2. Stores the refresh token at `~/.nadia/auth.json`
 3. Sets `model.provider: nous` in `~/.nadia/config.yaml`
-4. Picks a default agentic model (`anthropic/claude-sonnet-4.6` or similar)
+4. Picks a default agentic model from the curated catalog
 5. Turns on the Tool Gateway for web search, image generation, TTS, and browser automation
 
 When it finishes, you're back at your terminal ready to chat.
 
 ### What if I'm SSH'd into a server?
 
-OAuth needs a browser, but the loopback callback runs on the machine where Nadia is running. Two options:
+Activation confirms a short code in a browser, so it works even when the Nadia host has no browser: run the command on the remote, then approve the printed code from any device.
 
 ```bash
-# Option A: SSH port forwarding (preferred)
-ssh -N -L 8642:127.0.0.1:8642 user@remote-host    # in a local terminal
-nadia setup --portal                              # on the remote, open the printed URL in your local browser
-
-# Option B: manual paste (for Cloud Shell, Codespaces, EC2 Instance Connect)
-nadia auth add nous --type oauth --manual-paste
-# Then re-run `nadia setup --portal` to wire the provider + gateway
+nadia setup --portal            # on the remote — approve the printed code from your laptop browser
 ```
 
-See [OAuth over SSH / Remote Hosts](/guides/oauth-over-ssh) for the full walkthrough including ProxyJump chains, mosh/tmux, and ControlMaster gotchas.
+See [OAuth over SSH / Remote Hosts](/guides/oauth-over-ssh) for the full walkthrough including ProxyJump chains, mosh/tmux, and browser-only environments like Cloud Shell / Codespaces.
 
 ## 3. Verify it worked
 
@@ -64,9 +58,9 @@ You should see:
 
 ```
   NadicodeAI Portal
-  ───────────
-  Auth:    ✓ logged in
-  Portal:  https://portal.nadicodeai.com
+  ─────────────────
+  Auth:    ✓ activated
+  Portal:  https://portal.nadicode.ai
   Model:   ✓ using NadicodeAI Portal as inference provider
 
   Tool Gateway
@@ -77,7 +71,7 @@ You should see:
   Browser automation    via NadicodeAI Portal
 ```
 
-If any line shows something other than "via NadicodeAI Portal" or the auth line says "not logged in", jump to [Troubleshooting](#troubleshooting) below.
+If any line shows something other than "via NadicodeAI Portal" or the auth line says "not activated", jump to [Troubleshooting](#troubleshooting) below.
 
 ## 4. Run your first conversation
 
@@ -91,21 +85,20 @@ Try something that exercises both the model and the Tool Gateway:
 Hey, search the web for "Nadia Agent release notes" and summarize the top 3 hits.
 ```
 
-You should see Nadia call `web_search` (Firecrawl-backed, through the gateway) and respond with a summary. If the search runs and the response makes sense, you're done — the Portal is wired up end to end.
+You should see Nadia call `web_search` (through the gateway) and respond with a summary. If the search runs and the response makes sense, you're done — the Portal is wired up end to end.
 
 ## 5. Pick the model you actually want
 
-`nadia setup --portal` lets you pick a model during setup, but the whole point of the subscription is access to the full catalog — switch any time with `/model` mid-session:
+`nadia setup --portal` lets you pick a model during setup, but the whole point of the subscription is access to the curated catalog — switch any time with `/model` mid-session:
 
 ```bash
 /model anthropic/claude-sonnet-4.6     # best general-purpose agentic
 /model openai/gpt-5.4                  # strong reasoning + tool calling
 /model google/gemini-2.5-pro           # huge context window
 /model deepseek/deepseek-v3.2          # cost-effective coder
-/model anthropic/claude-opus-4.6       # heavyweight for hard problems
 ```
 
-Or pop the picker to browse:
+Or pop the picker to browse the curated catalog:
 
 ```bash
 /model
@@ -120,23 +113,23 @@ nadia config set model.default anthropic/claude-sonnet-4.6
 
 ### Don't pick Hermes-4 for agent work
 
-Hermes-4-70B and Hermes-4-405B are available on the Portal at deep discounts, but they're **chat/reasoning models**, not tool-call-tuned. They will struggle with multi-step agent loops. Use them for hosted chat through NadicodeAI Portal, for research workflows, or through the [subscription proxy](/user-guide/features/subscription-proxy) from non-agent tools. For Nadia Agent itself, stick to the frontier agentic models above.
+Hermes-4-70B and Hermes-4-405B are available on the Portal at deep discounts, but they're **chat/reasoning models**, not tool-call-tuned. They will struggle with multi-step agent loops. Use them for hosted chat through the NadicodeAI Portal, for research workflows, or through the [subscription proxy](/user-guide/features/subscription-proxy) from non-agent tools. For Nadia Agent itself, stick to the frontier agentic models above.
 
-The Portal's own [info page](https://portal.nadicodeai.com/info) carries this warning too — it's the official Portal guidance, not just a Nadia-side opinion.
+The Portal's own info page carries this warning too — it's the official Portal guidance, not just a Nadia-side opinion.
 
 ## 6. (Optional) Customize Tool Gateway routing
 
-The gateway is opt-in per tool, not all-or-nothing. If you already have a Browserbase account and want to keep using it while routing web search and image generation through NadicodeAI Portal, that's supported:
+The gateway is opt-in per tool, not all-or-nothing. If you already have your own browser account and want to keep using it while routing web search and image generation through the Portal, that's supported:
 
 ```bash
 nadia tools
-# → Web search       → "NadicodeAI Subscription"     (recommended)
-# → Image generation → "NadicodeAI Subscription"     (recommended)
-# → Browser          → "Browserbase"           (your existing key)
-# → TTS              → "NadicodeAI Subscription"     (recommended)
+# → Web search       → "NadicodeAI Subscription"   (recommended)
+# → Image generation → "NadicodeAI Subscription"   (recommended)
+# → Browser          → your own key
+# → TTS              → "NadicodeAI Subscription"   (recommended)
 ```
 
-These rows appear in `nadia tools` even before you've logged into NadicodeAI Portal — if you pick "NadicodeAI Subscription" without an active session, Nadia runs the Portal login inline (without changing your inference provider or your other tools).
+These rows appear in `nadia tools` even before you've activated — if you pick "NadicodeAI Subscription" without an active session, Nadia runs Portal activation inline (without changing your inference provider or your other tools).
 
 Verify your mix with:
 
@@ -144,11 +137,11 @@ Verify your mix with:
 nadia portal tools
 ```
 
-You'll see per-tool routing — `via NadicodeAI Portal` for the ones routed through the subscription, and the partner name (`browserbase`, `firecrawl`, etc.) for the ones using your own keys.
+You'll see per-tool routing — `via NadicodeAI Portal` for the ones routed through the subscription, and the backend name for the ones using your own keys.
 
 ## 7. (Optional) Enable voice mode
 
-Because the Tool Gateway includes OpenAI TTS, [voice mode](/user-guide/features/voice-mode) works without a separate OpenAI key:
+Because the Tool Gateway includes TTS, [voice mode](/user-guide/features/voice-mode) works without a separate key:
 
 ```bash
 nadia setup voice
@@ -160,7 +153,7 @@ Then in any messaging-platform session (Telegram, Discord, Signal, etc.), send a
 
 ## 8. (Optional) Cron + always-on workflows
 
-The Portal subscription works for [cron jobs](/user-guide/features/cron) and [batch processing](/user-guide/features/batch-processing) the same way it works for interactive chat — the OAuth refresh token is reused automatically. No additional setup; just schedule cron jobs and they'll bill against your subscription.
+The Portal subscription works for [cron jobs](/user-guide/features/cron) and [batch processing](/user-guide/features/batch-processing) the same way it works for interactive chat — the refresh token is reused automatically. No additional setup; just schedule cron jobs and they'll bill against your subscription.
 
 ```bash
 nadia cron create "every day at 9am" \
@@ -168,29 +161,29 @@ nadia cron create "every day at 9am" \
   --name "Daily AI news"
 ```
 
-The cron job runs unattended, calls the model + web search + summarization all through your Portal subscription.
+The cron job runs unattended, calling the model + web search + summarization all through your Portal subscription.
 
 ## Profiles and multi-user setups
 
-If you use [Nadia profiles](/user-guide/profiles) (e.g. a separate config per project), the Portal refresh token is automatically shared across all profiles via a shared token store. Sign in once on any profile, and the rest pick it up automatically.
+If you use [Nadia profiles](/user-guide/profiles) (e.g. a separate config per project), the Portal refresh token is automatically shared across all profiles via a shared token store. Activate once on any profile, and the rest pick it up automatically.
 
 For team setups where multiple humans share a machine, each human has their own Portal account → each home directory holds its own `~/.nadia/auth.json` → no token sharing across users. This is the right boundary.
 
 ## Troubleshooting
 
-### `nadia portal info` shows "not logged in" after `nadia setup --portal`
+### `nadia portal info` shows "not activated" after `nadia setup --portal`
 
-The OAuth flow didn't complete. Re-run it:
+Activation didn't complete. Re-run it:
 
 ```bash
 nadia portal
 ```
 
-If your browser doesn't open or the callback fails, you're likely on a remote/headless host — see [OAuth over SSH](/guides/oauth-over-ssh) for the port-forwarding and manual-paste workarounds.
+If you can't approve the code, you're likely on a remote/headless host — see [OAuth over SSH](/guides/oauth-over-ssh) for the remote patterns.
 
 ### "Model: currently openrouter" (or some other provider) instead of "using NadicodeAI Portal as inference provider"
 
-Your local config drifted. The OAuth worked but `model.provider` is still pointing at a different provider. Fix:
+Your local config drifted. Activation worked but `model.provider` is still pointing at a different provider. Fix:
 
 ```bash
 nadia config set model.provider nadia
@@ -200,12 +193,12 @@ Or interactively:
 
 ```bash
 nadia model
-# pick NadicodeAI Portal
+# pick the NadicodeAI Portal
 ```
 
 Re-verify with `nadia portal info`.
 
-### Tool Gateway tools showing partner names instead of "via NadicodeAI Portal"
+### Tool Gateway tools showing backend names instead of "via NadicodeAI Portal"
 
 Per-tool config is overriding the gateway. Run:
 
@@ -214,36 +207,30 @@ nadia tools
 # pick "NadicodeAI Subscription" for any tool you want gateway-routed
 ```
 
-Some users intentionally mix — e.g. routing web through NadicodeAI Portal but using their own Browserbase key for browser. If that's intentional, leave it alone. If not, this command fixes it.
+Some users intentionally mix — e.g. routing web through the Portal but using their own browser key. If that's intentional, leave it alone. If not, this command fixes it.
 
-### "Re-authentication required" mid-session
+### "Re-activation required" mid-session
 
-Your Portal refresh token was invalidated (password change, manual revoke, session expiry). The token is now quarantined locally so Nadia doesn't replay it endlessly. Just log in again:
-
-```bash
-nadia auth add nous
-```
-
-The quarantine clears automatically on successful re-login.
-
-### Model I want isn't in the `/model` picker
-
-The Portal catalog mirrors OpenRouter's model list (300+). If a model is missing, try typing the OpenRouter-style slug directly:
+Your Portal refresh token was invalidated (password change, manual revoke, session expiry). The token is now quarantined locally so Nadia doesn't replay it endlessly. Just activate again:
 
 ```bash
-/model anthropic/claude-opus-4.6
-/model openai/o1-2025-12-17
+nadia portal
 ```
 
-If a model is genuinely unavailable, [open an issue](https://github.com/nadicodeai/nadia/issues) — most gaps are routing config we can update.
+The quarantine clears automatically on successful re-activation.
 
-### Billing not appearing on my Portal account
+### A model I want isn't in the `/model` picker
+
+The picker shows the curated catalog — the manifest intersected with what the Portal can currently serve, minus experimental models. If a model you expect is missing, it may be experimental (stripped by design) or temporarily unavailable. If a model is genuinely unavailable, [open an issue](https://github.com/nadicodeai/nadia/issues) — most gaps are catalog config we can update.
+
+### Billing not appearing on my account
 
 `nadia portal info` will tell you whether you're actually routing through the Portal or some other provider. Common causes:
 
 - `model.provider` set to `openrouter`/`anthropic`/etc. instead of `nous`
-- An OAuth refresh failure that fell back to a different configured provider
 - Multiple Nadia profiles where you're using the wrong one (check `nadia profile list`)
+
+An activation failure is never the cause: when activation or a token refresh fails, Nadia surfaces a plain-language error and asks you to retry (`nadia portal`) — it never silently switches you to a different configured provider.
 
 ### Want to revoke and start clean
 
@@ -254,15 +241,15 @@ nadia auth logout nadia       # wipes the local refresh token
 
 ## What this gets you, in plain numbers
 
-| Without Portal | With Portal |
-|----------------|-------------|
-| 1× OpenRouter / Anthropic / OpenAI key in `.env` | 1× OAuth refresh token, no `.env` keys |
-| 1× Firecrawl key for web | Web routed through gateway |
-| 1× FAL key for image gen | Image gen routed through gateway |
-| 1× Browser Use / Browserbase key for browser | Browser routed through gateway |
-| 1× OpenAI key for TTS / voice mode | TTS routed through gateway |
-| 5 separate dashboards, top-ups, invoices | 1 subscription, 1 invoice |
-| Cross-machine: replicate all 5 keys | Cross-machine: re-OAuth once |
+| Without the Portal | With the Portal |
+|--------------------|-----------------|
+| 1× model provider key in `.env` | 1× activation refresh token, no `.env` keys |
+| 1× search key for web | Web routed through gateway |
+| 1× image key for image gen | Image gen routed through gateway |
+| 1× browser key for browser | Browser routed through gateway |
+| 1× TTS key for voice mode | TTS routed through gateway |
+| Several separate dashboards, top-ups, invoices | 1 subscription, 1 invoice |
+| Cross-machine: replicate every key | Cross-machine: re-activate once |
 
 That's the deal. If you're using more than two of those backends anyway, the subscription pays for itself.
 
@@ -272,5 +259,5 @@ That's the deal. If you're using more than two of those backends anyway, the sub
 - **[Tool Gateway](/user-guide/features/tool-gateway)** — Full details on every gateway-routed tool
 - **[Subscription proxy](/user-guide/features/subscription-proxy)** — Use your Portal subscription from non-Nadia tools
 - **[Voice mode](/user-guide/features/voice-mode)** — Set up voice conversations on the Portal subscription
-- **[OAuth over SSH](/guides/oauth-over-ssh)** — Remote / headless login patterns
-- **[Profiles](/user-guide/profiles)** — Share one Portal login across multiple Nadia configurations
+- **[OAuth over SSH](/guides/oauth-over-ssh)** — Remote / headless activation patterns
+- **[Profiles](/user-guide/profiles)** — Share one Portal activation across multiple Nadia configurations

@@ -43,8 +43,8 @@ OPENROUTER_MODELS: list[tuple[str, str]] = [
     ("openai/gpt-5.5-pro",                     ""),
     ("openai/gpt-5.4-mini",                    ""),
     # Google
-    ("google/gemini-3-pro-preview",            ""),
-    ("google/gemini-3.1-pro-preview",          ""),
+    # Gemini Pro is preview-only today; the curated picker carries Flash until
+    # a non-preview Pro id is available from the Portal catalog.
     ("google/gemini-3.5-flash",                ""),
     # xAI
     ("x-ai/grok-4.3",                          ""),
@@ -63,24 +63,13 @@ OPENROUTER_MODELS: list[tuple[str, str]] = [
     # Z-AI
     ("z-ai/glm-5.2",                           ""),
     ("z-ai/glm-5.1",                           ""),
-    # Xiaomi
-    ("xiaomi/mimo-v2.5-pro",                   ""),
-    # Tencent
-    ("tencent/hy3-preview",                    ""),
-    # StepFun
-    ("stepfun/step-3.7-flash",                 ""),
-    # NVIDIA
-    ("nvidia/nemotron-3-super-120b-a12b",      ""),
     # OpenRouter routers
     ("openrouter/pareto-code",                 "auto-routes to cheapest coder meeting openrouter.min_coding_score"),
     # Free tier
-    ("openrouter/elephant-alpha",              "free"),
-    ("openrouter/owl-alpha",                   "free"),
-    ("poolside/laguna-m.1:free",               "free"),
-    ("tencent/hy3-preview:free",               "free"),
-    ("nvidia/nemotron-3-super-120b-a12b:free", "free"),
-    ("nvidia/nemotron-3-ultra-550b-a55b:free", "free"),
-    ("inclusionai/ring-2.6-1t:free",           "free"),
+    ("poolside/laguna-m.1:free",               ""),
+    ("nvidia/nemotron-3-super-120b-a12b:free", ""),
+    ("nvidia/nemotron-3-ultra-550b-a55b:free", ""),
+    ("inclusionai/ring-2.6-1t:free",           ""),
 ]
 
 _openrouter_catalog_cache: list[tuple[str, str]] | None = None
@@ -171,6 +160,14 @@ def _xai_curated_models() -> list[str]:
         pass
     return _xai_merge_curated_extras(list(_XAI_STATIC_FALLBACK))
 
+_NOUS_CURATED_ROUTER_AND_FREE_IDS: tuple[str, ...] = (
+    "openrouter/pareto-code",
+    "poolside/laguna-m.1:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
+    "nvidia/nemotron-3-ultra-550b-a55b:free",
+    "inclusionai/ring-2.6-1t:free",
+)
+
 
 _PROVIDER_MODELS: dict[str, list[str]] = {
     "moa": ["default"],
@@ -184,8 +181,6 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         "openai/gpt-5.5-pro",
         "openai/gpt-5.4-mini",
         # Google
-        "google/gemini-3-pro-preview",
-        "google/gemini-3.1-pro-preview",
         "google/gemini-3.5-flash",
         # xAI
         "x-ai/grok-4.3",
@@ -204,14 +199,9 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         # Z-AI
         "z-ai/glm-5.2",
         "z-ai/glm-5.1",
-        # Xiaomi
-        "xiaomi/mimo-v2.5-pro",
-        # Tencent
-        "tencent/hy3-preview",
-        # StepFun
-        "stepfun/step-3.7-flash",
-        # NVIDIA
-        "nvidia/nemotron-3-super-120b-a12b",
+        # OpenRouter-native routers and zero-priced variants. The picker label
+        # still comes from live pricing, not from hardcoded descriptions here.
+        *_NOUS_CURATED_ROUTER_AND_FREE_IDS,
     ],
     # Native OpenAI Chat Completions (api.openai.com). Used by /model counts and
     # provider_model_ids fallback when /v1/models is unavailable.
@@ -526,8 +516,68 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
 # NadicodeAI Portal free-model helper
 # ---------------------------------------------------------------------------
 # The NadicodeAI Portal models endpoint is the source of truth for which models
-# are currently offered (free or paid). We trust whatever it returns and
-# surface it to users as-is — no local allowlist filtering.
+# are currently offered (free or paid).
+# Picker-visible rows still pass through the curated-catalog predicate so
+# experimental alpha/preview ids never leak into the Portal catalog.
+
+_NOUS_SILENT_DEFAULT_MODEL = "deepseek/deepseek-v4-flash"
+
+
+def _is_curated_model_id(model_id: str) -> bool:
+    try:
+        from nadia_cli.model_catalog import is_curated_model
+        return bool(is_curated_model({"id": model_id}))
+    except Exception:
+        text = str(model_id or "").lower()
+        return bool(text) and "alpha" not in text and "preview" not in text
+
+
+def _filter_curated_model_ids(model_ids: list[str]) -> list[str]:
+    out: list[str] = []
+    seen: set[str] = set()
+    for model_id in model_ids:
+        mid = str(model_id or "").strip()
+        key = mid.lower()
+        if not mid or key in seen or not _is_curated_model_id(mid):
+            continue
+        out.append(mid)
+        seen.add(key)
+    return out
+
+
+def union_with_nous_curated_router_and_free_ids(model_ids: list[str]) -> list[str]:
+    """Append fork-curated Portal router/free ids missing from ``model_ids``."""
+    out = _filter_curated_model_ids(model_ids)
+    seen = {mid.lower() for mid in out}
+    for model_id in _NOUS_CURATED_ROUTER_AND_FREE_IDS:
+        mid = str(model_id or "").strip()
+        key = mid.lower()
+        if not mid or key in seen or not _is_curated_model_id(mid):
+            continue
+        out.append(mid)
+        seen.add(key)
+    return out
+
+
+def _filter_curated_model_tuples(
+    models: list[tuple[str, str]]
+) -> list[tuple[str, str]]:
+    out: list[tuple[str, str]] = []
+    for model_id, description in models:
+        mid = str(model_id or "").strip()
+        if not mid or not _is_curated_model_id(mid):
+            continue
+        desc = "" if str(description or "").strip().lower() == "free" else str(description or "")
+        out.append((mid, desc))
+    return out
+
+
+def _first_curated_model(model_ids: list[str], *, fallback: str = "") -> str:
+    for model_id in _filter_curated_model_ids(model_ids):
+        return model_id
+    if fallback and _is_curated_model_id(fallback):
+        return fallback
+    return ""
 
 
 def _is_model_free(model_id: str, pricing: dict[str, dict[str, str]]) -> bool:
@@ -630,32 +680,43 @@ def union_with_portal_free_recommendations(
     Failures (network, parse, missing field) are silent and degrade to
     returning the inputs unchanged.
     """
+    base_ids = _filter_curated_model_ids(curated_ids)
+    base_pricing = dict(pricing)
     try:
         payload = fetch_nous_recommended_models(
             portal_base_url, force_refresh=force_refresh
         )
     except Exception:
-        return (list(curated_ids), dict(pricing))
+        return (base_ids, base_pricing)
 
     free_block = payload.get("freeRecommendedModels") if isinstance(payload, dict) else None
     if not isinstance(free_block, list) or not free_block:
-        return (list(curated_ids), dict(pricing))
+        return (base_ids, base_pricing)
 
     portal_free_ids: list[str] = []
     for entry in free_block:
         name = _extract_model_name(entry)
         if name:
+            try:
+                from nadia_cli.model_catalog import is_curated_model as _is_curated_entry
+                candidate = dict(entry) if isinstance(entry, dict) else {}
+                candidate["id"] = name
+                if not _is_curated_entry(candidate):
+                    continue
+            except Exception:
+                if not _is_curated_model_id(name):
+                    continue
             portal_free_ids.append(name)
     if not portal_free_ids:
-        return (list(curated_ids), dict(pricing))
+        return (base_ids, base_pricing)
 
-    augmented_pricing = dict(pricing)
+    augmented_pricing = dict(base_pricing)
     free_synthetic = {"prompt": "0", "completion": "0"}
     for mid in portal_free_ids:
         if mid not in augmented_pricing:
             augmented_pricing[mid] = dict(free_synthetic)
 
-    augmented_ids = list(curated_ids)
+    augmented_ids = list(base_ids)
     seen = set(augmented_ids)
     # Append Portal free recommendations that aren't already curated, so the
     # in-repo curated ("HA") models show first and Portal-only picks follow.
@@ -702,26 +763,37 @@ def union_with_portal_paid_recommendations(
     returning the inputs unchanged — never block the picker on a
     Portal-side hiccup.
     """
+    base_ids = _filter_curated_model_ids(curated_ids)
+    base_pricing = dict(pricing)
     try:
         payload = fetch_nous_recommended_models(
             portal_base_url, force_refresh=force_refresh
         )
     except Exception:
-        return (list(curated_ids), dict(pricing))
+        return (base_ids, base_pricing)
 
     paid_block = payload.get("paidRecommendedModels") if isinstance(payload, dict) else None
     if not isinstance(paid_block, list) or not paid_block:
-        return (list(curated_ids), dict(pricing))
+        return (base_ids, base_pricing)
 
     portal_paid_ids: list[str] = []
     for entry in paid_block:
         name = _extract_model_name(entry)
         if name:
+            try:
+                from nadia_cli.model_catalog import is_curated_model as _is_curated_entry
+                candidate = dict(entry) if isinstance(entry, dict) else {}
+                candidate["id"] = name
+                if not _is_curated_entry(candidate):
+                    continue
+            except Exception:
+                if not _is_curated_model_id(name):
+                    continue
             portal_paid_ids.append(name)
     if not portal_paid_ids:
-        return (list(curated_ids), dict(pricing))
+        return (base_ids, base_pricing)
 
-    augmented_ids = list(curated_ids)
+    augmented_ids = list(base_ids)
     seen = set(augmented_ids)
     # Append Portal paid recommendations that aren't already curated, so the
     # in-repo curated ("HA") models show first and Portal-only picks follow.
@@ -729,7 +801,7 @@ def union_with_portal_paid_recommendations(
     if new_ones:
         augmented_ids = augmented_ids + new_ones
 
-    return (augmented_ids, dict(pricing))
+    return (augmented_ids, base_pricing)
 
 
 # ---------------------------------------------------------------------------
@@ -877,7 +949,7 @@ def fetch_nous_recommended_models(
     any cache layer can supply data. Callers must treat missing/null fields
     as "no recommendation" and fall back to their own default.
     """
-    base = (portal_base_url or "https://portal.nadicodeai.com").rstrip("/")
+    base = (portal_base_url or "https://portal.nadicode.ai").rstrip("/")
     now = time.monotonic()
     cached = _nous_recommended_cache.get(base)
     if not force_refresh and cached is not None:
@@ -928,7 +1000,7 @@ def _resolve_nous_portal_url() -> str:
             return portal.rstrip("/")
         return str(DEFAULT_NOUS_PORTAL_URL).rstrip("/")
     except Exception:
-        return "https://portal.nadicodeai.com"
+        return "https://portal.nadicode.ai"
 
 
 def _extract_model_name(entry: Any) -> Optional[str]:
@@ -1015,7 +1087,7 @@ class ProviderEntry(NamedTuple):
     tui_desc: str   # detailed description for `nadia model` TUI
 
 CANONICAL_PROVIDERS: list[ProviderEntry] = [
-    ProviderEntry("nous",           "NadicodeAI Portal",              "NadicodeAI Portal (Everything your agent needs, 300+ models with bundled tool use)"),
+    ProviderEntry("nous",           "NadicodeAI Portal",        "NadicodeAI Portal (identity, billing, and curated frontier models)"),
     ProviderEntry("openrouter",     "OpenRouter",               "OpenRouter (Pay-per-use API aggregator)"),
     ProviderEntry("moa",            "Mixture of Agents",        "Mixture of Agents (named presets; aggregator acts after reference models)"),
     ProviderEntry("novita",         "NovitaAI",                 "NovitaAI (Cloud: Model API, Agent Sandbox, GPU Cloud)"),
@@ -1279,7 +1351,7 @@ _PROVIDER_ALIASES = {
 # in nadia_cli/web_server.py and ``partition_nous_models_by_tier`` — which can
 # hit the Portal; this fallback must stay cheap and network-free.
 _PROVIDER_SILENT_DEFAULT_OVERRIDES: dict[str, str] = {
-    "nous": "deepseek/deepseek-v4-flash",
+    "nous": _NOUS_SILENT_DEFAULT_MODEL,
 }
 
 
@@ -1300,6 +1372,15 @@ def get_default_model_for_provider(provider: str) -> str:
     """
     models = _PROVIDER_MODELS.get(provider, [])
     override = _PROVIDER_SILENT_DEFAULT_OVERRIDES.get(provider)
+    if provider == "nous":
+        candidates: list[str] = []
+        if override:
+            candidates.append(override)
+        candidates.extend(models)
+        return _first_curated_model(
+            candidates,
+            fallback=_NOUS_SILENT_DEFAULT_MODEL,
+        )
     if override and override in models:
         return override
     return models[0] if models else ""
@@ -1360,7 +1441,7 @@ def fetch_openrouter_models(
         remote = get_curated_openrouter_models()
     except Exception:
         remote = None
-    fallback = list(remote) if remote else list(OPENROUTER_MODELS)
+    fallback = _filter_curated_model_tuples(list(remote) if remote else list(OPENROUTER_MODELS))
     preferred_ids = [mid for mid, _ in fallback]
 
     try:
@@ -1391,6 +1472,15 @@ def fetch_openrouter_models(
         live_item = live_by_id.get(preferred_id)
         if live_item is None:
             continue
+        try:
+            from nadia_cli.model_catalog import is_curated_model as _is_curated_entry
+            candidate = dict(live_item)
+            candidate["id"] = preferred_id
+            if not _is_curated_entry(candidate):
+                continue
+        except Exception:
+            if not _is_curated_model_id(preferred_id):
+                continue
         # Hide models that don't advertise tool-calling support — nadia-agent
         # requires it and surfacing them leads to immediate runtime failures
         # when the user selects them. Ported from Kilo-Org/kilocode#9068.
@@ -1427,8 +1517,12 @@ def get_curated_nous_model_ids() -> list[str]:
     except Exception:
         remote = None
     if remote:
-        return list(remote)
-    return list(_PROVIDER_MODELS.get("nous", []))
+        curated_remote = _filter_curated_model_ids(list(remote))
+        if curated_remote:
+            return union_with_nous_curated_router_and_free_ids(curated_remote)
+    return union_with_nous_curated_router_and_free_ids(
+        list(_PROVIDER_MODELS.get("nous", []))
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -2294,8 +2388,9 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
             creds = resolve_nous_runtime_credentials()
             if creds:
                 live = fetch_nous_models(api_key=creds.get("api_key", ""), inference_base_url=creds.get("base_url", ""))
-                if live:
-                    return live
+                live_curated = _filter_curated_model_ids(live)
+                if live_curated:
+                    return union_with_nous_curated_router_and_free_ids(live_curated)
         except Exception:
             pass
         # Live failed (or no creds). Fall back to the docs-hosted manifest

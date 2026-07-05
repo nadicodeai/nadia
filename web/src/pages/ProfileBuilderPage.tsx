@@ -11,6 +11,7 @@ import { Toast } from "@/nadicodeai-ui-compat";
 import { useToast } from "@/nadicodeai-ui-compat";
 import { api } from "@/lib/api";
 import type { McpServerCreate, SkillInfo, SkillHubResult } from "@/lib/api";
+import { formatText, useI18n } from "@/i18n";
 import { cn } from "@/lib/utils";
 
 // Profile name rule mirrors the backend (`^[a-z0-9][a-z0-9_-]{0,63}$`).
@@ -18,13 +19,7 @@ const PROFILE_NAME_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 
 type StepId = "identity" | "model" | "skills" | "mcp" | "review";
 
-const STEPS: { id: StepId; label: string }[] = [
-  { id: "identity", label: "Identity" },
-  { id: "model", label: "Model" },
-  { id: "skills", label: "Skills" },
-  { id: "mcp", label: "MCPs" },
-  { id: "review", label: "Review" },
-];
+const STEP_IDS: StepId[] = ["identity", "model", "skills", "mcp", "review"];
 
 interface ModelChoice {
   provider: string;
@@ -49,6 +44,15 @@ interface ModelChoice {
 export default function ProfileBuilderPage() {
   const navigate = useNavigate();
   const { toast, showToast } = useToast();
+  const { t } = useI18n();
+  const text = t.profileBuilder;
+  const stepLabels: Record<StepId, string> = {
+    identity: text.stepIdentity,
+    model: text.stepModel,
+    skills: text.stepSkills,
+    mcp: text.stepMcp,
+    review: text.stepReview,
+  };
 
   const [step, setStep] = useState<StepId>("identity");
 
@@ -162,11 +166,11 @@ export default function ProfileBuilderPage() {
   const addMcpDraft = () => {
     const n = mcpDraft.name.trim();
     if (!n) {
-      showToast("MCP server needs a name", "error");
+      showToast(text.mcpNeedsName, "error");
       return;
     }
     if (!mcpDraft.url.trim() && !mcpDraft.command.trim()) {
-      showToast("Give the MCP server a URL or a command", "error");
+      showToast(text.mcpNeedsTarget, "error");
       return;
     }
     const entry: McpServerCreate = { name: n };
@@ -212,7 +216,7 @@ export default function ProfileBuilderPage() {
   const handleCreate = async () => {
     const n = name.trim();
     if (!PROFILE_NAME_RE.test(n)) {
-      showToast("Invalid profile name (lowercase, digits, - and _)", "error");
+      showToast(text.invalidProfileName, "error");
       setStep("identity");
       return;
     }
@@ -231,41 +235,46 @@ export default function ProfileBuilderPage() {
       const pending = (res.hub_installs ?? []).filter((h) => h.pid).length;
       showToast(
         pending
-          ? `Profile "${n}" created — ${pending} hub skill${pending === 1 ? "" : "s"} installing`
-          : `Profile "${n}" created`,
+          ? formatText(
+              pending === 1
+                ? text.profileCreatedInstallingOne
+                : text.profileCreatedInstallingMany,
+              { name: n, count: pending },
+            )
+          : formatText(text.profileCreated, { name: n }),
         "success",
       );
       navigate("/profiles");
     } catch (e) {
-      showToast(`Create failed: ${e}`, "error");
+      showToast(formatText(text.createFailed, { error: String(e) }), "error");
     } finally {
       setCreating(false);
     }
   };
 
-  const stepIndex = STEPS.findIndex((s) => s.id === step);
+  const stepIndex = STEP_IDS.findIndex((id) => id === step);
   const canAdvance = step !== "identity" || nameValid;
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 p-4">
       <div className="flex items-center justify-between">
-        <H2>New Nadia profile</H2>
+        <H2>{text.newProfile}</H2>
         <Button ghost onClick={() => navigate("/profiles")}>
-          Cancel
+          {text.cancel}
         </Button>
       </div>
 
       {/* Stepper */}
       <div className="flex items-center gap-2 text-sm">
-        {STEPS.map((s, i) => (
+        {STEP_IDS.map((id, i) => (
           <button
-            key={s.id}
+            key={id}
             // Identity must be valid before jumping ahead.
             disabled={i > 0 && !nameValid}
-            onClick={() => setStep(s.id)}
+            onClick={() => setStep(id)}
             className={cn(
               "rounded-full px-3 py-1 transition-colors",
-              s.id === step
+              id === step
                 ? "bg-primary text-primary-foreground"
                 : i <= stepIndex
                   ? "bg-muted text-foreground"
@@ -273,7 +282,7 @@ export default function ProfileBuilderPage() {
               i > 0 && !nameValid && "cursor-not-allowed opacity-50",
             )}
           >
-            {i + 1}. {s.label}
+            {i + 1}. {stepLabels[id]}
           </button>
         ))}
       </div>
@@ -283,24 +292,24 @@ export default function ProfileBuilderPage() {
           {step === "identity" && (
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="pb-name">Profile name</Label>
+                <Label htmlFor="pb-name">{text.profileName}</Label>
                 <Input
                   id="pb-name"
-                  placeholder="coder"
+                  placeholder={text.namePlaceholder}
                   value={name}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
                 />
                 {name && !nameValid && (
                   <p className="text-xs text-destructive">
-                    Lowercase letters, digits, hyphens and underscores; must start with a letter or digit.
+                    {text.nameRule}
                   </p>
                 )}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="pb-desc">Description (optional)</Label>
+                <Label htmlFor="pb-desc">{text.descriptionOptional}</Label>
                 <Input
                   id="pb-desc"
-                  placeholder="What this Nadia profile is for"
+                  placeholder={text.descriptionPlaceholder}
                   value={description}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setDescription(e.target.value)
@@ -313,17 +322,17 @@ export default function ProfileBuilderPage() {
           {step === "model" && (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                Pick the model+provider for this profile. Skip to use the default.
+                {text.modelHint}
               </p>
               <Input
-                placeholder="Filter models…"
+                placeholder={text.filterModels}
                 value={modelFilter}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   setModelFilter(e.target.value)
                 }
               />
               {modelChoices === null ? (
-                <p className="text-sm text-muted-foreground">Loading models…</p>
+                <p className="text-sm text-muted-foreground">{text.loadingModels}</p>
               ) : (
                 <div className="max-h-72 space-y-1 overflow-y-auto">
                   <button
@@ -333,7 +342,7 @@ export default function ProfileBuilderPage() {
                       modelChoice === "" ? "bg-primary/10" : "hover:bg-muted",
                     )}
                   >
-                    Use default (set later)
+                    {text.useDefaultModel}
                   </button>
                   {filteredModels.map((c) => {
                     const key = `${c.provider}\u0000${c.model}`;
@@ -362,22 +371,22 @@ export default function ProfileBuilderPage() {
                   checked={keepAll}
                   onCheckedChange={(v) => setKeepAll(Boolean(v))}
                 />
-                Start from the full default skill bundle (recommended)
+                {text.keepAllSkills}
               </label>
               {!keepAll && (
                 <div className="space-y-2">
                   <p className="text-xs text-muted-foreground">
-                    Choose which built-in / optional skills to keep active. Unchecked skills are disabled in the new profile.
+                    {text.keepSkillsHint}
                   </p>
                   <Input
-                    placeholder="Filter skills…"
+                    placeholder={text.filterSkills}
                     value={skillFilter}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setSkillFilter(e.target.value)
                     }
                   />
                   {skills === null ? (
-                    <p className="text-sm text-muted-foreground">Loading skills…</p>
+                    <p className="text-sm text-muted-foreground">{text.loadingSkills}</p>
                   ) : (
                     <div className="max-h-56 space-y-1 overflow-y-auto">
                       {filteredSkills.map((s) => (
@@ -411,10 +420,10 @@ export default function ProfileBuilderPage() {
 
               {/* Skills hub */}
               <div className="space-y-2 border-t pt-4">
-                <Label>Add from the skills hub</Label>
+                <Label>{text.addFromHub}</Label>
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Search the hub (e.g. linear, hyperliquid)…"
+                    placeholder={text.searchHubPlaceholder}
                     value={hubQuery}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setHubQuery(e.target.value)
@@ -424,7 +433,7 @@ export default function ProfileBuilderPage() {
                     }}
                   />
                   <Button outlined onClick={runHubSearch} disabled={hubSearching}>
-                    {hubSearching ? "Searching…" : "Search"}
+                    {hubSearching ? text.searching : text.search}
                   </Button>
                 </div>
                 {hubResults.length > 0 && (
@@ -446,7 +455,7 @@ export default function ProfileBuilderPage() {
                           )}
                         </span>
                         <Button size="sm" ghost onClick={() => addHubSkill(r)}>
-                          Add
+                          {text.add}
                         </Button>
                       </div>
                     ))}
@@ -460,7 +469,7 @@ export default function ProfileBuilderPage() {
                         <button
                           className="ml-1 text-xs"
                           onClick={() => removeHubSkill(r.identifier)}
-                          aria-label={`Remove ${r.name}`}
+                          aria-label={formatText(text.removeSkill, { name: r.name })}
                         >
                           ×
                         </button>
@@ -475,32 +484,32 @@ export default function ProfileBuilderPage() {
           {step === "mcp" && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Add MCP servers for this profile. HTTP servers take a URL; stdio servers take a command + args.
+                {text.mcpHint}
               </p>
               <div className="grid grid-cols-2 gap-2">
                 <Input
-                  placeholder="Server name"
+                  placeholder={text.serverName}
                   value={mcpDraft.name}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setMcpDraft({ ...mcpDraft, name: e.target.value })
                   }
                 />
                 <Input
-                  placeholder="URL (https://…/mcp)"
+                  placeholder={text.urlPlaceholder}
                   value={mcpDraft.url}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setMcpDraft({ ...mcpDraft, url: e.target.value })
                   }
                 />
                 <Input
-                  placeholder="Command (e.g. npx)"
+                  placeholder={text.commandPlaceholder}
                   value={mcpDraft.command}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setMcpDraft({ ...mcpDraft, command: e.target.value })
                   }
                 />
                 <Input
-                  placeholder="Args (space-separated)"
+                  placeholder={text.argsPlaceholder}
                   value={mcpDraft.args}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setMcpDraft({ ...mcpDraft, args: e.target.value })
@@ -508,7 +517,7 @@ export default function ProfileBuilderPage() {
                 />
               </div>
               <Button outlined onClick={addMcpDraft}>
-                Add server
+                {text.addServer}
               </Button>
               {mcpServers.length > 0 && (
                 <div className="space-y-1">
@@ -527,7 +536,7 @@ export default function ProfileBuilderPage() {
                         className="text-xs text-destructive"
                         onClick={() => removeMcp(s.name)}
                       >
-                        Remove
+                        {text.remove}
                       </button>
                     </div>
                   ))}
@@ -538,35 +547,37 @@ export default function ProfileBuilderPage() {
 
           {step === "review" && (
             <div className="space-y-3 text-sm">
-              <ReviewRow label="Name" value={name.trim() || "—"} />
-              <ReviewRow label="Description" value={description.trim() || "—"} />
+              <ReviewRow label={text.reviewName} value={name.trim() || text.dash} />
+              <ReviewRow label={text.reviewDescription} value={description.trim() || text.dash} />
               <ReviewRow
-                label="Model"
-                value={pickedModel ? pickedModel.label : "Default (set later)"}
+                label={text.reviewModel}
+                value={pickedModel ? pickedModel.label : text.defaultModel}
               />
               <ReviewRow
-                label="Skills"
+                label={text.reviewSkills}
                 value={
                   keepAll
-                    ? "Full default bundle"
-                    : `${keptSkills.size} built-in/optional kept` +
-                      (hubSkills.length ? ` + ${hubSkills.length} hub` : "")
+                    ? text.fullDefaultBundle
+                    : formatText(text.keptSkills, { count: keptSkills.size }) +
+                      (hubSkills.length
+                        ? formatText(text.hubSuffix, { count: hubSkills.length })
+                        : "")
                 }
               />
               {!keepAll && hubSkills.length > 0 && (
                 <p className="pl-24 text-xs text-muted-foreground">
-                  Hub: {hubSkills.map((s) => s.name).join(", ")}
+                  {text.hubPrefix} {hubSkills.map((s) => s.name).join(", ")}
                 </p>
               )}
               {keepAll && hubSkills.length > 0 && (
                 <ReviewRow
-                  label="Hub skills"
+                  label={text.reviewHubSkills}
                   value={hubSkills.map((s) => s.name).join(", ")}
                 />
               )}
               <ReviewRow
-                label="MCP servers"
-                value={mcpServers.length ? mcpServers.map((s) => s.name).join(", ") : "None"}
+                label={text.reviewMcpServers}
+                value={mcpServers.length ? mcpServers.map((s) => s.name).join(", ") : text.none}
               />
             </div>
           )}
@@ -578,20 +589,20 @@ export default function ProfileBuilderPage() {
         <Button
           ghost
           disabled={stepIndex === 0}
-          onClick={() => setStep(STEPS[Math.max(0, stepIndex - 1)].id)}
+          onClick={() => setStep(STEP_IDS[Math.max(0, stepIndex - 1)])}
         >
-          Back
+          {text.back}
         </Button>
         {step === "review" ? (
           <Button onClick={handleCreate} disabled={creating || !nameValid}>
-            {creating ? "Creating…" : "Create profile"}
+            {creating ? text.creating : text.createProfile}
           </Button>
         ) : (
           <Button
             disabled={!canAdvance}
-            onClick={() => setStep(STEPS[Math.min(STEPS.length - 1, stepIndex + 1)].id)}
+            onClick={() => setStep(STEP_IDS[Math.min(STEP_IDS.length - 1, stepIndex + 1)])}
           >
-            Next
+            {text.next}
           </Button>
         )}
       </div>

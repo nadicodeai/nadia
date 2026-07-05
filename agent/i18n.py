@@ -42,10 +42,7 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-SUPPORTED_LANGUAGES: tuple[str, ...] = (
-    "en",
-    "it",
-)
+SUPPORTED_LANGUAGES: tuple[str, ...] = ("en", "it")
 DEFAULT_LANGUAGE = "en"
 
 # Accept a few natural aliases so users who type "italiano" / "it-IT" get the

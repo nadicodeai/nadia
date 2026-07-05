@@ -40,7 +40,7 @@ import { Toast } from "@/nadicodeai-ui-compat";
 import { Card, CardContent } from "@/nadicodeai-ui-compat";
 import { Input } from "@/nadicodeai-ui-compat";
 import { Label } from "@/nadicodeai-ui-compat";
-import { useI18n } from "@/i18n";
+import { formatText, useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { PluginSlot } from "@/plugins";
 import { Segmented } from "@/nadicodeai-ui-compat";
@@ -633,22 +633,22 @@ export default function CronPage() {
       !payload.schedule ||
       (!payload.no_agent && !cronJobHasExecutionContent(payload))
     ) {
-      showToast(`${t.cron.prompt} & ${t.cron.schedule} required`, "error");
+      showToast(t.cron.requiredPromptSchedule, "error");
       return;
     }
     if (payload.no_agent && !payload.script) {
-      showToast("no_agent jobs require a script", "error");
+      showToast(t.cron.noAgentNeedsScript, "error");
       return;
     }
     setCreating(true);
     try {
       await api.createCronJob(payload, createProfile);
-      showToast(t.common.create + " ✓", "success");
+      showToast(t.cron.createdToast, "success");
       setCreateForm(emptyCronJobForm());
       setCreateModalOpen(false);
       loadJobs();
     } catch (e) {
-      showToast(`${t.config.failedToSave}: ${e}`, "error");
+      showToast(formatText(t.cron.saveFailed, { error: String(e) }), "error");
     } finally {
       setCreating(false);
     }
@@ -661,11 +661,11 @@ export default function CronPage() {
       !payload.schedule ||
       (!payload.no_agent && !cronJobHasExecutionContent(payload))
     ) {
-      showToast(`${t.cron.prompt} & ${t.cron.schedule} required`, "error");
+      showToast(t.cron.requiredPromptSchedule, "error");
       return;
     }
     if (payload.no_agent && !payload.script) {
-      showToast("no_agent jobs require a script", "error");
+      showToast(t.cron.noAgentNeedsScript, "error");
       return;
     }
     setSaving(true);
@@ -675,11 +675,11 @@ export default function CronPage() {
         payload,
         getJobProfile(editJob),
       );
-      showToast("Saved changes ✓", "success");
+      showToast(t.cron.savedChanges, "success");
       setEditJob(null);
       loadJobs();
     } catch (e) {
-      showToast(`${t.config.failedToSave}: ${e}`, "error");
+      showToast(formatText(t.cron.saveFailed, { error: String(e) }), "error");
     } finally {
       setSaving(false);
     }
@@ -692,19 +692,19 @@ export default function CronPage() {
       if (isPaused) {
         await api.resumeCronJob(job.id, profile);
         showToast(
-          `${t.cron.resume}: "${truncateText(getJobTitle(job), 30)}"`,
+          formatText(t.cron.resumedToast, { name: truncateText(getJobTitle(job), 30) }),
           "success",
         );
       } else {
         await api.pauseCronJob(job.id, profile);
         showToast(
-          `${t.cron.pause}: "${truncateText(getJobTitle(job), 30)}"`,
+          formatText(t.cron.pausedToast, { name: truncateText(getJobTitle(job), 30) }),
           "success",
         );
       }
       loadJobs();
     } catch (e) {
-      showToast(`${t.status.error}: ${e}`, "error");
+      showToast(formatText(t.common.errorWithDetail, { error: String(e) }), "error");
     }
   };
 
@@ -712,12 +712,12 @@ export default function CronPage() {
     try {
       await api.triggerCronJob(job.id, getJobProfile(job));
       showToast(
-        `${t.cron.triggerNow}: "${truncateText(getJobTitle(job), 30)}"`,
+        formatText(t.cron.triggeredToast, { name: truncateText(getJobTitle(job), 30) }),
         "success",
       );
       loadJobs();
     } catch (e) {
-      showToast(`${t.status.error}: ${e}`, "error");
+      showToast(formatText(t.common.errorWithDetail, { error: String(e) }), "error");
     }
   };
 
@@ -729,16 +729,18 @@ export default function CronPage() {
         try {
           await api.deleteCronJob(id, profile);
           showToast(
-            `${t.common.delete}: "${job ? truncateText(getJobTitle(job), 30) : id}"`,
+            formatText(t.cron.deletedToast, {
+              name: job ? truncateText(getJobTitle(job), 30) : id,
+            }),
             "success",
           );
           loadJobs();
         } catch (e) {
-          showToast(`${t.status.error}: ${e}`, "error");
+          showToast(formatText(t.common.errorWithDetail, { error: String(e) }), "error");
           throw e;
         }
       },
-      [jobs, loadJobs, showToast, t.common.delete, t.status.error],
+      [jobs, loadJobs, showToast, t.common.errorWithDetail, t.cron.deletedToast],
     ),
   });
 

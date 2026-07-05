@@ -41,6 +41,11 @@ gateway:
     usage_switch_model:     "`/model <name>` — cambia modello"
     usage_switch_provider:  "`/model <name> --provider <slug>` — cambia provider"
     usage_persist:          "`/model <name> --global` — rendi permanente"
+    stale_gateway_restart:  "Questo gateway esegue codice da {boot_rev}, ma il checkout su disco ora è {disk_rev}. Cambiare modello rischierebbe un crash da modulo obsoleto — riavvia il gateway per caricare il nuovo codice: nadia gateway restart"
+    switch_failed_staying:  "Cambio modello a {model} non riuscito ({error}); resto su {current}."
+    expensive_title:        "Avviso modello costoso"
+    expensive_confirm_prompt: "⚠️ **Avviso modello costoso**\n\n{warning}\n\n_Alternativa testuale: rispondi `{prefix}approve` per cambiare o `{prefix}cancel` per mantenere il modello attuale._"
+    expensive_cancelled:    "🟡 Cambio modello annullato. Modello attuale invariato ({model})."
 
   agents:
     header:                "🤖 **Agenti e attività attivi**"
@@ -73,6 +78,21 @@ gateway:
     switch_failed:         "Ramo creato ma il passaggio ad esso non è riuscito."
     branched_one:          "⑂ Diramato in **{title}** ({count} messaggio copiato)\nOriginale: `{parent}`\nRamo: `{new}`\nUsa `/resume` per tornare all'originale."
     branched_many:         "⑂ Diramato in **{title}** ({count} messaggi copiati)\nOriginale: `{parent}`\nRamo: `{new}`\nUsa `/resume` per tornare all'originale."
+
+  bundles:
+    unavailable:           "Sottosistema bundle non disponibile: {error}"
+    none_installed:        "Nessun bundle di skill installato.\nCreane uno sull'host con:\n  `nadia bundles create <name> --skill <s1> --skill <s2>`\nDirectory: `{directory}`"
+    header:                "**Bundle di skill** ({count} installati):"
+    default_description:   "Carica {count} skill"
+    item:                  "• `/{slug}` — {description} _({count} skill)_"
+    skill_item:            "    · {skill}"
+    invoke:                "Invoca un bundle con `/<slug>` per caricare tutte le sue skill."
+
+  codex_runtime:
+    errors:                "❌ {errors}"
+    config_load_failed:    "❌ Impossibile caricare la configurazione: {error}"
+    success:               "✓ {message}"
+    failed:                "✗ {message}"
 
   commands:
     usage:                 "Uso: `/commands [page]`"
@@ -134,6 +154,15 @@ gateway:
     resumed:               "▶ Obiettivo ripreso: {goal}\nInvia un messaggio per continuare, oppure aspetta — farò il prossimo passo al turno successivo."
     invalid:               "Obiettivo non valido: {error}"
     set:                   "⊙ Obiettivo impostato (budget di {budget} turni): {goal}\nContinuerò a lavorare finché l'obiettivo non sarà completato, lo metterai in pausa/lo cancellerai, oppure il budget sarà esaurito.\nControlli: /goal status · /goal pause · /goal resume · /goal clear"
+    completion_contract:   "{status}\nContratto di completamento:\n{contract}"
+    wait_usage:            "Uso: /goal wait <pid> [motivo]"
+    wait_pid_invalid:      "/goal wait: <pid> deve essere un ID di processo intero."
+    wait_error:            "/goal wait: {error}"
+    wait_parked:           "⏳ Obiettivo in attesa del pid {pid}{reason}. Il loop resta in pausa finché termina."
+    wait_cleared:          "▶ Barriera di attesa cancellata — il loop obiettivo riprende."
+    no_wait_barrier:       "Nessuna barriera di attesa impostata."
+    draft_usage:           "Uso: /goal draft <obiettivo in linguaggio naturale>"
+    draft_failed_freeform: "{base}\n(Impossibile generare un contratto — esecuzione come obiettivo libero.)"
 
   help:
     header:                "📖 **Comandi Nadia**\n"
@@ -159,6 +188,9 @@ gateway:
       status_joiner:       ", "
       message:             "[kanban] Task {task_id} {status}.\nTitle: {title}\nAssignee: @{assignee}\nBoard: {board}\n\nCheck the result or decide the next step."
 
+  memory:
+    unknown_subcommand:    "Sottocomando /memory sconosciuto. Usa: pending, approve <id>, reject <id>, approval <on|off>."
+
   personality:
     none_configured:       "Nessuna personalità configurata in `{path}/config.yaml`"
     header:                "🎭 **Personalità disponibili**\n"
@@ -169,6 +201,24 @@ gateway:
     cleared:               "🎭 Personalità cancellata — uso il comportamento base dell'agente.\n_(verrà applicato al prossimo messaggio)_"
     set_to:                "🎭 Personalità impostata su **{name}**\n_(verrà applicato al prossimo messaggio)_"
     unknown:               "Personalità sconosciuta: `{name}`\n\nDisponibili: {available}"
+
+  platform:
+    header:                "**Piattaforme gateway**"
+    connected:             "Connesse: {platforms}"
+    connected_none:        "Connesse: (nessuna)"
+    failed_paused:         "  · {platform} — IN PAUSA ({reason}). Riprendi con `/platform resume {platform}`."
+    failed_retrying:       "  · {platform} — nuovo tentativo (tentativo {attempts})"
+    failed_none:           "Non riuscite/in pausa: (nessuna)"
+    reason_paused:         "in pausa"
+    usage_action:          "Uso: /platform {action} <nome>"
+    unknown:               "Piattaforma sconosciuta: {platform}"
+    pause_not_in_retry_queue: "{platform} non è nella coda dei retry (è connessa oppure non è abilitata)."
+    already_paused:        "{platform} è già in pausa."
+    paused:                "✓ {platform} in pausa. Riprendi con `/platform resume {platform}` oppure `nadia gateway restart` per reimpostare."
+    resume_not_in_retry_queue: "{platform} non è nella coda dei retry — niente da riprendere."
+    already_retrying:      "{platform} sta già ritentando — non serve riprendere."
+    resumed:               "✓ {platform} ripresa — nuovo tentativo al prossimo ciclo del watcher."
+    usage:                 "Uso: /platform <list|pause|resume> [nome]\n  /platform list — mostra lo stato delle piattaforme\n  /platform pause <nome> — ferma i retry di una piattaforma non riuscita\n  /platform resume <nome> — rimette in coda una piattaforma in pausa"
 
   profile:
     header:                "👤 **Profilo:** `{profile}`"
@@ -267,6 +317,15 @@ Future messages in this room will use that transcript until `/reset` or another 
     save_failed:           "Salvataggio del canale home non riuscito: {error}"
     success:               "✅ Canale home impostato su **{name}** (ID: {chat_id}).\nI cron job e i messaggi cross-platform verranno consegnati qui."
 
+  sessions:
+    title_all:             "Sessioni"
+    title_named:           "Sessioni nominate"
+
+  skills:
+    approval_off:          "Approvazione scrittura skill disattivata (skills.write_approval). Abilitala con /skills approval on, poi rivedi qui le modifiche con /skills pending."
+    unknown_subcommand:    "Sottocomando /skills sconosciuto su questa piattaforma. Usa: pending, approve <id>, reject <id>, diff <id>, approval <on|off>. (Ricerca/installazione sono solo CLI.)"
+    diff_truncated:        "\n… (troncato — diff completo in ~/.nadia/pending/skills/{pending_id}.json)"
+
   status:
     header:                "📊 **Stato del Gateway Nadia**"
     matrix_scope_header:   "**Matrix scope:**"
@@ -294,6 +353,20 @@ Future messages in this room will use that transcript until `/reset` or another 
     stopped_pending:       "⚡ Fermato. L'agente non era ancora partito — puoi continuare questa sessione."
     stopped:               "⚡ Fermato. Puoi continuare questa sessione."
     no_active:             "Nessuna attività attiva da fermare."
+
+  subgoal:
+    no_active:             "Nessun obiettivo attivo. Impostane uno con /goal <testo>."
+    list:                  "{status}\n{subgoals}"
+    remove_usage:          "Uso: /subgoal remove <n>"
+    remove_invalid:        "/subgoal remove: <n> deve essere un intero (indice da 1)."
+    remove_error:          "/subgoal remove: {error}"
+    removed:               "✓ Sotto-obiettivo {index} rimosso: {text}"
+    clear_error:           "/subgoal clear: {error}"
+    cleared_one:           "✓ Cancellato {count} sotto-obiettivo."
+    cleared_many:          "✓ Cancellati {count} sotto-obiettivi."
+    none_to_clear:         "Nessun sotto-obiettivo da cancellare."
+    add_error:             "/subgoal: {error}"
+    added:                 "✓ Sotto-obiettivo {index} aggiunto: {text}"
 
   title:
     db_unavailable:        "Database delle sessioni non disponibile."
@@ -327,6 +400,7 @@ Future messages in this room will use that transcript until `/reset` or another 
     nadia_cmd_not_found:    "✗ Impossibile localizzare il comando `nadia`. Nadia è in esecuzione, ma il comando di aggiornamento non ha trovato l'eseguibile nel PATH o tramite l'interprete Python attuale. Prova a eseguire `nadia update` manualmente nel terminale."
     start_failed:            "✗ Avvio dell'aggiornamento non riuscito: {error}"
     starting:                "⚕ Avvio dell'aggiornamento di Nadia… mostrerò qui i progressi in streaming."
+    managed:                 "✗ {message}"
 
   usage:
     rate_limits:              "⏱️ **Limiti di frequenza:** {state}"
@@ -360,6 +434,9 @@ Future messages in this room will use that transcript until `/reset` or another 
 
   credits:
     not_logged_in:            "Non hai effettuato l'accesso a NadicodeAI Portal. Accedi per vedere il saldo dei crediti e ricaricare."
+    header:                   "💳 **Crediti Nadia**"
+    top_up:                   "Ricarica: {url}"
+    browser_completion:       "Completa la ricarica nel browser — i crediti appariranno in /credits a breve."
 
   verbose:
     not_enabled:           "Il comando `/verbose` non è abilitato per le piattaforme di messaggistica.\n\nAbilitalo in `config.yaml`:\n```yaml\ndisplay:\n  tool_progress_command: true\n```"
@@ -369,6 +446,8 @@ Future messages in this room will use that transcript until `/reset` or another 
     mode_verbose:          "⚙️ Progresso strumenti: **VERBOSE** — ogni chiamata a uno strumento con argomenti completi."
     saved_suffix:          "_(salvato per **{platform}** — verrà applicato al prossimo messaggio)_"
     save_failed:           "_(impossibile salvare nella configurazione: {error})_"
+    saved:                 "{description}\n_(salvato per **{platform}** — verrà applicato al prossimo messaggio)_"
+    save_failed_with_description: "{description}\n_(impossibile salvare nella configurazione: {error})_"
 
   voice:
     enabled_voice_only:    "Modalità vocale attivata.\nRisponderò con la voce quando invii messaggi vocali.\nUsa /voice tts per ricevere risposte vocali per tutti i messaggi."
@@ -390,6 +469,14 @@ Future messages in this room will use that transcript until `/reset` or another 
   yolo:
     disabled:                   "⚠️ Modalità YOLO **OFF** per questa sessione — i comandi pericolosi richiederanno approvazione."
     enabled:                    "⚡ Modalità YOLO **ON** per questa sessione — tutti i comandi auto-approvati. Usa con cautela."
+
+  whoami:
+    scope_dm:              "DM"
+    scope_group:           "gruppo/canale"
+    none:                  "(nessuno)"
+    unrestricted:          "**Tu** — {platform} ({scope})\nID utente: `{user_id}`\nLivello: senza restrizioni (nessuna lista admin configurata per questo ambito)\nComandi slash: tutti disponibili"
+    admin:                 "**Tu** — {platform} ({scope})\nID utente: `{user_id}`\nLivello: **admin**\nComandi slash: tutti disponibili"
+    user:                  "**Tu** — {platform} ({scope})\nID utente: `{user_id}`\nLivello: utente\nComandi slash disponibili: {commands}"
 
   shared:
     session_db_unavailable:      "Database delle sessioni non disponibile."

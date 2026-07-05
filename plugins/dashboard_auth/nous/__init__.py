@@ -20,7 +20,7 @@ Configuration surfaces (env wins over config.yaml when set non-empty):
 
       NADIA_DASHBOARD_OAUTH_CLIENT_ID  — shape ``agent:{agent_instance_id}``
       NADIA_DASHBOARD_PORTAL_URL       — defaults to
-                                          ``https://portal.nadicodeai.com``
+                                          ``https://portal.nadicode.ai``
                                           (production Portal). Override only
                                           for staging (``portal.rewbs.uk``)
                                           or a custom deployment.
@@ -98,7 +98,7 @@ logger = logging.getLogger(__name__)
 # Production Portal URL. Override via NADIA_DASHBOARD_PORTAL_URL for
 # staging (portal.rewbs.uk) or a custom deployment. Contract docs name
 # this as the production issuer.
-_DEFAULT_PORTAL_URL = "https://portal.nadicodeai.com"
+_DEFAULT_PORTAL_URL = "https://portal.nadicode.ai"
 
 
 # ---------------------------------------------------------------------------
