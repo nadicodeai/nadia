@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "updated_at": "2026-06-16T18:04:33Z",
+  "updated_at": "2026-07-06T22:08:19Z",
   "metadata": {
-    "source": "nadia-agent repo",
-    "docs": "https://docs.nadicode.ai/nadia/reference/model-catalog"
+    "source": "nadia repo",
+    "docs": "https://docs.nadicode.ai/nadia/docs/reference/model-catalog"
   },
   "providers": {
     "openrouter": {
@@ -187,5 +187,6 @@
         }
       ]
     }
-  }
+  },
+  "generated_at": "2026-07-06T22:08:19Z"
 }

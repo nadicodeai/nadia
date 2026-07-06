@@ -686,27 +686,51 @@ jobs:
       - name: Install Python docs helpers
         run: python -m pip install pyyaml==6.0.2 httpx==0.28.1
 
-      - name: Regenerate skills index
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python scripts/build_skills_index.py
-
-      - name: Regenerate model catalog
+      - name: Verify exported docs API files
+        shell: bash
         run: |
-          python scripts/build_model_catalog.py
+          set -euo pipefail
           python - <<'PY'
           import json
+          import sys
           from pathlib import Path
 
-          path = Path("website/static/api/model-catalog.json")
-          data = json.loads(path.read_text(encoding="utf-8"))
-          if "generated_at" not in data:
-              data["generated_at"] = data.get("updated_at")
-              path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+          ok = True
+          for raw in (
+              "website/static/api/skills-index.json",
+              "website/static/api/model-catalog.json",
+          ):
+              path = Path(raw)
+              if not path.is_file():
+                  print(
+                      f"::error::{raw} is missing; "
+                      ".nadia-pipeline/tools/export_public_repo.py must generate docs API files during public export.",
+                      file=sys.stderr,
+                  )
+                  ok = False
+                  continue
+              try:
+                  data = json.loads(path.read_text(encoding="utf-8"))
+              except json.JSONDecodeError as exc:
+                  print(
+                      f"::error::{raw} is invalid JSON: {exc}; "
+                      ".nadia-pipeline/tools/export_public_repo.py must generate docs API files during public export.",
+                      file=sys.stderr,
+                  )
+                  ok = False
+                  continue
+              if not isinstance(data, dict) or not data.get("generated_at"):
+                  print(
+                      f"::error::{raw} is missing generated_at; "
+                      ".nadia-pipeline/tools/export_public_repo.py must generate docs API files during public export.",
+                      file=sys.stderr,
+                  )
+                  ok = False
+          if not ok:
+              sys.exit(1)
           PY
 
-      - name: Regenerate skill docs
+      - name: Build skill docs
         run: |
           python website/scripts/extract-skills.py
           python website/scripts/generate-skill-docs.py
