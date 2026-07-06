@@ -56,7 +56,13 @@ function RootErrorFallback({ error, reset }: ErrorBoundaryFallbackProps) {
   const { t } = useI18n()
 
   return (
-    <div className="fixed inset-0 z-[1500] grid place-items-center bg-(--ui-chat-surface-background) p-6">
+    // data-render-error: machine-readable crash marker. The build and release
+    // gates fail the render check when this attribute is present — a window
+    // showing the root crash screen must never count as "renders".
+    <div
+      className="fixed inset-0 z-[1500] grid place-items-center bg-(--ui-chat-surface-background) p-6"
+      data-render-error={error.message || 'render error'}
+    >
       <ErrorState
         className="w-full max-w-[28rem]"
         description={error.message || t.errors.boundaryDesc}

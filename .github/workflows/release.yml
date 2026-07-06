@@ -137,6 +137,29 @@ jobs:
             spctl --assess --type execute --verbose=4 "${zip_app}"
           fi
 
+      - name: Product gate (macOS)
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          dmg="$(find apps/desktop/release -maxdepth 1 -type f -name 'Nadia-Agent-*.dmg' | sort | tail -n 1)"
+          test -n "${dmg}"
+
+          mount="${RUNNER_TEMP}/nadia-gate-dmg"
+          rm -rf "${mount}"
+          mkdir -p "${mount}"
+          cleanup() { hdiutil detach "${mount}" >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+
+          hdiutil attach "${dmg}" -readonly -nobrowse -mountpoint "${mount}"
+          gate_app="${mount}/Nadia Agent.app"
+          test -d "${gate_app}"
+
+          # portal check: real first-run bootstrap + sign-in click; activation-start
+          # proven on the packaged macOS app 2026-07-06 (issue #14 was click-during-
+          # bootstrap sequencing, fixed by the gate's settle-wait).
+          node apps/desktop/scripts/product-gate.mjs --binary "${gate_app}/Contents/MacOS/Nadia Agent" --checks render,brand,portal --pristine
+
       - name: Stage macOS app artifacts
         shell: bash
         run: |
@@ -170,6 +193,22 @@ jobs:
       - name: Build Windows app artifacts
         run: npm run dist:win --workspace apps/desktop
 
+      - name: Product gate (Windows)
+        shell: pwsh
+        run: |
+          $unpacked = 'apps/desktop/release/win-unpacked'
+          $exe = Join-Path $unpacked 'Nadia Agent.exe'
+          if (-not (Test-Path -LiteralPath $exe)) {
+            $found = Get-ChildItem -LiteralPath $unpacked -Filter '*.exe' -File -ErrorAction SilentlyContinue |
+              Where-Object { $_.Name -notlike '*Uninstall*' } |
+              Select-Object -First 1
+            if (-not $found) { throw "No unpacked Windows executable found under $unpacked to gate." }
+            $exe = $found.FullName
+          }
+          # TODO(#14): portal check proven on macOS 2026-07-06; enable here after one observed run on this OS
+          node apps/desktop/scripts/product-gate.mjs --binary "$exe" --checks render,brand --pristine
+          if ($LASTEXITCODE -ne 0) { throw "product gate failed (exit $LASTEXITCODE)" }
+
       - name: Stage Windows app artifacts
         shell: pwsh
         run: |
@@ -201,13 +240,27 @@ jobs:
       - name: Install Linux package tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y fakeroot rpm
+          sudo apt-get install -y fakeroot rpm xvfb
 
       - name: Install dependencies
         run: npm ci
 
       - name: Build Linux app artifacts
         run: npm run dist:linux --workspace apps/desktop
+
+      - name: Product gate (Linux)
+        shell: bash
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+        run: |
+          set -euo pipefail
+
+          appimage="$(find apps/desktop/release -maxdepth 1 -type f -name 'Nadia-Agent-*.AppImage' | sort | tail -n 1)"
+          test -n "${appimage}"
+          chmod +x "${appimage}"
+
+          # TODO(#14): portal check proven on macOS 2026-07-06; enable here after one observed run on this OS
+          xvfb-run -a node apps/desktop/scripts/product-gate.mjs --binary "${appimage}" --checks render,brand --pristine
 
       - name: Stage Linux app artifacts
         shell: bash

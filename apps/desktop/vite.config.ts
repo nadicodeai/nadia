@@ -42,16 +42,28 @@ export default defineConfig({
     postcss: { plugins: [] }
   },
   build: {
-    // Keep desktop packaging stable: Shiki ships many dynamic chunks by
-    // default, and electron-builder can OOM scanning thousands of files.
-    // Collapsing to a single chunk is intentional, so the renderer bundle is
-    // large by design (~22 MB). Raise the warning ceiling above that so the
-    // cosmetic "chunk larger than 500 kB" nag stays quiet, while still acting
-    // as a regression alarm if the bundle balloons well past today's size.
+    // Raise the chunk-size warning ceiling: the vendor chunk is large by
+    // design (~22 MB, mostly Shiki grammars). Keep it as a regression alarm if
+    // the bundle balloons well past today's size.
     chunkSizeWarningLimit: 25000,
     rolldownOptions: {
       output: {
-        codeSplitting: false
+        // Do NOT collapse to a single chunk (codeSplitting:false): that path
+        // triggers a rolldown 1.1.3 scope-hoisting bug where
+        // class-variance-authority's `cva` is inlined and renamed per consumer
+        // (cva$1..cva$N) and one alias loses its declaration, so the packaged
+        // renderer dies at module-eval with `cva$10 is not defined` — a blank
+        // white window on every OS. Instead code-split (so `cva` is imported
+        // from a chunk, not hoist-renamed) but group Shiki's many language
+        // modules and the rest of node_modules into a bounded set of vendor
+        // chunks (~35 files total) so electron-builder does not OOM scanning
+        // thousands of files (the reason single-chunk was chosen originally).
+        codeSplitting: {
+          groups: [
+            { name: 'shiki', test: /node_modules[\\/](shiki|@shikijs|oniguruma)/ },
+            { name: 'vendor', test: /node_modules/ }
+          ]
+        }
       }
     }
   },
