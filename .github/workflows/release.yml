@@ -242,6 +242,21 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y fakeroot rpm xvfb
 
+      - name: Allow Electron's unprivileged-userns sandbox (Ubuntu 24.04)
+        run: |
+          # Ubuntu 24.04 runners restrict unprivileged user namespaces
+          # (kernel.apparmor_restrict_unprivileged_userns=1), which disables
+          # Chromium's namespace sandbox. Electron then falls back to the SUID
+          # sandbox helper — not setuid-root here — and aborts before the
+          # renderer loads ("SUID sandbox helper ... not configured correctly").
+          # Re-enable unprivileged userns so the app and the render/brand gate
+          # launch WITH the sandbox, exactly as a normal Linux desktop runs it.
+          # Deliberately NOT --no-sandbox: the gate must exercise the real,
+          # sandboxed launch, not a configuration no customer uses. The `|| true`
+          # only covers kernels without this knob (where nothing needs relaxing);
+          # if the sandbox is still broken the render gate below stays red.
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+
       - name: Install dependencies
         run: npm ci
 
