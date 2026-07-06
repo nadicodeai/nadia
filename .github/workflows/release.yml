@@ -4,9 +4,34 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing CalVer tag to manufacture'
+        required: true
+        type: string
+      drill:
+        description: 'Build and gate without publishing customer-visible outputs'
+        required: false
+        default: false
+        type: boolean
+      fail_job:
+        description: 'Optional job id to force-fail during a drill'
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: write
+  packages: write
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+  REGISTRY_IMAGE: ghcr.io/nadicodeai/nadia
 
 jobs:
   source-and-installers:
@@ -15,14 +40,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.tag || github.ref_name }}
           fetch-depth: 0
+
+      - name: Forced drill failure
+        if: ${{ inputs.fail_job == 'source-and-installers' }}
+        shell: bash
+        run: |
+          echo "::error::Forced failure for drill job source-and-installers"
+          exit 1
+
+      - name: Validate CalVer tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "${RELEASE_TAG}" =~ ^v[0-9]{4}\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
+            echo "::error::release tag must be vYYYY.M.D[.N], got ${RELEASE_TAG}"
+            exit 1
+          fi
 
       - name: Stage source archive and install scripts
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p release-assets
-          git archive --format=tar.gz --prefix="nadia-${GITHUB_REF_NAME}/"             -o "release-assets/nadia-${GITHUB_REF_NAME}-source.tar.gz" HEAD
+          git archive --format=tar.gz --prefix="nadia-${RELEASE_TAG}/"             -o "release-assets/nadia-${RELEASE_TAG}-source.tar.gz" HEAD
           cp scripts/install.sh release-assets/install.sh
           cp scripts/install.ps1 release-assets/install.ps1
           cp scripts/install.cmd release-assets/install.cmd
@@ -39,6 +81,15 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+
+      - name: Forced drill failure
+        if: ${{ inputs.fail_job == 'desktop-macos' }}
+        shell: bash
+        run: |
+          echo "::error::Forced failure for drill job desktop-macos"
+          exit 1
 
       - uses: actions/setup-node@v4
         with:
@@ -67,13 +118,280 @@ jobs:
           done
           npm run dist:mac --workspace apps/desktop
 
+      - name: Stage macOS app artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          find apps/desktop/release -maxdepth 1 -type f \( -name 'Nadia-Agent-*.dmg' -o -name 'Nadia-Agent-*.zip' \) -exec cp {} release-assets/ \;
+          test -n "$(find release-assets -maxdepth 1 -type f -print -quit)"
+          find release-assets -maxdepth 1 -type f -print | sort
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-macos
+          path: release-assets/*
+          if-no-files-found: error
+
+  desktop-windows:
+    name: desktop Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+
+      - name: Forced drill failure
+        if: ${{ inputs.fail_job == 'desktop-windows' }}
+        shell: pwsh
+        run: |
+          Write-Error "Forced failure for drill job desktop-windows"
+          exit 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Windows app artifacts
+        run: npm run dist:win --workspace apps/desktop
+
+      - name: Stage Windows app artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force release-assets | Out-Null
+          $files = Get-ChildItem apps/desktop/release -File |
+            Where-Object { $_.Name -like 'Nadia-Agent-*.exe' -or $_.Name -like 'Nadia-Agent-*.msi' }
+          if (-not $files) { throw 'No Windows app artifacts were produced.' }
+          $files | Copy-Item -Destination release-assets
+          Get-ChildItem release-assets -File | Sort-Object Name | ForEach-Object { $_.FullName }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-windows
+          path: release-assets/*
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-windows-gate
+          path: apps/desktop/release/win-unpacked/**
+          if-no-files-found: error
+
+  desktop-linux:
+    name: desktop Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+
+      - name: Forced drill failure
+        if: ${{ inputs.fail_job == 'desktop-linux' }}
+        shell: bash
+        run: |
+          echo "::error::Forced failure for drill job desktop-linux"
+          exit 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install Linux package tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fakeroot rpm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Linux app artifacts
+        run: npm run dist:linux --workspace apps/desktop
+
+      - name: Stage Linux app artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          find apps/desktop/release -maxdepth 1 -type f \( -name 'Nadia-Agent-*.AppImage' -o -name 'Nadia-Agent-*.deb' -o -name 'Nadia-Agent-*.rpm' \) -exec cp {} release-assets/ \;
+          test -n "$(find release-assets -maxdepth 1 -type f -print -quit)"
+          find release-assets -maxdepth 1 -type f -print | sort
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-linux
+          path: release-assets/*
+          if-no-files-found: error
+
+  docker-build:
+    name: docker build (${{ matrix.platform }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+            digest_suffix: linux-amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            digest_suffix: linux-arm64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+
+      - name: Forced drill failure
+        if: ${{ inputs.fail_job == 'docker-build' }}
+        shell: bash
+        run: |
+          echo "::error::Forced failure for drill job docker-build"
+          exit 1
+
+      - name: Resolve release revision
+        id: release-ref
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "sha=$(git rev-parse HEAD)" >> "${GITHUB_OUTPUT}"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: ${{ matrix.platform }}
+          build-args: |
+            NADIA_GIT_SHA=${{ steps.release-ref.outputs.sha }}
+          labels: |
+            org.opencontainers.image.version=${{ env.RELEASE_TAG }}
+            org.opencontainers.image.revision=${{ steps.release-ref.outputs.sha }}
+          outputs: type=image,name=${{ env.REGISTRY_IMAGE }},push-by-digest=true,name-canonical=true,push=true
+
+      - name: Export digest artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          digest="${digest#sha256:}"
+          test -n "${digest}"
+          touch "/tmp/digests/${digest}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docker-digest-${{ matrix.digest_suffix }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+
+  gate:
+    name: release gate (${{ matrix.target }})
+    needs:
+      - source-and-installers
+      - desktop-macos
+      - desktop-windows
+      - desktop-linux
+      - docker-build
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: assets
+            runner: ubuntu-latest
+          - target: macos
+            runner: macos-latest
+          - target: windows
+            runner: windows-latest
+          - target: linux
+            runner: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+
+      - name: Forced drill failure
+        if: ${{ inputs.fail_job == 'gate' }}
+        shell: bash
+        run: |
+          echo "::error::Forced failure for drill job gate"
+          exit 1
+
+      - uses: actions/setup-node@v4
+        if: ${{ matrix.target != 'assets' }}
+        with:
+          node-version: 22
+
+      - uses: actions/download-artifact@v4
+        if: ${{ matrix.target == 'assets' }}
+        with:
+          name: source-and-installers
+          path: release-assets
+
+      - uses: actions/download-artifact@v4
+        if: ${{ matrix.target == 'assets' }}
+        with:
+          name: desktop-macos
+          path: release-assets
+
+      - uses: actions/download-artifact@v4
+        if: ${{ matrix.target == 'assets' }}
+        with:
+          name: desktop-windows
+          path: release-assets
+
+      - uses: actions/download-artifact@v4
+        if: ${{ matrix.target == 'assets' }}
+        with:
+          name: desktop-linux
+          path: release-assets
+
+      - name: Verify release asset inventory
+        if: ${{ matrix.target == 'assets' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "release-assets/nadia-${RELEASE_TAG}-source.tar.gz"
+          test -f release-assets/install.sh
+          test -f release-assets/install.ps1
+          test -f release-assets/install.cmd
+          test -n "$(find release-assets -maxdepth 1 -type f -name 'Nadia-Agent-*.dmg' -print -quit)"
+          test -n "$(find release-assets -maxdepth 1 -type f -name 'Nadia-Agent-*.zip' -print -quit)"
+          test -n "$(find release-assets -maxdepth 1 -type f -name 'Nadia-Agent-*.AppImage' -print -quit)"
+          test -n "$(find release-assets -maxdepth 1 -type f -name 'Nadia-Agent-*.deb' -print -quit)"
+          test -n "$(find release-assets -maxdepth 1 -type f -name 'Nadia-Agent-*.rpm' -print -quit)"
+          test -n "$(find release-assets -maxdepth 1 -type f \( -name 'Nadia-Agent-*.exe' -o -name 'Nadia-Agent-*.msi' \) -print -quit)"
+          find release-assets -maxdepth 1 -type f -print | sort
+
+      - uses: actions/download-artifact@v4
+        if: ${{ matrix.target == 'macos' }}
+        with:
+          name: desktop-macos
+          path: release-assets
+
       - name: Validate macOS Gatekeeper acceptance
+        if: ${{ matrix.target == 'macos' }}
         shell: bash
         run: |
           set -euo pipefail
 
-          dmg="$(find apps/desktop/release -maxdepth 1 -type f -name 'Nadia-Agent-*.dmg' | sort | tail -n 1)"
-          zip="$(find apps/desktop/release -maxdepth 1 -type f -name 'Nadia-Agent-*.zip' | sort | tail -n 1)"
+          dmg="$(find release-assets -maxdepth 1 -type f -name 'Nadia-Agent-*.dmg' | sort | tail -n 1)"
+          zip="$(find release-assets -maxdepth 1 -type f -name 'Nadia-Agent-*.zip' | sort | tail -n 1)"
           test -n "${dmg}"
           test -n "${zip}"
 
@@ -138,11 +456,12 @@ jobs:
           fi
 
       - name: Product gate (macOS)
+        if: ${{ matrix.target == 'macos' }}
         shell: bash
         run: |
           set -euo pipefail
 
-          dmg="$(find apps/desktop/release -maxdepth 1 -type f -name 'Nadia-Agent-*.dmg' | sort | tail -n 1)"
+          dmg="$(find release-assets -maxdepth 1 -type f -name 'Nadia-Agent-*.dmg' | sort | tail -n 1)"
           test -n "${dmg}"
 
           mount="${RUNNER_TEMP}/nadia-gate-dmg"
@@ -160,46 +479,20 @@ jobs:
           # bootstrap sequencing, fixed by the gate's settle-wait).
           node apps/desktop/scripts/product-gate.mjs --binary "${gate_app}/Contents/MacOS/Nadia Agent" --checks render,brand,portal --pristine
 
-      - name: Stage macOS app artifacts
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p release-assets
-          find apps/desktop/release -maxdepth 1 -type f \( -name 'Nadia-Agent-*.dmg' -o -name 'Nadia-Agent-*.zip' \) -exec cp {} release-assets/ \;
-          test -n "$(find release-assets -maxdepth 1 -type f -print -quit)"
-          find release-assets -maxdepth 1 -type f -print | sort
-
-      - uses: actions/upload-artifact@v4
+      - uses: actions/download-artifact@v4
+        if: ${{ matrix.target == 'windows' }}
         with:
-          name: desktop-macos
-          path: release-assets/*
-          if-no-files-found: error
-
-  desktop-windows:
-    name: desktop Windows
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build Windows app artifacts
-        run: npm run dist:win --workspace apps/desktop
+          name: desktop-windows-gate
+          path: win-unpacked
 
       - name: Product gate (Windows)
+        if: ${{ matrix.target == 'windows' }}
         shell: pwsh
         run: |
-          $unpacked = 'apps/desktop/release/win-unpacked'
+          $unpacked = 'win-unpacked'
           $exe = Join-Path $unpacked 'Nadia Agent.exe'
           if (-not (Test-Path -LiteralPath $exe)) {
-            $found = Get-ChildItem -LiteralPath $unpacked -Filter '*.exe' -File -ErrorAction SilentlyContinue |
+            $found = Get-ChildItem -LiteralPath $unpacked -Filter '*.exe' -File -Recurse -ErrorAction SilentlyContinue |
               Where-Object { $_.Name -notlike '*Uninstall*' } |
               Select-Object -First 1
             if (-not $found) { throw "No unpacked Windows executable found under $unpacked to gate." }
@@ -209,40 +502,20 @@ jobs:
           node apps/desktop/scripts/product-gate.mjs --binary "$exe" --checks render,brand --pristine
           if ($LASTEXITCODE -ne 0) { throw "product gate failed (exit $LASTEXITCODE)" }
 
-      - name: Stage Windows app artifacts
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force release-assets | Out-Null
-          $files = Get-ChildItem apps/desktop/release -File |
-            Where-Object { $_.Name -like 'Nadia-Agent-*.exe' -or $_.Name -like 'Nadia-Agent-*.msi' }
-          if (-not $files) { throw 'No Windows app artifacts were produced.' }
-          $files | Copy-Item -Destination release-assets
-          Get-ChildItem release-assets -File | Sort-Object Name | ForEach-Object { $_.FullName }
-
-      - uses: actions/upload-artifact@v4
+      - uses: actions/download-artifact@v4
+        if: ${{ matrix.target == 'linux' }}
         with:
-          name: desktop-windows
-          path: release-assets/*
-          if-no-files-found: error
+          name: desktop-linux
+          path: release-assets
 
-  desktop-linux:
-    name: desktop Linux
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: package-lock.json
-
-      - name: Install Linux package tools
+      - name: Install Linux gate tools
+        if: ${{ matrix.target == 'linux' }}
         run: |
           sudo apt-get update
-          sudo apt-get install -y fakeroot rpm xvfb
+          sudo apt-get install -y xvfb
 
       - name: Allow Electron's unprivileged-userns sandbox (Ubuntu 24.04)
+        if: ${{ matrix.target == 'linux' }}
         run: |
           # Ubuntu 24.04 runners restrict unprivileged user namespaces
           # (kernel.apparmor_restrict_unprivileged_userns=1), which disables
@@ -257,54 +530,53 @@ jobs:
           # if the sandbox is still broken the render gate below stays red.
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build Linux app artifacts
-        run: npm run dist:linux --workspace apps/desktop
-
       - name: Product gate (Linux)
+        if: ${{ matrix.target == 'linux' }}
         shell: bash
         env:
           APPIMAGE_EXTRACT_AND_RUN: "1"
         run: |
           set -euo pipefail
 
-          appimage="$(find apps/desktop/release -maxdepth 1 -type f -name 'Nadia-Agent-*.AppImage' | sort | tail -n 1)"
+          appimage="$(find release-assets -maxdepth 1 -type f -name 'Nadia-Agent-*.AppImage' | sort | tail -n 1)"
           test -n "${appimage}"
           chmod +x "${appimage}"
 
           # TODO(#14): portal check proven on macOS 2026-07-06; enable here after one observed run on this OS
           xvfb-run -a node apps/desktop/scripts/product-gate.mjs --binary "${appimage}" --checks render,brand --pristine
 
-      - name: Stage Linux app artifacts
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p release-assets
-          find apps/desktop/release -maxdepth 1 -type f \( -name 'Nadia-Agent-*.AppImage' -o -name 'Nadia-Agent-*.deb' -o -name 'Nadia-Agent-*.rpm' \) -exec cp {} release-assets/ \;
-          test -n "$(find release-assets -maxdepth 1 -type f -print -quit)"
-          find release-assets -maxdepth 1 -type f -print | sort
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: desktop-linux
-          path: release-assets/*
-          if-no-files-found: error
-
-  publish:
+  publish-release:
     name: publish release assets
-    needs:
-      - source-and-installers
-      - desktop-macos
-      - desktop-windows
-      - desktop-linux
+    needs: gate
+    if: ${{ inputs.drill != 'true' && inputs.drill != true }}
     runs-on: ubuntu-latest
     steps:
+      - name: Forced drill failure
+        if: ${{ inputs.fail_job == 'publish-release' }}
+        shell: bash
+        run: |
+          echo "::error::Forced failure for job publish-release"
+          exit 1
+
       - uses: actions/download-artifact@v4
         with:
+          name: source-and-installers
           path: release-assets
-          merge-multiple: true
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: desktop-macos
+          path: release-assets
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: desktop-windows
+          path: release-assets
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: desktop-linux
+          path: release-assets
 
       - name: Add checksums
         shell: bash
@@ -321,8 +593,147 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          tag="${GITHUB_REF_NAME}"
+          tag="${RELEASE_TAG}"
           if ! gh release view "${tag}" >/dev/null 2>&1; then
             gh release create "${tag}" --title "Nadia Agent ${tag}" --notes "Nadia Agent ${tag}"
           fi
           gh release upload "${tag}" release-assets/* --clobber
+
+  docker-publish:
+    name: publish Docker manifest
+    needs: gate
+    if: ${{ inputs.drill != 'true' && inputs.drill != true }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Forced drill failure
+        if: ${{ inputs.fail_job == 'docker-publish' }}
+        shell: bash
+        run: |
+          echo "::error::Forced failure for job docker-publish"
+          exit 1
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: docker-digest-*
+          merge-multiple: true
+
+      - name: Create tagged Docker manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          refs=()
+          while IFS= read -r digest_file; do
+            digest="$(basename "${digest_file}")"
+            refs+=("${REGISTRY_IMAGE}@sha256:${digest}")
+          done < <(find /tmp/digests -maxdepth 1 -type f | sort)
+          if [ "${#refs[@]}" -ne 2 ]; then
+            echo "::error::expected 2 docker digests, found ${#refs[@]}"
+            exit 1
+          fi
+          docker buildx imagetools create             -t "${REGISTRY_IMAGE}:${RELEASE_TAG}"             -t "${REGISTRY_IMAGE}:latest"             "${refs[@]}"
+          docker buildx imagetools inspect "${REGISTRY_IMAGE}:${RELEASE_TAG}"
+          docker buildx imagetools inspect "${REGISTRY_IMAGE}:latest"
+
+  docs-deploy:
+    name: deploy docs
+    needs: gate
+    if: ${{ inputs.drill != 'true' && inputs.drill != true }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+
+      - name: Forced drill failure
+        if: ${{ inputs.fail_job == 'docs-deploy' }}
+        shell: bash
+        run: |
+          echo "::error::Forced failure for job docs-deploy"
+          exit 1
+
+      - name: Check Vercel token
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${VERCEL_TOKEN:-}" ]; then
+            echo "::error::VERCEL_TOKEN is required to deploy docs"
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python docs helpers
+        run: python -m pip install pyyaml==6.0.2 httpx==0.28.1
+
+      - name: Regenerate skills index
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/build_skills_index.py
+
+      - name: Regenerate model catalog
+        run: |
+          python scripts/build_model_catalog.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("website/static/api/model-catalog.json")
+          data = json.loads(path.read_text(encoding="utf-8"))
+          if "generated_at" not in data:
+              data["generated_at"] = data.get("updated_at")
+              path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+          PY
+
+      - name: Regenerate skill docs
+        run: |
+          python website/scripts/extract-skills.py
+          python website/scripts/generate-skill-docs.py
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      - name: Install website dependencies
+        run: npm ci
+        working-directory: website
+
+      - name: Build website
+        run: npm run build
+        working-directory: website
+
+      - name: Stage Vercel output
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd website
+          rm -rf .vercel/output
+          mkdir -p .vercel/output/static .vercel/output/static/nadia
+          cp -R build/. .vercel/output/static/
+          cp -R build/. .vercel/output/static/nadia/
+          printf '%s\n' '{"version":3}' > .vercel/output/config.json
+
+      - name: Deploy to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd website
+          npx vercel@latest link --yes --scope vadim-comanescus-projects --project argo-docs --token "${VERCEL_TOKEN}"
+          npx vercel@latest deploy --prebuilt --prod --yes --scope vadim-comanescus-projects --token "${VERCEL_TOKEN}"
