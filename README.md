@@ -1,32 +1,47 @@
-# Nadia Agent
+# Nadia — the NadicodeAI agent
 
-Nadia is NadicodeAI's AI agent — chat, tools, files, browser, terminal, and
-scheduled work, on your machine or ours. One subscription, 300+ models,
-managed through the [NadicodeAI Portal](https://portal.nadicode.ai).
-
-This repository hosts **release artifacts only**.
+Nadia is an AI agent desktop app. Sign in with the
+[NadicodeAI Portal](https://portal.nadicode.ai) to activate — your
+subscription and models are managed there.
 
 ## Install
 
 Download the latest release from the
-[Releases page](https://github.com/nadicodeai/nadia/releases/latest):
+[Releases page](https://github.com/nadicodeai/nadia/releases).
 
-- **macOS** — `Nadia-<version>-mac-arm64.dmg`
-- **Windows / Linux** — see the assets on the latest release
+**macOS (Apple Silicon)** — `.dmg`
 
-Container image:
+The app is ad-hoc signed for now. On first open, either run:
 
 ```
-docker pull ghcr.io/nadicodeai/nadia:latest
+xattr -dr com.apple.quarantine /Applications/Nadia.app
 ```
 
-## Getting started
+or go to System Settings → Privacy & Security → Open Anyway.
 
-First launch opens the NadicodeAI Portal sign-in — activate the agent and
-you're running. Your subscription and models are managed in the
-[portal](https://portal.nadicode.ai).
+**Linux (x86_64)** — `.AppImage` or `.deb`
+
+```
+chmod +x Nadia-*.AppImage
+./Nadia-*.AppImage
+```
+
+Debian/Ubuntu users can instead install the `.deb` package.
+
+**Windows** — coming soon.
+
+## First launch
+
+On first launch, Nadia installs its background agent from the source bundled
+inside the app (about 2 minutes; requires network access to fetch
+dependencies), then opens the portal sign-in screen.
+
+## Verifying downloads
+
+Each release includes a `sha256sums.txt` file. Verify your download against
+it before installing.
 
 ## License
 
-Released under the MIT license — see [LICENSE](LICENSE). Nadia includes
-software from open-source projects; attributions ship with the artifacts.
+MIT — see [LICENSE](LICENSE). Nadia is built on hermes-agent by Nous Research
+(MIT).
