@@ -20,9 +20,16 @@ Download the latest release from the
 Open the `.dmg`, then drag Nadia into Applications.
 
 The first time you open Nadia, macOS asks you to confirm apps downloaded
-outside the App Store. Right-click (or Control-click) Nadia in Applications
-and choose **Open**, or go to System Settings → Privacy & Security →
-**Open Anyway**.
+outside the App Store:
+
+1. Double-click Nadia in Applications. macOS shows a message that it can't
+   verify the developer — click **Done**.
+2. Open System Settings → Privacy & Security and scroll to Security. You'll
+   see a note that Nadia was blocked, with an **Open Anyway** button.
+3. Click **Open Anyway**, confirm with your password or Touch ID, then open
+   Nadia once more to confirm.
+
+You only need to do this once.
 
 **Linux (x86_64)** — `.AppImage`, `.deb`, or `.rpm`
 
