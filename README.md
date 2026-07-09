@@ -1,8 +1,14 @@
 # Nadia — the NadicodeAI agent
 
-Nadia is an AI agent desktop app. Sign in with the
-[NadicodeAI Portal](https://portal.nadicode.ai) to activate — your
+Nadia is NadicodeAI's AI agent for your desktop. Sign in with the
+[NadicodeAI Portal](https://portal.nadicode.ai) to get started — your
 subscription and models are managed there.
+
+Nadia can connect to the channels you already use: Telegram, WhatsApp,
+Signal, iMessage, Email, SMS, Discord, Slack, Microsoft Teams, Google Chat,
+Mattermost, Matrix, and Home Assistant, plus webhooks and an API.
+
+Available in English and Italian.
 
 ## Install
 
@@ -11,30 +17,30 @@ Download the latest release from the
 
 **macOS (Apple Silicon)** — `.dmg`
 
-The app is ad-hoc signed for now. On first open, either run:
+Open the `.dmg`, then drag Nadia into Applications.
 
-```
-xattr -dr com.apple.quarantine /Applications/Nadia.app
-```
+The first time you open Nadia, macOS asks you to confirm apps downloaded
+outside the App Store. Right-click (or Control-click) Nadia in Applications
+and choose **Open**, or go to System Settings → Privacy & Security →
+**Open Anyway**.
 
-or go to System Settings → Privacy & Security → Open Anyway.
-
-**Linux (x86_64)** — `.AppImage` or `.deb`
+**Linux (x86_64)** — `.AppImage`, `.deb`, or `.rpm`
 
 ```
 chmod +x Nadia-*.AppImage
 ./Nadia-*.AppImage
 ```
 
-Debian/Ubuntu users can instead install the `.deb` package.
+Debian and Ubuntu users can install the `.deb`; Fedora and RHEL users can
+install the `.rpm`.
 
-**Windows** — coming soon.
+**Windows** — Windows support is coming soon.
 
 ## First launch
 
-On first launch, Nadia installs its background agent from the source bundled
-inside the app (about 2 minutes; requires network access to fetch
-dependencies), then opens the portal sign-in screen.
+The first launch takes a couple of minutes to finish setting up and needs an
+internet connection. Nadia then asks you to sign in with the NadicodeAI
+Portal.
 
 ## Verifying downloads
 
